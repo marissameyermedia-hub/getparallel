@@ -1,0 +1,862 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { parallelQuestionnaire, ONBOARDING_INTRO, Question } from '../data/parallelQuestionnaire_updated';
+import { ProgressBar } from './onboarding/ProgressBar';
+import { ChapterTitle } from './onboarding/ChapterTitle';
+import { QuestionScreen } from './onboarding/QuestionScreen';
+import { ProfileEditor } from './ProfileEditor';
+import { WelcomeScreen } from './onboarding/WelcomeScreen';
+import { SimpleHeader } from './SimpleHeader';
+import { LocationPicker } from './LocationPicker';
+import { MatchWeightsScreen } from './MatchWeightsScreen';
+import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { publicAnonKey } from '../utils/supabase/info';
+
+interface OnboardingFlowProps {
+  onComplete: (answers: Record<string, any>) => Promise<{ success: boolean; error?: string; locationRequired?: boolean }>;
+  onNavigate?: (view: 'matches' | 'pricing' | 'questionnaire' | 'account' | 'attachment-quiz' | 'signin' | 'profile' | 'my-profile' | 'inbox') => void;
+  showInbox?: boolean;
+  userDateOfBirth?: string;
+  userName?: string;
+}
+
+// Index of the last Part 1 section in the parallelQuestionnaire array.
+// Array order: [0]=id1 BasicIdentity, [1]=id3 Lifestyle, [2]=id4 CareerFinances,
+// [3]=id5 FamilySocialLife, [4]=id6 ValuesBeliefs, [5]=id7 RelationshipPsychology,
+// [6]=id8 RelationshipGoals  <-- Part 1 ends here
+// [7]=id9 AttractionPreferences, [8]=id11 LifestyleCompatibility, [9]=id12 PartnerValues
+const PART1_LAST_CHAPTER_INDEX = 6;
+
+const STORAGE_KEY = 'parallel_questionnaire_progress';
+
+export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBirth, userName = '' }: OnboardingFlowProps) {
+  const lockedAge = (() => {
+    if (!userDateOfBirth) return null;
+    const today = new Date();
+    const birth = new Date(userDateOfBirth);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age > 0 ? age : null;
+  })();
+
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [showLocationStep, setShowLocationStep] = useState(false);
+  const [showTimeEstimate, setShowTimeEstimate] = useState(true);
+  const [showPart2Transition, setShowPart2Transition] = useState(false);
+  const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
+  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [showProfileCompletion, setShowProfileCompletion] = useState(false);
+  const [showCreateProfileTitle, setShowCreateProfileTitle] = useState(false);
+  const [showMatchWeights, setShowMatchWeights] = useState(false);
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [bio, setBio] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [career, setCareer] = useState<string>('');
+  const [education, setEducation] = useState<string>('');
+  const [instagram, setInstagram] = useState<string>('');
+  const [pronouns, setPronouns] = useState<string>('');
+  const [onboardingLocation, setOnboardingLocation] = useState<{
+    latitude: number;
+    longitude: number;
+    city: string;
+    country: string;
+    locationDisplay: string;
+  } | undefined>(undefined);
+  const [showResumeMessage, setShowResumeMessage] = useState(false);
+  // Ref to track the most recent answers synchronously — used by saveStep when called
+  // immediately after handleAnswer, before React's async state commit resolves.
+  const latestAnswersRef = useRef<Record<string, any>>({});
+  // Gate — render nothing until fetchProgress has completed so there's no flash
+  const [hasLoadedProgress, setHasLoadedProgress] = useState(false);
+  const [hasSavedOnce, setHasSavedOnce] = useState(false);
+  const [saveError, setSaveError] = useState<string>('');
+  const [saveErrorLocationRequired, setSaveErrorLocationRequired] = useState(false);
+
+  const currentChapter = parallelQuestionnaire[currentChapterIndex];
+
+  // Pre-populate education from questionnaire answers
+  useEffect(() => {
+    if (answers['4.5'] && !education) {
+      const val = answers['4.5'];
+      const extracted = typeof val === 'string' ? val : (val?.value && typeof val.value === 'string' ? val.value : null);
+      if (extracted) setEducation(extracted);
+    }
+  }, [answers]);
+
+  // ── showIf visibility helper ─────────────────────────────────
+  const isQuestionVisible = (question: Question): boolean => {
+    if (!question.showIf) return true;
+    const { questionId, notValues, hasValue } = question.showIf;
+    const refAnswer = answers[questionId];
+    const refValue = refAnswer && typeof refAnswer === 'object' && 'value' in refAnswer
+      ? refAnswer.value
+      : refAnswer;
+    if (hasValue) {
+      return refValue != null && refValue !== '';
+    }
+    if (notValues) {
+      if (refValue == null || refValue === '') return false;
+      return !notValues.includes(String(refValue));
+    }
+    return true;
+  };
+
+  // ── Total question count ──────────────────────────────────────
+  const totalQuestions = parallelQuestionnaire.reduce((total, section) => {
+    return total + section.questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
+  }, 0);
+
+  const getCurrentQuestionNumber = () => {
+    let questionNumber = 0;
+    for (let i = 0; i < currentChapterIndex; i++) {
+      questionNumber += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
+    }
+    if (currentQuestionIndex >= 0) {
+      const questionsUpToHere = currentChapter.questions
+        .slice(0, currentQuestionIndex + 1)
+        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q));
+      questionNumber += questionsUpToHere.length;
+    }
+    return questionNumber;
+  };
+
+
+  // ── Save a non-question step (location, chapter intros, transitions) ──────
+  // Called whenever the user lands on a screen that isn't a question answer.
+  // This ensures resume works even if they exit on these screens.
+  //
+  // IMPORTANT: Pass `latestAnswers` when calling from handleContinue after an answer
+  // was just set. React's setAnswers is async — the closure `answers` value may be
+  // stale at call time, which would overwrite the just-saved answer in user_answers.
+  const saveStep = useCallback((step: string, latestAnswers?: Record<string, any>) => {
+    const token = localStorage.getItem('parallel_access_token');
+    if (!token) return;
+    fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': publicAnonKey,
+      },
+      body: JSON.stringify({
+        current_step: step,
+        partial_answers: latestAnswers ?? answers,
+        partial_photos: photos,
+      }),
+    }).catch(err => console.error('Failed to save step:', err));
+  }, [answers, photos]);
+
+  // ── Fetch saved progress on mount ────────────────────────────
+  useEffect(() => {
+    const fetchProgress = async () => {
+      const token = localStorage.getItem('parallel_access_token');
+      if (!token) {
+        setHasLoadedProgress(true);
+        return;
+      }
+      try {
+        const res = await fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'apikey': publicAnonKey,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.progress && data.progress.current_step) {
+            const progress = data.progress;
+            const step = progress.current_step as string;
+
+            // Restore answers and photos first, regardless of step
+            if (progress.partial_answers && Object.keys(progress.partial_answers).length > 0) {
+              setAnswers(progress.partial_answers);
+            }
+            if (progress.partial_photos && progress.partial_photos.length > 0) {
+              setPhotos(progress.partial_photos);
+            }
+
+            // Restore the correct screen
+            if (step === 'profile' || step === 'photo_upload') {
+              // photo_upload is written by ProfileEditor during photo uploads —
+              // both map to the Create Profile screen
+              setShowCreateProfileTitle(true);
+              setShowTimeEstimate(false);
+            } else if (step === 'location') {
+              setShowLocationStep(true);
+              setShowTimeEstimate(false);
+              setShowResumeMessage(true);
+              setTimeout(() => setShowResumeMessage(false), 3000);
+            } else if (step === 'part2_transition') {
+              setShowPart2Transition(true);
+              setShowTimeEstimate(false);
+              setShowResumeMessage(true);
+              setTimeout(() => setShowResumeMessage(false), 3000);
+            } else if (step.startsWith('chapter_')) {
+              const parts = step.split('_');
+              const chapterIdx = parseInt(parts[1]);
+              if (parts[2] === 'intro') {
+                setCurrentChapterIndex(chapterIdx);
+                setCurrentQuestionIndex(-1);
+              } else if (parts[2] === 'question') {
+                const questionIdx = parseInt(parts[3]);
+                setCurrentChapterIndex(chapterIdx);
+                setCurrentQuestionIndex(questionIdx);
+              }
+              setShowTimeEstimate(false);
+              setShowResumeMessage(true);
+              setTimeout(() => setShowResumeMessage(false), 3000);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch progress:', err);
+      } finally {
+        setHasLoadedProgress(true);
+      }
+    };
+    fetchProgress();
+  }, []);
+
+  // ── Saving spinner ───────────────────────────────────────────
+  if (isSaving) {
+    return (
+      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center gap-4">
+        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-gray-500">Saving your profile…</p>
+      </div>
+    );
+  }
+
+
+  // ── Loading gate — render nothing until progress fetch resolves ──────────
+  // Prevents the intro screen flashing before the user is dropped at their
+  // saved question. Shows for ~200-500ms on a normal connection.
+  if (!hasLoadedProgress) {
+    return (
+      <div className="fixed inset-0 bg-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-1">
+            <div className="w-1.5 h-8 bg-black rounded-full" />
+            <div className="w-1.5 h-8 bg-black rounded-full" />
+          </div>
+          <p className="text-sm text-gray-400">Loading your progress…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Profile completion handler ────────────────────────────────
+  const handleProfileCompletionComplete = async (data: {
+    photos: string[];
+    bio: string;
+    career: string;
+    education: string;
+    instagram: string;
+    pronouns: string;
+    location?: { latitude: number; longitude: number; city: string; country: string; locationDisplay: string };
+  }) => {
+    setIsSaving(true);
+    setSaveError('');
+    setSaveErrorLocationRequired(false);
+    setPhotos(data.photos);
+    setBio(data.bio);
+    setCareer(data.career);
+    setEducation(data.education);
+    setInstagram(data.instagram);
+    setPronouns(data.pronouns || '');
+
+    try {
+      const result = await onComplete({
+        ...answers,
+        photos: data.photos,
+        bio: data.bio,
+        career: data.career,
+        education: data.education,
+        instagram: data.instagram,
+        pronouns: data.pronouns || '',
+        location: data.location || onboardingLocation,
+      });
+
+      if (!result.success) {
+        setIsSaving(false);
+        setSaveError(result.error || 'An error occurred while saving your profile.');
+        if (result.locationRequired) {
+          setSaveErrorLocationRequired(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch (err) {
+      setIsSaving(false);
+      setSaveError('Network error. Please check your connection and try again.');
+      console.error('Profile save error:', err);
+    }
+  };
+
+  // ── Profile completion screen ────────────────────────────────
+  if (showProfileCompletion) {
+    return (
+      <div className="flex flex-col min-h-screen bg-white">
+        {saveError && (
+          <div className="bg-red-50 border-b-2 border-red-200 px-6 py-3 flex-shrink-0 flex items-start gap-3">
+            <span className="text-red-500 text-lg flex-shrink-0">⚠</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-red-800">Couldn't save your profile</p>
+              <p className="text-sm text-red-700 mt-0.5">{saveError}</p>
+              {saveErrorLocationRequired && (
+                <p className="text-xs text-red-600 mt-1">Scroll down to add your location before finishing.</p>
+              )}
+            </div>
+            <button onClick={() => setSaveError('')} className="text-red-400 hover:text-red-600 text-lg flex-shrink-0">×</button>
+          </div>
+        )}
+        <ProfileEditor
+          isOnboarding={true}
+          initialName={userName}
+          onComplete={handleProfileCompletionComplete}
+          onBack={() => {
+            setShowProfileCompletion(false);
+            setShowCreateProfileTitle(true);
+          }}
+          initialPhotos={photos}
+          initialBio={bio}
+          initialCareer={career}
+          initialEducation={education}
+          initialInstagram={instagram}
+          initialPronouns={pronouns}
+          initialLocation={onboardingLocation}
+        />
+      </div>
+    );
+  }
+
+  // ── Match Weights screen ─────────────────────────────────────
+  if (showMatchWeights) {
+    return (
+      <MatchWeightsScreen
+        isOnboarding={true}
+        onComplete={() => {
+          setShowMatchWeights(false);
+          setShowCreateProfileTitle(true);
+        }}
+        onBack={() => setShowMatchWeights(false)}
+      />
+    );
+  }
+
+  // ── "Create Profile" chapter title screen ────────────────────
+  if (showCreateProfileTitle) {
+    return (
+      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+        {onNavigate && (
+          <SimpleHeader
+            onNavigate={onNavigate}
+            showBackButton={false}
+            showMenu={true}
+            isSignedIn={true}
+            showInbox={showInbox}
+          />
+        )}
+        <div
+          className="flex-1 min-h-0 flex flex-col max-w-[390px] mx-auto w-full bg-white"
+        >
+          <ChapterTitle
+            title="Create Profile"
+            subtitle="Add your photos and a few details so your matches can get to know the real you."
+            chapterNumber={parallelQuestionnaire.length + 1}
+            totalChapters={parallelQuestionnaire.length + 1}
+            onContinue={() => {
+              setShowCreateProfileTitle(false);
+              setShowProfileCompletion(true);
+            }}
+            onBack={() => {
+              setShowCreateProfileTitle(false);
+              const lastChapterIndex = parallelQuestionnaire.length - 1;
+              setCurrentChapterIndex(lastChapterIndex);
+              const lastChapter = parallelQuestionnaire[lastChapterIndex];
+              setCurrentQuestionIndex(lastChapter.questions.length - 1);
+            }}
+            canGoBack={true}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentChapter) return null;
+
+  // ── Navigation helpers ────────────────────────────────────────
+  const getNextQuestionIndex = (fromIndex: number): number | null => {
+    for (let i = fromIndex; i < currentChapter.questions.length; i++) {
+      const q = currentChapter.questions[i];
+      if (q.type !== 'LOCATION' && isQuestionVisible(q)) return i;
+    }
+    return null;
+  };
+
+  const getPrevQuestionIndex = (fromIndex: number): number | null => {
+    for (let i = fromIndex; i >= 0; i--) {
+      const q = currentChapter.questions[i];
+      if (q.type !== 'LOCATION' && isQuestionVisible(q)) return i;
+    }
+    return null;
+  };
+
+  const getCompletedQuestions = () => {
+    let completed = 0;
+    for (let i = 0; i < currentChapterIndex; i++) {
+      completed += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
+    }
+    if (currentQuestionIndex >= 0) {
+      completed += currentChapter.questions
+        .slice(0, currentQuestionIndex + 1)
+        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
+    }
+    return completed;
+  };
+
+  const handleAnswer = (questionId: string, answer: any) => {
+    setAnswers((prev) => {
+      const updated = { ...prev, [questionId]: answer };
+      const token = localStorage.getItem('parallel_access_token');
+      if (token) {
+        fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': publicAnonKey,
+          },
+          body: JSON.stringify({
+            current_step: `chapter_${currentChapterIndex}_question_${currentQuestionIndex}`,
+            completed_steps: [],
+            partial_answers: updated,
+            partial_photos: photos,
+          }),
+        }).catch(err => console.error('Failed to save answer:', err));
+      }
+      // Store latest answers in ref so handleContinue's saveStep call
+      // gets the fresh value even though React state hasn't committed yet.
+      latestAnswersRef.current = updated;
+      return updated;
+    });
+  };
+
+  const getTotalDealbreakers = () => {
+    let count = 0;
+    Object.values(answers).forEach((answer) => {
+      if (answer && typeof answer === 'object' && answer.isDealbreaker === true) count++;
+    });
+    return count;
+  };
+
+  const handleContinue = () => {
+    const nextInChapter = getNextQuestionIndex(currentQuestionIndex + 1);
+    if (nextInChapter !== null) {
+      setCurrentQuestionIndex(nextInChapter);
+      window.scrollTo(0, 0);
+    } else {
+      // End of current chapter — pass latestAnswersRef.current so saveStep doesn't
+      // use the stale closure value and accidentally overwrite the last answer.
+      const fresh = latestAnswersRef.current && Object.keys(latestAnswersRef.current).length > 0
+        ? latestAnswersRef.current
+        : undefined;
+      if (currentChapterIndex === PART1_LAST_CHAPTER_INDEX) {
+        // Skip the Part 1 complete interstitial — go straight to Part 2
+        const nextIdx = PART1_LAST_CHAPTER_INDEX + 1;
+        setCurrentChapterIndex(nextIdx);
+        setCurrentQuestionIndex(-1);
+        saveStep(`chapter_${nextIdx}_intro`, fresh);
+        window.scrollTo(0, 0);
+      } else if (currentChapterIndex < parallelQuestionnaire.length - 1) {
+        const nextIdx = currentChapterIndex + 1;
+        setCurrentChapterIndex(nextIdx);
+        setCurrentQuestionIndex(-1);
+        saveStep(`chapter_${nextIdx}_intro`, fresh);
+        window.scrollTo(0, 0);
+      } else {
+        setShowMatchWeights(true);
+        window.scrollTo(0, 0);
+      }
+    }
+  };
+
+  const handleBack = () => {
+    if (showPart2Transition) {
+      // Back from Part 2 transition — return to last question of Part 1
+      setShowPart2Transition(false);
+      setCurrentChapterIndex(PART1_LAST_CHAPTER_INDEX);
+      const lastPart1Chapter = parallelQuestionnaire[PART1_LAST_CHAPTER_INDEX];
+      let lastQ = lastPart1Chapter.questions.length - 1;
+      while (
+        lastQ >= 0 &&
+        (lastPart1Chapter.questions[lastQ].type === 'LOCATION' ||
+          !isQuestionVisible(lastPart1Chapter.questions[lastQ]))
+      ) lastQ--;
+      setCurrentQuestionIndex(lastQ >= 0 ? lastQ : lastPart1Chapter.questions.length - 1);
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (currentQuestionIndex > 0) {
+      const prev = getPrevQuestionIndex(currentQuestionIndex - 1);
+      if (prev !== null) {
+        setCurrentQuestionIndex(prev);
+      } else {
+        setCurrentQuestionIndex(-1);
+      }
+      window.scrollTo(0, 0);
+    } else if (currentQuestionIndex === 0) {
+      setCurrentQuestionIndex(-1);
+      window.scrollTo(0, 0);
+    } else if (currentQuestionIndex === -1) {
+      // On a chapter intro screen
+      if (currentChapterIndex === PART1_LAST_CHAPTER_INDEX + 1) {
+        // First Part 2 chapter intro — back goes to Part 2 transition
+        setShowPart2Transition(true);
+        window.scrollTo(0, 0);
+      } else if (currentChapterIndex > 0) {
+        const prevChapter = parallelQuestionnaire[currentChapterIndex - 1];
+        setCurrentChapterIndex(currentChapterIndex - 1);
+        let lastQ = prevChapter.questions.length - 1;
+        while (
+          lastQ >= 0 &&
+          (prevChapter.questions[lastQ].type === 'LOCATION' ||
+            !isQuestionVisible(prevChapter.questions[lastQ]))
+        ) lastQ--;
+        setCurrentQuestionIndex(lastQ >= 0 ? lastQ : prevChapter.questions.length - 1);
+        window.scrollTo(0, 0);
+      } else {
+        setShowTimeEstimate(true);
+        window.scrollTo(0, 0);
+      }
+    }
+  };
+
+  const handleStartChapter = () => {
+    const firstQ = getNextQuestionIndex(0);
+    if (firstQ !== null) {
+      setCurrentQuestionIndex(firstQ);
+      saveStep(`chapter_${currentChapterIndex}_question_${firstQ}`);
+      window.scrollTo(0, 0);
+    } else {
+      handleSkipChapter();
+    }
+  };
+
+  const handleSkipChapter = () => {
+    if (currentChapterIndex < parallelQuestionnaire.length - 1) {
+      const nextIdx = currentChapterIndex + 1;
+      setCurrentChapterIndex(nextIdx);
+      setCurrentQuestionIndex(-1);
+      saveStep(`chapter_${nextIdx}_intro`);
+      window.scrollTo(0, 0);
+    } else {
+      setShowCreateProfileTitle(true);
+      saveStep('profile');
+      window.scrollTo(0, 0);
+    }
+  };
+
+  // ── TIME ESTIMATE SCREEN ─────────────────────────────────────
+  if (showTimeEstimate && !showWelcome) {
+    return (
+      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+        {onNavigate && (
+          <SimpleHeader
+            onNavigate={onNavigate}
+            showBackButton={false}
+            showMenu={true}
+            isSignedIn={true}
+            showInbox={showInbox}
+          />
+        )}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-6 pb-4"
+          style={{
+            paddingTop: '40px',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          <div className="max-w-md w-full mx-auto">
+            <h1 className="text-3xl font-medium mb-4 leading-tight">
+              Here's how Parallel works
+            </h1>
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Answer honestly — there are no right answers, just yours. Your responses are private and only used for matching.
+            </p>
+            <div className="space-y-5">
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">1</div>
+                <div>
+                  <p className="font-medium text-gray-900">Answer 65 questions about yourself</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Takes about 15 minutes. Saves automatically as you go — you can close and come back anytime.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">2</div>
+                <div>
+                  <p className="font-medium text-gray-900">We run our compatibility algorithm</p>
+                  <p className="text-sm text-gray-500 mt-0.5">Your answers are matched against others across 8 compatibility categories — no random swiping.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">3</div>
+                <div>
+                  <p className="font-medium text-gray-900">Meet people who actually match</p>
+                  <p className="text-sm text-gray-500 mt-0.5">See exactly why you matched — and what might be different. Then decide if you want to connect.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          className="flex-shrink-0 bg-white border-t border-gray-100 px-6 pt-3"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        >
+          <div className="max-w-md mx-auto">
+            <button
+              onClick={() => {
+                setShowTimeEstimate(false);
+                setShowLocationStep(true);
+                saveStep('location');
+              }}
+              className="w-full py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
+            >
+              Let's go →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Location picker step ─────────────────────────────────────
+  if (showLocationStep) {
+    const handleLocationChange = async (loc: {
+      latitude: number;
+      longitude: number;
+      city: string;
+      country: string;
+      locationDisplay: string;
+    }) => {
+      setOnboardingLocation(loc);
+      const token = localStorage.getItem('parallel_access_token');
+      if (token) {
+        try {
+          await fetch(`${EDGE_FUNCTION_URL}/user/location`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': publicAnonKey,
+            },
+            body: JSON.stringify({
+              latitude: loc.latitude,
+              longitude: loc.longitude,
+              city: loc.city,
+              country: loc.country,
+              locationDisplay: loc.locationDisplay,
+            }),
+          });
+        } catch (err) {
+          console.error('Failed to save location:', err);
+        }
+      }
+    };
+
+    return (
+      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+        {showResumeMessage && (
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200 px-6 py-3 flex-shrink-0">
+            <p className="text-center text-blue-900 font-medium text-sm">
+              Welcome back — pick up where you left off ✓
+            </p>
+          </div>
+        )}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-6 pt-10 pb-4"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className="max-w-md mx-auto">
+            <h1 className="text-2xl font-medium mb-3">Where are you based?</h1>
+            <p className="text-gray-600 mb-6 leading-relaxed">
+              We use your location to show you compatible people nearby and calculate distance.
+            </p>
+            <LocationPicker
+              value={onboardingLocation}
+              onChange={handleLocationChange}
+            />
+          </div>
+        </div>
+        <div
+          className="flex-shrink-0 bg-white border-t border-gray-100 px-6 pt-3"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        >
+          <div className="max-w-md mx-auto">
+            <button
+              onClick={() => {
+                setShowLocationStep(false);
+                saveStep('chapter_0_intro');
+              }}
+              className="w-full py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
+            >
+              {onboardingLocation ? 'Continue →' : 'Skip for now →'}
+            </button>
+            {!onboardingLocation && (
+              <p className="text-xs text-gray-400 text-center mt-3">
+                You'll need to add your location before finishing your profile.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Part 2 transition screen ─────────────────────────────────
+  if (showPart2Transition) {
+    return (
+      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+        {onNavigate && (
+          <SimpleHeader
+            onNavigate={onNavigate}
+            showBackButton={false}
+            showMenu={true}
+            isSignedIn={true}
+            showInbox={showInbox}
+          />
+        )}
+        {showResumeMessage && (
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200 px-6 py-3 flex-shrink-0">
+            <p className="text-center text-blue-900 font-medium text-sm">
+              Welcome back — pick up where you left off ✓
+            </p>
+          </div>
+        )}
+        <div
+          className="flex-1 min-h-0 overflow-y-auto px-6 pb-4 flex flex-col items-center justify-center"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          <div className="max-w-md w-full mx-auto text-center">
+            <div className="text-6xl mb-6" role="img" aria-label="celebration">🎉</div>
+            <h1 className="text-3xl font-medium mb-4 leading-tight">
+              Part 1 complete!
+            </h1>
+            <p className="text-lg text-gray-600 leading-relaxed">
+              Now let's talk about what you're looking for in a match.
+            </p>
+          </div>
+        </div>
+        <div
+          className="flex-shrink-0 bg-white border-t border-gray-100 px-4 pt-3"
+          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
+        >
+          <div className="max-w-md mx-auto flex items-center gap-3">
+            <button
+              onClick={() => handleBack()}
+              className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors bg-white"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              onClick={() => {
+                setShowPart2Transition(false);
+                const nextIdx = PART1_LAST_CHAPTER_INDEX + 1;
+                setCurrentChapterIndex(nextIdx);
+                setCurrentQuestionIndex(-1);
+                saveStep(`chapter_${nextIdx}_intro`);
+                window.scrollTo(0, 0);
+              }}
+              className="flex-1 py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
+            >
+              Let's go →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQuestion = currentChapter.questions[currentQuestionIndex];
+
+  return (
+    <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+      {onNavigate && (
+        <SimpleHeader
+          onNavigate={onNavigate}
+          showBackButton={false}
+          showMenu={true}
+          isSignedIn={true}
+          showInbox={showInbox}
+        />
+      )}
+
+      <div
+        className="max-w-[390px] mx-auto w-full bg-white flex flex-col flex-1 min-h-0"
+      >
+        {showResumeMessage && (
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200 px-6 py-3 flex-shrink-0">
+            <p className="text-center text-blue-900 font-medium text-sm">
+              Welcome back — pick up where you left off ✓
+            </p>
+          </div>
+        )}
+
+        {/* Progress bar — only shown during questions */}
+        {currentQuestionIndex >= 0 && (
+          <div className="flex-shrink-0">
+            <ProgressBar
+              currentChapter={currentChapterIndex + 1}
+              totalChapters={parallelQuestionnaire.length}
+            />
+          </div>
+        )}
+
+        {currentQuestionIndex === -1 ? (
+          <div className="flex-1 min-h-0 flex flex-col">
+            <ChapterTitle
+              title={currentChapter.title}
+              subtitle={currentChapter.subtitle}
+              chapterNumber={currentChapter.id}
+              totalChapters={parallelQuestionnaire.length}
+              onContinue={handleStartChapter}
+              onBack={handleBack}
+              canGoBack={true}
+            />
+          </div>
+        ) : currentQuestion && currentQuestion.type !== 'LOCATION' ? (
+          <div className="flex-1 min-h-0 flex flex-col">
+            {/* Section title replaces "Section X of Y" — more meaningful to users */}
+            <div className="px-6 pt-2 pb-0 flex items-center justify-between flex-shrink-0">
+              <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+                {currentChapter.title}
+              </span>
+              <span className="text-xs text-green-500 font-medium flex items-center gap-1">
+                <span>✓</span>
+                <span>Saving automatically</span>
+              </span>
+            </div>
+            <QuestionScreen
+              key={currentQuestion.id}
+              question={currentQuestion}
+              answer={answers[currentQuestion.id]}
+              answers={answers}
+              onAnswer={((qId) => (answer: any) => handleAnswer(qId, answer))(currentQuestion.id)}
+              onBack={handleBack}
+              onContinue={handleContinue}
+              canGoBack={true}
+              chapterTitle={`QUESTION ${getCurrentQuestionNumber()} OF ${totalQuestions}`}
+              lockedAge={lockedAge}
+              totalDealbreakers={getTotalDealbreakers()}
+            />
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
