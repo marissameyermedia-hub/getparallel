@@ -54,16 +54,7 @@ function App() {
   const [suspensionMessage, setSuspensionMessage] = useState('');
   const [emailConfirmed, setEmailConfirmed] = useState(true); // true by default so existing users aren't gated
   const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
-  const [currentView, setCurrentView] = useState<
-    | 'signin' | 'account-creation' | 'phone-verification' | 'onboarding'
-    | 'pricing' | 'payment-confirmation'
-    | 'matches' | 'questionnaire' | 'account' | 'profile' | 'my-profile'
-    | 'payment-details' | 'privacy-safety' | 'notifications' | 'pause-profile'
-    | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
-    | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
-    | 'verification' | 'invite-friends' | 'reset-password'
-    | 'preview-profile'
-  >('signin');
+  const [currentView, setCurrentView] = useState<string>('signin');
 
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [phoneToVerify, setPhoneToVerify] = useState<string>('');
