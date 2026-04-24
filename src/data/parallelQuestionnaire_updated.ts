@@ -1,6 +1,7 @@
 export type QuestionType =
   | "MC" | "MS" | "MS_MAX" | "NUM" | "HEIGHT" | "AGE_RANGE"
-  | "HEIGHT_RANGE" | "LOCATION" | "TXT" | "MAP";
+  | "HEIGHT_RANGE" | "LOCATION" | "TXT" | "MAP"
+  | "DROPDOWN" | "DATE" | "PARA" | "LT" | "RANK" | "UPLOAD";
 
 export type QuestionTag =
   | "Compatibility Score" | "Dealbreaker Eligible"
@@ -47,6 +48,8 @@ export interface Question {
   showIf?: ShowIf;
   filterOptionsIf?: FilterOptionsIf;
   optional?: boolean;
+  multipleFields?: Array<{ id: string; label?: string; placeholder?: string }>;
+  maxCharacters?: number;
 }
 
 export interface Section {
