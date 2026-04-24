@@ -48,7 +48,7 @@ export interface Question {
   showIf?: ShowIf;
   filterOptionsIf?: FilterOptionsIf;
   optional?: boolean;
-  multipleFields?: Array<{ id: string; label?: string; placeholder?: string }>;
+  multipleFields?: number;
   maxCharacters?: number;
 }
 
