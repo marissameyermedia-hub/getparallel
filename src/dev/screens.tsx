@@ -50,7 +50,7 @@ import { TermsServiceView } from "../components/account/TermsServiceView";
 import { MOCK_INBOX, MOCK_MATCH, MOCK_MATCHES, MOCK_PROFILE } from "./mockData";
 
 const noop = () => {};
-const noopAsync = async () => {};
+const noopAsync = async () => ({ success: true });
 
 export interface ScreenEntry {
   id: string;
@@ -259,12 +259,12 @@ export const SCREENS: ScreenEntry[] = [
       />
     ),
   },
-  { id: "notifications", label: "Notifications", group: "Account", render: () => <NotificationsView onBack={noop as any} /> },
+  { id: "notifications", label: "Notifications", group: "Account", render: () => <NotificationsView userId="dev-user" onBack={noop as any} /> },
   { id: "payment-details", label: "Payment Details", group: "Account", render: () => <PaymentDetailsView onBack={noop as any} /> },
   { id: "privacy-safety", label: "Privacy & Safety", group: "Account", render: () => <PrivacySafetyView onBack={noop as any} /> },
   { id: "pause-profile", label: "Pause Profile", group: "Account", render: () => <PauseProfileView onBack={noop as any} /> },
   { id: "help-support", label: "Help & Support", group: "Account", render: () => <HelpSupportView onBack={noop as any} /> },
-  { id: "delete-account", label: "Delete Account", group: "Account", render: () => <DeleteAccountView onBack={noop as any} /> },
+  { id: "delete-account", label: "Delete Account", group: "Account", render: () => <DeleteAccountView onBack={noop as any} onDeleteComplete={noop as any} /> },
   { id: "terms", label: "Terms of Service", group: "Account", render: () => <TermsServiceView onBack={noop as any} /> },
   { id: "privacy-policy", label: "Privacy Policy", group: "Account", render: () => <PrivacyPolicyView onBack={noop as any} /> },
   { id: "refund-policy", label: "Refund Policy", group: "Account", render: () => <RefundPolicyView onBack={noop as any} /> },
@@ -272,7 +272,7 @@ export const SCREENS: ScreenEntry[] = [
   { id: "health-data", label: "Consumer Health Data", group: "Account", render: () => <ConsumerHealthDataPolicyView onBack={noop as any} /> },
 
   // ── Payment ────────────────────────────────────────────
-  { id: "pricing", label: "Pricing", group: "Payment", render: () => <PricingPage onBack={noop as any} onSelectPlan={noop as any} /> },
+  { id: "pricing", label: "Pricing", group: "Payment", render: () => <PricingPage onBack={noop as any} onCheckout={noop as any} onSkip={noop as any} /> },
   { id: "payment-confirm", label: "Payment Confirmation", group: "Payment", render: () => <PaymentConfirmation onContinue={noop as any} /> },
 
   // ── Misc ───────────────────────────────────────────────
