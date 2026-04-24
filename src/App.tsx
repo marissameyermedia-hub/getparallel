@@ -1210,7 +1210,7 @@ function App() {
           <PrivacySafetyView onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'notifications' && (
-          <NotificationsView onBack={() => setCurrentView('account')} />
+          <NotificationsView userId={userId ?? ''} onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'pause-profile' && (
           <PauseProfileView onBack={() => setCurrentView('account')} hasActivated={hasActivated} />
