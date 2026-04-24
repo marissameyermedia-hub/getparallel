@@ -3,6 +3,7 @@ import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp } from 'lucide
 import { motion, AnimatePresence } from 'motion/react';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { EDGE_FUNCTION_URL } from '../../utils/supabase/client';
+import { PromoCodeInput } from "./PromoCodeInput";
 
 // ── PRE_LAUNCH flag — controlled by VITE_PRE_LAUNCH env var ───
 const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH === 'true';
@@ -393,6 +394,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
               </div>
             )}
             <div ref={buttonContainerRef} id="paypal-button-container" />
+            <PromoCodeInput />
           </motion.div>
         )}
 
