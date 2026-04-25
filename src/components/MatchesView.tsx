@@ -149,9 +149,6 @@ export function MatchesView({
             We're building the matching pool right now. Invite friends and get ready — the more
             people who join before launch day, the better everyone's matches will be.
           </p>
-          <div className="inline-flex items-center gap-2 text-white text-sm font-medium px-4 py-2 rounded-full mb-8 bg-primary-foreground">
-            <span>Founding members get 47% off their first year — offer ends at launch</span>
-          </div>
           <div className="space-y-3 mb-8">
             <button
               onClick={onNavigateToInvite || handleShareInvite}
