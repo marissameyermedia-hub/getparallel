@@ -86,6 +86,18 @@ export const MATCHES_FUNCTION_URL = `${supabaseUrl}/functions/v1/matches`;
 // /realtime-config, /send.
 export const MESSAGES_FUNCTION_URL = `${supabaseUrl}/functions/v1/messages`;
 
+// Dedicated misc function — final chunk of the make-server rebuild.
+// Handles: /auth/email-confirmed, /auth/resend-verification, /auth/validate-token,
+// /auth/send-phone-otp, /auth/verify-phone-otp, /sms/log-consent,
+// /verification/complete, /verification/consent,
+// /safety/block, /safety/blocked, /safety/report,
+// /notifications/preferences (GET/PUT),
+// /paypal/config, /paypal/record-subscription, /payment/cancel,
+// /promo/redeem, /referral/my-code,
+// /exit-feedback, /app-feedback, /nps, /success/submit, /user/feedback,
+// /account/export, /user/delete.
+export const MISC_FUNCTION_URL = `${supabaseUrl}/functions/v1/misc`;
+
 export function getAuthHeaders(accessToken: string) {
   return {
     'Authorization': `Bearer ${accessToken}`,
