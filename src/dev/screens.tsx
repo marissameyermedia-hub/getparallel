@@ -10,6 +10,7 @@ import { AppHeader } from "../components/AppHeader";
 import { BackButton } from "../components/BackButton";
 import { BottomNav } from "../components/BottomNav";
 import { DateReviewScreen } from "../components/DateReviewScreen";
+import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import { Header } from "../components/Header";
 import { InboxView } from "../components/InboxView";
 import { InstallPromptBanner } from "../components/InstallPromptBanner";
@@ -65,35 +66,20 @@ export const SCREENS: ScreenEntry[] = [
     id: "signin",
     label: "Sign In",
     group: "Auth",
-    render: () => (
-      <SignInPage
-        onSignIn={noop}
-        onCreateAccount={noop}
-        onShowExplainer={noop}
-        onNavigate={noop}
-      />
-    ),
+    render: () => <SignInPage onSignIn={noop} onCreateAccount={noop} onShowExplainer={noop} onNavigate={noop} />,
   },
   {
     id: "account-creation",
     label: "Account Creation",
     group: "Auth",
-    render: () => (
-      <AccountCreationPage onComplete={noop} onBack={noop} onNavigate={noop} />
-    ),
+    render: () => <AccountCreationPage onComplete={noop} onBack={noop} onNavigate={noop} />,
   },
   {
     id: "phone-verification",
     label: "Phone Verification",
     group: "Auth",
     render: () => (
-      <PhoneVerificationPage
-        accessToken="dev-token"
-        phone=""
-        onVerified={noop}
-        onSkip={noop}
-        onBack={noop}
-      />
+      <PhoneVerificationPage accessToken="dev-token" phone="" onVerified={noop} onSkip={noop} onBack={noop} />
     ),
   },
   {
@@ -145,13 +131,7 @@ export const SCREENS: ScreenEntry[] = [
     label: "Matches Feed",
     group: "Matches",
     render: () => (
-      <MatchesView
-        matches={MOCK_MATCHES}
-        onRetakeQuestionnaire={noop}
-        hasActivated
-        hasReceivedMatches
-        isVerified
-      />
+      <MatchesView matches={MOCK_MATCHES} onRetakeQuestionnaire={noop} hasActivated hasReceivedMatches isVerified />
     ),
   },
   {
@@ -160,13 +140,7 @@ export const SCREENS: ScreenEntry[] = [
     group: "Matches",
     render: () => (
       <div className="max-w-md mx-auto p-4">
-        <MatchCard
-          match={MOCK_MATCH}
-          hasActivated
-          onPass={noop}
-          onLike={noop}
-          onViewProfile={noop}
-        />
+        <MatchCard match={MOCK_MATCH} hasActivated onPass={noop} onLike={noop} onViewProfile={noop} />
       </div>
     ),
   },
@@ -189,15 +163,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "match-profile",
     label: "Match Profile",
     group: "Matches",
-    render: () => (
-      <MatchProfileView
-        match={MOCK_MATCH}
-        onBack={noop}
-        onOpenChat={noop}
-        onMatch={noop}
-        onPass={noop}
-      />
-    ),
+    render: () => <MatchProfileView match={MOCK_MATCH} onBack={noop} onOpenChat={noop} onMatch={noop} onPass={noop} />,
   },
 
   // ── Inbox & Messaging ──────────────────────────────────
@@ -205,14 +171,7 @@ export const SCREENS: ScreenEntry[] = [
     id: "inbox",
     label: "Inbox",
     group: "Messaging",
-    render: () => (
-      <InboxView
-        messages={MOCK_INBOX}
-        onOpenChat={noop}
-        onViewProfile={noop}
-        hasActivated
-      />
-    ),
+    render: () => <InboxView messages={MOCK_INBOX} onOpenChat={noop} onViewProfile={noop} hasActivated />,
   },
   {
     id: "messaging",
@@ -251,52 +210,209 @@ export const SCREENS: ScreenEntry[] = [
     id: "questionnaire",
     label: "Questionnaire List",
     group: "Account",
-    render: () => (
-      <QuestionnaireListView
-        answers={MOCK_PROFILE.answers}
-        onUpdateAnswer={noop}
-        onClose={noop}
-      />
-    ),
+    render: () => <QuestionnaireListView answers={MOCK_PROFILE.answers} onUpdateAnswer={noop} onClose={noop} />,
   },
-  { id: "notifications", label: "Notifications", group: "Account", render: () => <NotificationsView userId="dev-user" onBack={noop as any} /> },
-  { id: "payment-details", label: "Payment Details", group: "Account", render: () => <PaymentDetailsView onBack={noop as any} /> },
-  { id: "privacy-safety", label: "Privacy & Safety", group: "Account", render: () => <PrivacySafetyView onBack={noop as any} /> },
-  { id: "pause-profile", label: "Pause Profile", group: "Account", render: () => <PauseProfileView onBack={noop as any} /> },
-  { id: "help-support", label: "Help & Support", group: "Account", render: () => <HelpSupportView onBack={noop as any} /> },
-  { id: "delete-account", label: "Delete Account", group: "Account", render: () => <DeleteAccountView onBack={noop as any} onDeleteComplete={noop as any} /> },
+  {
+    id: "notifications",
+    label: "Notifications",
+    group: "Account",
+    render: () => <NotificationsView userId="dev-user" onBack={noop as any} />,
+  },
+  {
+    id: "payment-details",
+    label: "Payment Details",
+    group: "Account",
+    render: () => <PaymentDetailsView onBack={noop as any} />,
+  },
+  {
+    id: "privacy-safety",
+    label: "Privacy & Safety",
+    group: "Account",
+    render: () => <PrivacySafetyView onBack={noop as any} />,
+  },
+  {
+    id: "pause-profile",
+    label: "Pause Profile",
+    group: "Account",
+    render: () => <PauseProfileView onBack={noop as any} />,
+  },
+  {
+    id: "help-support",
+    label: "Help & Support",
+    group: "Account",
+    render: () => <HelpSupportView onBack={noop as any} />,
+  },
+  {
+    id: "delete-account",
+    label: "Delete Account",
+    group: "Account",
+    render: () => <DeleteAccountView onBack={noop as any} onDeleteComplete={noop as any} />,
+  },
   { id: "terms", label: "Terms of Service", group: "Account", render: () => <TermsServiceView onBack={noop as any} /> },
-  { id: "privacy-policy", label: "Privacy Policy", group: "Account", render: () => <PrivacyPolicyView onBack={noop as any} /> },
-  { id: "refund-policy", label: "Refund Policy", group: "Account", render: () => <RefundPolicyView onBack={noop as any} /> },
-  { id: "community-guidelines", label: "Community Guidelines", group: "Account", render: () => <CommunityGuidelinesView onBack={noop as any} /> },
-  { id: "health-data", label: "Consumer Health Data", group: "Account", render: () => <ConsumerHealthDataPolicyView onBack={noop as any} /> },
+  {
+    id: "privacy-policy",
+    label: "Privacy Policy",
+    group: "Account",
+    render: () => <PrivacyPolicyView onBack={noop as any} />,
+  },
+  {
+    id: "refund-policy",
+    label: "Refund Policy",
+    group: "Account",
+    render: () => <RefundPolicyView onBack={noop as any} />,
+  },
+  {
+    id: "community-guidelines",
+    label: "Community Guidelines",
+    group: "Account",
+    render: () => <CommunityGuidelinesView onBack={noop as any} />,
+  },
+  {
+    id: "health-data",
+    label: "Consumer Health Data",
+    group: "Account",
+    render: () => <ConsumerHealthDataPolicyView onBack={noop as any} />,
+  },
 
   // ── Payment ────────────────────────────────────────────
-  { id: "pricing", label: "Pricing", group: "Payment", render: () => <PricingPage onBack={noop as any} onCheckout={noop as any} onSkip={noop as any} /> },
-  { id: "payment-confirm", label: "Payment Confirmation", group: "Payment", render: () => <PaymentConfirmation onContinue={noop as any} /> },
+  {
+    id: "pricing",
+    label: "Pricing",
+    group: "Payment",
+    render: () => <PricingPage onBack={noop as any} onCheckout={noop as any} onSkip={noop as any} />,
+  },
+  {
+    id: "payment-confirm",
+    label: "Payment Confirmation",
+    group: "Payment",
+    render: () => <PaymentConfirmation onContinue={noop as any} />,
+  },
 
   // ── Misc ───────────────────────────────────────────────
-  { id: "verification", label: "ID Verification", group: "Misc", render: () => <VerificationView userId="dev-user" onBack={noop} onVerified={noop} /> },
+  {
+    id: "verification",
+    label: "ID Verification",
+    group: "Misc",
+    render: () => <VerificationView userId="dev-user" onBack={noop} onVerified={noop} />,
+  },
   { id: "invite", label: "Invite Friends", group: "Misc", render: () => <InviteView onBack={noop} /> },
-  { id: "date-review", label: "Date Review", group: "Misc", render: () => <DateReviewScreen isOpen onClose={noop} matchName="Sara" matchId="match-1" onSubmit={noop} /> },
-  { id: "pass-feedback", label: "Pass Feedback Sheet", group: "Misc", render: () => <PassFeedbackBottomSheet isOpen onClose={noop} onSubmit={noop} onNavigateToQuestionnaire={noop} /> },
-  { id: "app-feedback", label: "App Feedback Sheet", group: "Misc", render: () => <AppFeedbackBottomSheet isOpen onClose={noop} onSubmit={noop} /> },
-  { id: "nps", label: "NPS Sheet", group: "Misc", render: () => <NPSBottomSheet isOpen onClose={noop} onSubmit={noop} /> },
-  { id: "location-picker", label: "Location Picker", group: "Misc", render: () => (
-    <div className="max-w-md mx-auto p-6"><LocationPicker value={null as any} onChange={noop} /></div>
-  )},
-  { id: "install-banner", label: "Install Prompt Banner", group: "Misc", render: () => <InstallPromptBanner hasCompletedOnboarding /> },
+  {
+    id: "date-review",
+    label: "Date Review",
+    group: "Misc",
+    render: () => <DateReviewScreen isOpen onClose={noop} matchName="Sara" matchId="match-1" onSubmit={noop} />,
+  },
+  {
+    id: "pass-feedback",
+    label: "Pass Feedback Sheet",
+    group: "Misc",
+    render: () => <PassFeedbackBottomSheet isOpen onClose={noop} onSubmit={noop} onNavigateToQuestionnaire={noop} />,
+  },
+  {
+    id: "app-feedback",
+    label: "App Feedback Sheet",
+    group: "Misc",
+    render: () => <AppFeedbackBottomSheet isOpen onClose={noop} onSubmit={noop} />,
+  },
+  {
+    id: "nps",
+    label: "NPS Sheet",
+    group: "Misc",
+    render: () => <NPSBottomSheet isOpen onClose={noop} onSubmit={noop} />,
+  },
+  {
+    id: "location-picker",
+    label: "Location Picker",
+    group: "Misc",
+    render: () => (
+      <div className="max-w-md mx-auto p-6">
+        <LocationPicker value={null as any} onChange={noop} />
+      </div>
+    ),
+  },
+  {
+    id: "install-banner",
+    label: "Install Prompt Banner",
+    group: "Misc",
+    render: () => <InstallPromptBanner hasCompletedOnboarding />,
+  },
+  {
+    id: "email-banner",
+    label: "Email Verification Banner",
+    group: "Misc",
+    render: () => (
+      <div className="bg-gray-50 min-h-screen">
+        <EmailVerificationBanner accessToken="dev-token" emailVerified={false} />
+        <div className="max-w-2xl mx-auto px-6 py-12">
+          <p className="text-sm text-gray-500">
+            Banner appears at the top of all in-app views when the user has not yet verified their email. Dismissable
+            for the current session via the × button. The "Resend" button calls{" "}
+            <code className="text-xs">/email/resend</code>.
+          </p>
+        </div>
+      </div>
+    ),
+  },
 
   // ── Primitives ────────────────────────────────────────
-  { id: "header", label: "Header", group: "Primitives", render: () => <Header onNavigate={noop} currentView="matches" isSignedIn unreadMessageCount={2} showInbox /> },
-  { id: "simple-header", label: "Simple Header", group: "Primitives", render: () => <SimpleHeader onNavigate={noop} title="Settings" showBackButton onBack={noop} /> },
+  {
+    id: "header",
+    label: "Header",
+    group: "Primitives",
+    render: () => <Header onNavigate={noop} currentView="matches" isSignedIn unreadMessageCount={2} showInbox />,
+  },
+  {
+    id: "simple-header",
+    label: "Simple Header",
+    group: "Primitives",
+    render: () => <SimpleHeader onNavigate={noop} title="Settings" showBackButton onBack={noop} />,
+  },
   { id: "app-header", label: "App Header", group: "Primitives", render: () => <AppHeader onNavigate={noop} /> },
   { id: "app-footer", label: "App Footer", group: "Primitives", render: () => <AppFooter onNavigate={noop} /> },
-  { id: "bottom-nav", label: "Bottom Nav", group: "Primitives", render: () => <BottomNav onNavigate={noop} currentView="matches" unreadMessageCount={3} /> },
-  { id: "back-button", label: "Back Button", group: "Primitives", render: () => <div className="p-6"><BackButton onClick={noop} /></div> },
-  { id: "parallel-icon", label: "Parallel Icon", group: "Primitives", render: () => <div className="p-6 flex gap-4 items-center"><ParallelIcon size={24} /><ParallelIcon size={48} /><ParallelIcon size={96} /></div> },
-  { id: "loading-dots", label: "Loading Dots", group: "Primitives", render: () => <div className="p-12 flex justify-center"><LoadingDots /></div> },
-  { id: "page-loader", label: "Page Loader", group: "Primitives", render: () => <PageLoader message="Loading your matches…" /> },
+  {
+    id: "bottom-nav",
+    label: "Bottom Nav",
+    group: "Primitives",
+    render: () => <BottomNav onNavigate={noop} currentView="matches" unreadMessageCount={3} />,
+  },
+  {
+    id: "back-button",
+    label: "Back Button",
+    group: "Primitives",
+    render: () => (
+      <div className="p-6">
+        <BackButton onClick={noop} />
+      </div>
+    ),
+  },
+  {
+    id: "parallel-icon",
+    label: "Parallel Icon",
+    group: "Primitives",
+    render: () => (
+      <div className="p-6 flex gap-4 items-center">
+        <ParallelIcon size={24} />
+        <ParallelIcon size={48} />
+        <ParallelIcon size={96} />
+      </div>
+    ),
+  },
+  {
+    id: "loading-dots",
+    label: "Loading Dots",
+    group: "Primitives",
+    render: () => (
+      <div className="p-12 flex justify-center">
+        <LoadingDots />
+      </div>
+    ),
+  },
+  {
+    id: "page-loader",
+    label: "Page Loader",
+    group: "Primitives",
+    render: () => <PageLoader message="Loading your matches…" />,
+  },
 ];
 
 export const SCREEN_GROUPS = Array.from(new Set(SCREENS.map((s) => s.group)));
