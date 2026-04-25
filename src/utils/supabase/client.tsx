@@ -69,6 +69,9 @@ export const EDGE_FUNCTION_URL = `${supabaseUrl}/functions/v1/make-server-7af08c
 // Separate from make-server-7af08c19 so it can ship independently.
 export const EMAIL_FUNCTION_URL = `${supabaseUrl}/functions/v1/email`;
 
+// Auth-related endpoints (signup, etc.) live on the main edge function.
+export const AUTH_FUNCTION_URL = EDGE_FUNCTION_URL;
+
 export function getAuthHeaders(accessToken: string) {
   return {
     Authorization: `Bearer ${accessToken}`,
