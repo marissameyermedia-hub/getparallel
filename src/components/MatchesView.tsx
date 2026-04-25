@@ -144,12 +144,12 @@ export function MatchesView({
     return (
       <div className="bg-white min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
-          <h2 className="text-3xl font-bold mb-4 whitespace-pre-line">{"You are in the pool. \nMatching opens soon."}</h2>
+          <h2 className="text-3xl font-bold mb-4 whitespace-pre-line text-primary">{"You're in the pool. \nMatching opens soon."}</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
-            We're building the pool right now. Complete your questionnaire, invite friends, and get ready — the more
-            people who join before launch day, the better everyone's first matches will be.
+            We're building the matching pool right now. Invite friends and get ready — the more
+            people who join before launch day, the better everyone's matches will be.
           </p>
-          <div className="inline-flex items-center gap-2 bg-black text-white text-sm font-medium px-4 py-2 rounded-full mb-8">
+          <div className="inline-flex items-center gap-2 text-white text-sm font-medium px-4 py-2 rounded-full mb-8 bg-primary-foreground">
             <span>Founding members get 47% off their first year — offer ends at launch</span>
           </div>
           <div className="space-y-3 mb-8">
