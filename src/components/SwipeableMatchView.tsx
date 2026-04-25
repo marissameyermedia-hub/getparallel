@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Match } from '../types';
 import { Undo2 } from 'lucide-react';
 import { MatchCard } from './MatchCard';
+import { ParallelIcon } from './ParallelIcon';
 
 interface SwipeableMatchViewProps {
   matches: Match[];
@@ -42,9 +43,8 @@ export function SwipeableMatchView({
     return (
       <div className="min-h-[60vh] bg-white flex items-center justify-center p-8">
         <div className="text-center max-w-md">
-          <div className="flex gap-1 mb-6 justify-center">
-            <div className="w-2 h-12 bg-black rounded-full" />
-            <div className="w-2 h-12 bg-black rounded-full" />
+          <div className="flex justify-center mb-6">
+            <ParallelIcon size={48} className="text-black" />
           </div>
           <h2 className="text-2xl font-medium mb-3">Your match suggestions are on the way</h2>
           <p className="text-gray-600 leading-relaxed">

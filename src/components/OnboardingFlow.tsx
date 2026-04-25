@@ -7,6 +7,7 @@ import { QuestionScreen } from './onboarding/QuestionScreen';
 import { ProfileEditor } from './ProfileEditor';
 import { WelcomeScreen } from './onboarding/WelcomeScreen';
 import { SimpleHeader } from './SimpleHeader';
+import { ParallelIcon } from './ParallelIcon';
 import { LocationPicker } from './LocationPicker';
 import { MatchWeightsScreen } from './MatchWeightsScreen';
 import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
@@ -237,10 +238,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
     return (
       <div className="fixed inset-0 bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-1">
-            <div className="w-1.5 h-8 bg-black rounded-full" />
-            <div className="w-1.5 h-8 bg-black rounded-full" />
-          </div>
+          <ParallelIcon size={32} className="text-black" />
           <p className="text-sm text-gray-400">Loading your progress…</p>
         </div>
       </div>
