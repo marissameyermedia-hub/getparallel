@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { publicAnonKey } from '../../utils/supabase/info';
-import { EDGE_FUNCTION_URL } from '../../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { PromoCodeInput } from "./PromoCodeInput";
 
 // ── PRE_LAUNCH flag — controlled by VITE_PRE_LAUNCH env var ───
@@ -85,7 +85,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${EDGE_FUNCTION_URL}/paypal/config`, {
+        const res = await fetch(`${MISC_FUNCTION_URL}/paypal/config`, {
           headers: { 'apikey': publicAnonKey },
         });
         const data = await res.json();
@@ -153,7 +153,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                 setProcessing(false);
                 return;
               }
-              const res = await fetch(`${EDGE_FUNCTION_URL}/paypal/record-subscription`, {
+              const res = await fetch(`${MISC_FUNCTION_URL}/paypal/record-subscription`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${token}`,

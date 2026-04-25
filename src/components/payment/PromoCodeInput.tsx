@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { projectId, publicAnonKey } from "../../utils/supabase/info";
+import { MISC_FUNCTION_URL } from "../../utils/supabase/client";
 
 interface PromoCodeInputProps {
   onSuccess?: () => void;
@@ -32,7 +33,7 @@ export function PromoCodeInput({ onSuccess }: PromoCodeInputProps) {
       }
 
       const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-7af08c19/promo/redeem`,
+        `${MISC_FUNCTION_URL}/promo/redeem`,
         {
           method: "POST",
           headers: {
