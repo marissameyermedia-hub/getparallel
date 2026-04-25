@@ -1336,6 +1336,41 @@ function App() {
         />
       )}
 
+      {/* ── Floating back button — easier reach than top chevron ── */}
+      {/* Shown on sub-pages that have a clear single back destination.            */}
+      {/* Positioned above the BottomNav when it's visible to avoid overlap.       */}
+      {(() => {
+        const backTargets: Record<string, string> = {
+          'payment-details': 'account',
+          'privacy-safety': 'account',
+          'notifications': 'account',
+          'pause-profile': 'account',
+          'help-support': 'account',
+          'terms-service': 'account',
+          'privacy-policy': 'account',
+          'community-guidelines': 'account',
+          'refund-policy': 'account',
+          'consumer-health-data-policy': 'account',
+          'delete-account': 'account',
+          'verification': 'account',
+          'invite-friends': 'account',
+          'profile': 'matches',
+          'messaging': 'inbox',
+        };
+        const target = backTargets[currentView];
+        if (!target) return null;
+        const liftAboveNav = !isFullscreenView && !['profile', 'messaging'].includes(currentView);
+        return (
+          <button
+            onClick={() => setCurrentView(target as any)}
+            className={`fixed left-6 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors bg-white shadow-sm z-50 ${liftAboveNav ? 'bottom-24' : 'bottom-6'}`}
+            aria-label="Go back"
+          >
+            <ChevronLeft size={22} />
+          </button>
+        );
+      })()}
+
       {/* ── App footer — legal/policy/account views only ── */}
       {/* Shown on all public entry points (via SignInPage + AccountCreationPage props)  */}
       {/* and on account/policy views where users are reading legal documents.           */}
