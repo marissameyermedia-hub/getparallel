@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from './utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL } from './utils/supabase/client';
 import { publicAnonKey } from './utils/supabase/info';
 import { SignInPage } from './components/SignInPage';
 import { AccountCreationPage } from './components/AccountCreationPage';
@@ -116,7 +116,7 @@ function App() {
 
   const fetchMutualMatches = async (token: string) => {
     try {
-      const res = await fetch(`${EDGE_FUNCTION_URL}/matches/mutual`, { headers: getHeaders(token) });
+      const res = await fetch(`${MATCHES_FUNCTION_URL}/mutual`, { headers: getHeaders(token) });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.mutualMatchIds)) {
@@ -170,7 +170,7 @@ function App() {
   const fetchMatches = async (token: string) => {
     try {
       const [matchesRes] = await Promise.all([
-        fetch(`${EDGE_FUNCTION_URL}/matches`, { headers: getHeaders(token) }),
+        fetch(`${MATCHES_FUNCTION_URL}/list`, { headers: getHeaders(token) }),
         fetchMutualMatches(token)
       ]);
       if (matchesRes.ok) {
@@ -610,7 +610,7 @@ function App() {
     let isMutual = false;
     if (token) {
       try {
-        const response = await fetch(`${EDGE_FUNCTION_URL}/matches/action`, {
+        const response = await fetch(`${MATCHES_FUNCTION_URL}/action`, {
           method: 'POST',
           headers: getHeaders(token),
           body: JSON.stringify({ matchUserId: likedUserId, action: 'like' })
@@ -661,13 +661,13 @@ function App() {
     if (currentView === 'profile') setCurrentView('matches');
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
-    fetch(`${EDGE_FUNCTION_URL}/matches/action`, {
+    fetch(`${MATCHES_FUNCTION_URL}/action`, {
       method: 'POST',
       headers: getHeaders(token),
       body: JSON.stringify({ matchUserId: matchId, action: 'pass' }),
     }).catch(err => console.error('Pass API failed:', err));
     if (passReasons.length > 0 || wouldAdjust.length > 0) {
-      fetch(`${EDGE_FUNCTION_URL}/feedback/structured`, {
+      fetch(`${MATCHES_FUNCTION_URL}/feedback/structured`, {
         method: 'POST',
         headers: getHeaders(token),
         body: JSON.stringify({
@@ -698,7 +698,7 @@ function App() {
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        const res = await fetch(`${EDGE_FUNCTION_URL}/feedback/confirm-met`, {
+        const res = await fetch(`${MATCHES_FUNCTION_URL}/feedback/confirm-met`, {
           method: 'POST',
           headers: getHeaders(token),
           body: JSON.stringify({ matchUserId: matchId })
@@ -724,7 +724,7 @@ function App() {
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/feedback/tier2`, {
+        await fetch(`${MATCHES_FUNCTION_URL}/feedback/tier2`, {
           method: 'POST',
           headers: getHeaders(token),
           body: JSON.stringify({ matchUserId: dateReviewScreen.matchId, ...review })
