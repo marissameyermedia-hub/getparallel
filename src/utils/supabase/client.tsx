@@ -75,6 +75,10 @@ export const AUTH_FUNCTION_URL = `${supabaseUrl}/functions/v1/auth`;
 // /attachment/score. Sidesteps the make-server OPTIONS bug.
 export const ONBOARDING_FUNCTION_URL = `${supabaseUrl}/functions/v1/onboarding`;
 
+// Dedicated matches function. Handles: /list, /mutual, /mutual-waiting, /action,
+// /feedback/structured, /feedback/confirm-met, /feedback/tier2.
+export const MATCHES_FUNCTION_URL = `${supabaseUrl}/functions/v1/matches`;
+
 export function getAuthHeaders(accessToken: string) {
   return {
     'Authorization': `Bearer ${accessToken}`,
