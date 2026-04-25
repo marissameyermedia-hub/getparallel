@@ -313,7 +313,7 @@ export function QuestionnaireListView({ answers, onUpdateAnswer, onClose }: Ques
             className="w-full mb-4 p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl flex items-center gap-3 hover:bg-amber-100 transition-colors text-left"
           >
             <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
-              <AlertCircle size={16} className="text-white" />
+              <AlertCircle size={16} className="text-primary" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-amber-900">
@@ -378,9 +378,9 @@ export function QuestionnaireListView({ answers, onUpdateAnswer, onClose }: Ques
                           }`}
                         >
                           {sectionComplete ? (
-                            <Check size={12} className="text-white" />
+                            <Check size={12} className="text-primary" />
                           ) : hasRequiredUnanswered ? (
-                            <span className="text-xs font-semibold text-white">{requiredUnansweredInSection}</span>
+                            <span className="text-xs font-semibold text-primary">{requiredUnansweredInSection}</span>
                           ) : (
                             <span className="text-xs text-gray-500">{requiredAnswered}</span>
                           )}

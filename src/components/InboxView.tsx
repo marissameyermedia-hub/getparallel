@@ -174,7 +174,7 @@ export function InboxView({
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center ring-2 ring-black/5">
-                          <span className="text-white text-base font-semibold">
+                          <span className="text-primary text-base font-semibold">
                             {getInitials(w.name)}
                           </span>
                         </div>
@@ -210,7 +210,7 @@ export function InboxView({
                       />
                     ) : (
                       <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
-                        <span className="text-white text-base font-semibold">
+                        <span className="text-primary text-base font-semibold">
                           {getInitials(message.matchName)}
                         </span>
                       </div>

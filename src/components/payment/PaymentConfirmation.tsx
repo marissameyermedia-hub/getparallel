@@ -20,7 +20,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
           className="mb-8"
         >
           <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={44} className="text-white" />
+            <CheckCircle size={44} className="text-primary" />
           </div>
           <h1 className="text-4xl mb-3">You're in.</h1>
           <p className="text-gray-600 leading-relaxed">
@@ -37,7 +37,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
           >
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center flex-shrink-0">
-                <ShieldCheck size={22} className="text-white" />
+                <ShieldCheck size={22} className="text-primary" />
               </div>
               <div className="flex-1">
                 <p className="font-semibold mb-1">Get your verified badge</p>
@@ -46,7 +46,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
                 </p>
                 <button
                   onClick={onVerify}
-                  className="w-full bg-black text-white py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-black text-primary py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                 >
                   Verify my identity
                   <ArrowRight size={16} />
@@ -67,7 +67,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={onContinue}
-            className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors"
+            className="w-full bg-black text-primary py-4 rounded-full font-medium hover:bg-gray-800 transition-colors"
           >
             See my matches
           </motion.button>

@@ -144,7 +144,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
         <button
           onClick={handleSubmit}
           disabled={isLoading || !password || !confirmPassword}
-          className="w-full py-4 px-6 rounded-full bg-black text-white font-medium text-lg transition-all hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-4 px-6 rounded-full bg-black text-primary font-medium text-lg transition-all hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Updating...' : 'Update password'}
         </button>

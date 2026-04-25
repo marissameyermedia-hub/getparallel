@@ -230,7 +230,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-5 bg-black text-white rounded-2xl p-4"
+            className="mb-5 bg-black text-primary rounded-2xl p-4"
           >
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Founding pricing ends at launch</p>
             <p className="text-sm leading-relaxed">
@@ -289,7 +289,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             onClick={selectAnnual}
             className={`w-full text-left rounded-2xl p-4 border-2 transition-all ${
               billing === 'annual'
-                ? 'border-black bg-black text-white'
+                ? 'border-black bg-black text-primary'
                 : 'border-gray-200 bg-white text-black hover:border-gray-400'
             }`}
           >
@@ -312,13 +312,13 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   {PRE_LAUNCH && (
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      billing === 'annual' ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-700'
+                      billing === 'annual' ? 'bg-white/15 text-primary' : 'bg-gray-100 text-gray-700'
                     }`}>
                       ⭐ Founding Rate
                     </span>
                   )}
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                    billing === 'annual' ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-700'
+                    billing === 'annual' ? 'bg-white/15 text-primary' : 'bg-gray-100 text-gray-700'
                   }`}>
                     Save 73%
                   </span>
@@ -338,7 +338,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             onClick={selectMonthly}
             className={`w-full text-left rounded-2xl p-4 border-2 transition-all ${
               billing === 'monthly'
-                ? 'border-black bg-black text-white'
+                ? 'border-black bg-black text-primary'
                 : 'border-gray-200 bg-white text-black hover:border-gray-400'
             }`}
           >

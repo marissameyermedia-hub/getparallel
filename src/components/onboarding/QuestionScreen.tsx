@@ -471,7 +471,7 @@ export function QuestionScreen({
                           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
                             className="w-6 h-6 rounded-full bg-black flex items-center justify-center flex-shrink-0"
                           >
-                            <Check size={14} className="text-white" />
+                            <Check size={14} className="text-primary" />
                           </motion.div>
                         )}
                       </div>
@@ -531,7 +531,7 @@ export function QuestionScreen({
                         {selected.map(hobby => (
                           <button key={hobby}
                             onClick={() => { const n = selected.filter(h => h !== hobby); setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                            className="flex items-center gap-1 bg-black text-white text-xs font-medium px-3 py-1.5 rounded-full"
+                            className="flex items-center gap-1 bg-black text-primary text-xs font-medium px-3 py-1.5 rounded-full"
                           >
                             {hobby}<span className="ml-1 opacity-60">×</span>
                           </button>
@@ -552,7 +552,7 @@ export function QuestionScreen({
                                   const n = isSelected ? selected.filter(h => h !== hobby) : [...selected, hobby];
                                   setLocalAnswer(n); saveAnswer(n, isDealbreaker);
                                 }}
-                                className={`text-sm px-3 py-2 rounded-full border-2 transition-all font-medium ${isSelected ? 'border-black bg-black text-white' : isDisabled ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:border-gray-400 text-black'}`}
+                                className={`text-sm px-3 py-2 rounded-full border-2 transition-all font-medium ${isSelected ? 'border-black bg-black text-primary' : isDisabled ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:border-gray-400 text-black'}`}
                               >
                                 {hobby}
                               </button>
@@ -595,7 +595,7 @@ export function QuestionScreen({
                         <motion.button key={option}
                           onClick={() => handleSelectOption(option)}
                           whileTap={{ scale: 0.95 }}
-                          className={`rounded-full border-2 transition-all font-medium text-sm px-4 py-2 ${isSelected ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-300 text-black'}`}
+                          className={`rounded-full border-2 transition-all font-medium text-sm px-4 py-2 ${isSelected ? 'border-black bg-black text-primary' : 'border-gray-200 hover:border-gray-300 text-black'}`}
                         >
                           {option}
                         </motion.button>
@@ -775,7 +775,7 @@ export function QuestionScreen({
                     onDragEnd={handleDragEnd}
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-move ${draggedItem === option ? 'border-black opacity-50' : 'border-gray-200'}`}
                   >
-                    <div className="w-7 h-7 rounded-full bg-black text-white text-sm flex items-center justify-center flex-shrink-0">{index + 1}</div>
+                    <div className="w-7 h-7 rounded-full bg-black text-primary text-sm flex items-center justify-center flex-shrink-0">{index + 1}</div>
                     <GripVertical className="w-4 h-4 text-gray-400" />
                     <span className="flex-1 text-sm">{option}</span>
                   </motion.div>
@@ -870,7 +870,7 @@ export function QuestionScreen({
             {onSave ? (
               <div className="flex gap-2">
                 <button onClick={onSave} disabled={!isAnswered()}
-                  className="flex-1 py-2.5 px-3 rounded-full text-white transition-all disabled:opacity-40 bg-black text-sm font-medium"
+                  className="flex-1 py-2.5 px-3 rounded-full text-primary transition-all disabled:opacity-40 bg-black text-sm font-medium"
                 >Save & Exit</button>
                 <button onClick={onContinue}
                   className="flex-1 py-2.5 px-3 text-black border-2 border-black rounded-full text-sm font-medium hover:bg-gray-50"
@@ -884,7 +884,7 @@ export function QuestionScreen({
                     onClick={() => { setDealbreakerJustToggled(false); onContinue(); }}
                     disabled={!isAnswered()}
                     whileTap={isAnswered() ? { scale: 0.98 } : {}}
-                    className="w-full py-4 px-6 rounded-full text-white transition-all disabled:opacity-40 bg-black text-lg font-medium"
+                    className="w-full py-4 px-6 rounded-full text-primary transition-all disabled:opacity-40 bg-black text-lg font-medium"
                   >
                     Continue
                   </motion.button>

@@ -112,7 +112,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
-              <ParallelIcon size={16} className="text-white" />
+              <ParallelIcon size={16} className="text-primary" />
             </div>
             <span className="font-semibold tracking-tight">Parallel</span>
           </div>
@@ -144,7 +144,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={onShowExplainer}
-                  className="w-full sm:w-auto bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
+                  className="w-full sm:w-auto bg-black text-primary px-8 py-4 rounded-full hover:bg-gray-800 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
                 >
                   Get matched
                   <ArrowRight size={18} />
@@ -287,7 +287,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
             <button
               onClick={onShowExplainer}
-              className="w-full sm:w-auto bg-black text-white px-10 py-4 rounded-full hover:bg-gray-800 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
+              className="w-full sm:w-auto bg-black text-primary px-10 py-4 rounded-full hover:bg-gray-800 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
             >
               Get matched
               <ArrowRight size={18} />
@@ -320,7 +320,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
               <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
-                <ParallelIcon size={20} className="text-white" />
+                <ParallelIcon size={20} className="text-primary" />
               </div>
               <button
                 onClick={closeSignInModal}
@@ -383,7 +383,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full bg-black text-white py-3.5 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
+                      className="w-full bg-black text-primary py-3.5 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
                     >
                       {isLoading ? (
                         <>
@@ -451,7 +451,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                       type="button"
                       onClick={handleSendResetLink}
                       disabled={resetLoading}
-                      className="w-full bg-black text-white py-3.5 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
+                      className="w-full bg-black text-primary py-3.5 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
                     >
                       {resetLoading ? (
                         <>
@@ -485,7 +485,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   <button
                     type="button"
                     onClick={handleBackToSignIn}
-                    className="w-full bg-black text-white py-3.5 rounded-full hover:bg-gray-800 transition-all font-medium"
+                    className="w-full bg-black text-primary py-3.5 rounded-full hover:bg-gray-800 transition-all font-medium"
                   >
                     Back to sign in
                   </button>
@@ -521,7 +521,7 @@ function Feature({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex items-start gap-3">
       <div className="w-5 h-5 rounded-full bg-black flex-shrink-0 mt-1 flex items-center justify-center">
-        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+        <Check className="w-3 h-3 text-primary" strokeWidth={3} />
       </div>
       <div>
         <h3 className="font-semibold mb-1 tracking-tight">{title}</h3>
@@ -607,7 +607,7 @@ function PreviewMatchCard({
         {/* Verified badge — top left */}
         {verified && (
           <div className="absolute top-3 left-3 bg-blue-500 rounded-full p-1.5 shadow-lg z-20">
-            <ShieldCheck size={16} className="text-white" />
+            <ShieldCheck size={16} className="text-primary" />
           </div>
         )}
 
@@ -621,12 +621,12 @@ function PreviewMatchCard({
 
         {/* Name/age/height/location overlay at bottom of photo */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 z-10">
-          <p className="text-white text-xl font-semibold leading-tight">
+          <p className="text-primary text-xl font-semibold leading-tight">
             {name}, {age}{height ? ` · ${height}` : ''}
           </p>
           <div className="flex items-center gap-1 mt-1">
-            <MapPin size={12} className="text-white/70 flex-shrink-0" />
-            <p className="text-white/80 text-xs">{location}</p>
+            <MapPin size={12} className="text-primary/70 flex-shrink-0" />
+            <p className="text-primary/80 text-xs">{location}</p>
           </div>
         </div>
       </div>
@@ -674,7 +674,7 @@ function PreviewMatchCard({
             <X size={16} className="text-gray-500" />
             <span className="text-[10px] text-gray-400">Pass</span>
           </div>
-          <div className="flex-1 h-12 rounded-full bg-black text-white flex items-center justify-center gap-2 font-medium">
+          <div className="flex-1 h-12 rounded-full bg-black text-primary flex items-center justify-center gap-2 font-medium">
             <Heart size={18} />
             <span className="text-sm">Like</span>
           </div>

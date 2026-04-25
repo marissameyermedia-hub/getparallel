@@ -76,7 +76,7 @@ export function NPSBottomSheet({ isOpen, onClose, onSubmit }: NPSBottomSheetProp
                       onClick={() => setSelectedScore(score)}
                       className={`aspect-square rounded-lg border-2 transition-all text-sm font-medium ${
                         selectedScore === score
-                          ? 'bg-black text-white border-black'
+                          ? 'bg-black text-primary border-black'
                           : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                       }`}
                     >
@@ -113,7 +113,7 @@ export function NPSBottomSheet({ isOpen, onClose, onSubmit }: NPSBottomSheetProp
               disabled={selectedScore === null || isSubmitting}
               className={`w-full px-6 py-3 rounded-full transition-all font-medium ${
                 selectedScore !== null && !isSubmitting
-                  ? 'bg-black text-white hover:bg-gray-800'
+                  ? 'bg-black text-primary hover:bg-gray-800'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
             >

@@ -76,7 +76,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
               className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4"
               style={{ backgroundColor: '#000000' }}
             >
-              <span className="text-white text-2xl font-medium">{chapterNumber}</span>
+              <span className="text-primary text-2xl font-medium">{chapterNumber}</span>
             </div>
           </motion.div>
 
@@ -112,7 +112,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
           <motion.button
             onClick={onContinue}
             whileTap={{ scale: 0.98 }}
-            className="flex-1 py-4 px-6 rounded-full text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg text-lg font-medium"
+            className="flex-1 py-4 px-6 rounded-full text-primary flex items-center justify-center gap-2 transition-all hover:shadow-lg text-lg font-medium"
             style={{
               backgroundColor: '#000000',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',

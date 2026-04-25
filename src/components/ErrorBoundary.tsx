@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-xs text-gray-400 mb-6">Screenshot this and send to Marissa</p>
             <button
               onClick={() => { localStorage.clear(); window.location.href = '/'; }}
-              className="w-full bg-black text-white py-4 rounded-full font-semibold"
+              className="w-full bg-black text-primary py-4 rounded-full font-semibold"
             >
               Restart app
             </button>
