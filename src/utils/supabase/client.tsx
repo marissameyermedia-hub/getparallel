@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import { projectId, publicAnonKey } from "./info";
+import { createClient } from '@supabase/supabase-js';
+import { projectId, publicAnonKey } from './info';
 
 const supabaseUrl = `https://${projectId}.supabase.co`;
 
@@ -8,7 +8,9 @@ const supabaseUrl = `https://${projectId}.supabase.co`;
 // like NotificationsView that guard on `if (!session) throw` will bail out
 // before ever calling fetch — and the fetch interceptor won't get a chance
 // to return mock data).
-const isDevGallery = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("dev") === "1";
+const isDevGallery =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('dev') === '1';
 
 const realClient = createClient(supabaseUrl, publicAnonKey, {
   auth: {
@@ -30,14 +32,14 @@ export const supabase = isDevGallery
         getSession: async () => ({
           data: {
             session: {
-              access_token: "dev-fake-access-token",
-              refresh_token: "dev-fake-refresh-token",
+              access_token: 'dev-fake-access-token',
+              refresh_token: 'dev-fake-refresh-token',
               expires_in: 3600,
-              token_type: "bearer",
+              token_type: 'bearer',
               user: {
-                id: "dev-user-00000000-0000-0000-0000-000000000001",
-                email: "dev@example.com",
-                phone: "+12535551234",
+                id: 'dev-user-00000000-0000-0000-0000-000000000001',
+                email: 'dev@example.com',
+                phone: '+12535551234',
               },
             },
           },
@@ -46,9 +48,9 @@ export const supabase = isDevGallery
         getUser: async () => ({
           data: {
             user: {
-              id: "dev-user-00000000-0000-0000-0000-000000000001",
-              email: "dev@example.com",
-              phone: "+12535551234",
+              id: 'dev-user-00000000-0000-0000-0000-000000000001',
+              email: 'dev@example.com',
+              phone: '+12535551234',
             },
           },
           error: null,
@@ -68,10 +70,15 @@ export const EDGE_FUNCTION_URL = `${supabaseUrl}/functions/v1/make-server-7af08c
 // by living at its own slug. Matches the pattern used by EMAIL_FUNCTION_URL.
 export const AUTH_FUNCTION_URL = `${supabaseUrl}/functions/v1/auth`;
 
+// Dedicated onboarding function. Handles: /progress, /user/profile, /user/complete-onboarding,
+// /user/location, /user/category-weights, /location/search, /location/reverse, /photos/upload,
+// /attachment/score. Sidesteps the make-server OPTIONS bug.
+export const ONBOARDING_FUNCTION_URL = `${supabaseUrl}/functions/v1/onboarding`;
+
 export function getAuthHeaders(accessToken: string) {
   return {
-    Authorization: `Bearer ${accessToken}`,
-    apikey: publicAnonKey,
-    "Content-Type": "application/json",
+    'Authorization': `Bearer ${accessToken}`,
+    'apikey': publicAnonKey,
+    'Content-Type': 'application/json',
   };
 }
