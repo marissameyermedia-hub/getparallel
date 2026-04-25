@@ -294,23 +294,7 @@ export const SCREENS: ScreenEntry[] = [
   { id: "app-footer", label: "App Footer", group: "Primitives", render: () => <AppFooter onNavigate={noop} /> },
   { id: "bottom-nav", label: "Bottom Nav", group: "Primitives", render: () => <BottomNav onNavigate={noop} currentView="matches" unreadMessageCount={3} /> },
   { id: "back-button", label: "Back Button", group: "Primitives", render: () => <div className="p-6"><BackButton onClick={noop} /></div> },
-  { id: "parallel-icon", label: "Parallel Icon", group: "Primitives", render: () => (
-    <div className="p-6 space-y-6">
-      <div className="flex gap-4 items-end">
-        <div className="text-center"><ParallelIcon size="xs" tone="foreground" /><div className="text-[10px] text-muted-foreground mt-1">xs · 16</div></div>
-        <div className="text-center"><ParallelIcon size="sm" tone="foreground" /><div className="text-[10px] text-muted-foreground mt-1">sm · 20</div></div>
-        <div className="text-center"><ParallelIcon size="md" tone="foreground" /><div className="text-[10px] text-muted-foreground mt-1">md · 24</div></div>
-        <div className="text-center"><ParallelIcon size="lg" tone="foreground" /><div className="text-[10px] text-muted-foreground mt-1">lg · 32</div></div>
-        <div className="text-center"><ParallelIcon size="xl" tone="foreground" /><div className="text-[10px] text-muted-foreground mt-1">xl · 48</div></div>
-        <div className="text-center"><ParallelIcon size="2xl" tone="foreground" /><div className="text-[10px] text-muted-foreground mt-1">2xl · 96</div></div>
-      </div>
-      <div className="flex gap-4 items-center">
-        <div className="p-3 bg-foreground rounded-lg"><ParallelIcon size="lg" tone="inverse" /></div>
-        <div className="p-3 bg-secondary rounded-lg"><ParallelIcon size="lg" tone="primary" /></div>
-        <div className="p-3 rounded-lg"><ParallelIcon size="lg" tone="muted" /></div>
-      </div>
-    </div>
-  ) },
+  { id: "parallel-icon", label: "Parallel Icon", group: "Primitives", render: () => <div className="p-6 flex gap-4 items-center"><ParallelIcon size={24} /><ParallelIcon size={48} /><ParallelIcon size={96} /></div> },
   { id: "loading-dots", label: "Loading Dots", group: "Primitives", render: () => <div className="p-12 flex justify-center"><LoadingDots /></div> },
   { id: "page-loader", label: "Page Loader", group: "Primitives", render: () => <PageLoader message="Loading your matches…" /> },
 ];

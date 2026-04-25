@@ -18,7 +18,7 @@ export function Header({ onNavigate, currentView, isSignedIn = true, unreadMessa
           onClick={() => onNavigate('matches')}
           className="flex items-center gap-2 hover:opacity-70 transition-opacity"
         >
-          <ParallelIcon size="md" tone="foreground" label="Parallel" />
+          <ParallelIcon size={24} className="text-black" />
           <span className="font-semibold">Parallel</span>
         </button>
       </div>
