@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 interface Message {
@@ -46,7 +46,7 @@ export function InboxView({
     try {
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey };
       const [convoRes, mutualRes, waitingRes] = await Promise.all([
-        fetch(`${EDGE_FUNCTION_URL}/messages/conversations`, { headers }),
+        fetch(`${MESSAGES_FUNCTION_URL}/conversations`, { headers }),
         fetch(`${MATCHES_FUNCTION_URL}/mutual`, { headers }),
         fetch(`${MATCHES_FUNCTION_URL}/mutual-waiting`, { headers }),
       ]);

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
-import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 function getAuthHeaders(token: string) {
@@ -136,7 +136,7 @@ export function MessagingView({
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
     try {
-      const res = await fetch(`${EDGE_FUNCTION_URL}/messages/${matchId}`, {
+      const res = await fetch(`${MESSAGES_FUNCTION_URL}/${matchId}`, {
         headers: getAuthHeaders(token),
       });
       if (res.ok) {
@@ -158,7 +158,7 @@ export function MessagingView({
 
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
-      fetch(`${EDGE_FUNCTION_URL}/messages/mark-read`, {
+      fetch(`${MESSAGES_FUNCTION_URL}/mark-read`, {
         method: 'POST',
         headers: getAuthHeaders(token),
         body: JSON.stringify({ matchId }),
@@ -170,7 +170,7 @@ export function MessagingView({
       const token = localStorage.getItem('parallel_access_token');
       if (!token) return;
       try {
-        const res = await fetch(`${EDGE_FUNCTION_URL}/messages/realtime-config?matchId=${matchId}`, {
+        const res = await fetch(`${MESSAGES_FUNCTION_URL}/realtime-config?matchId=${matchId}`, {
           headers: getAuthHeaders(token),
         });
         if (res.ok) {
@@ -252,7 +252,7 @@ export function MessagingView({
     setNewMessage('');
     setShowStarters(false);
     try {
-      await fetch(`${EDGE_FUNCTION_URL}/messages/send`, {
+      await fetch(`${MESSAGES_FUNCTION_URL}/send`, {
         method: 'POST',
         headers: getAuthHeaders(token),
         body: JSON.stringify({ matchId, text: optimisticMsg.text }),
