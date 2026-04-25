@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from 'sonner@2.0.3';
 import { createClient } from '@supabase/supabase-js';
-import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 function getAuthHeaders(token: string) {
@@ -307,7 +307,7 @@ export function MessagingView({
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/matches/action`, {
+        await fetch(`${MATCHES_FUNCTION_URL}/action`, {
           method: 'POST', headers: getAuthHeaders(token),
           body: JSON.stringify({ matchUserId: matchId, action: 'pass' }),
         });
