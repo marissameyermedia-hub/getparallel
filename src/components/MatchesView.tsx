@@ -144,7 +144,7 @@ export function MatchesView({
     return (
       <div className="bg-white min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
-          <h2 className="text-3xl font-bold mb-4">Matching opens May 15th.</h2>
+          <h2 className="text-3xl font-bold mb-4 whitespace-pre-line">{"You are in the pool. \nMatching opens soon."}</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
             We're building the pool right now. Complete your questionnaire, invite friends, and get ready — the more
             people who join before launch day, the better everyone's first matches will be.
