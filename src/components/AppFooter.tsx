@@ -16,7 +16,7 @@ interface AppFooterProps {
 
 export function AppFooter({ onNavigate }: AppFooterProps) {
   return (
-    <footer className="w-full border-t border-gray-100 bg-white">
+    <footer className="w-full border-t border-gray-100 bg-white pb-24">
       <div className="max-w-2xl mx-auto px-6 py-6">
 
         <p className="text-center text-xs text-gray-400 mb-4">
