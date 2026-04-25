@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL } from './utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from './utils/supabase/client';
 import { publicAnonKey } from './utils/supabase/info';
 import { SignInPage } from './components/SignInPage';
 import { AccountCreationPage } from './components/AccountCreationPage';
@@ -229,7 +229,7 @@ function App() {
           // Show loading screen while validating token
           setIsLoading(true);
           try {
-            const response = await fetch(`${EDGE_FUNCTION_URL}/auth/validate-token`, {
+            const response = await fetch(`${MISC_FUNCTION_URL}/auth/validate-token`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -324,7 +324,7 @@ function App() {
             // Clean the URL
             window.history.replaceState({}, '', window.location.pathname);
             // Notify backend to send welcome email (fire and forget)
-            fetch(`${EDGE_FUNCTION_URL}/auth/email-confirmed`, {
+            fetch(`${MISC_FUNCTION_URL}/auth/email-confirmed`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
             }).catch(() => {});
@@ -371,7 +371,7 @@ function App() {
             // Clean the URL
             window.history.replaceState({}, '', window.location.pathname);
             // Notify backend to send welcome email (fire and forget)
-            fetch(`${EDGE_FUNCTION_URL}/auth/email-confirmed`, {
+            fetch(`${MISC_FUNCTION_URL}/auth/email-confirmed`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
             }).catch(() => {});
@@ -416,7 +416,7 @@ function App() {
                 // Clean the URL
                 window.history.replaceState({}, '', window.location.pathname);
                 // Notify backend to send welcome email (fire and forget)
-                fetch(`${EDGE_FUNCTION_URL}/auth/email-confirmed`, {
+                fetch(`${MISC_FUNCTION_URL}/auth/email-confirmed`, {
                   method: 'POST',
                   headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
                 }).catch(() => {});
@@ -730,7 +730,7 @@ function App() {
           body: JSON.stringify({ matchUserId: dateReviewScreen.matchId, ...review })
         });
         if (review.isSafetyIssue) {
-          await fetch(`${EDGE_FUNCTION_URL}/safety/report`, {
+          await fetch(`${MISC_FUNCTION_URL}/safety/report`, {
             method: 'POST',
             headers: getHeaders(token),
             body: JSON.stringify({ reportedUserId: dateReviewScreen.matchId, reason: 'safety_issue_from_date_review', details: review.couldImprove || '' })
@@ -770,7 +770,7 @@ function App() {
     const token = localStorage.getItem('parallel_access_token');
     if (token && message.trim()) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/app-feedback`, {
+        await fetch(`${MISC_FUNCTION_URL}/app-feedback`, {
           method: 'POST',
           headers: getHeaders(token),
           body: JSON.stringify({ feedbackType, rating, message })
@@ -788,7 +788,7 @@ function App() {
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/nps`, {
+        await fetch(`${MISC_FUNCTION_URL}/nps`, {
           method: 'POST',
           headers: getHeaders(token),
           body: JSON.stringify({ score, reason })
@@ -869,7 +869,7 @@ function App() {
           onClick={async () => {
             const token = localStorage.getItem('parallel_access_token');
             if (!token) return;
-            const res = await fetch(`${EDGE_FUNCTION_URL}/auth/resend-verification`, {
+            const res = await fetch(`${MISC_FUNCTION_URL}/auth/resend-verification`, {
               method: 'POST',
               headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
             });
