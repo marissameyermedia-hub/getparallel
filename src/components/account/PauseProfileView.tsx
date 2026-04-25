@@ -1,6 +1,6 @@
 import { Pause, Play, AlertCircle, ChevronLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { EDGE_FUNCTION_URL } from '../../utils/supabase/client';
+import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 
 interface PauseProfileViewProps {
@@ -45,7 +45,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
   useEffect(() => {
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
-    fetch(`${EDGE_FUNCTION_URL}/user/profile`, { headers: getAuthHeaders(token) })
+    fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, { headers: getAuthHeaders(token) })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (typeof data?.isPaused === 'boolean') setIsPaused(data.isPaused); })
       .catch(err => console.error('Failed to fetch pause state:', err));
@@ -70,7 +70,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/user/profile`, {
+        await fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
           method: 'PUT',
           headers: getAuthHeaders(token),
           body: JSON.stringify({ isPaused: paused }),
