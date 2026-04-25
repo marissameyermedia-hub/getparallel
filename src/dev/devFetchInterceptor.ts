@@ -1,13 +1,7 @@
 // Intercepts fetch() calls to the Supabase edge function while the DevGallery
 // is mounted. Returns mock JSON so screens look populated without a backend.
-import { EDGE_FUNCTION_URL } from "../utils/supabase/client";
-import {
-  MOCK_INBOX,
-  MOCK_MATCHES,
-  MOCK_MESSAGES,
-  MOCK_PROFILE,
-  MOCK_USER_ID,
-} from "./mockData";
+import { EDGE_FUNCTION_URL, EMAIL_FUNCTION_URL } from "../utils/supabase/client";
+import { MOCK_INBOX, MOCK_MATCHES, MOCK_MESSAGES, MOCK_PROFILE, MOCK_USER_ID } from "./mockData";
 
 let installed = false;
 
@@ -58,6 +52,27 @@ function routeFor(path: string): unknown | null {
   return {};
 }
 
+// Routes for the dedicated email edge function (verification send/verify/status).
+// These mirror the real responses so DevGallery interactions feel realistic.
+function emailRouteFor(path: string): unknown | null {
+  const clean = path.split("?")[0];
+  if (clean === "/send" || clean === "/resend") {
+    // Pretend the email was queued. The banner / account row will flip to
+    // "Sent ✓" briefly so you can see the success state.
+    return { success: true, sent: true };
+  }
+  if (clean === "/verify") {
+    return { success: true, name: "Riley" };
+  }
+  if (clean === "/status") {
+    return { verified: false };
+  }
+  if (clean === "/health" || clean === "/") {
+    return { ok: true, service: "email", version: "1" };
+  }
+  return null;
+}
+
 export function installDevFetchInterceptor() {
   if (installed) return;
   installed = true;
@@ -67,6 +82,14 @@ export function installDevFetchInterceptor() {
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
+    // Email function — verification send/verify/status/resend
+    if (url.startsWith(EMAIL_FUNCTION_URL)) {
+      const path = url.slice(EMAIL_FUNCTION_URL.length) || "/";
+      const body = emailRouteFor(path);
+      return jsonResponse(body ?? { success: true });
+    }
+
+    // Main make-server function
     if (url.startsWith(EDGE_FUNCTION_URL)) {
       const path = url.slice(EDGE_FUNCTION_URL.length);
       const method = (init?.method || "GET").toUpperCase();
