@@ -1,4 +1,5 @@
 import { MessageCircle } from 'lucide-react';
+import { ParallelIcon } from './ParallelIcon';
 
 interface HeaderProps {
   onNavigate: (view: 'matches' | 'pricing' | 'questionnaire' | 'account' | 'signin' | 'inbox' | 'my-profile') => void;
@@ -17,10 +18,7 @@ export function Header({ onNavigate, currentView, isSignedIn = true, unreadMessa
           onClick={() => onNavigate('matches')}
           className="flex items-center gap-2 hover:opacity-70 transition-opacity"
         >
-          <div className="flex gap-0.5">
-            <div className="w-0.5 h-6 bg-black"></div>
-            <div className="w-0.5 h-6 bg-black"></div>
-          </div>
+          <ParallelIcon size={24} className="text-black" />
           <span className="font-semibold">Parallel</span>
         </button>
       </div>

@@ -1,3 +1,4 @@
+import { ParallelIcon } from './ParallelIcon';
 
 interface AppHeaderProps {
   onNavigate?: () => void;
@@ -12,10 +13,7 @@ export function AppHeader({ onNavigate }: AppHeaderProps) {
           className="flex items-center gap-3 hover:opacity-70 transition-opacity"
           disabled={!onNavigate}
         >
-          <div className="flex gap-0.5">
-            <div className="w-0.5 h-6 bg-black"></div>
-            <div className="w-0.5 h-6 bg-black"></div>
-          </div>
+          <ParallelIcon size={24} className="text-black" />
           <span className="font-semibold text-lg">Parallel</span>
         </button>
       </div>
