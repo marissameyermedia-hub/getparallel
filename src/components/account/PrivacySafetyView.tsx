@@ -1,6 +1,6 @@
 import { Shield, Eye, Lock, UserX, ChevronLeft, Download, Flag } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../../utils/supabase/client';
+import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { toast } from 'sonner';
 
@@ -38,7 +38,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
         }
       })
       .catch(err => console.error('Failed to fetch privacy settings:', err));
-    fetch(`${EDGE_FUNCTION_URL}/safety/blocked`, { headers })
+    fetch(`${MISC_FUNCTION_URL}/safety/blocked`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (typeof data?.count === 'number') setBlockedCount(data.count); })
       .catch(err => console.error('Failed to fetch blocked count:', err));
@@ -71,7 +71,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
 
     setIsExporting(true);
     try {
-      const res = await fetch(`${EDGE_FUNCTION_URL}/account/export`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/account/export`, {
         headers: getAuthHeaders(token),
       });
 

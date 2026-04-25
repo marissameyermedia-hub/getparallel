@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, ChevronLeft, Info } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
-import { supabase } from '../../utils/supabase/client';
+import { supabase, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 
 interface NotificationsViewProps {
   userId: string;
@@ -16,8 +16,6 @@ interface NotificationPrefs {
   message_alerts: boolean;
   date_reminders: boolean;
 }
-
-const EDGE_FUNCTION_URL = `https://${projectId}.supabase.co/functions/v1/make-server-7af08c19`;
 
 const SMS_CONSENT_TEXT =
   "By tapping 'Enable SMS', you agree to receive SMS account notifications, verification codes, and match alerts from Parallel at the phone number provided. Consent is not a condition of purchase. Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. We will not share mobile information with third parties for promotional or marketing purposes. View our Privacy Policy and Terms of Service.";
@@ -51,7 +49,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
     const load = async () => {
       try {
         const token = await getAuthToken();
-        const res = await fetch(`${EDGE_FUNCTION_URL}/notifications/preferences`, {
+        const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'apikey': publicAnonKey,
@@ -84,7 +82,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
     setError('');
     try {
       const token = await getAuthToken();
-      const res = await fetch(`${EDGE_FUNCTION_URL}/notifications/preferences`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +129,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
     try {
       const token = await getAuthToken();
       // Log consent to consent_log AND flip sms_enabled on (edge function does both atomically)
-      const res = await fetch(`${EDGE_FUNCTION_URL}/sms/log-consent`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/sms/log-consent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,7 +162,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
     try {
       const token = await getAuthToken();
       // Log opt-out event to consent_log AND flip sms_enabled off
-      const res = await fetch(`${EDGE_FUNCTION_URL}/sms/log-consent`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/sms/log-consent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

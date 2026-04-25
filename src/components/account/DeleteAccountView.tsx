@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Trash2, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
-import { supabase } from '../../utils/supabase/client';
+import { supabase, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { EDGE_FUNCTION_URL } from '../../utils/supabase/client';
 
@@ -31,7 +31,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
     }
 
     try {
-      const response = await fetch(`${EDGE_FUNCTION_URL}/user/delete`, {
+      const response = await fetch(`${MISC_FUNCTION_URL}/user/delete`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
