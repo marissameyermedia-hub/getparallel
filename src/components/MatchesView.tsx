@@ -153,13 +153,13 @@ export function MatchesView({
             We're building the pool right now. Complete your questionnaire, invite friends, and get ready — the more
             people who join before launch day, the better everyone's first matches will be.
           </p>
-          <div className="inline-flex items-center gap-2 bg-black text-primary text-sm font-medium px-4 py-2 rounded-full mb-8">
+          <div className="inline-flex items-center gap-2 bg-black text-white text-sm font-medium px-4 py-2 rounded-full mb-8">
             <span>Founding members get 47% off their first year — offer ends at launch</span>
           </div>
           <div className="space-y-3 mb-8">
             <button
               onClick={onNavigateToInvite || handleShareInvite}
-              className="w-full bg-black text-primary px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
+              className="w-full bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
             >
               Invite a friend →
             </button>
@@ -203,7 +203,7 @@ export function MatchesView({
           </div>
           <button
             onClick={onViewQuestionnaire}
-            className="w-full bg-black text-primary px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
+            className="w-full bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
           >
             Continue questionnaire →
           </button>
@@ -305,7 +305,7 @@ export function MatchesView({
                       item.complete ? "bg-black" : "bg-white border-2 border-gray-300"
                     }`}
                   >
-                    {item.complete && <Check size={12} className="text-primary" />}
+                    {item.complete && <Check size={12} className="text-white" />}
                   </div>
                   <p className={`text-sm flex-1 ${item.complete ? "text-gray-400 line-through" : "text-gray-900"}`}>
                     {item.label}
@@ -331,7 +331,7 @@ export function MatchesView({
             </p>
             <button
               onClick={onNavigateToInvite || handleShareInvite}
-              className="w-full bg-black text-primary px-6 py-3 rounded-full hover:bg-gray-800 transition-colors text-sm font-medium"
+              className="w-full bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors text-sm font-medium"
             >
               Invite a friend →
             </button>
@@ -381,10 +381,10 @@ export function MatchesView({
           <div className="max-w-md mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1">
               <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <ShieldCheck size={18} className="text-primary" />
+                <ShieldCheck size={18} className="text-white" />
               </div>
               <div>
-                <p className="text-primary font-medium text-sm">Get verified to stand out ✓</p>
+                <p className="text-white font-medium text-sm">Get verified to stand out ✓</p>
                 <p className="text-gray-400 text-xs">Takes 2 minutes</p>
               </div>
             </div>
@@ -424,7 +424,7 @@ export function MatchesView({
                     </p>
                     <button
                       onClick={onNavigateToPayment}
-                      className="w-full bg-black text-primary py-3 rounded-full font-medium hover:bg-gray-800 transition-colors text-[13px]"
+                      className="w-full bg-black text-white py-3 rounded-full font-medium hover:bg-gray-800 transition-colors text-[13px]"
                     >
                       Subscribe to unlock — from $6.58/mo
                     </button>

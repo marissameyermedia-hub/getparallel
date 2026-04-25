@@ -245,7 +245,7 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
                 onClick={() => setFilterStatus(status)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   filterStatus === status
-                    ? 'bg-black text-primary'
+                    ? 'bg-black text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                 }`}
               >

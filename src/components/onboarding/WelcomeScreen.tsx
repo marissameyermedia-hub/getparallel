@@ -23,7 +23,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
             className="text-center mb-10"
           >
             <div className="w-16 h-16 rounded-full bg-black mx-auto flex items-center justify-center mb-6">
-              <ParallelIcon size={32} className="text-primary" />
+              <ParallelIcon size={32} className="text-white" />
             </div>
             <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-3 font-medium">
               Welcome to Parallel
@@ -46,7 +46,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               className="flex items-start gap-4"
             >
               <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-4 h-4 text-primary" />
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">The questionnaire</h3>
@@ -64,7 +64,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               className="flex items-start gap-4"
             >
               <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <Heart className="w-4 h-4 text-primary" />
+                <Heart className="w-4 h-4 text-white" />
               </div>
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">Your profile</h3>
@@ -81,7 +81,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               className="flex items-start gap-4"
             >
               <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="w-4 h-4 text-primary" />
+                <MessageCircle className="w-4 h-4 text-white" />
               </div>
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">Your matches</h3>
@@ -113,7 +113,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
         <div className="max-w-md mx-auto">
           <button
             onClick={onContinue}
-            className="w-full py-4 px-6 rounded-full bg-black text-primary font-medium transition-all hover:bg-gray-800 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+            className="w-full py-4 px-6 rounded-full bg-black text-white font-medium transition-all hover:bg-gray-800 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
           >
             Start the questionnaire
             <ArrowRight size={18} />

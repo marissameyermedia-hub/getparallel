@@ -339,7 +339,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             <button
               onClick={confirmSmsOptIn}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 bg-black text-primary rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <>
@@ -375,7 +375,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             <button
               onClick={confirmSmsOptOut}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 bg-black text-primary rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <>

@@ -135,11 +135,11 @@ export function MatchCard({
               <div className="w-full h-full bg-gradient-to-br from-gray-300 via-gray-200 to-gray-300" />
             )}
             <div className="absolute inset-0 flex items-center justify-center">
-              <Lock size={48} className="text-primary" />
+              <Lock size={48} className="text-white" />
             </div>
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 z-10">
-              <p className="text-primary text-xl font-semibold">{user.age} years old</p>
-              <p className="text-primary/70 text-sm mt-0.5">Subscribe to unlock your matches →</p>
+              <p className="text-white text-xl font-semibold">{user.age} years old</p>
+              <p className="text-white/70 text-sm mt-0.5">Subscribe to unlock your matches →</p>
             </div>
           </div>
         ) : (
@@ -148,7 +148,7 @@ export function MatchCard({
               <img src={primaryPhoto} alt={user.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <div className="w-20 h-20 bg-gray-400 rounded-full flex items-center justify-center text-primary text-2xl font-semibold">
+                <div className="w-20 h-20 bg-gray-400 rounded-full flex items-center justify-center text-white text-2xl font-semibold">
                   {getInitials(user.name)}
                 </div>
               </div>
@@ -157,7 +157,7 @@ export function MatchCard({
             {/* Verified badge — top left */}
             {user.isVerified && (
               <div className="absolute top-3 left-3 bg-blue-500 rounded-full p-1.5 shadow-lg z-20">
-                <ShieldCheck size={16} className="text-primary" />
+                <ShieldCheck size={16} className="text-white" />
               </div>
             )}
 
@@ -170,13 +170,13 @@ export function MatchCard({
 
             {/* Name, age, height, location overlay at bottom of photo */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 z-10">
-              <p className="text-primary text-xl font-semibold leading-tight">
+              <p className="text-white text-xl font-semibold leading-tight">
                 {user.name}, {user.age}{heightDisplay ? ` · ${heightDisplay}` : ''}
               </p>
               {locationLine && (
                 <div className="flex items-center gap-1 mt-1">
-                  <MapPin size={12} className="text-primary/70 flex-shrink-0" />
-                  <p className="text-primary/80 text-xs">{locationLine}</p>
+                  <MapPin size={12} className="text-white/70 flex-shrink-0" />
+                  <p className="text-white/80 text-xs">{locationLine}</p>
                 </div>
               )}
             </div>
@@ -197,7 +197,7 @@ export function MatchCard({
         <div className="p-5 space-y-3">
           <button
             onClick={handleUnlockClick}
-            className="w-full bg-black text-primary rounded-full hover:bg-gray-800 transition-all font-medium text-base py-4 px-6"
+            className="w-full bg-black text-white rounded-full hover:bg-gray-800 transition-all font-medium text-base py-4 px-6"
           >
             Unlock who's waiting for you →
           </button>
@@ -260,7 +260,7 @@ export function MatchCard({
               onClick={handleLikeClick}
               disabled={isLiked}
               className={`flex-1 h-12 rounded-full transition-all flex items-center justify-center gap-2 font-medium ${
-                isLiked ? 'bg-red-500 text-primary cursor-default' : 'bg-black text-primary hover:bg-gray-800'
+                isLiked ? 'bg-red-500 text-white cursor-default' : 'bg-black text-white hover:bg-gray-800'
               }`}
             >
               <Heart size={18} className={isLiked ? 'fill-current' : ''} />

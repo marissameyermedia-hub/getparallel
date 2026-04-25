@@ -216,8 +216,8 @@ export function ProfileEditor({
             <div className="relative aspect-[3/4] bg-gray-100">
               <img src={uploadedPhotos[0]} alt="Main" className="w-full h-full object-cover" />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                <h2 className="text-primary text-2xl font-semibold">{displayName}</h2>
-                {career && <p className="text-primary/80 text-sm mt-1">{career}</p>}
+                <h2 className="text-white text-2xl font-semibold">{displayName}</h2>
+                {career && <p className="text-white/80 text-sm mt-1">{career}</p>}
               </div>
             </div>
           ) : (
@@ -301,15 +301,15 @@ export function ProfileEditor({
                 >
                   <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
                   {index === 0 && (
-                    <div className="absolute top-1.5 left-1.5 bg-black text-primary text-[10px] font-medium px-1.5 py-0.5 rounded-full">Main</div>
+                    <div className="absolute top-1.5 left-1.5 bg-black text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">Main</div>
                   )}
                   <button onClick={() => handleRemovePhoto(index)}
                     className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center hover:bg-black transition-colors"
                   >
-                    <X size={12} className="text-primary" />
+                    <X size={12} className="text-white" />
                   </button>
                   <div className="absolute bottom-1.5 left-1.5 w-5 h-5 bg-black/40 rounded-full flex items-center justify-center">
-                    <GripVertical size={10} className="text-primary" />
+                    <GripVertical size={10} className="text-white" />
                   </div>
                 </div>
               ))}
@@ -475,7 +475,7 @@ export function ProfileEditor({
             <button
               onClick={handleComplete}
               disabled={!canSave || isUploading || isSaving}
-              className="w-full py-4 px-6 rounded-full bg-black text-primary font-medium text-base transition-all hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 px-6 rounded-full bg-black text-white font-medium text-base transition-all hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <>

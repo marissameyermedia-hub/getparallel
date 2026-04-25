@@ -587,21 +587,21 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
             </p>
             <div className="space-y-5">
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-black text-primary flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">1</div>
+                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">1</div>
                 <div>
                   <p className="font-medium text-gray-900">Answer 65 questions about yourself</p>
                   <p className="text-sm text-gray-500 mt-0.5">Takes about 15 minutes. Saves automatically as you go — you can close and come back anytime.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-black text-primary flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">2</div>
+                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">2</div>
                 <div>
                   <p className="font-medium text-gray-900">We run our compatibility algorithm</p>
                   <p className="text-sm text-gray-500 mt-0.5">Your answers are matched against others across 8 compatibility categories — no random swiping.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-black text-primary flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">3</div>
+                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">3</div>
                 <div>
                   <p className="font-medium text-gray-900">Meet people who actually match</p>
                   <p className="text-sm text-gray-500 mt-0.5">See exactly why you matched — and what might be different. Then decide if you want to connect.</p>
@@ -621,7 +621,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 setShowLocationStep(true);
                 saveStep('location');
               }}
-              className="w-full py-4 px-6 rounded-full bg-black text-primary text-lg font-medium transition-all hover:bg-gray-800"
+              className="w-full py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
             >
               Let's go →
             </button>
@@ -699,7 +699,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 setShowLocationStep(false);
                 saveStep('chapter_0_intro');
               }}
-              className="w-full py-4 px-6 rounded-full bg-black text-primary text-lg font-medium transition-all hover:bg-gray-800"
+              className="w-full py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
             >
               {onboardingLocation ? 'Continue →' : 'Skip for now →'}
             </button>
@@ -770,7 +770,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 saveStep(`chapter_${nextIdx}_intro`);
                 window.scrollTo(0, 0);
               }}
-              className="flex-1 py-4 px-6 rounded-full bg-black text-primary text-lg font-medium transition-all hover:bg-gray-800"
+              className="flex-1 py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
             >
               Let's go →
             </button>

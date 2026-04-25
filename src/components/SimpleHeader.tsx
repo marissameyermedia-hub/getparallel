@@ -62,7 +62,7 @@ export function SimpleHeader({
             {/* Notification Badge */}
             {unreadMessageCount && unreadMessageCount > 0 && (
               <div className="absolute -top-1 -right-1 min-w-[20px] h-[20px] bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-primary text-[11px] font-bold px-1">
+                <span className="text-white text-[11px] font-bold px-1">
                   {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
                 </span>
               </div>

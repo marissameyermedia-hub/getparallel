@@ -116,7 +116,7 @@ export function AdminCaseDetail({
           </p>
           <button
             onClick={onBack}
-            className="w-full py-3 bg-black text-primary rounded-lg font-medium hover:bg-gray-800 transition-colors"
+            className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
           >
             Return to Dashboard
           </button>
@@ -217,7 +217,7 @@ export function AdminCaseDetail({
                       <div className={`inline-block px-4 py-2 rounded-lg ${
                         msg.sender === 'accused' 
                           ? 'bg-gray-100 text-gray-900' 
-                          : 'bg-black text-primary'
+                          : 'bg-black text-white'
                       }`}>
                         <p className="text-sm">{msg.message}</p>
                       </div>
@@ -381,7 +381,7 @@ export function AdminCaseDetail({
             <button
               onClick={handleTakeAction}
               disabled={!selectedAction || !internalNotes.trim()}
-              className="w-full py-3 bg-black text-primary rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Submit Action
             </button>

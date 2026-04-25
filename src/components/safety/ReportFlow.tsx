@@ -138,7 +138,7 @@ export function ReportFlow({
             <button
               onClick={() => setStep('details')}
               disabled={!category}
-              className="w-full py-3 bg-black text-primary rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Continue
             </button>
@@ -223,7 +223,7 @@ export function ReportFlow({
                       onClick={() => setFeelsUnsafe(true)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         feelsUnsafe
-                          ? 'bg-red-600 text-primary'
+                          ? 'bg-red-600 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -233,7 +233,7 @@ export function ReportFlow({
                       onClick={() => setFeelsUnsafe(false)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         !feelsUnsafe
-                          ? 'bg-black text-primary'
+                          ? 'bg-black text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -258,7 +258,7 @@ export function ReportFlow({
             <button
               onClick={handleSubmit}
               disabled={!description.trim() || description.length > 1000}
-              className="w-full py-3 bg-black text-primary rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Submit Report
             </button>
@@ -302,7 +302,7 @@ export function ReportFlow({
 
             <button
               onClick={handleClose}
-              className="w-full py-3 bg-black text-primary rounded-lg font-medium hover:bg-gray-800 transition-colors"
+              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
             >
               Close
             </button>

@@ -260,13 +260,13 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
         <div className="absolute right-4 top-4 flex flex-col gap-2">
           <button
             onClick={handleZoomIn}
-            className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-primary transition-all shadow-lg"
+            className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-lg"
           >
             <Plus className="w-5 h-5" />
           </button>
           <button
             onClick={handleZoomOut}
-            className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-primary transition-all shadow-lg"
+            className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-lg"
           >
             <Minus className="w-5 h-5" />
           </button>
@@ -281,7 +281,7 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
         {selectedPin && (
           <button
             onClick={clearPin}
-            className="absolute left-4 top-4 px-3 py-2 bg-white border-2 border-black rounded-lg text-sm font-medium hover:bg-black hover:text-primary transition-all shadow-lg flex items-center gap-2"
+            className="absolute left-4 top-4 px-3 py-2 bg-white border-2 border-black rounded-lg text-sm font-medium hover:bg-black hover:text-white transition-all shadow-lg flex items-center gap-2"
           >
             <X className="w-4 h-4" />
             Clear Pin

@@ -28,10 +28,10 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
         {hasActivated ? (
           <>
             {/* Active Membership Status */}
-            <div className="bg-black text-primary rounded-3xl p-6 mb-6">
+            <div className="bg-black text-white rounded-3xl p-6 mb-6">
               <div className="flex items-center gap-3 mb-4">
-                <CheckCircle className="w-6 h-6 text-primary" />
-                <h2 className="text-primary">Parallel — active</h2>
+                <CheckCircle className="w-6 h-6 text-white" />
+                <h2 className="text-white">Parallel — active</h2>
               </div>
               <p className="text-gray-300">
                 Your plan is active. Manage billing and renewals from this page.
@@ -68,7 +68,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
               </p>
               <button
                 onClick={onGoToPayment}
-                className="w-full py-4 px-6 bg-black text-primary rounded-full hover:bg-gray-800 transition-colors font-medium"
+                className="w-full py-4 px-6 bg-black text-white rounded-full hover:bg-gray-800 transition-colors font-medium"
               >
                 See plans
               </button>
@@ -80,7 +80,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle className="w-4 h-4 text-primary" />
+                    <CheckCircle className="w-4 h-4 text-white" />
                   </div>
                   <div>
                     <div className="font-medium">Unlock all your matches</div>
@@ -89,7 +89,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle className="w-4 h-4 text-primary" />
+                    <CheckCircle className="w-4 h-4 text-white" />
                   </div>
                   <div>
                     <div className="font-medium">Annual or monthly plans</div>
@@ -98,7 +98,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle className="w-4 h-4 text-primary" />
+                    <CheckCircle className="w-4 h-4 text-white" />
                   </div>
                   <div>
                     <div className="font-medium">Message your matches</div>

@@ -337,7 +337,7 @@ export function MessagingView({
               This conversation will end and they'll be removed from your matches. This can't be undone.
             </p>
             <div className="space-y-3">
-              <button onClick={handleUnmatch} className="w-full py-3 bg-black text-primary rounded-full font-medium">Unmatch</button>
+              <button onClick={handleUnmatch} className="w-full py-3 bg-black text-white rounded-full font-medium">Unmatch</button>
               <button onClick={() => setShowUnmatchModal(false)} className="w-full py-3 border border-gray-200 rounded-full text-gray-700">Cancel</button>
             </div>
           </div>
@@ -356,7 +356,7 @@ export function MessagingView({
               <img src={matchPhoto} alt={matchName} className="w-10 h-10 rounded-full object-cover" />
             ) : (
               <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center">
-                <span className="text-primary text-sm font-semibold">{getInitials(matchName)}</span>
+                <span className="text-white text-sm font-semibold">{getInitials(matchName)}</span>
               </div>
             )}
           </div>
@@ -447,7 +447,7 @@ export function MessagingView({
               <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showSenderChange && index > 0 ? 'mt-3' : 'mt-0.5'}`}>
                 <div className={`max-w-[80%] ${
                   isMe
-                    ? 'bg-black text-primary rounded-[18px] rounded-br-[4px]'
+                    ? 'bg-black text-white rounded-[18px] rounded-br-[4px]'
                     : 'bg-gray-100 text-gray-900 rounded-[18px] rounded-bl-[4px]'
                 } px-3 py-2`}>
                   <p className="text-sm leading-snug whitespace-pre-line">{message.text}</p>
@@ -486,7 +486,7 @@ export function MessagingView({
           <div className="mb-2">
             <button
               onClick={() => onOpenDateReview(matchId)}
-              className="w-full flex items-center justify-center gap-2 bg-black text-primary px-5 py-2.5 rounded-full text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 bg-black text-white px-5 py-2.5 rounded-full text-sm font-medium"
             >
               <Check size={14} />
               Leave a Date Review
@@ -516,7 +516,7 @@ export function MessagingView({
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || isLocked}
-            className="bg-black text-primary p-2.5 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 active:scale-95"
+            className="bg-black text-white p-2.5 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 active:scale-95"
           >
             <Send size={16} />
           </button>

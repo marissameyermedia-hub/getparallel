@@ -111,7 +111,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             onClick={() => onChange(value)}
             className={`w-12 h-12 rounded-full border-2 transition-all ${
               rating !== null && value <= rating
-                ? 'bg-black text-primary border-black'
+                ? 'bg-black text-white border-black'
                 : 'bg-white text-gray-400 border-gray-300 hover:border-gray-400'
             }`}
           >
@@ -149,7 +149,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
                 onClick={() => setWouldGoAgain(true)}
                 className={`flex-1 px-6 py-3 rounded-full border-2 transition-all ${
                   wouldGoAgain === true
-                    ? 'bg-black text-primary border-black'
+                    ? 'bg-black text-white border-black'
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
@@ -159,7 +159,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
                 onClick={() => setWouldGoAgain(false)}
                 className={`flex-1 px-6 py-3 rounded-full border-2 transition-all ${
                   wouldGoAgain === false
-                    ? 'bg-black text-primary border-black'
+                    ? 'bg-black text-white border-black'
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
@@ -204,8 +204,8 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
                     className={`px-4 py-2 rounded-full border-2 transition-all ${
                       selectedReasons.includes(reason.id)
                         ? reason.isSafety
-                          ? 'bg-red-600 text-primary border-red-600'
-                          : 'bg-black text-primary border-black'
+                          ? 'bg-red-600 text-white border-red-600'
+                          : 'bg-black text-white border-black'
                         : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                     }`}
                   >
@@ -250,7 +250,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             disabled={!canSubmit}
             className={`w-full px-6 py-3 rounded-full transition-all ${
               canSubmit
-                ? 'bg-black text-primary hover:bg-gray-800'
+                ? 'bg-black text-white hover:bg-gray-800'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
           >

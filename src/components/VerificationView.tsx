@@ -163,7 +163,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
         {/* Header */}
         <div className="text-center mb-10">
           <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck size={36} className="text-primary" />
+            <ShieldCheck size={36} className="text-white" />
           </div>
           <h1 className="text-3xl mb-3">Get verified</h1>
           <p className="text-gray-600 leading-relaxed">
@@ -274,7 +274,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             <button
               onClick={handleConsentSubmit}
               disabled={!consentChecked || consentSubmitting}
-              className="w-full bg-black text-primary py-4 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {consentSubmitting ? (
                 <><Loader size={18} className="animate-spin" /> Saving consent...</>
@@ -307,7 +307,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
                 Your profile now shows a blue verified checkmark to all your matches.
               </p>
             </div>
-            <button onClick={onBack} className="w-full bg-black text-primary py-4 rounded-full font-medium hover:bg-gray-800 transition-colors">
+            <button onClick={onBack} className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors">
               Back to account
             </button>
           </>
@@ -323,7 +323,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
                 We weren't able to verify your identity. Please try again.
               </p>
             </div>
-            <button onClick={() => setStatus('idle')} className="w-full bg-black text-primary py-4 rounded-full font-medium hover:bg-gray-800 transition-colors">
+            <button onClick={() => setStatus('idle')} className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors">
               Try again
             </button>
           </>
@@ -350,7 +350,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             </div>
             <button
               onClick={handleOpenPersona}
-              className="w-full bg-black text-primary py-4 rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
             >
               Start verification
               <ExternalLink size={18} />
@@ -380,7 +380,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             <button
               onClick={handleCheckStatus}
               disabled={status === 'checking'}
-              className="w-full bg-black text-primary py-4 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {status === 'checking' ? (
                 <><Loader size={18} className="animate-spin" /> Checking...</>

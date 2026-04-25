@@ -141,7 +141,7 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
               disabled={!message.trim() || isSubmitting}
               className={`w-full px-6 py-3 rounded-full transition-all font-medium ${
                 message.trim() && !isSubmitting
-                  ? 'bg-black text-primary hover:bg-gray-800'
+                  ? 'bg-black text-white hover:bg-gray-800'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
             >

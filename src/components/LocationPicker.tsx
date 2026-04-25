@@ -256,7 +256,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
             type="button"
             onClick={handleUseCurrentLocation}
             disabled={isGettingLocation}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-black text-primary rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
           >
             {isGettingLocation ? (
               <>

@@ -245,7 +245,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
             <button
               onClick={sendCode}
               disabled={!phoneIsValid || isSending}
-              className="w-full bg-black text-primary py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+              className="w-full bg-black text-white py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
             >
               {isSending ? (
                 <>
@@ -327,7 +327,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
             <button
               onClick={verifyCode}
               disabled={code.length !== 6 || isVerifying}
-              className="w-full bg-black text-primary py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+              className="w-full bg-black text-white py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
             >
               {isVerifying ? (
                 <>

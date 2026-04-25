@@ -65,7 +65,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
                 onClick={() => toggleReason(reason.id)}
                 className={`px-4 py-2 rounded-full border-2 transition-all text-sm ${
                   selectedReasons.includes(reason.id)
-                    ? 'bg-black text-primary border-black'
+                    ? 'bg-black text-white border-black'
                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
@@ -76,7 +76,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
 
           {/* Questionnaire nudge */}
           {ageRangeSelected && onNavigateToQuestionnaire && (
-            <button onClick={onNavigateToQuestionnaire} className="mt-4 w-full text-left p-4 bg-black text-primary rounded-2xl">
+            <button onClick={onNavigateToQuestionnaire} className="mt-4 w-full text-left p-4 bg-black text-white rounded-2xl">
               <p className="text-sm font-semibold">Update your age preferences</p>
               <p className="text-sm text-gray-300 mt-0.5">Adjust the age range in your questionnaire →</p>
             </button>
@@ -96,7 +96,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
             disabled={selectedReasons.length === 0}
             className={`w-full px-6 py-3 rounded-full transition-all font-medium mb-2 ${
               selectedReasons.length > 0
-                ? 'bg-black text-primary hover:bg-gray-800'
+                ? 'bg-black text-white hover:bg-gray-800'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >

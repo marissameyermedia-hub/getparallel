@@ -222,7 +222,7 @@ export function PostDateSafetyCheck({
           <button
             onClick={handleSubmit}
             disabled={feltSafe === null || boundariesRespected === null || anythingMisleading === null}
-            className="w-full py-3 bg-black text-primary rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Submit Feedback
           </button>
