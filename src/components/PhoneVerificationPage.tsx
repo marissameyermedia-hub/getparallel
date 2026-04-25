@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Check } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { ParallelIcon } from './ParallelIcon';
 
 // Formats an incoming phone number (from signup) for display in our input.
 // Handles raw digits, +1XXXXXXXXXX format, and anything in between.
@@ -164,7 +165,10 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
     <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-medium tracking-tight">Parallel</h1>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <ParallelIcon size={24} className="text-black" />
+            <h1 className="text-2xl font-medium tracking-tight">Parallel</h1>
+          </div>
           <p className="text-sm text-gray-500 mt-1">
             {step === 'enter' ? 'Verify your phone number' : 'Enter your verification code'}
           </p>
