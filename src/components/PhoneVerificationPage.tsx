@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Check } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { ParallelIcon } from './ParallelIcon';
 
 // Formats an incoming phone number (from signup) for display in our input.
@@ -25,7 +26,7 @@ interface PhoneVerificationPageProps {
   onBack?: () => void;
 }
 
-const EDGE_FUNCTION_URL = `https://${projectId}.supabase.co/functions/v1/make-server-7af08c19`;
+const EDGE_FUNCTION_URL = MISC_FUNCTION_URL;
 
 // SMS CONSENT TEXT — Telnyx 10DLC required disclaimers (all 6 elements)
 const SMS_CONSENT_TEXT =
@@ -91,7 +92,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
       const token = await getAuthToken();
 
       // Send phone OTP — edge function will log SMS consent automatically if smsConsent=true
-      const res = await fetch(`${EDGE_FUNCTION_URL}/auth/send-phone-otp`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/auth/send-phone-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,7 +136,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
     try {
       const e164 = `+1${phoneDigits}`;
       const token = await getAuthToken();
-      const res = await fetch(`${EDGE_FUNCTION_URL}/auth/verify-phone-otp`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/auth/verify-phone-otp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

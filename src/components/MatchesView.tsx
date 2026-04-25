@@ -1,7 +1,7 @@
 import { Match } from '../types';
 import { SwipeableMatchView } from './SwipeableMatchView';
 import { toast } from 'sonner';
-import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';
 import { ShieldCheck, X } from 'lucide-react';
@@ -59,7 +59,7 @@ export function MatchesView({
     if (!token || resendStatus !== 'idle') return;
     setResendStatus('sending');
     try {
-      await fetch(`${EDGE_FUNCTION_URL}/auth/resend-verification`, {
+      await fetch(`${MISC_FUNCTION_URL}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
       });
@@ -105,7 +105,7 @@ export function MatchesView({
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
     try {
-      const res = await fetch(`${EDGE_FUNCTION_URL}/referral/my-code`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/referral/my-code`, {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
-import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 function getAuthHeaders(token: string) {
@@ -279,7 +279,7 @@ export function MessagingView({
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/safety/report`, {
+        await fetch(`${MISC_FUNCTION_URL}/safety/report`, {
           method: 'POST', headers: getAuthHeaders(token),
           body: JSON.stringify({ reportedUserId: matchId, reason: 'user_report_from_messaging' }),
         });
@@ -293,7 +293,7 @@ export function MessagingView({
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/safety/block`, {
+        await fetch(`${MISC_FUNCTION_URL}/safety/block`, {
           method: 'POST', headers: getAuthHeaders(token),
           body: JSON.stringify({ blockedUserId: matchId }),
         });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { User, FileText, ShieldCheck, CreditCard, Bell, Lock, HelpCircle, FileText as FileTextAlt, LogOut, ChevronRight, Pause, Trash2, Eye, BarChart2, Heart, ExternalLink } from 'lucide-react';
 import { MatchWeightsScreen } from './MatchWeightsScreen';
-import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 interface AccountPageProps {
@@ -232,7 +232,7 @@ export function AccountPage({
     // Save feedback to backend
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/exit-feedback`, {
+        await fetch(`${MISC_FUNCTION_URL}/exit-feedback`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -658,7 +658,7 @@ export function AccountPage({
                       const token = localStorage.getItem('parallel_access_token');
                       if (token) {
                         try {
-                          await fetch(`${EDGE_FUNCTION_URL}/success/submit`, {
+                          await fetch(`${MISC_FUNCTION_URL}/success/submit`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
                             body: JSON.stringify({ storyText: storyText.trim(), howLongTogether: storyHowLong.trim() || null }),
@@ -732,7 +732,7 @@ export function AccountPage({
                     const token = localStorage.getItem('parallel_access_token');
                     if (token) {
                       try {
-                        await fetch(`${EDGE_FUNCTION_URL}/user/feedback`, {
+                        await fetch(`${MISC_FUNCTION_URL}/user/feedback`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
                           body: JSON.stringify({

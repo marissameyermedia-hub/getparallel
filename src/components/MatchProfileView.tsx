@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Briefcase, GraduationCap, Instagram, Heart, X, Flag, Ban, ChevronLeft, MoreVertical, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, UserMinus, Lock } from 'lucide-react';
 import { Match } from '../types';
-import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 function getAuthHeaders(token: string) {
@@ -242,7 +242,7 @@ export function MatchProfileView({
                         const token = localStorage.getItem('parallel_access_token');
                         if (token) {
                           try {
-                            await fetch(`${EDGE_FUNCTION_URL}/safety/report`, {
+                            await fetch(`${MISC_FUNCTION_URL}/safety/report`, {
                               method: 'POST', headers: getAuthHeaders(token),
                               body: JSON.stringify({ reportedUserId: user.id, reason, feelsUnsafe: false }),
                             });
@@ -260,7 +260,7 @@ export function MatchProfileView({
                     const token = localStorage.getItem('parallel_access_token');
                     if (token) {
                       try {
-                        await fetch(`${EDGE_FUNCTION_URL}/safety/report`, {
+                        await fetch(`${MISC_FUNCTION_URL}/safety/report`, {
                           method: 'POST', headers: getAuthHeaders(token),
                           body: JSON.stringify({ reportedUserId: user.id, reason: 'Safety concern — user feels unsafe', feelsUnsafe: true }),
                         });
@@ -292,7 +292,7 @@ export function MatchProfileView({
               <button onClick={async () => {
                 const token = localStorage.getItem('parallel_access_token');
                 if (token) {
-                  try { await fetch(`${EDGE_FUNCTION_URL}/safety/block`, { method: 'POST', headers: getAuthHeaders(token), body: JSON.stringify({ blockedUserId: user.id }) }); } catch (e) {}
+                  try { await fetch(`${MISC_FUNCTION_URL}/safety/block`, { method: 'POST', headers: getAuthHeaders(token), body: JSON.stringify({ blockedUserId: user.id }) }); } catch (e) {}
                 }
                 setShowBlockModal(false); onBack();
               }} className="w-full py-3 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium">Block User</button>

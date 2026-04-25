@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Copy, Share2, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { ParallelIcon } from './ParallelIcon';
 
@@ -30,7 +30,7 @@ export function InviteView({ onBack }: InviteViewProps) {
       if (!token) return;
 
       try {
-        const res = await fetch(`${EDGE_FUNCTION_URL}/referral/my-code`, {
+        const res = await fetch(`${MISC_FUNCTION_URL}/referral/my-code`, {
           headers: getHeaders(token)
         });
 

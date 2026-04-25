@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShieldCheck, ArrowLeft, CheckCircle, XCircle, ExternalLink, Loader, ScanFace } from 'lucide-react';
-import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 interface VerificationViewProps {
@@ -50,7 +50,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/verification/complete`, {
+        await fetch(`${MISC_FUNCTION_URL}/verification/complete`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -83,7 +83,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     }
 
     try {
-      const res = await fetch(`${EDGE_FUNCTION_URL}/verification/consent`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/verification/consent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     const token = localStorage.getItem('parallel_access_token');
     if (!token) { setStatus('opened'); return; }
     try {
-      const res = await fetch(`${EDGE_FUNCTION_URL}/verification/complete`, {
+      const res = await fetch(`${MISC_FUNCTION_URL}/verification/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
