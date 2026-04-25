@@ -1,8 +1,8 @@
 import { Shield, Eye, Lock, UserX, ChevronLeft, Download, Flag } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { EDGE_FUNCTION_URL } from '../../utils/supabase/client';
+import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
-import { toast } from 'sonner';
+import { toast } from 'sonner@2.0.3';
 
 interface PrivacySafetyViewProps {
   onBack: () => void;
@@ -27,7 +27,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
     const headers = getAuthHeaders(token);
-    fetch(`${EDGE_FUNCTION_URL}/user/profile`, { headers })
+    fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.privacySettings) {
@@ -48,7 +48,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
     try {
-      await fetch(`${EDGE_FUNCTION_URL}/user/profile`, {
+      await fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
         method: 'PUT',
         headers: getAuthHeaders(token),
         body: JSON.stringify({ privacySettings: settings }),
