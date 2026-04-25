@@ -6,6 +6,7 @@ import { publicAnonKey } from "../utils/supabase/info";
 import { useState } from "react";
 import { ShieldCheck, X, Check } from "lucide-react";
 import { parallelQuestionnaire } from "../data/parallelQuestionnaire_updated";
+import { ParallelIcon } from "./ParallelIcon";
 
 // ── PRE_LAUNCH flag ────────────────────────────────────────────
 // Set to true during pre-launch period.
@@ -285,9 +286,8 @@ export function MatchesView({
     return (
       <div className="min-h-[80vh] flex flex-col items-center px-4 pt-12 pb-12">
         <div className="max-w-md w-full">
-          <div className="flex gap-1 mb-6 justify-center">
-            <div className="w-2 h-16 bg-black"></div>
-            <div className="w-2 h-16 bg-black"></div>
+          <div className="flex mb-6 justify-center">
+            <ParallelIcon size={64} className="text-black" />
           </div>
           <h2 className="text-3xl font-bold mb-3 text-center">Your matches are on the way</h2>
           <p className="text-gray-600 text-base leading-relaxed mb-8 text-center">
