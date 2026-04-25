@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { projectId, publicAnonKey } from "./info";
 
 const supabaseUrl = `https://${projectId}.supabase.co`;
@@ -10,12 +10,11 @@ const supabaseUrl = `https://${projectId}.supabase.co`;
 // to return mock data).
 const isDevGallery = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("dev") === "1";
 
-const realClient: SupabaseClient = createClient(supabaseUrl, publicAnonKey, {
+const realClient = createClient(supabaseUrl, publicAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: typeof window !== "undefined" ? window.localStorage : undefined,
   },
 });
 
@@ -23,7 +22,7 @@ const realClient: SupabaseClient = createClient(supabaseUrl, publicAnonKey, {
 // Everything else (realtime, storage, etc) still points at the real client
 // but the window.fetch interceptor catches anything that would actually go
 // over the wire.
-export const supabase: SupabaseClient = isDevGallery
+export const supabase = isDevGallery
   ? ({
       ...realClient,
       auth: {
@@ -59,18 +58,15 @@ export const supabase: SupabaseClient = isDevGallery
           data: { subscription: { unsubscribe: () => {} } },
         }),
       },
-    } as unknown as SupabaseClient)
+    } as typeof realClient)
   : realClient;
 
-// Full URL for the main edge function deployed on the user's Supabase project.
+// Full URL for the main edge function.
 export const EDGE_FUNCTION_URL = `${supabaseUrl}/functions/v1/make-server-7af08c19`;
 
-// Email service function — handles email verification send/verify/resend/status.
-// Separate from make-server-7af08c19 so it can ship independently.
-export const EMAIL_FUNCTION_URL = `${supabaseUrl}/functions/v1/email`;
-
-// Auth-related endpoints (signup, etc.) live on the main edge function.
-export const AUTH_FUNCTION_URL = EDGE_FUNCTION_URL;
+// Dedicated auth function (signup, etc). Sidesteps the make-server OPTIONS bug
+// by living at its own slug. Matches the pattern used by EMAIL_FUNCTION_URL.
+export const AUTH_FUNCTION_URL = `${supabaseUrl}/functions/v1/auth`;
 
 export function getAuthHeaders(accessToken: string) {
   return {
