@@ -65,6 +65,10 @@ export const supabase: SupabaseClient = isDevGallery
 // Full URL for the main edge function deployed on the user's Supabase project.
 export const EDGE_FUNCTION_URL = `${supabaseUrl}/functions/v1/make-server-7af08c19`;
 
+// Email service function — handles email verification send/verify/resend/status.
+// Separate from make-server-7af08c19 so it can ship independently.
+export const EMAIL_FUNCTION_URL = `${supabaseUrl}/functions/v1/email`;
+
 export function getAuthHeaders(accessToken: string) {
   return {
     Authorization: `Bearer ${accessToken}`,
