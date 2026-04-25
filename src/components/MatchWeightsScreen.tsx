@@ -190,7 +190,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
         </div>
 
         {/* Token counter */}
-        <div className={`mb-6 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl ${remaining === 0 ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'} transition-colors`}>
+        <div className={`mb-6 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl ${remaining === 0 ? 'bg-black text-primary' : 'bg-gray-100 text-gray-600'} transition-colors`}>
           <span className="text-sm font-medium">
             {remaining === 0 ? `✓ All ${TOTAL_TOKENS} tokens allocated` : `${remaining} token${remaining !== 1 ? 's' : ''} remaining`}
           </span>
@@ -253,7 +253,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
           <button
             onClick={handleSave}
             disabled={remaining !== 0 || isSaving}
-            className="w-full bg-black text-white py-4 rounded-full font-semibold text-base hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-black text-primary py-4 rounded-full font-semibold text-base hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSaving ? 'Saving...' : isOnboarding ? 'Set my preferences →' : 'Save preferences'}
           </button>

@@ -63,7 +63,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
                 setReason('I found someone on Parallel 🎉');
               }}
               className={`py-3 px-4 rounded-2xl border-2 text-sm font-medium transition-all ${
-                foundMatch === true ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-400'
+                foundMatch === true ? 'border-black bg-black text-primary' : 'border-gray-200 hover:border-gray-400'
               }`}
             >
               Yes! 🎉
@@ -74,7 +74,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
                 if (reason === 'I found someone on Parallel 🎉') setReason('');
               }}
               className={`py-3 px-4 rounded-2xl border-2 text-sm font-medium transition-all ${
-                foundMatch === false ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-400'
+                foundMatch === false ? 'border-black bg-black text-primary' : 'border-gray-200 hover:border-gray-400'
               }`}
             >
               Not yet
@@ -124,8 +124,8 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
           disabled={!canConfirm}
           className={`w-full py-4 rounded-full font-medium text-base transition-all ${
             action === 'delete'
-              ? 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-40'
-              : 'bg-black text-white hover:bg-gray-800 disabled:opacity-40'
+              ? 'bg-red-600 text-primary hover:bg-red-700 disabled:opacity-40'
+              : 'bg-black text-primary hover:bg-gray-800 disabled:opacity-40'
           } disabled:cursor-not-allowed`}
         >
           {actionLabel}
@@ -301,11 +301,11 @@ export function AccountPage({
 
           {/* Upgrade nudge for free users */}
           {!hasActivated && (
-            <div className="bg-black text-white rounded-3xl p-6 mb-6">
+            <div className="bg-black text-primary rounded-3xl p-6 mb-6">
               <div className="flex items-start gap-4">
                 <span className="text-2xl">🔓</span>
                 <div className="flex-1">
-                  <h2 className="text-white mb-1">You haven't subscribed yet</h2>
+                  <h2 className="text-primary mb-1">You haven't subscribed yet</h2>
                   <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                     Subscribe to see your full matches, unlock messaging, and connect with compatible people.
                   </p>
@@ -322,13 +322,13 @@ export function AccountPage({
 
           {/* Verification prominence — elevated when not verified */}
           {hasActivated && !hasVerified && (
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-3xl p-6 mb-6">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-primary rounded-3xl p-6 mb-6">
               <div className="flex items-start gap-4">
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <ShieldCheck className="w-5 h-5 text-white" />
+                  <ShieldCheck className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-white mb-1">Get verified ✓</h2>
+                  <h2 className="text-primary mb-1">Get verified ✓</h2>
                   <p className="text-blue-100 text-sm mb-4 leading-relaxed">
                     Add a blue checkmark to your profile. Takes about 2 minutes and builds trust with matches.
                   </p>
@@ -389,10 +389,10 @@ export function AccountPage({
             {/* Edit Profile */}
             <button
               onClick={() => onNavigate?.('my-profile')}
-              className="bg-black text-white rounded-2xl p-4 hover:bg-gray-800 transition-colors text-left"
+              className="bg-black text-primary rounded-2xl p-4 hover:bg-gray-800 transition-colors text-left"
             >
-              <User size={20} className="text-white mb-2" />
-              <p className="text-sm font-medium text-white">Edit Profile</p>
+              <User size={20} className="text-primary mb-2" />
+              <p className="text-sm font-medium text-primary">Edit Profile</p>
               <p className="text-xs text-gray-400">Photos, bio, details</p>
             </button>
 
@@ -669,7 +669,7 @@ export function AccountPage({
                       setStorySubmitted(true);
                     }}
                     disabled={storyText.trim().length < 10 || storySubmitting}
-                    className="w-full py-4 bg-black text-white rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+                    className="w-full py-4 bg-black text-primary rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
                   >
                     {storySubmitting ? 'Submitting…' : 'Submit story'}
                   </button>
@@ -682,12 +682,12 @@ export function AccountPage({
               <>
                 <div className="text-center py-4">
                   <div className="w-14 h-14 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Heart size={24} className="text-white" />
+                    <Heart size={24} className="text-primary" />
                   </div>
                   <h2 className="text-lg font-semibold mb-2">Thank you ❤️</h2>
                   <p className="text-sm text-gray-500 leading-relaxed">Your story means a lot. We'll review it and may feature it on our site.</p>
                 </div>
-                <button onClick={() => { setShowStoryModal(false); setStorySubmitted(false); setStoryText(''); setStoryHowLong(''); }} className="w-full mt-6 py-4 bg-black text-white rounded-full font-medium text-sm hover:bg-gray-800 transition-colors">
+                <button onClick={() => { setShowStoryModal(false); setStorySubmitted(false); setStoryText(''); setStoryHowLong(''); }} className="w-full mt-6 py-4 bg-black text-primary rounded-full font-medium text-sm hover:bg-gray-800 transition-colors">
                   Done
                 </button>
               </>
@@ -746,7 +746,7 @@ export function AccountPage({
                     setFeedbackSubmitted(true);
                   }}
                   disabled={feedbackMessage.trim().length < 5 || feedbackSubmitting}
-                  className="w-full py-4 bg-black text-white rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+                  className="w-full py-4 bg-black text-primary rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
                 >
                   {feedbackSubmitting ? 'Sending…' : 'Send'}
                 </button>
@@ -761,14 +761,14 @@ export function AccountPage({
               <>
                 <div className="text-center py-4">
                   <div className="w-14 h-14 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileText size={24} className="text-white" />
+                    <FileText size={24} className="text-primary" />
                   </div>
                   <h2 className="text-lg font-semibold mb-2">Thanks!</h2>
                   <p className="text-sm text-gray-500 leading-relaxed">We got your message and will read it carefully.</p>
                 </div>
                 <button
                   onClick={() => { setFeedbackModal(null); setFeedbackSubmitted(false); setFeedbackMessage(''); }}
-                  className="w-full mt-6 py-4 bg-black text-white rounded-full font-medium text-sm hover:bg-gray-800 transition-colors"
+                  className="w-full mt-6 py-4 bg-black text-primary rounded-full font-medium text-sm hover:bg-gray-800 transition-colors"
                 >
                   Done
                 </button>

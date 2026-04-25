@@ -1132,10 +1132,10 @@ function App() {
                   <div className="relative aspect-[3/4] bg-gray-100">
                     <img src={userProfile.photos[0]} alt="Main" className="w-full h-full object-cover" />
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                      <h2 className="text-white text-2xl font-semibold">
+                      <h2 className="text-primary text-2xl font-semibold">
                         {displayName}{userAge ? `, ${userAge}` : ''}
                       </h2>
-                      {userProfile.career && <p className="text-white/80 text-sm mt-1">{userProfile.career}</p>}
+                      {userProfile.career && <p className="text-primary/80 text-sm mt-1">{userProfile.career}</p>}
                     </div>
                   </div>
                 ) : (

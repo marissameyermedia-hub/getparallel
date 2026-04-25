@@ -40,7 +40,7 @@ export function BottomNav({ onNavigate, currentView, unreadMessageCount = 0 }: B
             <MessageSquare size={24} strokeWidth={isActive('inbox') ? 2.5 : 1.5} />
             {unreadMessageCount > 0 && (
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-black rounded-full flex items-center justify-center">
-                <span className="text-white text-[10px] font-bold">{unreadMessageCount > 9 ? '9+' : unreadMessageCount}</span>
+                <span className="text-primary text-[10px] font-bold">{unreadMessageCount > 9 ? '9+' : unreadMessageCount}</span>
               </div>
             )}
           </div>

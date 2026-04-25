@@ -115,7 +115,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
 
             <button
               onClick={() => setShowConfirmation(true)}
-              className="w-full py-4 px-6 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium"
+              className="w-full py-4 px-6 bg-red-600 text-primary rounded-full hover:bg-red-700 transition-colors font-medium"
             >
               Continue to Delete Account
             </button>
@@ -154,7 +154,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
               disabled={confirmText.toLowerCase() !== 'delete' || isDeleting}
               className={`w-full py-4 px-6 rounded-full font-medium transition-colors mb-3 flex items-center justify-center gap-2 ${
                 confirmText.toLowerCase() === 'delete' && !isDeleting
-                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  ? 'bg-red-600 text-primary hover:bg-red-700'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >

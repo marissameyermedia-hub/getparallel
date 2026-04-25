@@ -15,7 +15,7 @@ export function DealbreakerExplanationScreen({ onContinue }: DealbreakerExplanat
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           className="mb-8 w-24 h-24 rounded-full bg-black flex items-center justify-center"
         >
-          <AlertCircle className="w-12 h-12 text-white" />
+          <AlertCircle className="w-12 h-12 text-primary" />
         </motion.div>
 
         <motion.h1
@@ -56,7 +56,7 @@ export function DealbreakerExplanationScreen({ onContinue }: DealbreakerExplanat
       <div className="p-6">
         <button
           onClick={onContinue}
-          className="w-full bg-black text-white py-4 rounded-full text-lg font-medium hover:bg-gray-800 transition-colors"
+          className="w-full bg-black text-primary py-4 rounded-full text-lg font-medium hover:bg-gray-800 transition-colors"
         >
           Got it
         </button>

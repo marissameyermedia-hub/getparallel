@@ -152,7 +152,7 @@ export function InviteView({ onBack }: InviteViewProps) {
 
               <button
                 onClick={handleShare}
-                className="flex-1 bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 bg-black text-primary px-6 py-3 rounded-full hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
               >
                 <Share2 size={18} />
                 Share

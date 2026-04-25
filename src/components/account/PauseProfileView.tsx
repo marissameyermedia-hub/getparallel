@@ -99,10 +99,10 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
         </button>
         <h1 className="mb-3">Pause My Profile</h1>
         <p className="text-gray-600 mb-8">Take a break without losing your matches or data</p>
-        <div className={`rounded-2xl p-6 mb-6 ${isPaused ? 'bg-gray-100' : 'bg-black text-white'}`}>
+        <div className={`rounded-2xl p-6 mb-6 ${isPaused ? 'bg-gray-100' : 'bg-black text-primary'}`}>
           <div className="flex items-center gap-3 mb-3">
-            {isPaused ? <Pause className="w-6 h-6 text-gray-600" /> : <Play className="w-6 h-6 text-white" />}
-            <h2 className={isPaused ? 'text-black' : 'text-white'}>{isPaused ? 'Profile is Paused' : 'Profile is Active'}</h2>
+            {isPaused ? <Pause className="w-6 h-6 text-gray-600" /> : <Play className="w-6 h-6 text-primary" />}
+            <h2 className={isPaused ? 'text-black' : 'text-primary'}>{isPaused ? 'Profile is Paused' : 'Profile is Active'}</h2>
           </div>
           <p className={isPaused ? 'text-gray-700' : 'text-gray-300'}>
             {isPaused ? "Your profile is hidden. Messaging is disabled until you unpause." : 'Your profile is visible and you can receive new matches.'}
@@ -127,7 +127,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
             ))}
           </div>
         </div>
-        <button onClick={handleTogglePause} className="w-full py-4 px-6 rounded-full bg-black text-white hover:bg-gray-800 transition-colors">
+        <button onClick={handleTogglePause} className="w-full py-4 px-6 rounded-full bg-black text-primary hover:bg-gray-800 transition-colors">
           {isPaused ? 'Resume My Profile' : 'Pause My Profile'}
         </button>
 
@@ -165,7 +165,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
               </ul>
               <div className="flex gap-3">
                 <button onClick={() => setShowConfirmation(false)} className="flex-1 py-3 px-6 rounded-full border-2 border-gray-200 hover:border-black transition-colors">Cancel</button>
-                <button onClick={confirmPause} className="flex-1 py-3 px-6 rounded-full bg-black text-white hover:bg-gray-800 transition-colors">Pause Profile</button>
+                <button onClick={confirmPause} className="flex-1 py-3 px-6 rounded-full bg-black text-primary hover:bg-gray-800 transition-colors">Pause Profile</button>
               </div>
             </div>
           </div>
@@ -177,7 +177,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
               <p className="text-gray-700 mb-6">Your access continues until the end of your current billing period. Your matches and questionnaire data are saved — you can resubscribe anytime.</p>
               <div className="flex gap-3">
                 <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-3 px-6 rounded-full border-2 border-gray-200 hover:border-black transition-colors">Keep subscription</button>
-                <button onClick={handleCancelSubscription} className="flex-1 py-3 px-6 rounded-full bg-black text-white hover:bg-gray-800 transition-colors">
+                <button onClick={handleCancelSubscription} className="flex-1 py-3 px-6 rounded-full bg-black text-primary hover:bg-gray-800 transition-colors">
                   {cancelLoading ? 'Canceling...' : 'Cancel Subscription'}
                 </button>
               </div>

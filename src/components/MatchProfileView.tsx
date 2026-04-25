@@ -219,7 +219,7 @@ export function MatchProfileView({
               They'll be removed from your matches and won't be able to contact you. You can unblock them anytime from Privacy & Safety in your account.
             </p>
             <div className="space-y-3">
-              <button onClick={handleUnmatch} className="w-full py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors font-medium">Unmatch</button>
+              <button onClick={handleUnmatch} className="w-full py-3 bg-black text-primary rounded-full hover:bg-gray-800 transition-colors font-medium">Unmatch</button>
               <button onClick={() => setShowUnmatchModal(false)} className="w-full py-3 border-2 border-gray-200 rounded-full hover:border-gray-400 transition-colors">Cancel</button>
             </div>
           </div>
@@ -295,7 +295,7 @@ export function MatchProfileView({
                   try { await fetch(`${EDGE_FUNCTION_URL}/safety/block`, { method: 'POST', headers: getAuthHeaders(token), body: JSON.stringify({ blockedUserId: user.id }) }); } catch (e) {}
                 }
                 setShowBlockModal(false); onBack();
-              }} className="w-full py-3 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium">Block User</button>
+              }} className="w-full py-3 bg-red-600 text-primary rounded-full hover:bg-red-700 transition-colors font-medium">Block User</button>
               <button onClick={() => setShowBlockModal(false)} className="w-full py-3 border-2 border-gray-200 rounded-full hover:border-gray-400 transition-colors">Cancel</button>
             </div>
           </div>
@@ -326,7 +326,7 @@ export function MatchProfileView({
               </>
             )}
             {user.isVerified && (
-              <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+              <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-primary px-3 py-1.5 rounded-full shadow-lg">
                 <ShieldCheck size={13} /><span className="text-xs font-medium">Verified</span>
               </div>
             )}
@@ -409,7 +409,7 @@ export function MatchProfileView({
                 <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">You both enjoy</p>
                 <div className="flex flex-wrap gap-2">
                   {sharedHobbies.map((hobby) => (
-                    <span key={hobby} className="text-xs px-3 py-1.5 bg-black text-white rounded-full font-medium">
+                    <span key={hobby} className="text-xs px-3 py-1.5 bg-black text-primary rounded-full font-medium">
                       {hobby}
                     </span>
                   ))}
@@ -476,7 +476,7 @@ export function MatchProfileView({
       {/* Fixed bottom action bar */}
       {isMutual ? (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 pb-8 z-[60]">
-          <div className="max-w-md mx-auto p-4 bg-black text-white rounded-2xl text-center">
+          <div className="max-w-md mx-auto p-4 bg-black text-primary rounded-2xl text-center">
             <p className="text-lg font-medium">🎉 It's a mutual match!</p>
             <p className="text-gray-300 text-sm mt-1">Taking you to messaging with {user.name}…</p>
           </div>
@@ -495,9 +495,9 @@ export function MatchProfileView({
               onClick={handleMatch}
               disabled={isLiked || isLiking}
               className={`flex-1 h-14 rounded-full transition-all flex items-center justify-center gap-2 font-medium shadow-lg ${
-                isLiked ? 'bg-red-500 text-white cursor-default'
-                : isLiking ? 'bg-gray-400 text-white cursor-wait'
-                : 'bg-black text-white hover:bg-gray-800'
+                isLiked ? 'bg-red-500 text-primary cursor-default'
+                : isLiking ? 'bg-gray-400 text-primary cursor-wait'
+                : 'bg-black text-primary hover:bg-gray-800'
               }`}
             >
               <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />

@@ -105,11 +105,11 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
         <h1 className="mb-3">Privacy & Safety</h1>
         <p className="text-gray-600 mb-8">Control who can see your profile and how you interact</p>
 
-        <div className="bg-black text-white rounded-2xl p-6 mb-6">
+        <div className="bg-black text-primary rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-3">
-            <Shield className="w-6 h-6 text-white flex-shrink-0 mt-1" />
+            <Shield className="w-6 h-6 text-primary flex-shrink-0 mt-1" />
             <div>
-              <h3 className="text-white mb-2">Our Safety Commitment</h3>
+              <h3 className="text-primary mb-2">Our Safety Commitment</h3>
               <p className="text-gray-300 text-sm leading-relaxed">We take user safety seriously and actively moderate behavior that violates our Community Guidelines. Every profile is reviewed, and we provide tools to report and block users who make you feel uncomfortable.</p>
             </div>
           </div>
