@@ -82,6 +82,10 @@ export const ONBOARDING_FUNCTION_URL = `${supabaseUrl}/functions/v1/onboarding`;
 // /feedback/structured, /feedback/confirm-met, /feedback/tier2.
 export const MATCHES_FUNCTION_URL = `${supabaseUrl}/functions/v1/matches`;
 
+// Dedicated messaging function. Handles: /conversations, /:matchId, /mark-read,
+// /realtime-config, /send.
+export const MESSAGES_FUNCTION_URL = `${supabaseUrl}/functions/v1/messages`;
+
 export function getAuthHeaders(accessToken: string) {
   return {
     'Authorization': `Bearer ${accessToken}`,
