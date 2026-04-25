@@ -527,21 +527,34 @@ function App() {
 
         // Handle error responses
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          
+          // Read body once as text so we can handle both JSON and non-JSON 500s
+          const raw = await response.text().catch(() => '');
+          let errorData: any = {};
+          try { errorData = raw ? JSON.parse(raw) : {}; } catch { /* non-JSON */ }
+
           // Check for location required error
           if (response.status === 400 && errorData.locationRequired === true) {
-            return { 
-              success: false, 
+            return {
+              success: false,
               error: 'Please set your location before finishing your profile.',
-              locationRequired: true 
+              locationRequired: true
             };
           }
-          
+
+          // Server-side 5xx — surface a friendly retry message instead of blanking
+          if (response.status >= 500) {
+            console.warn('complete-onboarding 5xx:', response.status, raw);
+            toast.error("We couldn't save your answers. Please try again.");
+            return {
+              success: false,
+              error: "We couldn't save your answers right now. Please try again in a moment."
+            };
+          }
+
           // Handle other errors
-          return { 
-            success: false, 
-            error: errorData.error || 'Failed to save profile. Please try again.' 
+          return {
+            success: false,
+            error: errorData.error || 'Failed to save profile. Please try again.'
           };
         }
 
