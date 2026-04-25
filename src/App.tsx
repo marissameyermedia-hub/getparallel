@@ -13,6 +13,7 @@ import { QuestionnaireListView } from './components/QuestionnaireListView';
 import { MatchProfileView } from './components/MatchProfileView';
 import { MessagingView } from './components/MessagingView';
 import { Header } from './components/Header';
+import { ParallelIcon } from './components/ParallelIcon';
 import { BottomNav } from './components/BottomNav';
 import { ProfileEditor } from './components/ProfileEditor';
 import { PaymentDetailsView } from './components/account/PaymentDetailsView';
@@ -801,9 +802,8 @@ function App() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="flex gap-1 justify-center mb-3">
-            <div className="w-1.5 h-8 bg-black rounded-full"></div>
-            <div className="w-1.5 h-8 bg-black rounded-full"></div>
+          <div className="flex justify-center mb-3">
+            <ParallelIcon size={32} className="text-black" />
           </div>
           <p className="font-semibold text-black">Parallel</p>
         </div>
