@@ -70,6 +70,9 @@ export const EDGE_FUNCTION_URL = `${supabaseUrl}/functions/v1/make-server-7af08c
 // by living at its own slug. Matches the pattern used by EMAIL_FUNCTION_URL.
 export const AUTH_FUNCTION_URL = `${supabaseUrl}/functions/v1/auth`;
 
+// Dedicated email function (verification send/resend/verify/status).
+export const EMAIL_FUNCTION_URL = `${supabaseUrl}/functions/v1/email`;
+
 // Dedicated onboarding function. Handles: /progress, /user/profile, /user/complete-onboarding,
 // /user/location, /user/category-weights, /location/search, /location/reverse, /photos/upload,
 // /attachment/score. Sidesteps the make-server OPTIONS bug.
