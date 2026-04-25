@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Briefcase, GraduationCap, Instagram, Heart, X, Flag, Ban, ChevronLeft, MoreVertical, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, UserMinus, Lock } from 'lucide-react';
 import { Match } from '../types';
-import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 function getAuthHeaders(token: string) {
@@ -112,7 +112,7 @@ export function MatchProfileView({
     try {
       const token = localStorage.getItem('parallel_access_token');
       if (!token) return;
-      const res = await fetch(`${EDGE_FUNCTION_URL}/matches/action`, {
+      const res = await fetch(`${MATCHES_FUNCTION_URL}/action`, {
         method: 'POST',
         headers: getAuthHeaders(token),
         body: JSON.stringify({ matchUserId: user.id, action: 'like' }),
@@ -139,7 +139,7 @@ export function MatchProfileView({
     const token = localStorage.getItem('parallel_access_token');
     if (token) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/matches/action`, {
+        await fetch(`${MATCHES_FUNCTION_URL}/action`, {
           method: 'POST',
           headers: getAuthHeaders(token),
           body: JSON.stringify({ matchUserId: user.id, action: 'pass' }),
