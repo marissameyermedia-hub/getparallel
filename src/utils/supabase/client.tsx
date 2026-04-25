@@ -60,7 +60,7 @@ export const supabase = isDevGallery
           data: { subscription: { unsubscribe: () => {} } },
         }),
       },
-    } as typeof realClient)
+    } as unknown as typeof realClient)
   : realClient;
 
 // Full URL for the main edge function.
