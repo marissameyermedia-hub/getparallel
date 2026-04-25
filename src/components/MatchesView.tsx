@@ -157,7 +157,7 @@ export function MatchesView({
               onClick={onNavigateToInvite || handleShareInvite}
               className="w-full bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
             >
-              Help us find more high intent singles →
+              Invite friends →
             </button>
             <button
               onClick={onNavigateToPayment}
@@ -207,7 +207,7 @@ export function MatchesView({
             onClick={onNavigateToInvite || handleShareInvite}
             className="w-full border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-full hover:border-gray-400 transition-colors text-base mt-3"
           >
-            Help us find more high intent singles →
+            Invite friends →
           </button>
         </div>
       </div>
@@ -329,7 +329,7 @@ export function MatchesView({
               onClick={onNavigateToInvite || handleShareInvite}
               className="w-full bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition-colors text-sm font-medium"
             >
-              Help us find more high intent singles →
+              Invite friends →
             </button>
           </div>
         </div>
@@ -438,7 +438,7 @@ export function MatchesView({
               onClick={onNavigateToInvite || handleShareInvite}
               className="w-full border-2 border-black text-black py-3 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
             >
-              Help us find more high intent singles →
+              Invite friends →
             </button>
           </div>
         </div>
@@ -479,7 +479,7 @@ export function MatchesView({
                 onClick={onNavigateToInvite || handleShareInvite}
                 className="w-full border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-full hover:border-gray-400 transition-colors text-base"
               >
-                Help us find more high intent singles →
+                Invite friends →
               </button>
             </div>
           ) : hasActivated ? (
