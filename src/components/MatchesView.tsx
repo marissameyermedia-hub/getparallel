@@ -163,7 +163,7 @@ export function MatchesView({
               Lock in founding pricing →
             </button>
           </div>
-          <p className="text-sm text-gray-400">Your questionnaire answers are already saved. You're in the queue.</p>
+          <p className="text-sm text-gray-400">Your questionnaire answers are already saved. We'll text you when matching opens.</p>
         </div>
       </div>
     );
