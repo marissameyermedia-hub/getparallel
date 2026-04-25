@@ -159,6 +159,12 @@ export function MatchesView({
             >
               Invite a friend →
             </button>
+            <button
+              onClick={onNavigateToPayment}
+              className="w-full border-2 border-black text-black px-8 py-4 rounded-full hover:bg-gray-50 transition-colors text-base font-medium"
+            >
+              Lock in founding pricing →
+            </button>
           </div>
           <p className="text-sm text-gray-400">Your questionnaire answers are already saved. You're in the queue.</p>
         </div>
