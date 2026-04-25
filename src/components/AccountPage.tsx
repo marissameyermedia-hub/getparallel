@@ -596,6 +596,10 @@ export function AccountPage({
               </div>
             </button>
 
+            {/* Reassurance line for older users anxious about being trapped */}
+            <p className="text-center text-xs text-gray-400 pt-1">
+              Need to leave? You can always delete your account above — we make it easy.
+            </p>
           </div>
 
         </div>

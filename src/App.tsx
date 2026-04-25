@@ -1343,7 +1343,7 @@ function App() {
       {/* Required: WA MHMDA Consumer Health Data Policy must be linked from app entry  */}
       {/* points and accessible from within the app.                                    */}
       {[
-        'privacy-policy', 'consumer-health-data-policy', 'terms-service',
+        'account', 'privacy-policy', 'consumer-health-data-policy', 'terms-service',
         'refund-policy', 'community-guidelines', 'help-support', 'privacy-safety',
         'payment-details', 'notifications', 'pause-profile', 'delete-account',
         'verification',
