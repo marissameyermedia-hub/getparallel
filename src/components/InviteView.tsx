@@ -3,6 +3,7 @@ import { ChevronLeft, Copy, Share2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { ParallelIcon } from './ParallelIcon';
 
 interface InviteViewProps {
   onBack: () => void;
@@ -101,10 +102,7 @@ export function InviteView({ onBack }: InviteViewProps) {
 
         {/* Logo */}
         <div className="flex justify-center mb-6 mt-6">
-          <div className="flex gap-1">
-            <div className="w-1.5 h-10 bg-black"></div>
-            <div className="w-1.5 h-10 bg-black"></div>
-          </div>
+          <ParallelIcon size={40} className="text-black" />
         </div>
 
         {/* Headline */}
