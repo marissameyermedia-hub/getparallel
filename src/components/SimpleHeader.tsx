@@ -1,4 +1,5 @@
 import { ChevronLeft, MessageCircle } from 'lucide-react';
+import { ParallelIcon } from './ParallelIcon';
 
 interface SimpleHeaderProps {
   onNavigate?: (view: 'matches' | 'pricing' | 'questionnaire' | 'account' | 'attachment-quiz' | 'signin' | 'profile' | 'my-profile' | 'inbox' | 'resources') => void;
@@ -38,10 +39,7 @@ export function SimpleHeader({
             onClick={() => onNavigate?.('matches')}
             className="flex items-center gap-2 hover:opacity-70 transition-opacity"
           >
-            <div className="flex gap-0.5">
-              <div className="w-0.5 h-6 bg-black"></div>
-              <div className="w-0.5 h-6 bg-black"></div>
-            </div>
+            <ParallelIcon size={24} className="text-black" />
             <span className="font-semibold">Parallel</span>
           </button>
         )}
