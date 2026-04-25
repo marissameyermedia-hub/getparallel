@@ -1,6 +1,6 @@
 import { Match } from '../types';
 import { SwipeableMatchView } from './SwipeableMatchView';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';

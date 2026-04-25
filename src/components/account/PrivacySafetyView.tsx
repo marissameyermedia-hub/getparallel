@@ -2,7 +2,7 @@ import { Shield, Eye, Lock, UserX, ChevronLeft, Download, Flag } from 'lucide-re
 import { useState, useEffect } from 'react';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 interface PrivacySafetyViewProps {
   onBack: () => void;

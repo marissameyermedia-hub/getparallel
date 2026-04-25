@@ -217,7 +217,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
       )}
 
       {/* Search mode */}
-      {(mode === 'search' || (!value?.locationDisplay && mode === 'search')) && (
+      {mode === 'search' && (
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

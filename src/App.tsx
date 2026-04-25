@@ -27,7 +27,7 @@ import { CommunityGuidelinesView } from './components/account/CommunityGuideline
 import { ConsumerHealthDataPolicyView } from './components/account/ConsumerHealthDataPolicyView';
 import { DeleteAccountView } from './components/account/DeleteAccountView';
 import { Match } from './types/index';
-import { Toaster, toast } from 'sonner@2.0.3';
+import { Toaster, toast } from 'sonner';
 import { InboxView } from './components/InboxView';
 import { DateReviewScreen } from './components/DateReviewScreen';
 import { PassFeedbackBottomSheet } from './components/PassFeedbackBottomSheet';
@@ -1006,7 +1006,7 @@ function App() {
         {currentView === 'onboarding' && (
           <OnboardingFlow
             onComplete={handleOnboardingComplete}
-            onNavigate={(view) => setCurrentView(view)}
+            onNavigate={(view) => setCurrentView(view as any)}
             showInbox={false}
             userDateOfBirth={userDateOfBirth}
             userName={userName}
@@ -1064,7 +1064,7 @@ function App() {
         {/* ── Account ── */}
         {currentView === 'account' && (
           <AccountPage
-            onNavigate={(view) => setCurrentView(view)}
+            onNavigate={(view) => setCurrentView(view as any)}
             onLogOut={handleLogOut}
             hasActivated={hasActivated}
             userName={userName}
@@ -1219,13 +1219,13 @@ function App() {
           <PrivacySafetyView onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'notifications' && (
-          <NotificationsView onBack={() => setCurrentView('account')} />
+          <NotificationsView userId={userId ?? ''} onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'pause-profile' && (
           <PauseProfileView onBack={() => setCurrentView('account')} hasActivated={hasActivated} />
         )}
         {currentView === 'help-support' && (
-          <HelpSupportView onBack={() => setCurrentView('account')} onNavigate={(view) => setCurrentView(view)} />
+          <HelpSupportView onBack={() => setCurrentView('account')} onNavigate={(view) => setCurrentView(view as any)} />
         )}
         {currentView === 'terms-service' && (
           <TermsServiceView onBack={() => setCurrentView('account')} />
@@ -1339,7 +1339,7 @@ function App() {
       {/* ── Bottom nav — hidden on fullscreen views ── */}
       {!isFullscreenView && (
         <BottomNav
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={(view) => setCurrentView(view as any)}
           currentView={currentView}
           unreadMessageCount={inboxMessages.filter(m => m.unread).length}
         />
