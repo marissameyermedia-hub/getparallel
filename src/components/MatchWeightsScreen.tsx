@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Info } from 'lucide-react';
-import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 interface MatchWeightsScreenProps {
@@ -78,7 +78,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
       const accessToken = localStorage.getItem('parallel_access_token');
       if (!accessToken) { setIsLoading(false); return; }
       try {
-        const res = await fetch(`${EDGE_FUNCTION_URL}/user/category-weights`, {
+        const res = await fetch(`${ONBOARDING_FUNCTION_URL}/user/category-weights`, {
           headers: { 'Authorization': `Bearer ${accessToken}`, 'apikey': publicAnonKey },
         });
         if (res.ok) {
@@ -138,7 +138,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
     const accessToken = localStorage.getItem('parallel_access_token');
     if (accessToken) {
       try {
-        await fetch(`${EDGE_FUNCTION_URL}/user/category-weights`, {
+        await fetch(`${ONBOARDING_FUNCTION_URL}/user/category-weights`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -263,7 +263,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
               const accessToken = localStorage.getItem('parallel_access_token');
               if (accessToken) {
                 try {
-                  await fetch(`${EDGE_FUNCTION_URL}/user/category-weights`, {
+                  await fetch(`${ONBOARDING_FUNCTION_URL}/user/category-weights`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}`, 'apikey': publicAnonKey },
                     body: JSON.stringify(tokens),

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Upload, X, GripVertical, ChevronLeft, User, Briefcase, GraduationCap, Instagram, MapPin, Plus } from 'lucide-react';
-import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { LocationPicker } from './LocationPicker';
 
@@ -130,7 +130,7 @@ export function ProfileEditor({
         const formData = new FormData();
         formData.append('photo', strippedFile);
         formData.append('position', String(uploadedPhotos.length + newPhotos.length));
-        const res = await fetch(`${EDGE_FUNCTION_URL}/photos/upload`, {
+        const res = await fetch(`${ONBOARDING_FUNCTION_URL}/photos/upload`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
           body: formData,
@@ -148,7 +148,7 @@ export function ProfileEditor({
       // Save photo URLs immediately so a refresh doesn't lose them
       const savedToken = localStorage.getItem('parallel_access_token');
       if (savedToken) {
-        fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+        fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -174,7 +174,7 @@ export function ProfileEditor({
     // Persist reordered photos immediately so a refresh doesn't lose the new order
     const token = localStorage.getItem('parallel_access_token');
     if (token && uploadedPhotos.length > 0) {
-      fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+      fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
         body: JSON.stringify({ current_step: 'photo_upload', completed_steps: [], partial_answers: {}, partial_photos: uploadedPhotos }),
@@ -443,7 +443,7 @@ export function ProfileEditor({
                   const token = localStorage.getItem('parallel_access_token');
                   if (token) {
                     try {
-                      await fetch(`${EDGE_FUNCTION_URL}/user/location`, {
+                      await fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',

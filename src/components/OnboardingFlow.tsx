@@ -7,10 +7,9 @@ import { QuestionScreen } from './onboarding/QuestionScreen';
 import { ProfileEditor } from './ProfileEditor';
 import { WelcomeScreen } from './onboarding/WelcomeScreen';
 import { SimpleHeader } from './SimpleHeader';
-import { ParallelIcon } from './ParallelIcon';
 import { LocationPicker } from './LocationPicker';
 import { MatchWeightsScreen } from './MatchWeightsScreen';
-import { EDGE_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 interface OnboardingFlowProps {
@@ -134,7 +133,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   const saveStep = useCallback((step: string, latestAnswers?: Record<string, any>) => {
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
-    fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+    fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -158,7 +157,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
         return;
       }
       try {
-        const res = await fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+        const res = await fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'apikey': publicAnonKey,
@@ -238,7 +237,10 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
     return (
       <div className="fixed inset-0 bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <ParallelIcon size={32} className="text-black" />
+          <div className="flex gap-1">
+            <div className="w-1.5 h-8 bg-black rounded-full" />
+            <div className="w-1.5 h-8 bg-black rounded-full" />
+          </div>
           <p className="text-sm text-gray-400">Loading your progress…</p>
         </div>
       </div>
@@ -421,7 +423,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
       const updated = { ...prev, [questionId]: answer };
       const token = localStorage.getItem('parallel_access_token');
       if (token) {
-        fetch(`${EDGE_FUNCTION_URL}/onboarding/progress`, {
+        fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -644,7 +646,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
       const token = localStorage.getItem('parallel_access_token');
       if (token) {
         try {
-          await fetch(`${EDGE_FUNCTION_URL}/user/location`, {
+          await fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
