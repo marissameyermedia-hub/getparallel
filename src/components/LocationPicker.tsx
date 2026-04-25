@@ -123,7 +123,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
             `${ONBOARDING_FUNCTION_URL}/location/reverse?lat=${latitude}&lng=${longitude}`,
             { headers }
           );
-          
+
           if (res.ok) {
             const data = await res.json();
             onChange({
@@ -133,9 +133,15 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
               country: data.country,
               locationDisplay: data.displayName
             });
+          } else {
+            console.warn('Reverse geocoding unavailable, falling back to search');
+            setMode('search');
+            alert("We couldn't look up your address automatically. Please search for your city instead.");
           }
         } catch (err) {
           console.error('Reverse geocoding error:', err);
+          setMode('search');
+          alert("We couldn't look up your address automatically. Please search for your city instead.");
         } finally {
           setIsGettingLocation(false);
         }
