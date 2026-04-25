@@ -13,7 +13,7 @@ export function AppHeader({ onNavigate }: AppHeaderProps) {
           className="flex items-center gap-3 hover:opacity-70 transition-opacity"
           disabled={!onNavigate}
         >
-          <ParallelIcon size={24} className="text-black" />
+          <ParallelIcon size="md" tone="foreground" label="Parallel" />
           <span className="font-semibold text-lg">Parallel</span>
         </button>
       </div>
