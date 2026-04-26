@@ -134,9 +134,8 @@ export function MatchesView({
     return (
       <div className="bg-white min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
-          <div className="flex gap-1 mb-8 justify-center">
-            <div className="w-2 h-16 bg-black"></div>
-            <div className="w-2 h-16 bg-black"></div>
+          <div className="mb-8 flex justify-center">
+            <ParallelIcon size={64} className="text-black" />
           </div>
           <h2 className="text-3xl font-bold mb-4">Matching opens May 15th.</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
