@@ -5,6 +5,7 @@ import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../u
 import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';
 import { ShieldCheck, X } from 'lucide-react';
+import { ParallelIcon } from './ParallelIcon';
 import { parallelQuestionnaire } from '../data/parallelQuestionnaire_updated';
 import { getAccessToken } from '../utils/auth';
 
@@ -133,9 +134,8 @@ export function MatchesView({
     return (
       <div className="bg-white min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
-          <div className="flex gap-1 mb-8 justify-center">
-            <div className="w-2 h-16 bg-black"></div>
-            <div className="w-2 h-16 bg-black"></div>
+          <div className="mb-8 flex justify-center">
+            <ParallelIcon size={64} className="text-black" />
           </div>
           <h2 className="text-3xl font-bold mb-4">Matching opens May 15th.</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
@@ -165,9 +165,8 @@ export function MatchesView({
     return (
       <div className="bg-white pt-20 min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md text-center">
-          <div className="flex gap-1 mb-8 justify-center">
-            <div className="w-2 h-16 bg-black"></div>
-            <div className="w-2 h-16 bg-black"></div>
+          <div className="mb-8 flex justify-center">
+            <ParallelIcon size={64} className="text-black" />
           </div>
           <h2 className="text-3xl font-bold mb-3">Finish your questionnaire to unlock your matches</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-8">
@@ -356,9 +355,8 @@ export function MatchesView({
         ) : matches.length === 0 ? (
           // ── Combined: processing + no matches yet state ────────
           <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-            <div className="flex gap-1 mb-8">
-              <div className="w-2 h-16 bg-black"></div>
-              <div className="w-2 h-16 bg-black"></div>
+            <div className="mb-8">
+              <ParallelIcon size={64} className="text-black" />
             </div>
             <h2 className="text-3xl font-bold mb-3">Your match suggestions are on their way!</h2>
             <p className="text-gray-600 text-lg leading-relaxed mb-8 max-w-md">
