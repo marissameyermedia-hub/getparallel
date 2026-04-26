@@ -36,6 +36,14 @@ interface MessagingViewProps {
   sharedHobbies?: string[];
   sharedValues?: string[];
   lastActiveAt?: string | null;
+  /**
+   * Whether the current user has verified their email. When false, the send
+   * input is disabled and an inline banner explains why. The user can still
+   * read existing messages and view the match's profile — only outbound
+   * messaging is gated. Defaults to true so legacy callers (and the dev
+   * gallery) aren't affected.
+   */
+  emailVerified?: boolean;
 }
 
 const STARTERS = [
@@ -79,6 +87,7 @@ export function MessagingView({
   sharedHobbies,
   sharedValues,
   lastActiveAt,
+  emailVerified = true,
 }: MessagingViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -242,6 +251,10 @@ export function MessagingView({
 
   const handleSend = async () => {
     if (!newMessage.trim() || conversationId === null) return;
+    if (!emailVerified) {
+      toast.error('Verify your email to send messages.');
+      return;
+    }
     const token = await getAccessToken();
     if (!token) return;
     const optimisticMsg: Message = {
@@ -321,6 +334,10 @@ export function MessagingView({
   };
 
   const isLocked = conversationId === null;
+  // Email verification gate: read existing messages freely, but disable sending
+  // until the user verifies their email. We need a verified email to send them
+  // notifications about replies (no push notifications on the web app).
+  const messagingDisabled = isLocked || !emailVerified;
 
   return (
     <div
@@ -497,9 +514,22 @@ export function MessagingView({
           </div>
         )}
 
+        {/* Email verification gate notice — shown only when convo is unlocked
+            but user hasn't verified their email yet. We suppress this when the
+            convo itself is locked (mutual match required) so we don't stack
+            two competing "you can't message" reasons. */}
+        {!isLocked && !emailVerified && (
+          <div className="mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+            <p className="text-xs text-amber-900 leading-snug">
+              <span className="font-medium">Verify your email to send messages.</span>
+              <span className="text-amber-800"> Tap "Resend" in the banner above to receive your verification link.</span>
+            </p>
+          </div>
+        )}
+
         <div className="flex items-end gap-2">
           <div className={`flex-1 rounded-full border px-3.5 py-2 transition-colors ${
-            isLocked
+            messagingDisabled
               ? 'bg-gray-100 border-gray-200 opacity-60'
               : 'bg-gray-50 border-gray-200 focus-within:bg-white focus-within:border-gray-300'
           }`}>
@@ -509,16 +539,22 @@ export function MessagingView({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               onFocus={handleInputFocus}
-              placeholder={isLocked ? 'Messaging locked...' : `Message ${matchName}...`}
+              placeholder={
+                isLocked
+                  ? 'Messaging locked...'
+                  : !emailVerified
+                  ? 'Verify your email to send...'
+                  : `Message ${matchName}...`
+              }
               className="w-full bg-transparent resize-none outline-none text-sm leading-snug disabled:cursor-not-allowed"
               rows={1}
-              disabled={isLocked}
+              disabled={messagingDisabled}
               style={{ maxHeight: '100px' }}
             />
           </div>
           <button
             onClick={handleSend}
-            disabled={!newMessage.trim() || isLocked}
+            disabled={!newMessage.trim() || messagingDisabled}
             className="bg-black text-white p-2.5 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 active:scale-95"
           >
             <Send size={16} />
