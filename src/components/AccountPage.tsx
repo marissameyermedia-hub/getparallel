@@ -4,6 +4,36 @@ import { MatchWeightsScreen } from './MatchWeightsScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
+import { parallelQuestionnaire, Question } from '../data/parallelQuestionnaire_updated';
+
+// ── Conditional question visibility ────────────────────────────────
+// A question with a `showIf` clause is only "visible" (countable toward
+// completion) when its parent answer matches the showIf criteria. This
+// must match the logic used by OnboardingFlow.tsx, QuestionnaireListView.tsx,
+// and MatchesView.tsx so completion percentage is consistent everywhere.
+function isQuestionVisible(question: Question, answers: Record<string, any>): boolean {
+  if (!question.showIf) return true;
+  const { questionId, notValues, hasValue } = question.showIf as any;
+  const refAnswer = answers[questionId];
+  const refValue = refAnswer && typeof refAnswer === 'object' && 'value' in refAnswer
+    ? refAnswer.value
+    : refAnswer;
+  if (hasValue) return refValue != null && refValue !== '';
+  if (notValues) {
+    if (refValue == null || refValue === '') return false;
+    return !notValues.includes(String(refValue));
+  }
+  return true;
+}
+
+function isAnswered(answer: any): boolean {
+  if (answer === null || answer === undefined) return false;
+  const val = typeof answer === 'object' && 'value' in answer ? answer.value : answer;
+  if (val === null || val === undefined) return false;
+  if (typeof val === 'string' && val.trim() === '') return false;
+  if (Array.isArray(val) && val.length === 0) return false;
+  return true;
+}
 
 interface AccountPageProps {
   onClose?: () => void;
@@ -13,6 +43,9 @@ interface AccountPageProps {
   userName?: string;
   hasVerified?: boolean;
   userAnswers?: Record<string, any>;
+  /** @deprecated — completion is now computed from `userAnswers` against the
+   *  questionnaire's conditional visibility rules. Prop kept for backward
+   *  compatibility with old App.tsx versions; ignored. */
   totalQuestions?: number;
 }
 
@@ -167,7 +200,7 @@ export function AccountPage({
   userName,
   hasVerified,
   userAnswers = {},
-  totalQuestions = 55,
+  // totalQuestions intentionally ignored — see prop comment above.
 }: AccountPageProps) {
   const [exitFeedbackAction, setExitFeedbackAction] = useState<'pause' | 'cancel' | 'delete' | null>(null);
   const [showMatchWeights, setShowMatchWeights] = useState(false);
@@ -188,16 +221,21 @@ export function AccountPage({
   const [isFoundingMember, setIsFoundingMember] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  const answeredCount = Object.keys(userAnswers).filter(k => {
-    const v = userAnswers[k];
-    if (v === null || v === undefined) return false;
-    if (typeof v === 'string' && v.trim() === '') return false;
-    if (Array.isArray(v) && v.length === 0) return false;
-    return true;
-  }).length;
+  // Compute completion against questions that are actually applicable to this user.
+  // Questions hidden by their `showIf` rule (e.g. drinking-style questions for users
+  // who answered "Never drink") don't count toward the denominator OR the numerator,
+  // so a user who never sees a conditional question still hits 100% by answering
+  // every question they were shown.
+  const visibleQuestions = parallelQuestionnaire.flatMap(s =>
+    s.questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, userAnswers))
+  );
+  const computedTotal = visibleQuestions.length;
+  const answeredCount = visibleQuestions.filter(q => isAnswered(userAnswers[q.id])).length;
 
-  const completionPct = Math.min(100, Math.round((answeredCount / totalQuestions) * 100));
-  const isComplete = completionPct >= 100;
+  const completionPct = computedTotal > 0
+    ? Math.min(100, Math.round((answeredCount / computedTotal) * 100))
+    : 0;
+  const isComplete = completionPct >= 100 && computedTotal > 0;
 
   // Fetch subscription + pause state on mount. Runs for ALL users (not just activated)
   // because isPaused must work for free users too.
@@ -360,7 +398,7 @@ export function AccountPage({
                 />
               </div>
               <span className="text-xs text-gray-500 flex-shrink-0">
-                {isComplete ? '✓ Complete' : `${answeredCount} of ${totalQuestions}`}
+                {isComplete ? '✓ Complete' : `${answeredCount} of ${computedTotal}`}
               </span>
             </div>
             {!isComplete && (

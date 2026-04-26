@@ -62,6 +62,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
     latitude: number;
     longitude: number;
     city: string;
+    state: string;
     country: string;
     locationDisplay: string;
   } | undefined>(undefined);
@@ -256,7 +257,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
     education: string;
     instagram: string;
     pronouns: string;
-    location?: { latitude: number; longitude: number; city: string; country: string; locationDisplay: string };
+    location?: { latitude: number; longitude: number; city: string; state: string; country: string; locationDisplay: string };
   }) => {
     setIsSaving(true);
     setSaveError('');
@@ -422,7 +423,50 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   const handleAnswer = (questionId: string, answer: any) => {
     let updated: Record<string, any> | null = null;
     setAnswers((prev) => {
-      updated = { ...prev, [questionId]: answer };
+      const next: Record<string, any> = { ...prev, [questionId]: answer };
+
+      // ── Stale-conditional cleanup ────────────────────────────────
+      // If this question is the parent of any conditional (`showIf`) child,
+      // and the new answer hides that child, wipe the child's previous answer.
+      // Without this, a user who answered 3.2 ("when you drink…") and then
+      // changes 3.1 to "Never drink" would have a stranded 3.2 answer they
+      // can't see or edit, and that answer would still be sent to the matching
+      // algorithm. We only check direct children of `questionId`; transitive
+      // chains (e.g. 6.2 → 6.2b → 12.3) are handled because re-checking on
+      // every parent change cascades naturally as users move through the flow.
+      for (const section of parallelQuestionnaire) {
+        for (const child of section.questions) {
+          if (!child.showIf || child.showIf.questionId !== questionId) continue;
+          const childAnswer = next[child.id];
+          if (childAnswer === undefined || childAnswer === null) continue;
+          // Re-evaluate visibility against the *new* parent answer.
+          const refValue = answer && typeof answer === 'object' && 'value' in answer
+            ? (answer as any).value
+            : answer;
+          let stillVisible = true;
+          if (child.showIf.hasValue) {
+            stillVisible = refValue != null && refValue !== '';
+          } else if (child.showIf.notValues) {
+            stillVisible = refValue != null && refValue !== '' &&
+              !child.showIf.notValues.includes(String(refValue));
+          }
+          if (!stillVisible) {
+            delete next[child.id];
+            // Also wipe transitive children (e.g. 12.3 depends on 6.2b which
+            // depends on 6.2). If 6.2 → atheist hides 6.2b, and 12.3 depended
+            // on 6.2b having any value, 12.3 should also clear.
+            for (const grandSection of parallelQuestionnaire) {
+              for (const grand of grandSection.questions) {
+                if (!grand.showIf || grand.showIf.questionId !== child.id) continue;
+                if (next[grand.id] !== undefined) delete next[grand.id];
+              }
+            }
+          }
+        }
+      }
+      // ── End cleanup ──────────────────────────────────────────────
+
+      updated = next;
       // Store latest answers in ref so handleContinue's saveStep call
       // gets the fresh value even though React state hasn't committed yet.
       latestAnswersRef.current = updated;
@@ -645,6 +689,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
       latitude: number;
       longitude: number;
       city: string;
+      state: string;
       country: string;
       locationDisplay: string;
     }) => {
@@ -663,6 +708,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
               latitude: loc.latitude,
               longitude: loc.longitude,
               city: loc.city,
+              state: loc.state,
               country: loc.country,
               locationDisplay: loc.locationDisplay,
             }),

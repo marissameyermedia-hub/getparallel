@@ -9,6 +9,7 @@ interface LocationPickerProps {
     latitude?: number;
     longitude?: number;
     city?: string;
+    state?: string;
     country?: string;
     locationDisplay?: string;
   } | null;
@@ -16,6 +17,7 @@ interface LocationPickerProps {
     latitude: number;
     longitude: number;
     city: string;
+    state: string;
     country: string;
     locationDisplay: string;
   }) => void;
@@ -25,6 +27,7 @@ interface SearchResult {
   latitude: number;
   longitude: number;
   city: string;
+  state: string;
   country: string;
   displayName: string;
 }
@@ -128,11 +131,15 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
           if (res.ok) {
             const data = await res.json();
             onChange({
-              latitude,
-              longitude,
-              city: data.city,
-              country: data.country,
-              locationDisplay: data.displayName
+              // Backend now returns snapped lat/lng (~1–2 mile grid). If the
+              // backend response includes them, use those; otherwise fall back
+              // to the raw GPS values (older backends).
+              latitude: typeof data.latitude === 'number' ? data.latitude : latitude,
+              longitude: typeof data.longitude === 'number' ? data.longitude : longitude,
+              city: data.city || '',
+              state: data.state || '',
+              country: data.country || '',
+              locationDisplay: data.displayName || ''
             });
           } else {
             console.warn('Reverse geocoding unavailable, falling back to search');
@@ -163,6 +170,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
       latitude: result.latitude,
       longitude: result.longitude,
       city: result.city,
+      state: result.state || '',
       country: result.country,
       locationDisplay: result.displayName
     });

@@ -62,6 +62,7 @@ interface ProfileEditorProps {
       latitude: number;
       longitude: number;
       city: string;
+      state: string;
       country: string;
       locationDisplay: string;
     };
@@ -78,6 +79,7 @@ interface ProfileEditorProps {
     latitude: number;
     longitude: number;
     city: string;
+    state: string;
     country: string;
     locationDisplay: string;
   };
@@ -455,6 +457,7 @@ export function ProfileEditor({
                           latitude: loc.latitude,
                           longitude: loc.longitude,
                           city: loc.city,
+                          state: loc.state,
                           country: loc.country,
                           locationDisplay: loc.locationDisplay,
                         }),

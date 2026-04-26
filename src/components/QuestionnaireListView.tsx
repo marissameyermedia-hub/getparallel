@@ -82,6 +82,46 @@ function isAnswered(question: Question, answer: any): boolean {
   return true;
 }
 
+// When the user edits a parent question (e.g. 3.1, 6.2, 8.2, 3.10), any
+// previously-answered child question with a `showIf` rule that no longer
+// matches the new parent value must be wiped. Otherwise the child answer
+// becomes a stranded ghost — invisible to the user (filtered out by
+// isQuestionVisible), but still sent to the matching algorithm.
+//
+// Returns a new answers object with stale conditional children removed.
+// Handles transitive chains too (e.g. 6.2 → 6.2b → 12.3).
+function stripStaleConditionalAnswers(answers: Record<string, any>): Record<string, any> {
+  let next = { ...answers };
+  // Iterate until stable — clearing one child may invalidate its grandchild.
+  let changed = true;
+  let safety = 0;
+  while (changed && safety++ < 5) {
+    changed = false;
+    for (const section of parallelQuestionnaire) {
+      for (const q of section.questions) {
+        if (!q.showIf) continue;
+        if (next[q.id] === undefined) continue;
+        const refAnswer = next[q.showIf.questionId];
+        const refValue = refAnswer && typeof refAnswer === 'object' && 'value' in refAnswer
+          ? refAnswer.value
+          : refAnswer;
+        let visible = true;
+        if ((q.showIf as any).hasValue) {
+          visible = refValue != null && refValue !== '';
+        } else if ((q.showIf as any).notValues) {
+          visible = refValue != null && refValue !== '' &&
+            !(q.showIf as any).notValues.includes(String(refValue));
+        }
+        if (!visible) {
+          delete next[q.id];
+          changed = true;
+        }
+      }
+    }
+  }
+  return next;
+}
+
 export function QuestionnaireListView({
   answers,
   onUpdateAnswer,
@@ -111,7 +151,18 @@ export function QuestionnaireListView({
   const handleSaveAndExit = async () => {
     if (editingQuestion && editingAnswer !== undefined) {
       onUpdateAnswer(editingQuestion.id, editingAnswer);
-      const updatedAnswers = { ...answers, [editingQuestion.id]: editingAnswer };
+      // Apply the new answer, then strip any conditional children that the
+      // change made invisible. Both the local copy we send to the backend
+      // AND the parent state need to be cleaned, so we propagate deletions
+      // back through onUpdateAnswer for any child IDs that were wiped.
+      const before = { ...answers, [editingQuestion.id]: editingAnswer };
+      const updatedAnswers = stripStaleConditionalAnswers(before);
+      for (const key of Object.keys(before)) {
+        if (!(key in updatedAnswers)) {
+          // Tell parent state to drop this stale child
+          onUpdateAnswer(key, null);
+        }
+      }
 
       // Direct backend write — bypasses the 1500ms debounce so the answer
       // is guaranteed to reach Supabase before returning to list view.
@@ -155,7 +206,11 @@ export function QuestionnaireListView({
   const handleContinueToNext = async () => {
     if (editingQuestion && editingAnswer !== undefined) {
       onUpdateAnswer(editingQuestion.id, editingAnswer);
-      const updatedAnswers = { ...answers, [editingQuestion.id]: editingAnswer };
+      const before = { ...answers, [editingQuestion.id]: editingAnswer };
+      const updatedAnswers = stripStaleConditionalAnswers(before);
+      for (const key of Object.keys(before)) {
+        if (!(key in updatedAnswers)) onUpdateAnswer(key, null);
+      }
 
       // Direct backend write — same as onBack. Bypasses the 1500ms debounce so
       // the answer is guaranteed to reach Supabase before the screen changes.
@@ -222,7 +277,11 @@ export function QuestionnaireListView({
             if (editingAnswer !== undefined && editingAnswer !== null) {
               const token = await getAccessToken();
               if (token) {
-                const updatedAnswers = { ...answers, [editingQuestion.id]: editingAnswer };
+                const before = { ...answers, [editingQuestion.id]: editingAnswer };
+                const updatedAnswers = stripStaleConditionalAnswers(before);
+                for (const key of Object.keys(before)) {
+                  if (!(key in updatedAnswers)) onUpdateAnswer(key, null);
+                }
                 fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
                   method: 'PUT',
                   headers: {
