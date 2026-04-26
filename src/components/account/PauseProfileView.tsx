@@ -46,9 +46,13 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
     const token = localStorage.getItem('parallel_access_token');
     if (!token) return;
     fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, { headers: getAuthHeaders(token) })
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        // Silently ignore auth/server errors — keeps default UI state and avoids triggering the blank-screen overlay
+        if (!r.ok) return null;
+        return r.json();
+      })
       .then(data => { if (typeof data?.isPaused === 'boolean') setIsPaused(data.isPaused); })
-      .catch(err => console.error('Failed to fetch pause state:', err));
+      .catch(() => { /* network failure — keep defaults */ });
   }, []);
 
   // If the user arrived here via "Cancel Subscription" on the Account page,
