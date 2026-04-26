@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { EDGE_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { ParallelIcon } from './ParallelIcon';
+import { getAccessToken } from '../utils/auth';
 
 interface InviteViewProps {
   onBack: () => void;
@@ -26,7 +27,7 @@ export function InviteView({ onBack }: InviteViewProps) {
 
   useEffect(() => {
     const fetchReferralData = async () => {
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (!token) return;
 
       try {

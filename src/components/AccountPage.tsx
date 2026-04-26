@@ -3,6 +3,7 @@ import { User, FileText, ShieldCheck, CreditCard, Bell, Lock, HelpCircle, FileTe
 import { MatchWeightsScreen } from './MatchWeightsScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 interface AccountPageProps {
   onClose?: () => void;
@@ -201,31 +202,33 @@ export function AccountPage({
   // Fetch subscription + pause state on mount. Runs for ALL users (not just activated)
   // because isPaused must work for free users too.
   useEffect(() => {
-    const token = localStorage.getItem('parallel_access_token');
-    if (!token) return;
-    fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': publicAnonKey,
-      },
-    })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (!data) return;
-        const plan = data.subscriptionPlan ?? data.subscription_plan ?? data.plan ?? null;
-        const renewal = data.currentPeriodEnd ?? data.current_period_end ?? data.renewalDate ?? data.renewal_date ?? null;
-        const founding = Boolean(data.isFoundingMember ?? data.is_founding_member ?? false);
-        const paused = Boolean(data.isPaused ?? data.is_paused ?? false);
-        if (plan) setSubscriptionPlan(plan);
-        if (renewal) setRenewalDate(renewal);
-        if (founding) setIsFoundingMember(true);
-        setIsPaused(paused);
+    (async () => {
+      const token = await getAccessToken();
+      if (!token) return;
+      fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': publicAnonKey,
+        },
       })
-      .catch(() => { /* network failure — keep defaults, don't trigger blank-screen overlay */ });
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data) return;
+          const plan = data.subscriptionPlan ?? data.subscription_plan ?? data.plan ?? null;
+          const renewal = data.currentPeriodEnd ?? data.current_period_end ?? data.renewalDate ?? data.renewal_date ?? null;
+          const founding = Boolean(data.isFoundingMember ?? data.is_founding_member ?? false);
+          const paused = Boolean(data.isPaused ?? data.is_paused ?? false);
+          if (plan) setSubscriptionPlan(plan);
+          if (renewal) setRenewalDate(renewal);
+          if (founding) setIsFoundingMember(true);
+          setIsPaused(paused);
+        })
+        .catch(() => { /* network failure — keep defaults, don't trigger blank-screen overlay */ });
+    })();
   }, []);
 
   const handleExitFeedbackConfirm = async (foundMatch: boolean, reason: string) => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     const action = exitFeedbackAction;
     setExitFeedbackAction(null);
 
@@ -655,7 +658,7 @@ export function AccountPage({
                     onClick={async () => {
                       if (storyText.trim().length < 10 || storySubmitting) return;
                       setStorySubmitting(true);
-                      const token = localStorage.getItem('parallel_access_token');
+                      const token = await getAccessToken();
                       if (token) {
                         try {
                           await fetch(`${MISC_FUNCTION_URL}/success/submit`, {
@@ -729,7 +732,7 @@ export function AccountPage({
                   onClick={async () => {
                     if (feedbackMessage.trim().length < 5 || feedbackSubmitting) return;
                     setFeedbackSubmitting(true);
-                    const token = localStorage.getItem('parallel_access_token');
+                    const token = await getAccessToken();
                     if (token) {
                       try {
                         await fetch(`${MISC_FUNCTION_URL}/user/feedback`, {

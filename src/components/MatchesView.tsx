@@ -6,6 +6,7 @@ import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';
 import { ShieldCheck, X } from 'lucide-react';
 import { parallelQuestionnaire } from '../data/parallelQuestionnaire_updated';
+import { getAccessToken } from '../utils/auth';
 
 // ── PRE_LAUNCH flag ────────────────────────────────────────────
 // Set to true during pre-launch period.
@@ -55,7 +56,7 @@ export function MatchesView({
   const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
 
   const handleResendVerification = async () => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token || resendStatus !== 'idle') return;
     setResendStatus('sending');
     try {
@@ -102,7 +103,7 @@ export function MatchesView({
   const isQuestionnaireIncomplete = answeredQuestionsCount < totalQuestions;
 
   const handleShareInvite = async () => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     try {
       const res = await fetch(`${MISC_FUNCTION_URL}/referral/my-code`, {
@@ -235,7 +236,7 @@ export function MatchesView({
     if (!lastPassedMatchId) return;
     const undoId = lastPassedMatchId;
     setLastPassedMatchId(null);
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     try {
       await fetch(`${MATCHES_FUNCTION_URL}/action`, {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ShieldCheck, ArrowLeft, CheckCircle, XCircle, ExternalLink, Loader, ScanFace } from 'lucide-react';
 import { EDGE_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 interface VerificationViewProps {
   userId: string;
@@ -47,7 +48,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
   const handleVerificationComplete = async () => {
     setStatus('completed');
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${MISC_FUNCTION_URL}/verification/complete`, {
@@ -75,7 +76,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     setConsentSubmitting(true);
     setConsentError('');
 
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) {
       setConsentError('Please sign in to continue.');
       setConsentSubmitting(false);
@@ -120,7 +121,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
   const handleCheckStatus = async () => {
     setStatus('checking');
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) { setStatus('opened'); return; }
     try {
       const res = await fetch(`${MISC_FUNCTION_URL}/verification/complete`, {

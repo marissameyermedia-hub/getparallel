@@ -3,6 +3,7 @@ import { MapPin, Briefcase, GraduationCap, Instagram, Heart, X, Flag, Ban, Chevr
 import { Match } from '../types';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 function getAuthHeaders(token: string) {
   return {
@@ -110,7 +111,7 @@ export function MatchProfileView({
     if (isLiked || isLiking) return;
     setIsLiking(true);
     try {
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (!token) return;
       const res = await fetch(`${MATCHES_FUNCTION_URL}/action`, {
         method: 'POST',
@@ -136,7 +137,7 @@ export function MatchProfileView({
   };
 
   const handleUnmatch = async () => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${MATCHES_FUNCTION_URL}/action`, {
@@ -239,7 +240,7 @@ export function MatchProfileView({
                     <button key={reason}
                       className="w-full p-3 text-left rounded-xl border-2 border-gray-200 hover:border-black transition-colors text-sm"
                       onClick={async () => {
-                        const token = localStorage.getItem('parallel_access_token');
+                        const token = await getAccessToken();
                         if (token) {
                           try {
                             await fetch(`${MISC_FUNCTION_URL}/safety/report`, {
@@ -257,7 +258,7 @@ export function MatchProfileView({
                 <button
                   className="w-full p-3 text-left rounded-xl border-2 border-red-200 bg-red-50 hover:border-red-400 transition-colors text-sm text-red-700 font-medium"
                   onClick={async () => {
-                    const token = localStorage.getItem('parallel_access_token');
+                    const token = await getAccessToken();
                     if (token) {
                       try {
                         await fetch(`${MISC_FUNCTION_URL}/safety/report`, {
@@ -290,7 +291,7 @@ export function MatchProfileView({
             <p className="text-gray-600 mb-6 text-sm leading-relaxed">They won't be able to see your profile or message you.</p>
             <div className="space-y-3">
               <button onClick={async () => {
-                const token = localStorage.getItem('parallel_access_token');
+                const token = await getAccessToken();
                 if (token) {
                   try { await fetch(`${MISC_FUNCTION_URL}/safety/block`, { method: 'POST', headers: getAuthHeaders(token), body: JSON.stringify({ blockedUserId: user.id }) }); } catch (e) {}
                 }

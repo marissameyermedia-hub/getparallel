@@ -11,6 +11,7 @@ import { LocationPicker } from './LocationPicker';
 import { MatchWeightsScreen } from './MatchWeightsScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 interface OnboardingFlowProps {
   onComplete: (answers: Record<string, any>) => Promise<{ success: boolean; error?: string; locationRequired?: boolean }>;
@@ -130,8 +131,8 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // IMPORTANT: Pass `latestAnswers` when calling from handleContinue after an answer
   // was just set. React's setAnswers is async — the closure `answers` value may be
   // stale at call time, which would overwrite the just-saved answer in user_answers.
-  const saveStep = useCallback((step: string, latestAnswers?: Record<string, any>) => {
-    const token = localStorage.getItem('parallel_access_token');
+  const saveStep = useCallback(async (step: string, latestAnswers?: Record<string, any>) => {
+    const token = await getAccessToken();
     if (!token) return;
     fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
       method: 'POST',
@@ -151,7 +152,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // ── Fetch saved progress on mount ────────────────────────────
   useEffect(() => {
     const fetchProgress = async () => {
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (!token) {
         setHasLoadedProgress(true);
         return;
@@ -419,30 +420,35 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   };
 
   const handleAnswer = (questionId: string, answer: any) => {
+    let updated: Record<string, any> | null = null;
     setAnswers((prev) => {
-      const updated = { ...prev, [questionId]: answer };
-      const token = localStorage.getItem('parallel_access_token');
-      if (token) {
-        fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'apikey': publicAnonKey,
-          },
-          body: JSON.stringify({
-            current_step: `chapter_${currentChapterIndex}_question_${currentQuestionIndex}`,
-            completed_steps: [],
-            partial_answers: updated,
-            partial_photos: photos,
-          }),
-        }).catch(err => console.error('Failed to save answer:', err));
-      }
+      updated = { ...prev, [questionId]: answer };
       // Store latest answers in ref so handleContinue's saveStep call
       // gets the fresh value even though React state hasn't committed yet.
       latestAnswersRef.current = updated;
       return updated;
     });
+
+    // Persist progress to backend (async, fire-and-forget).
+    // Pulled out of the setState callback so we can await getAccessToken().
+    (async () => {
+      const token = await getAccessToken();
+      if (!token || !updated) return;
+      fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': publicAnonKey,
+        },
+        body: JSON.stringify({
+          current_step: `chapter_${currentChapterIndex}_question_${currentQuestionIndex}`,
+          completed_steps: [],
+          partial_answers: updated,
+          partial_photos: photos,
+        }),
+      }).catch(err => console.error('Failed to save answer:', err));
+    })();
   };
 
   const getTotalDealbreakers = () => {
@@ -643,7 +649,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
       locationDisplay: string;
     }) => {
       setOnboardingLocation(loc);
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (token) {
         try {
           await fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {

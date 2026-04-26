@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 interface Message {
   matchId: string;
@@ -41,7 +42,7 @@ export function InboxView({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchAll = useCallback(async () => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     try {
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey };

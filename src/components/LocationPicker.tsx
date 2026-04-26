@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MapPin, Navigation, Search, ChevronDown, Loader2 } from 'lucide-react';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 interface LocationPickerProps {
   value?: {
@@ -65,7 +66,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
     searchTimeoutRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const token = localStorage.getItem('parallel_access_token');
+        const token = await getAccessToken();
         const headers: HeadersInit = {
           'Content-Type': 'application/json',
           'apikey': publicAnonKey
@@ -110,7 +111,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
         const { latitude, longitude } = position.coords;
         
         try {
-          const token = localStorage.getItem('parallel_access_token');
+          const token = await getAccessToken();
           const headers: HeadersInit = {
             'Content-Type': 'application/json',
             'apikey': publicAnonKey

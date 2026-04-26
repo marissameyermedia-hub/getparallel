@@ -4,6 +4,7 @@ import { parallelQuestionnaire, Question } from '../data/parallelQuestionnaire_u
 import { QuestionScreen } from './onboarding/QuestionScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 interface QuestionnaireListViewProps {
   answers: Record<string, any>;
@@ -107,14 +108,14 @@ export function QuestionnaireListView({
     setEditingAnswer(answers[question.id]);
   };
 
-  const handleSaveAndExit = () => {
+  const handleSaveAndExit = async () => {
     if (editingQuestion && editingAnswer !== undefined) {
       onUpdateAnswer(editingQuestion.id, editingAnswer);
       const updatedAnswers = { ...answers, [editingQuestion.id]: editingAnswer };
 
       // Direct backend write — bypasses the 1500ms debounce so the answer
       // is guaranteed to reach Supabase before returning to list view.
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (token) {
         fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
           method: 'PUT',
@@ -130,7 +131,7 @@ export function QuestionnaireListView({
       const attachmentIds = ['7.1a', '7.1b', '7.1c'];
       const allThreeAnswered = attachmentIds.every(id => updatedAnswers[id]);
       if (attachmentIds.includes(editingQuestion.id) && allThreeAnswered) {
-        const token = localStorage.getItem('parallel_access_token');
+        const token = await getAccessToken();
         if (token) {
           const toLetter = (qId: string): 'A'|'B'|'C'|'D' => {
             const q = parallelQuestionnaire.flatMap(s => s.questions).find(q => q.id === qId);
@@ -151,14 +152,14 @@ export function QuestionnaireListView({
     setEditingAnswer(null);
   };
 
-  const handleContinueToNext = () => {
+  const handleContinueToNext = async () => {
     if (editingQuestion && editingAnswer !== undefined) {
       onUpdateAnswer(editingQuestion.id, editingAnswer);
       const updatedAnswers = { ...answers, [editingQuestion.id]: editingAnswer };
 
       // Direct backend write — same as onBack. Bypasses the 1500ms debounce so
       // the answer is guaranteed to reach Supabase before the screen changes.
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (token) {
         fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
           method: 'PUT',
@@ -214,12 +215,12 @@ export function QuestionnaireListView({
             // debounce timer in saveAnswersToSupabase always has the latest value.
             onUpdateAnswer(editingQuestion.id, ans);
           }}
-          onBack={() => {
+          onBack={async () => {
             // Fire a direct backend write on Back, bypassing the 1500ms debounce.
             // Without this, tapping Back within 1500ms of answering cancels the
             // pending debounce timer and the answer is silently lost.
             if (editingAnswer !== undefined && editingAnswer !== null) {
-              const token = localStorage.getItem('parallel_access_token');
+              const token = await getAccessToken();
               if (token) {
                 const updatedAnswers = { ...answers, [editingQuestion.id]: editingAnswer };
                 fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {

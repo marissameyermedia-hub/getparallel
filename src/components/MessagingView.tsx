@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 function getAuthHeaders(token: string) {
   return {
@@ -133,7 +134,7 @@ export function MessagingView({
 
   const fetchMessages = useCallback(async () => {
     if (!mutualMatch) return;
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     try {
       const res = await fetch(`${MESSAGES_FUNCTION_URL}/${matchId}`, {
@@ -156,18 +157,20 @@ export function MessagingView({
     fetchMessages();
     const pollInterval = setInterval(fetchMessages, 8000);
 
-    const token = localStorage.getItem('parallel_access_token');
-    if (token) {
-      fetch(`${MESSAGES_FUNCTION_URL}/mark-read`, {
-        method: 'POST',
-        headers: getAuthHeaders(token),
-        body: JSON.stringify({ matchId }),
-      }).catch(() => {});
-    }
+    (async () => {
+      const token = await getAccessToken();
+      if (token) {
+        fetch(`${MESSAGES_FUNCTION_URL}/mark-read`, {
+          method: 'POST',
+          headers: getAuthHeaders(token),
+          body: JSON.stringify({ matchId }),
+        }).catch(() => {});
+      }
+    })();
 
     let realtimeChannel: any = null;
     const setupRealtime = async () => {
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (!token) return;
       try {
         const res = await fetch(`${MESSAGES_FUNCTION_URL}/realtime-config?matchId=${matchId}`, {
@@ -239,7 +242,7 @@ export function MessagingView({
 
   const handleSend = async () => {
     if (!newMessage.trim() || conversationId === null) return;
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     const optimisticMsg: Message = {
       id: `temp-${Date.now()}`,
@@ -276,7 +279,7 @@ export function MessagingView({
 
   const handleReportUser = async () => {
     setShowSafetyMenu(false);
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${MISC_FUNCTION_URL}/safety/report`, {
@@ -290,7 +293,7 @@ export function MessagingView({
 
   const handleBlockUser = async () => {
     setShowSafetyMenu(false);
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${MISC_FUNCTION_URL}/safety/block`, {
@@ -304,7 +307,7 @@ export function MessagingView({
   };
 
   const handleUnmatch = async () => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${MATCHES_FUNCTION_URL}/action`, {

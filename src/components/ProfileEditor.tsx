@@ -3,6 +3,7 @@ import { Upload, X, GripVertical, ChevronLeft, User, Briefcase, GraduationCap, I
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { LocationPicker } from './LocationPicker';
+import { getAccessToken } from '../utils/auth';
 
 // ─────────────────────────────────────────────────────────────
 // SECURITY: Strip EXIF metadata from images before upload.
@@ -118,7 +119,7 @@ export function ProfileEditor({
     if (uploadedPhotos.length >= 6) { setUploadError('Maximum 6 photos allowed'); return; }
     setIsUploading(true);
     setUploadError('');
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) { setIsUploading(false); return; }
 
     const newPhotos: string[] = [];
@@ -146,7 +147,7 @@ export function ProfileEditor({
       setUploadedPhotos(updatedPhotos);
       setHasSaved(false);
       // Save photo URLs immediately so a refresh doesn't lose them
-      const savedToken = localStorage.getItem('parallel_access_token');
+      const savedToken = await getAccessToken();
       if (savedToken) {
         fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
           method: 'POST',
@@ -169,10 +170,10 @@ export function ProfileEditor({
 
   const handleRemovePhoto = (index: number) => { setUploadedPhotos(prev => prev.filter((_, i) => i !== index)); setHasSaved(false); };
   const handleDragStart = (index: number) => setDragIndex(index);
-  const handleDragEnd = () => {
+  const handleDragEnd = async () => {
     setDragIndex(null);
     // Persist reordered photos immediately so a refresh doesn't lose the new order
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token && uploadedPhotos.length > 0) {
       fetch(`${ONBOARDING_FUNCTION_URL}/progress`, {
         method: 'POST',
@@ -440,7 +441,7 @@ export function ProfileEditor({
                   setHasSaved(false);
                   
                   // Call POST /user/location
-                  const token = localStorage.getItem('parallel_access_token');
+                  const token = await getAccessToken();
                   if (token) {
                     try {
                       await fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {

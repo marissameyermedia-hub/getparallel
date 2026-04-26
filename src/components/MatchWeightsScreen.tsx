@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, Info } from 'lucide-react';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
+import { getAccessToken } from '../utils/auth';
 
 interface MatchWeightsScreenProps {
   onComplete: () => void;
@@ -75,7 +76,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
 
   useEffect(() => {
     const load = async () => {
-      const accessToken = localStorage.getItem('parallel_access_token');
+      const accessToken = await getAccessToken();
       if (!accessToken) { setIsLoading(false); return; }
       try {
         const res = await fetch(`${ONBOARDING_FUNCTION_URL}/user/category-weights`, {
@@ -135,7 +136,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
   const handleSave = async () => {
     if (remaining !== 0) return;
     setIsSaving(true);
-    const accessToken = localStorage.getItem('parallel_access_token');
+    const accessToken = await getAccessToken();
     if (accessToken) {
       try {
         await fetch(`${ONBOARDING_FUNCTION_URL}/user/category-weights`, {
@@ -260,7 +261,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
           {isOnboarding && (
             <button onClick={async () => {
               // Save default weights before skipping so the backend has them explicitly
-              const accessToken = localStorage.getItem('parallel_access_token');
+              const accessToken = await getAccessToken();
               if (accessToken) {
                 try {
                   await fetch(`${ONBOARDING_FUNCTION_URL}/user/category-weights`, {
