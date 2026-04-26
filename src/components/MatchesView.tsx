@@ -5,6 +5,7 @@ import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../u
 import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';
 import { ShieldCheck, X } from 'lucide-react';
+import { ParallelIcon } from './ParallelIcon';
 import { parallelQuestionnaire } from '../data/parallelQuestionnaire_updated';
 import { getAccessToken } from '../utils/auth';
 
