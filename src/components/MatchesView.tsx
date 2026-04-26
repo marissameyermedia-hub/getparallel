@@ -165,9 +165,8 @@ export function MatchesView({
     return (
       <div className="bg-white pt-20 min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md text-center">
-          <div className="flex gap-1 mb-8 justify-center">
-            <div className="w-2 h-16 bg-black"></div>
-            <div className="w-2 h-16 bg-black"></div>
+          <div className="mb-8 flex justify-center">
+            <ParallelIcon size={64} className="text-black" />
           </div>
           <h2 className="text-3xl font-bold mb-3">Finish your questionnaire to unlock your matches</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-8">
