@@ -16,6 +16,7 @@ import { MessagingView } from './components/MessagingView';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { ProfileEditor } from './components/ProfileEditor';
+import { EmailVerificationBanner } from './components/EmailVerificationBanner';
 import { PaymentDetailsView } from './components/account/PaymentDetailsView';
 import { PrivacySafetyView } from './components/account/PrivacySafetyView';
 import { NotificationsView } from './components/account/NotificationsView';
@@ -159,6 +160,13 @@ function App() {
         setHasCompletedOnboarding(!!data.has_completed_onboarding);
         setHasActivated(data.hasActivated || false);
         setHasVerified(data.is_verified || false);
+        // Sync email-verification state from the server. The profile row's
+        // email_verified flag is the source of truth — this keeps the soft
+        // banner accurate even for users who signed up before this flow
+        // shipped or who refresh after verification on another device.
+        if (typeof data.email_verified === 'boolean') {
+          setEmailConfirmed(data.email_verified);
+        }
         return data;
       }
     } catch (err) {
@@ -616,16 +624,12 @@ function App() {
           };
         }
 
-        // Success - fetch matches and navigate
+        // Success - fetch matches and navigate. Email verification is now
+        // soft-gated via the persistent banner, so we don't branch here.
         await fetchMatches(token);
         setHasCompletedOnboarding(true);
-        if (!emailConfirmed) {
-          // Show the "check your email" gate before entering the app
-          setCurrentView('matches'); // gate renders on top of matches when !emailConfirmed
-        } else {
-          setCurrentView('matches');
-          toast.success('Profile saved! Welcome to Parallel 🎉', { duration: 4000 });
-        }
+        setCurrentView('matches');
+        toast.success('Profile saved! Welcome to Parallel 🎉', { duration: 4000 });
         return { success: true };
       } catch (err) {
         console.error('Failed to save onboarding:', err);
@@ -917,50 +921,11 @@ function App() {
     'payment-confirmation', 'reset-password'
   ].includes(currentView);
 
-  // Hard gate — email not confirmed
-  if (accessToken && !emailConfirmed && !['signin', 'account-creation', 'reset-password', 'phone-verification', 'onboarding'].includes(currentView)) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 text-center">
-        <div className="mb-8">
-          <p className="text-4xl mb-6">✉️</p>
-          <h1 className="text-2xl font-semibold mb-3">Check your email</h1>
-          <p className="text-gray-500 text-sm leading-relaxed max-w-xs mx-auto">
-            We sent a confirmation link to your email. Click it to activate your account and see your matches.
-          </p>
-        </div>
-        <button
-          onClick={async () => {
-            const token = await getAccessToken();
-            if (!token) return;
-            const res = await fetch(`${MISC_FUNCTION_URL}/auth/resend-verification`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-            });
-            const data = await res.json();
-            if (data.alreadyVerified) {
-              setEmailConfirmed(true);
-            } else {
-              alert('Verification email resent — check your inbox.');
-            }
-          }}
-          className="text-sm text-gray-400 underline"
-        >
-          Resend verification email
-        </button>
-        <button
-          onClick={() => {
-            localStorage.removeItem('parallel_access_token');
-            localStorage.removeItem('parallel_refresh_token');
-            setCurrentView('signin');
-            setEmailConfirmed(true);
-          }}
-          className="mt-4 text-sm text-gray-300"
-        >
-          Sign in with a different account
-        </button>
-      </div>
-    );
-  }
+  // Soft email-verification gate: signed-in but unverified users see a
+  // yellow banner just below the Header. Banner is hidden on fullscreen
+  // (signup/onboarding) views to avoid layout chaos. Outbound messaging
+  // is also gated inside MessagingView via the emailVerified prop.
+  const showEmailBanner = !!accessToken && !emailConfirmed && !isFullscreenView;
 
   return (
     <>
@@ -975,8 +940,24 @@ function App() {
         />
       )}
 
-      {/* Main content wrapper with top padding to prevent header overlap */}
-      <div className={!isFullscreenView ? 'pt-16' : ''}>
+      {/* Email verification banner — sits just below the fixed Header
+          (Header is fixed top-0 z-50, ~64px tall). Banner is fixed at
+          top-16 (= 64px) with z-40 so it slots immediately under the
+          header. Visible on every signed-in non-fullscreen view, including
+          matches/home and messaging. */}
+      {showEmailBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <EmailVerificationBanner
+            accessToken={accessToken}
+            emailVerified={emailConfirmed}
+          />
+        </div>
+      )}
+
+      {/* Main content wrapper. Standard 64px top padding clears the
+          Header. When the banner is visible we add ~42px more so content
+          doesn't underlay the banner. */}
+      <div className={!isFullscreenView ? (showEmailBanner ? 'pt-[6.5rem]' : 'pt-16') : ''}>
         {/* ── Reset Password ── */}
         {currentView === 'reset-password' && (
           <ResetPasswordPage
