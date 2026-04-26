@@ -88,24 +88,11 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   }, [answers]);
 
   // ── showIf visibility helper ─────────────────────────────────
-  // IMPORTANT: reads from latestAnswersRef.current, NOT from the `answers` state.
-  //
-  // Why: QuestionScreen auto-advances 180ms after the user taps an option.
-  // That 180ms fires handleContinue → getNextQuestionIndex → isQuestionVisible.
-  // React's setAnswers is async — the `answers` closure value is the *pre-tap*
-  // state at that point, so any conditional child whose showIf depends on the
-  // just-answered question would appear invisible and get skipped.
-  //
-  // latestAnswersRef.current is updated synchronously inside the setAnswers
-  // callback (before React commits), so it always reflects the newest answer.
-  // We fall back to `answers` only for progress-bar rendering where we need
-  // a stable React-controlled value.
-  const isQuestionVisible = (question: Question, answersOverride?: Record<string, any>): boolean => {
+  const isQuestionVisible = (question: Question): boolean => {
     if (!question.showIf) return true;
     const { questionId, notValues, hasValue } = question.showIf;
-    // Use the override (for rendering) or the ref (for navigation)
-    const source = answersOverride ?? latestAnswersRef.current;
-    const refAnswer = source[questionId];
+    const src = Object.keys(latestAnswersRef.current).length > 0 ? latestAnswersRef.current : answers;
+    const refAnswer = src[questionId];
     const refValue = refAnswer && typeof refAnswer === 'object' && 'value' in refAnswer
       ? refAnswer.value
       : refAnswer;
@@ -121,18 +108,18 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
 
   // ── Total question count ──────────────────────────────────────
   const totalQuestions = parallelQuestionnaire.reduce((total, section) => {
-    return total + section.questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+    return total + section.questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
   }, 0);
 
   const getCurrentQuestionNumber = () => {
     let questionNumber = 0;
     for (let i = 0; i < currentChapterIndex; i++) {
-      questionNumber += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+      questionNumber += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
     }
     if (currentQuestionIndex >= 0) {
       const questionsUpToHere = currentChapter.questions
         .slice(0, currentQuestionIndex + 1)
-        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers));
+        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q));
       questionNumber += questionsUpToHere.length;
     }
     return questionNumber;
@@ -188,8 +175,6 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
             // Restore answers and photos first, regardless of step
             if (progress.partial_answers && Object.keys(progress.partial_answers).length > 0) {
               setAnswers(progress.partial_answers);
-              // Keep ref in sync — navigation uses ref directly (not state)
-              latestAnswersRef.current = progress.partial_answers;
             }
             if (progress.partial_photos && progress.partial_photos.length > 0) {
               setPhotos(progress.partial_photos);
@@ -426,12 +411,12 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   const getCompletedQuestions = () => {
     let completed = 0;
     for (let i = 0; i < currentChapterIndex; i++) {
-      completed += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+      completed += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
     }
     if (currentQuestionIndex >= 0) {
       completed += currentChapter.questions
         .slice(0, currentQuestionIndex + 1)
-        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q)).length;
     }
     return completed;
   };
