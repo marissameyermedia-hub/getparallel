@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from './utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL } from './utils/supabase/client';
 import { publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
 import { SignInPage } from './components/SignInPage';
@@ -229,7 +229,7 @@ function App() {
           // Show loading screen while validating token
           setIsLoading(true);
           try {
-            const response = await fetch(`${MISC_FUNCTION_URL}/auth/validate-token`, {
+            const response = await fetch(`${EMAIL_FUNCTION_URL}/verify-confirm`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -243,7 +243,7 @@ function App() {
 
             if (response.ok) {
               const data = await response.json();
-              if (data.success) {
+              if (data.ok) {
                 // Email confirmed successfully
                 setEmailConfirmed(true);
                 
@@ -253,29 +253,35 @@ function App() {
                   await fetchUserData(storedToken);
                   await fetchMatches(storedToken);
                   setCurrentView('matches');
-                  toast.success(`Email confirmed — welcome, ${data.name || 'back'}!`, { duration: 4000 });
+                  toast.success(`Email verified — welcome!`, { duration: 4000 });
                 } else {
                   // Not logged in, go to signin
                   setCurrentView('signin');
-                  toast.success('Email confirmed! Please sign in.', { duration: 4000 });
+                  toast.success('Email verified! Please sign in.', { duration: 4000 });
                 }
                 setIsLoading(false);
                 return;
               }
             }
 
-            // Token validation failed
+            // Token validation failed — surface server's error message
+            let errMsg = 'This verification link has expired. Please request a new one.';
+            try {
+              const errData = await response.clone().json();
+              if (errData?.error) errMsg = errData.error;
+            } catch {
+              /* fall through with default */
+            }
             setIsLoading(false);
-            // Show error screen
             setCurrentView('signin');
-            toast.error('This verification link has expired. Please request a new one.', { duration: 5000 });
+            toast.error(errMsg, { duration: 5000 });
             return;
           } catch (err) {
             console.error('Token validation error:', err);
             window.history.replaceState({}, '', '/');
             setIsLoading(false);
             setCurrentView('signin');
-            toast.error('This verification link has expired. Please request a new one.', { duration: 5000 });
+            toast.error('Could not verify your email. Please request a new link.', { duration: 5000 });
             return;
           }
         }
@@ -1031,6 +1037,21 @@ function App() {
                 if (userData.emailConfirmed === false) {
                   setEmailConfirmed(false);
                 }
+
+                // Fire-and-forget: send the initial verification email so the
+                // user has it in their inbox by the time they finish onboarding.
+                // No await — failure shouldn't block signup, and the banner
+                // gives them a "Resend" path if Resend hiccups.
+                fetch(`${EMAIL_FUNCTION_URL}/verify-send`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userData.accessToken}`,
+                    'apikey': publicAnonKey,
+                  },
+                }).catch((err) => {
+                  console.warn('[signup] auto-verify-send failed:', err);
+                });
               } else {
                 setCurrentView('signin');
                 return;
@@ -1351,6 +1372,7 @@ function App() {
             hasConfirmedMet={metConfirmations[selectedMatchId]?.confirmed || false}
             bothConfirmedMet={metConfirmations[selectedMatchId]?.bothConfirmed || false}
             onOpenDateReview={handleOpenDateReview}
+            emailVerified={emailConfirmed}
           />
         )}
 
