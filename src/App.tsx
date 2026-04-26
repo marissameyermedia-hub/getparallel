@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from './utils/supabase/client';
 import { publicAnonKey } from './utils/supabase/info';
+import { getAccessToken } from './utils/auth';
 import { SignInPage } from './components/SignInPage';
 import { AccountCreationPage } from './components/AccountCreationPage';
 import { PhoneVerificationPage } from './components/PhoneVerificationPage';
@@ -190,7 +191,7 @@ function App() {
   const saveAnswersToSupabase = useCallback((answers: Record<string, any>) => {
     if (answerSaveTimer.current) clearTimeout(answerSaveTimer.current);
     answerSaveTimer.current = setTimeout(async () => {
-      const token = localStorage.getItem('parallel_access_token');
+      const token = await getAccessToken();
       if (!token) return;
       try {
         await fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
@@ -248,7 +249,7 @@ function App() {
                 setEmailConfirmed(true);
                 
                 // If user is logged in, navigate to matches
-                const storedToken = localStorage.getItem('parallel_access_token');
+                const storedToken = await getAccessToken();
                 if (storedToken) {
                   await fetchUserData(storedToken);
                   await fetchMatches(storedToken);
@@ -283,7 +284,7 @@ function App() {
         // ── Handle legacy verified param ──
         if (params.get('verified') === 'true') {
           window.history.replaceState({}, '', '/');
-          const storedToken = localStorage.getItem('parallel_access_token');
+          const storedToken = await getAccessToken();
           if (storedToken) {
             // User is logged in, navigate to matches
             await fetchUserData(storedToken);
@@ -318,7 +319,7 @@ function App() {
 
         // Handle ?email_confirmed=true redirect from Supabase email link
         if (params.get('email_confirmed') === 'true') {
-          const storedToken = localStorage.getItem('parallel_access_token');
+          const storedToken = await getAccessToken();
           if (storedToken) {
             setEmailConfirmed(true);
             // Clean the URL
@@ -390,7 +391,7 @@ function App() {
             setCurrentView('onboarding');
           }
         } else {
-          const storedToken = localStorage.getItem('parallel_access_token');
+          const storedToken = await getAccessToken();
           const storedUserId = localStorage.getItem('parallel_user_id');
           if (storedToken && storedUserId) {
             try {
@@ -460,6 +461,50 @@ function App() {
     checkSession();
   }, []);
 
+  // ── Keep cached access token fresh ────────────────────────────
+  //
+  // Supabase auto-refreshes access tokens every ~50 minutes. The refreshed
+  // token only lives in the SDK's session storage by default — we have to
+  // mirror it back to localStorage and to component state so any legacy
+  // code reading `parallel_access_token` directly stays in sync.
+  //
+  // Also handles SIGNED_OUT (e.g. session expired beyond refresh window)
+  // by clearing local state and dropping the user back to the sign-in page.
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' && session?.access_token) {
+        setAccessToken(session.access_token);
+        try {
+          localStorage.setItem('parallel_access_token', session.access_token);
+        } catch {
+          /* localStorage may be disabled — ignore */
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setAccessToken(null);
+        setUserId(null);
+        try {
+          localStorage.removeItem('parallel_access_token');
+          localStorage.removeItem('parallel_user_id');
+          localStorage.removeItem('parallel_user_email');
+        } catch {
+          /* ignore */
+        }
+        setCurrentView('signin');
+      } else if (event === 'SIGNED_IN' && session?.access_token) {
+        // Belt-and-suspenders: ensure cached token is fresh on sign-in too
+        try {
+          localStorage.setItem('parallel_access_token', session.access_token);
+        } catch {
+          /* ignore */
+        }
+      }
+    });
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
+
   // ── Scroll to top on view change ─────────────────────────────
 
   useEffect(() => {
@@ -516,7 +561,7 @@ function App() {
     localStorage.setItem('parallel_user_profile', JSON.stringify(profileData));
     localStorage.setItem('parallel_onboarding_complete', 'true');
     localStorage.setItem('parallel_onboarding_complete_date', new Date().toISOString());
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         const response = await fetch(`${ONBOARDING_FUNCTION_URL}/user/complete-onboarding`, {
@@ -618,7 +663,7 @@ function App() {
     });
 
     const match = matches.find(m => m.user.id === likedUserId);
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
 
     let isMutual = false;
     if (token) {
@@ -672,7 +717,7 @@ function App() {
       return updated;
     });
     if (currentView === 'profile') setCurrentView('matches');
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     fetch(`${MATCHES_FUNCTION_URL}/action`, {
       method: 'POST',
@@ -708,7 +753,7 @@ function App() {
   };
 
   const handleConfirmMet = async (matchId: string) => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         const res = await fetch(`${MATCHES_FUNCTION_URL}/feedback/confirm-met`, {
@@ -734,7 +779,7 @@ function App() {
 
   const handleSubmitDateReview = async (review: any) => {
     if (!dateReviewScreen) return;
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${MATCHES_FUNCTION_URL}/feedback/tier2`, {
@@ -780,7 +825,7 @@ function App() {
   };
 
   const handleAppFeedbackSubmit = async (feedbackType: string, rating: number | null, message: string) => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token && message.trim()) {
       try {
         await fetch(`${MISC_FUNCTION_URL}/app-feedback`, {
@@ -798,7 +843,7 @@ function App() {
   };
 
   const handleNPSSubmit = async (score: number, reason: string) => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${MISC_FUNCTION_URL}/nps`, {
@@ -880,7 +925,7 @@ function App() {
         </div>
         <button
           onClick={async () => {
-            const token = localStorage.getItem('parallel_access_token');
+            const token = await getAccessToken();
             if (!token) return;
             const res = await fetch(`${MISC_FUNCTION_URL}/auth/resend-verification`, {
               method: 'POST',
@@ -1096,7 +1141,7 @@ function App() {
               localStorage.setItem('parallel_user_profile', JSON.stringify(data));
               // Save bio/career/education/instagram/pronouns to DB
               // (photos are already saved to DB individually on upload)
-              const token = localStorage.getItem('parallel_access_token');
+              const token = await getAccessToken();
               if (token) {
                 try {
                   await fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
