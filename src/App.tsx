@@ -82,7 +82,6 @@ function App() {
   const [mutualMatchIds, setMutualMatchIds] = useState<string[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
-  const totalQuestions = 55;
   const [hasActivated, setHasActivated] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
@@ -1128,7 +1127,6 @@ function App() {
             userName={userName}
             hasVerified={hasVerified}
             userAnswers={userAnswers}
-            totalQuestions={totalQuestions}
           />
         )}
 
