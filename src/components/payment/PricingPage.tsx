@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { EDGE_FUNCTION_URL, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { PromoCodeInput } from "./PromoCodeInput";
+import { getAccessToken } from '../../utils/auth';
 
 // ── PRE_LAUNCH flag — controlled by VITE_PRE_LAUNCH env var ───
 const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH === 'true';
@@ -147,7 +148,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             setProcessing(true);
             setError('');
             try {
-              const token = localStorage.getItem('parallel_access_token');
+              const token = await getAccessToken();
               if (!token) {
                 setError('Please sign in to continue.');
                 setProcessing(false);
