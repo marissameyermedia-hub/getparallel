@@ -2,6 +2,7 @@ import { Pause, Play, AlertCircle, ChevronLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
+import { getAccessToken } from '../../utils/auth';
 
 interface PauseProfileViewProps {
   onBack: () => void;
@@ -25,7 +26,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
 
   const handleCancelSubscription = async () => {
     setCancelLoading(true);
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     try {
       const res = await fetch(`${MISC_FUNCTION_URL}/payment/cancel`, {
@@ -43,16 +44,18 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('parallel_access_token');
-    if (!token) return;
-    fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, { headers: getAuthHeaders(token) })
-      .then(r => {
-        // Silently ignore auth/server errors — keeps default UI state and avoids triggering the blank-screen overlay
-        if (!r.ok) return null;
-        return r.json();
-      })
-      .then(data => { if (typeof data?.isPaused === 'boolean') setIsPaused(data.isPaused); })
-      .catch(() => { /* network failure — keep defaults */ });
+    (async () => {
+      const token = await getAccessToken();
+      if (!token) return;
+      fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, { headers: getAuthHeaders(token) })
+        .then(r => {
+          // Silently ignore auth/server errors — keeps default UI state and avoids triggering the blank-screen overlay
+          if (!r.ok) return null;
+          return r.json();
+        })
+        .then(data => { if (typeof data?.isPaused === 'boolean') setIsPaused(data.isPaused); })
+        .catch(() => { /* network failure — keep defaults */ });
+    })();
   }, []);
 
   // If the user arrived here via "Cancel Subscription" on the Account page,
@@ -71,7 +74,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
   }, [hasActivated]);
 
   const setPauseState = async (paused: boolean) => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (token) {
       try {
         await fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {

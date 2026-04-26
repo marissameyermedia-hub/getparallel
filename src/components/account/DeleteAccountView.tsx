@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { supabase, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { EDGE_FUNCTION_URL } from '../../utils/supabase/client';
+import { getAccessToken } from '../../utils/auth';
 
 interface DeleteAccountViewProps {
   onBack: () => void;
@@ -22,7 +23,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
     setIsDeleting(true);
     setDeleteError('');
 
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
 
     if (!token) {
       setDeleteError('Session expired. Please sign in again and retry.');

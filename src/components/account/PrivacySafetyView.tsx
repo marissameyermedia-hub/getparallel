@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { toast } from 'sonner';
+import { getAccessToken } from '../../utils/auth';
 
 interface PrivacySafetyViewProps {
   onBack: () => void;
@@ -24,28 +25,30 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('parallel_access_token');
-    if (!token) return;
-    const headers = getAuthHeaders(token);
-    fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, { headers })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.privacySettings) {
-          const s = data.privacySettings;
-          if (typeof s.hideFromContacts === 'boolean') setHideFromContacts(s.hideFromContacts);
-          if (typeof s.readReceipts === 'boolean') setReadReceipts(s.readReceipts);
-          if (typeof s.onlineStatus === 'boolean') setOnlineStatus(s.onlineStatus);
-        }
-      })
-      .catch(err => console.error('Failed to fetch privacy settings:', err));
-    fetch(`${MISC_FUNCTION_URL}/safety/blocked`, { headers })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (typeof data?.count === 'number') setBlockedCount(data.count); })
-      .catch(err => console.error('Failed to fetch blocked count:', err));
+    (async () => {
+      const token = await getAccessToken();
+      if (!token) return;
+      const headers = getAuthHeaders(token);
+      fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.privacySettings) {
+            const s = data.privacySettings;
+            if (typeof s.hideFromContacts === 'boolean') setHideFromContacts(s.hideFromContacts);
+            if (typeof s.readReceipts === 'boolean') setReadReceipts(s.readReceipts);
+            if (typeof s.onlineStatus === 'boolean') setOnlineStatus(s.onlineStatus);
+          }
+        })
+        .catch(err => console.error('Failed to fetch privacy settings:', err));
+      fetch(`${MISC_FUNCTION_URL}/safety/blocked`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (typeof data?.count === 'number') setBlockedCount(data.count); })
+        .catch(err => console.error('Failed to fetch blocked count:', err));
+    })();
   }, []);
 
   const savePrivacySettings = async (settings: { hideFromContacts: boolean; readReceipts: boolean; onlineStatus: boolean }) => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) return;
     try {
       await fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
@@ -63,7 +66,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
   const toggleReadReceipts = () => { const next = !readReceipts; setReadReceipts(next); savePrivacySettings({ hideFromContacts, readReceipts: next, onlineStatus }); };
 
   const handleDownloadData = async () => {
-    const token = localStorage.getItem('parallel_access_token');
+    const token = await getAccessToken();
     if (!token) {
       toast.error('Please sign in to download your data');
       return;
