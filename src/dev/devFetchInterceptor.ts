@@ -52,23 +52,35 @@ function routeFor(path: string): unknown | null {
   return {};
 }
 
-// Routes for the dedicated email edge function (verification send/verify/status).
-// These mirror the real responses so DevGallery interactions feel realistic.
+// Routes for the dedicated email edge function (verification send/confirm,
+// match alerts, receipts, etc.). These mirror the real v2 responses so
+// DevGallery interactions feel realistic.
 function emailRouteFor(path: string): unknown | null {
   const clean = path.split("?")[0];
-  if (clean === "/send" || clean === "/resend") {
-    // Pretend the email was queued. The banner / account row will flip to
-    // "Sent ✓" briefly so you can see the success state.
-    return { success: true, sent: true };
+  // Verification send + legacy /resend alias both return { ok: true }
+  if (clean === "/verify-send" || clean === "/resend" || clean === "/send") {
+    return { ok: true };
   }
-  if (clean === "/verify") {
-    return { success: true, name: "Riley" };
+  // Verification confirm — flips email_verified server-side, returns ok
+  if (clean === "/verify-confirm" || clean === "/verify") {
+    return { ok: true };
+  }
+  // Optional emails — all just acknowledge "ok" or "skipped" in dev
+  if (
+    clean === "/match-alert" ||
+    clean === "/subscription-receipt" ||
+    clean === "/pause-confirm" ||
+    clean === "/resume-confirm" ||
+    clean === "/date-confirmed"
+  ) {
+    return { ok: true };
   }
   if (clean === "/status") {
+    // Legacy DevGallery probe — keep returning a flat shape
     return { verified: false };
   }
   if (clean === "/health" || clean === "/") {
-    return { ok: true, service: "email", version: "1" };
+    return { ok: true, service: "email", version: "2" };
   }
   return null;
 }
