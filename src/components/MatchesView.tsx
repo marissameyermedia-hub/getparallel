@@ -141,9 +141,6 @@ export function MatchesView({
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
             We're building the pool right now. Complete your questionnaire, invite friends, and get ready — the more people who join before launch day, the better everyone's first matches will be.
           </p>
-          <div className="inline-flex items-center gap-2 bg-black text-white text-sm font-medium px-4 py-2 rounded-full mb-8">
-            <span>Founding members get 47% off their first year — offer ends at launch</span>
-          </div>
           <div className="space-y-3 mb-8">
             <button
               onClick={onNavigateToInvite || handleShareInvite}
