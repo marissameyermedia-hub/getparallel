@@ -221,7 +221,7 @@ export function AccountPage({
         if (founding) setIsFoundingMember(true);
         setIsPaused(paused);
       })
-      .catch(err => console.error('Failed to load subscription details:', err));
+      .catch(() => { /* network failure — keep defaults, don't trigger blank-screen overlay */ });
   }, []);
 
   const handleExitFeedbackConfirm = async (foundMatch: boolean, reason: string) => {
