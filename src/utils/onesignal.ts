@@ -54,6 +54,13 @@ export function initOneSignal() {
         safari_web_id: 'web.onesignal.auto.4787ada6-f101-40da-894e-0a68fad84e0f',
         notifyButton: { enable: false },
         promptOptions: { autoPrompt: false },
+        // Explicit service worker path is required for PWA installs.
+        // Without this, OneSignal v16 silently fails to register the SW
+        // in standalone display mode (added to home screen).
+        serviceWorkerPath: 'OneSignalSDKWorker.js',
+        serviceWorkerParam: { scope: '/' },
+        // Allow native browser prompt rather than OneSignal's slidedown
+        allowLocalhostAsSecureOrigin: false,
       });
     } catch (err) {
       console.error('[OneSignal] init error:', err);
