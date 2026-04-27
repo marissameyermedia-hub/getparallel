@@ -308,9 +308,19 @@ export function NotificationsView({ userId, onBack, onShowDiagnostics }: Notific
         </button>
 
         <h1 className="text-2xl font-medium tracking-tight mb-1">Notifications</h1>
-        <p className="text-sm text-gray-500 mb-8">
+        <p className="text-sm text-gray-500 mb-4">
           Choose how you'd like to hear from Parallel.
         </p>
+
+        {onShowDiagnostics && (
+          <button
+            onClick={onShowDiagnostics}
+            className="mb-6 w-full text-left px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900 font-medium flex items-center justify-between"
+          >
+            <span>🔧 Push notification diagnostics</span>
+            <span className="text-blue-600">→</span>
+          </button>
+        )}
 
         {error && (
           <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-4" role="alert">
