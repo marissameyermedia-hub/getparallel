@@ -21,12 +21,17 @@ declare global {
 /** Get the OneSignal instance — directly if ready, queued if not. */
 function getOneSignal(): Promise<any> {
   return new Promise((resolve) => {
-    // Already initialized — use directly, no queue needed
-    if (window.OneSignal && typeof window.OneSignal.init === 'function') {
+    // Check if SDK is already initialized and ready to use.
+    // After init() completes, OneSignal.init is removed but Notifications exists.
+    // We check for Notifications OR User (both present post-init) to detect readiness.
+    if (
+      window.OneSignal &&
+      (window.OneSignal.Notifications || window.OneSignal.User)
+    ) {
       resolve(window.OneSignal);
       return;
     }
-    // Not ready yet — queue it
+    // Not ready yet — queue it. This runs when the SDK finishes init.
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push((os: any) => resolve(os));
   });
