@@ -6,7 +6,6 @@ import { useModalA11y } from '../../utils/useModalA11y';
 import {
   requestPushPermission,
   optOutOfPush,
-  optInToPush,
   getPushPermissionState,
   getPlayerId,
 } from '../../utils/onesignal';
@@ -152,67 +151,60 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
   // Push toggle handler — calls OneSignal to request/revoke permission,
   // saves the player ID to profiles so the backend can send notifications.
   const handlePushToggle = async (newValue: boolean) => {
-    // Push uses its own saving state so it NEVER freezes the other toggles.
-    // A 10-second safety timeout ensures it can't hang forever if the
-    // OneSignal SDK is slow to load or the promise never resolves.
     setIsPushSaving(true);
     setError('');
 
-    const safetyTimeout = setTimeout(() => {
-      setIsPushSaving(false);
-    }, 10000);
-
     try {
-      let playerId: string | null = null;
-
       if (newValue) {
+        // Check if browser has blocked notifications entirely
         const permState = await getPushPermissionState();
-
         if (permState === 'denied') {
-          setError(
-            'Notifications are blocked in your browser settings. To enable, click the lock icon in your address bar and allow notifications for getparallel.vip.'
-          );
+          setError('Notifications are blocked in your browser settings. To enable, open Settings and allow notifications for this site.');
           return;
         }
 
-        // Always go through requestPushPermission regardless of current state.
-        // It handles: already granted (skips prompt, gets ID), needs prompt, denied.
-        // optInToPush() can hang after a previous opt-out so we avoid it here.
-        playerId = await requestPushPermission();
+        // 1. Immediately flip the toggle and save push_enabled=true to backend.
+        //    The user gets instant feedback — no waiting for OneSignal.
+        const token = await getAuthToken();
+        const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+          body: JSON.stringify({ push_enabled: true }),
+        });
+        if (!res.ok) throw new Error('Could not save preference');
+        setPrefs({ ...prefs, push_enabled: true });
 
-        if (!playerId) {
-          // Permission denied or dismissed — revert toggle, no error shown
-          return;
-        }
+        // 2. Register the device with OneSignal in the background.
+        //    This may show a permission prompt or silently re-subscribe.
+        //    When done, save the player ID so the server can target this device.
+        requestPushPermission().then(async (playerId) => {
+          if (!playerId) return;
+          try {
+            const t = await getAuthToken();
+            await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}`, 'apikey': publicAnonKey },
+              body: JSON.stringify({ push_enabled: true, onesignal_player_id: playerId }),
+            });
+          } catch { /* non-critical — preference already saved above */ }
+        }).catch(() => {});
+
       } else {
-        // Turning off — save push_enabled=false to backend immediately.
-        // The server checks push_enabled before sending any notification,
-        // so this is sufficient to stop pushes. We don't call OneSignal here
-        // because it can hang if the SDK isn't in the expected state.
-        // Fire-and-forget optOut in background — non-blocking.
+        // Immediately flip toggle and save push_enabled=false to backend
+        const token = await getAuthToken();
+        const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+          body: JSON.stringify({ push_enabled: false }),
+        });
+        if (!res.ok) throw new Error('Could not save preference');
+        setPrefs({ ...prefs, push_enabled: false });
+        // Fire-and-forget opt-out — non-blocking
         optOutOfPush().catch(() => {});
       }
-
-      // Persist to backend regardless of whether SDK call succeeded
-      const token = await getAuthToken();
-      const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': publicAnonKey,
-        },
-        body: JSON.stringify({
-          push_enabled: newValue,
-          ...(playerId ? { onesignal_player_id: playerId } : {}),
-        }),
-      });
-      if (!res.ok) throw new Error('Could not save push preference');
-      setPrefs({ ...prefs, push_enabled: newValue });
     } catch (err: any) {
       setError(err.message || 'Could not update push notifications');
     } finally {
-      clearTimeout(safetyTimeout);
       setIsPushSaving(false);
     }
   };
