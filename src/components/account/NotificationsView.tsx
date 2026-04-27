@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, ChevronLeft, Info } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { supabase, MISC_FUNCTION_URL } from '../../utils/supabase/client';
+import { useModalA11y } from '../../utils/useModalA11y';
 
 interface NotificationsViewProps {
   userId: string;
@@ -37,6 +38,12 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
   const [showSmsConsentModal, setShowSmsConsentModal] = useState(false);
   const [showSmsOffConfirm, setShowSmsOffConfirm] = useState(false);
   const [error, setError] = useState('');
+
+  // Wire Escape-to-close + body-scroll-lock + focus restore for both modals.
+  // The "isSaving" guard prevents accidental closes while the network request
+  // is in flight — same as the existing onClose handlers below.
+  useModalA11y(showSmsConsentModal, () => { if (!isSaving) setShowSmsConsentModal(false); });
+  useModalA11y(showSmsOffConfirm, () => { if (!isSaving) setShowSmsOffConfirm(false); });
 
   // Get auth token for edge function calls
   const getAuthToken = async (): Promise<string> => {
@@ -188,8 +195,8 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+      <div className="min-h-screen bg-white flex items-center justify-center" role="status" aria-label="Loading notification preferences">
+        <Loader2 className="w-5 h-5 animate-spin text-gray-500" aria-hidden="true" />
       </div>
     );
   }
@@ -199,9 +206,10 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
       <div className="max-w-md mx-auto px-4 py-6">
         <button
           onClick={onBack}
+          aria-label="Back to account settings"
           className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-6"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4" aria-hidden="true" />
           Back
         </button>
 
@@ -211,7 +219,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
         </p>
 
         {error && (
-          <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-4">
+          <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-4" role="alert">
             {error}
           </div>
         )}
@@ -241,15 +249,15 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
           <div className="border-t border-gray-100">
             <div className="flex items-start justify-between py-4">
               <div className="flex-1 pr-4">
-                <div className="text-sm text-gray-900">SMS / text messages</div>
-                <div className="text-xs text-gray-500 mt-0.5">
+                <div className="text-sm text-gray-900" id="sms-toggle-label">SMS / text messages</div>
+                <div className="text-xs text-gray-500 mt-0.5" id="sms-toggle-sublabel">
                   {phoneNumber
                     ? `Sent to ${formatPhoneDisplay(phoneNumber)}`
                     : 'Add a verified phone number in account settings to enable'}
                 </div>
                 {prefs.sms_enabled && (
-                  <div className="text-xs text-gray-400 mt-1.5 flex items-start gap-1">
-                    <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-gray-500 mt-1.5 flex items-start gap-1">
+                    <Info className="w-3 h-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
                     <span>You can also reply STOP to any message to opt out instantly.</span>
                   </div>
                 )}
@@ -258,6 +266,8 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
                 checked={prefs.sms_enabled}
                 onChange={handleSmsToggle}
                 disabled={isSaving || !phoneNumber}
+                ariaLabelledBy="sms-toggle-label"
+                ariaDescribedBy="sms-toggle-sublabel"
               />
             </div>
           </div>
@@ -290,8 +300,11 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
 
       {/* SMS CONSENT MODAL */}
       {showSmsConsentModal && (
-        <Modal onClose={() => !isSaving && setShowSmsConsentModal(false)}>
-          <h2 className="text-lg font-medium mb-2">Enable SMS notifications</h2>
+        <Modal
+          onClose={() => !isSaving && setShowSmsConsentModal(false)}
+          labelledBy="sms-consent-title"
+        >
+          <h2 id="sms-consent-title" className="text-lg font-medium mb-2">Enable SMS notifications</h2>
           <p className="text-sm text-gray-600 mb-4">
             Texts will be sent to {phoneNumber && formatPhoneDisplay(phoneNumber)}.
           </p>
@@ -341,7 +354,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   Saving…
                 </>
               ) : (
@@ -354,8 +367,11 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
 
       {/* SMS OPT-OUT CONFIRMATION MODAL */}
       {showSmsOffConfirm && (
-        <Modal onClose={() => !isSaving && setShowSmsOffConfirm(false)}>
-          <h2 className="text-lg font-medium mb-2">Turn off SMS notifications?</h2>
+        <Modal
+          onClose={() => !isSaving && setShowSmsOffConfirm(false)}
+          labelledBy="sms-off-title"
+        >
+          <h2 id="sms-off-title" className="text-lg font-medium mb-2">Turn off SMS notifications?</h2>
           <p className="text-sm text-gray-600 mb-4">
             You won't receive text messages from Parallel. You can turn this back
             on anytime, or you can keep it off and we'll only contact you by email
@@ -377,7 +393,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   Saving…
                 </>
               ) : (
@@ -404,13 +420,24 @@ function Toggle({
   onChange: (v: boolean) => void;
   disabled?: boolean;
 }) {
+  // Generate stable ids for the label/sublabel so SwitchControl can reference them.
+  const safeId = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const labelId = `toggle-${safeId}-label`;
+  const sublabelId = sublabel ? `toggle-${safeId}-sublabel` : undefined;
+
   return (
     <div className="flex items-center justify-between py-4 border-t border-gray-100 first:border-t-0">
       <div className="flex-1 pr-4">
-        <div className="text-sm text-gray-900">{label}</div>
-        {sublabel && <div className="text-xs text-gray-500 mt-0.5">{sublabel}</div>}
+        <div id={labelId} className="text-sm text-gray-900">{label}</div>
+        {sublabel && <div id={sublabelId} className="text-xs text-gray-500 mt-0.5">{sublabel}</div>}
       </div>
-      <SwitchControl checked={value} onChange={onChange} disabled={disabled} />
+      <SwitchControl
+        checked={value}
+        onChange={onChange}
+        disabled={disabled}
+        ariaLabelledBy={labelId}
+        ariaDescribedBy={sublabelId}
+      />
     </div>
   );
 }
@@ -419,15 +446,21 @@ function SwitchControl({
   checked,
   onChange,
   disabled,
+  ariaLabelledBy,
+  ariaDescribedBy,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  ariaLabelledBy?: string;
+  ariaDescribedBy?: string;
 }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
       className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors ${
@@ -443,11 +476,22 @@ function SwitchControl({
   );
 }
 
-function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Modal({
+  children,
+  onClose,
+  labelledBy,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+  labelledBy?: string;
+}) {
   return (
     <div
       className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-4 sm:pb-0"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={labelledBy}
     >
       <div
         className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl"
