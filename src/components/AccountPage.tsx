@@ -5,6 +5,7 @@ import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '.
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 import { parallelQuestionnaire, Question } from '../data/parallelQuestionnaire_updated';
+import { useModalA11y } from '../utils/useModalA11y';
 
 // ── Conditional question visibility ────────────────────────────────
 // A question with a `showIf` clause is only "visible" (countable toward
@@ -77,12 +78,23 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
 
   const canConfirm = foundMatch !== null && reason !== '';
 
+  // Wire Escape-to-close + body-scroll-lock + focus restore.
+  // ExitFeedbackSheet only mounts while the parent has set
+  // `exitFeedbackAction` to non-null, so we can hard-code `true` for the
+  // open arg.
+  useModalA11y(true, onDismiss);
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-end justify-center">
+    <div
+      className="fixed inset-0 bg-black/50 z-[100] flex items-end justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="exit-feedback-title"
+    >
       <div className="bg-white rounded-t-3xl w-full max-w-md p-6 pb-10 max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold">Before you go</h2>
+          <h2 id="exit-feedback-title" className="text-lg font-semibold">Before you go</h2>
           <button onClick={onDismiss} className="text-gray-400 hover:text-gray-600 text-sm">
             Cancel
           </button>
@@ -229,6 +241,28 @@ export function AccountPage({
   const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [isFoundingMember, setIsFoundingMember] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+
+  // ── Modal accessibility hooks ────────────────────────────────────────────
+  // Each call wires Escape-to-close, body-scroll-lock, and focus-restore for
+  // one of the parent-controlled modals on this page. The reset callbacks
+  // mirror what the existing X-button click handlers do, so Escape closes
+  // cleanly and resets form state the same way.
+  useModalA11y(showStoryModal, () => {
+    setShowStoryModal(false);
+    setStoryText('');
+    setStoryHowLong('');
+    setStorySubmitted(false);
+  });
+  useModalA11y(showEmailModal, () => {
+    setShowEmailModal(false);
+    setEmailUpdateStatus('idle');
+    setEmailUpdateError('');
+  });
+  useModalA11y(feedbackModal !== null, () => {
+    setFeedbackModal(null);
+    setFeedbackMessage('');
+    setFeedbackSubmitted(false);
+  });
 
   // Compute completion against questions that are actually applicable to this user.
   // Questions hidden by their `showIf` rule (e.g. drinking-style questions for users
@@ -720,12 +754,17 @@ export function AccountPage({
 
       {/* Share Story Modal */}
       {showStoryModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center">
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="share-story-title"
+        >
           <div className="bg-white rounded-3xl p-6 pb-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
             {!storySubmitted ? (
               <>
                 <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-lg font-semibold">Share your story</h2>
+                  <h2 id="share-story-title" className="text-lg font-semibold">Share your story</h2>
                   <button
                     onClick={() => { setShowStoryModal(false); setStoryText(''); setStoryHowLong(''); setStorySubmitted(false); }}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700 text-lg"
@@ -811,7 +850,12 @@ export function AccountPage({
 
       {/* Email Update Modal */}
       {showEmailModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center">
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="email-update-title"
+        >
           <div className="bg-white rounded-3xl p-6 pb-10 sm:pb-6 w-full max-w-md">
             {emailUpdateStatus === 'success' ? (
               <div className="text-center py-4">
@@ -824,7 +868,7 @@ export function AccountPage({
             ) : (
               <>
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-lg font-semibold">Update email</h2>
+                  <h2 id="email-update-title" className="text-lg font-semibold">Update email</h2>
                   <button
                     onClick={() => { setShowEmailModal(false); setEmailUpdateStatus('idle'); setEmailUpdateError(''); }}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700 text-lg"
@@ -868,12 +912,17 @@ export function AccountPage({
 
       {/* Feedback / Feature Request Modal */}
       {feedbackModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center">
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feedback-modal-title"
+        >
           <div className="bg-white rounded-3xl p-6 pb-10 sm:pb-6 w-full max-w-md">
             {!feedbackSubmitted ? (
               <>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold">
+                  <h2 id="feedback-modal-title" className="text-lg font-semibold">
                     {feedbackModal === 'feature' ? 'Feature request' : 'Send feedback'}
                   </h2>
                   <button

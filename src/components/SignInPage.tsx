@@ -3,6 +3,7 @@ import { ParallelIcon } from './ParallelIcon';
 import { Mail, Lock, ArrowRight, X, Check, ShieldCheck, MapPin, Heart } from 'lucide-react';
 import { AppFooter } from './AppFooter';
 import { supabase } from '../utils/supabase/client';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface SignInPageProps {
   onSignIn: (accessToken: string, userId: string) => void;
@@ -104,6 +105,11 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
     setResetError('');
     setResetSuccess(false);
   };
+
+  // Wire Escape-to-close + body-scroll-lock + focus restore for the sign-in
+  // modal. This handles both the welcome-back and forgot-password sub-states,
+  // since closeSignInModal resets both.
+  useModalA11y(showSignIn, closeSignInModal);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -313,13 +319,16 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={closeSignInModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sign-in-modal-title"
         >
           <div
             className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
-              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center" aria-hidden="true">
                 <ParallelIcon size={20} className="text-white" />
               </div>
               <button
@@ -327,14 +336,14 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 className="text-gray-400 hover:text-black transition-colors"
                 aria-label="Close"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
 
             <div className="px-6 pb-8 pt-4">
               {!showForgotPassword && (
                 <>
-                  <h2 className="text-2xl font-semibold tracking-tight mb-1">Welcome back.</h2>
+                  <h2 id="sign-in-modal-title" className="text-2xl font-semibold tracking-tight mb-1">Welcome back.</h2>
                   <p className="text-gray-600 text-sm mb-6">Sign in to your Parallel account.</p>
 
                   {error && (
@@ -419,7 +428,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
 
               {showForgotPassword && !resetSuccess && (
                 <>
-                  <h2 className="text-2xl font-semibold tracking-tight mb-1">Reset your password</h2>
+                  <h2 id="sign-in-modal-title" className="text-2xl font-semibold tracking-tight mb-1">Reset your password</h2>
                   <p className="text-gray-600 text-sm mb-6">We'll email you a secure reset link.</p>
 
                   {resetError && (
