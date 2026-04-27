@@ -38,7 +38,7 @@ import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
-import { PushDiagnostics } from './components/account/PushDiagnostics';
+import { InstallPromptBanner } from './components/InstallPromptBanner';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
@@ -64,7 +64,7 @@ function App() {
     | 'matches' | 'questionnaire' | 'account' | 'profile' | 'my-profile'
     | 'payment-details' | 'privacy-safety' | 'notifications' | 'pause-profile'
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
-    | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox' | 'push-diagnostics'
+    | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
     | 'verification' | 'invite-friends' | 'reset-password'
     | 'preview-profile'
   >('signin');
@@ -1017,6 +1017,12 @@ function App() {
         />
       )}
 
+      {/* PWA install prompt — shows on Home for non-installed users with a 7-day snooze.
+          Only appears when user has completed onboarding and isn't already in a PWA install. */}
+      {hasCompletedOnboarding && currentView === 'home' && (
+        <InstallPromptBanner hasCompletedOnboarding={hasCompletedOnboarding} />
+      )}
+
       {/* Main content wrapper. Standard 64px top padding clears the
           Header. When the banner is visible we add ~42px more so content
           doesn't underlay the banner. */}
@@ -1341,12 +1347,9 @@ function App() {
           <PrivacySafetyView onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'notifications' && (
-          <NotificationsView userId={userId ?? ''} onBack={() => setCurrentView('account')} onShowDiagnostics={() => setCurrentView('push-diagnostics')} />
+          <NotificationsView userId={userId ?? ''} onBack={() => setCurrentView('account')} />
         )}
 
-        {currentView === 'push-diagnostics' && (
-          <PushDiagnostics onBack={() => setCurrentView('account')} />
-        )}
         {currentView === 'pause-profile' && (
           <PauseProfileView onBack={() => setCurrentView('account')} hasActivated={hasActivated} />
         )}
