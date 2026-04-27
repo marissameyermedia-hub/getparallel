@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface PassFeedbackBottomSheetProps {
   isOpen: boolean;
@@ -29,6 +30,9 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
     if (isOpen) setSelectedReasons([]);
   }, [isOpen]);
 
+  // Hook handles Escape-to-close, body-scroll-lock, focus restore.
+  useModalA11y(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const toggleReason = (id: string) =>
@@ -40,19 +44,32 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
   return (
     <>
       {/* Backdrop — z-[65] so it sits above bottom nav (z-[60]) but below sheet (z-[70]) */}
-      <div className="fixed inset-0 bg-black/40 z-[65]" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/40 z-[65]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       {/* Sheet — z-[70] so it's always above bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[70] max-h-[85vh] flex flex-col">
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[70] max-h-[85vh] flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pass-feedback-title"
+      >
 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold">Why did you pass?</h3>
+            <h3 id="pass-feedback-title" className="text-lg font-semibold">Why did you pass?</h3>
             <p className="text-sm text-gray-500 mt-0.5">Select all that apply</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <X className="w-5 h-5" />
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -63,6 +80,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
               <button
                 key={reason.id}
                 onClick={() => toggleReason(reason.id)}
+                aria-pressed={selectedReasons.includes(reason.id)}
                 className={`px-4 py-2 rounded-full border-2 transition-all text-sm ${
                   selectedReasons.includes(reason.id)
                     ? 'bg-black text-white border-black'

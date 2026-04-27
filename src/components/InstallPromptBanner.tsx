@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Share, X, MoreVertical, Plus } from 'lucide-react';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface InstallPromptBannerProps {
   hasCompletedOnboarding: boolean;
@@ -42,19 +43,19 @@ function InstallInstructions({ device }: { device: DeviceType }) {
     return (
       <div className="space-y-2 mb-6">
         <div className={stepStyle}>
-          <div className={numStyle}>1</div>
+          <div className={numStyle} aria-hidden="true">1</div>
           <p className="text-sm text-gray-700 leading-relaxed">
-            Tap the <Share className="inline w-4 h-4 mx-0.5 align-middle" /> <strong>Share</strong> button at the bottom of your Safari browser
+            Tap the <Share className="inline w-4 h-4 mx-0.5 align-middle" aria-hidden="true" /> <strong>Share</strong> button at the bottom of your Safari browser
           </p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>2</div>
+          <div className={numStyle} aria-hidden="true">2</div>
           <p className="text-sm text-gray-700 leading-relaxed">
-            Scroll down and tap <strong>"Add to Home Screen"</strong> <Plus className="inline w-4 h-4 mx-0.5 align-middle" />
+            Scroll down and tap <strong>"Add to Home Screen"</strong> <Plus className="inline w-4 h-4 mx-0.5 align-middle" aria-hidden="true" />
           </p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>3</div>
+          <div className={numStyle} aria-hidden="true">3</div>
           <p className="text-sm text-gray-700 leading-relaxed">
             Tap <strong>"Add"</strong> in the top right corner
           </p>
@@ -70,13 +71,13 @@ function InstallInstructions({ device }: { device: DeviceType }) {
           <p className="text-sm text-amber-800">For the best experience on iPhone, open this page in <strong>Safari</strong> first.</p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>1</div>
+          <div className={numStyle} aria-hidden="true">1</div>
           <p className="text-sm text-gray-700 leading-relaxed">
-            Tap the <Share className="inline w-4 h-4 mx-0.5 align-middle" /> <strong>Share</strong> button at the bottom of Chrome
+            Tap the <Share className="inline w-4 h-4 mx-0.5 align-middle" aria-hidden="true" /> <strong>Share</strong> button at the bottom of Chrome
           </p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>2</div>
+          <div className={numStyle} aria-hidden="true">2</div>
           <p className="text-sm text-gray-700 leading-relaxed">
             Tap <strong>"Add to Home Screen"</strong>
           </p>
@@ -92,12 +93,12 @@ function InstallInstructions({ device }: { device: DeviceType }) {
           <p className="text-sm text-amber-800">For the best experience on iPhone, open this page in <strong>Safari</strong> instead.</p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>1</div>
+          <div className={numStyle} aria-hidden="true">1</div>
           <p className="text-sm text-gray-700">Open <strong>getparallel.vip</strong> in Safari</p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>2</div>
-          <p className="text-sm text-gray-700">Tap <Share className="inline w-4 h-4 mx-0.5 align-middle" /> Share, then <strong>"Add to Home Screen"</strong></p>
+          <div className={numStyle} aria-hidden="true">2</div>
+          <p className="text-sm text-gray-700">Tap <Share className="inline w-4 h-4 mx-0.5 align-middle" aria-hidden="true" /> Share, then <strong>"Add to Home Screen"</strong></p>
         </div>
       </div>
     );
@@ -107,19 +108,19 @@ function InstallInstructions({ device }: { device: DeviceType }) {
     return (
       <div className="space-y-2 mb-6">
         <div className={stepStyle}>
-          <div className={numStyle}>1</div>
+          <div className={numStyle} aria-hidden="true">1</div>
           <p className="text-sm text-gray-700 leading-relaxed">
-            Tap the <MoreVertical className="inline w-4 h-4 mx-0.5 align-middle" /> <strong>menu</strong> (three dots) in the top right of Chrome
+            Tap the <MoreVertical className="inline w-4 h-4 mx-0.5 align-middle" aria-hidden="true" /> <strong>menu</strong> (three dots) in the top right of Chrome
           </p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>2</div>
+          <div className={numStyle} aria-hidden="true">2</div>
           <p className="text-sm text-gray-700 leading-relaxed">
             Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>
           </p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>3</div>
+          <div className={numStyle} aria-hidden="true">3</div>
           <p className="text-sm text-gray-700 leading-relaxed">
             Tap <strong>"Add"</strong> to confirm
           </p>
@@ -132,11 +133,11 @@ function InstallInstructions({ device }: { device: DeviceType }) {
     return (
       <div className="space-y-2 mb-6">
         <div className={stepStyle}>
-          <div className={numStyle}>1</div>
-          <p className="text-sm text-gray-700">Tap the <MoreVertical className="inline w-4 h-4 mx-0.5 align-middle" /> <strong>menu</strong> in Firefox</p>
+          <div className={numStyle} aria-hidden="true">1</div>
+          <p className="text-sm text-gray-700">Tap the <MoreVertical className="inline w-4 h-4 mx-0.5 align-middle" aria-hidden="true" /> <strong>menu</strong> in Firefox</p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>2</div>
+          <div className={numStyle} aria-hidden="true">2</div>
           <p className="text-sm text-gray-700">Tap <strong>"Install"</strong> or <strong>"Add to Home Screen"</strong></p>
         </div>
       </div>
@@ -147,11 +148,11 @@ function InstallInstructions({ device }: { device: DeviceType }) {
     return (
       <div className="space-y-2 mb-6">
         <div className={stepStyle}>
-          <div className={numStyle}>1</div>
+          <div className={numStyle} aria-hidden="true">1</div>
           <p className="text-sm text-gray-700">Look for the <strong>install icon</strong> (⊕) in the right side of the Chrome address bar</p>
         </div>
         <div className={stepStyle}>
-          <div className={numStyle}>2</div>
+          <div className={numStyle} aria-hidden="true">2</div>
           <p className="text-sm text-gray-700">Click it and select <strong>"Install"</strong></p>
         </div>
       </div>
@@ -191,6 +192,9 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
     setIsVisible(false);
   };
 
+  // Hook handles Escape-to-close, body-scroll-lock, focus restore.
+  useModalA11y(isVisible, handleDismiss);
+
   const handleNativeInstall = async () => {
     if (!window.deferredInstallPrompt) return;
     try {
@@ -210,22 +214,31 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={handleDismiss} />
-      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 shadow-2xl">
+      <div
+        className="fixed inset-0 bg-black/40 z-40"
+        onClick={handleDismiss}
+        aria-hidden="true"
+      />
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="install-prompt-title"
+      >
         <div className="relative max-w-md mx-auto">
           <button
             onClick={handleDismiss}
             className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors z-10"
             aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
 
           <div className="px-6 pt-6 pb-8">
             <div className="inline-block bg-black text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
               BETTER EXPERIENCE
             </div>
-            <h2 className="text-2xl font-semibold text-black mb-2">
+            <h2 id="install-prompt-title" className="text-2xl font-semibold text-black mb-2">
               Add Parallel to your home screen
             </h2>
             <p className="text-gray-600 text-base leading-relaxed mb-6">

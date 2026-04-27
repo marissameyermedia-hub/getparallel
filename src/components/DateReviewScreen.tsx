@@ -1,5 +1,6 @@
 import { X, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface DateReviewScreenProps {
   isOpen: boolean;
@@ -43,11 +44,14 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
   const [showSafetyWarning, setShowSafetyWarning] = useState(false);
 
+  // Hook handles Escape-to-close, body-scroll-lock, focus restore.
+  useModalA11y(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const toggleReason = (reasonId: string) => {
     const reason = NEGATIVE_REASONS.find(r => r.id === reasonId);
-    
+
     if (reason?.isSafety) {
       if (!selectedReasons.includes(reasonId)) {
         setShowSafetyWarning(true);
@@ -75,9 +79,9 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
       reasons: selectedReasons,
       isSafetyIssue: selectedReasons.includes('felt_unsafe'),
     };
-    
+
     onSubmit(review);
-    
+
     // Reset form
     setWouldGoAgain(null);
     setChemistryRating(null);
@@ -88,31 +92,36 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
     onClose();
   };
 
-  const canSubmit = wouldGoAgain !== null && 
-                     chemistryRating !== null && 
-                     conversationRating !== null && 
+  const canSubmit = wouldGoAgain !== null &&
+                     chemistryRating !== null &&
+                     conversationRating !== null &&
                      respectfulnessRating !== null;
 
-  const RatingStars = ({ 
-    rating, 
-    onChange, 
-    label 
-  }: { 
-    rating: number | null; 
-    onChange: (val: number) => void; 
+  const RatingStars = ({
+    rating,
+    onChange,
+    label,
+    idPrefix,
+  }: {
+    rating: number | null;
+    onChange: (val: number) => void;
     label: string;
+    idPrefix: string;
   }) => (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-900">{label}</label>
-      <div className="flex gap-2">
+      <span id={`${idPrefix}-label`} className="text-sm font-medium text-gray-900 block">{label}</span>
+      <div className="flex gap-2" role="radiogroup" aria-labelledby={`${idPrefix}-label`}>
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
             onClick={() => onChange(value)}
+            role="radio"
+            aria-checked={rating === value}
+            aria-label={`${value} of 5`}
             className={`w-12 h-12 rounded-full border-2 transition-all ${
               rating !== null && value <= rating
                 ? 'bg-black text-white border-black'
-                : 'bg-white text-gray-400 border-gray-300 hover:border-gray-400'
+                : 'bg-white text-gray-500 border-gray-300 hover:border-gray-400'
             }`}
           >
             {value}
@@ -123,19 +132,25 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="date-review-title"
+    >
       <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-xl font-medium">How was your date?</h2>
+            <h2 id="date-review-title" className="text-xl font-medium">How was your date?</h2>
             <p className="text-sm text-gray-600 mt-1">with {matchName}</p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 hover:bg-gray-100 rounded-full"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -143,10 +158,12 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Would you go out again? */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-900">Would you go out again?</label>
-            <div className="flex gap-3">
+            <span id="would-go-again-label" className="text-sm font-medium text-gray-900 block">Would you go out again?</span>
+            <div className="flex gap-3" role="radiogroup" aria-labelledby="would-go-again-label">
               <button
                 onClick={() => setWouldGoAgain(true)}
+                role="radio"
+                aria-checked={wouldGoAgain === true}
                 className={`flex-1 px-6 py-3 rounded-full border-2 transition-all ${
                   wouldGoAgain === true
                     ? 'bg-black text-white border-black'
@@ -157,6 +174,8 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
               </button>
               <button
                 onClick={() => setWouldGoAgain(false)}
+                role="radio"
+                aria-checked={wouldGoAgain === false}
                 className={`flex-1 px-6 py-3 rounded-full border-2 transition-all ${
                   wouldGoAgain === false
                     ? 'bg-black text-white border-black'
@@ -169,30 +188,33 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
           </div>
 
           {/* Ratings */}
-          <RatingStars 
+          <RatingStars
             rating={chemistryRating}
             onChange={setChemistryRating}
             label="Chemistry rating"
+            idPrefix="chemistry"
           />
 
-          <RatingStars 
+          <RatingStars
             rating={conversationRating}
             onChange={setConversationRating}
             label="Conversation rating"
+            idPrefix="conversation"
           />
 
-          <RatingStars 
+          <RatingStars
             rating={respectfulnessRating}
             onChange={setRespectfulnessRating}
             label="Respectfulness rating"
+            idPrefix="respectfulness"
           />
 
           {/* Reasons (optional, shown if negative ratings) */}
           {wouldGoAgain === false && (
             <div className="space-y-3 pt-4 border-t border-gray-200">
-              <label className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-gray-900 block">
                 What went wrong? (Optional)
-              </label>
+              </span>
               <p className="text-xs text-gray-600">
                 This helps us improve your future matches
               </p>
@@ -201,6 +223,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
                   <button
                     key={reason.id}
                     onClick={() => toggleReason(reason.id)}
+                    aria-pressed={selectedReasons.includes(reason.id)}
                     className={`px-4 py-2 rounded-full border-2 transition-all ${
                       selectedReasons.includes(reason.id)
                         ? reason.isSafety
@@ -216,15 +239,18 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
 
               {/* Safety Warning */}
               {showSafetyWarning && (
-                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mt-4">
+                <div
+                  className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mt-4"
+                  role="alert"
+                >
                   <div className="flex gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     <div>
                       <p className="text-sm font-medium text-red-900 mb-1">
                         Safety Concern Reported
                       </p>
                       <p className="text-sm text-red-800">
-                        Your report will be immediately reviewed by our safety team. 
+                        Your report will be immediately reviewed by our safety team.
                         This user may be suspended pending investigation.
                       </p>
                     </div>
@@ -237,7 +263,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
           {/* Privacy Notice */}
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-600 text-center">
-              🔒 Your feedback is completely private and will never be shown to {matchName}. 
+              🔒 Your feedback is completely private and will never be shown to {matchName}.
               It only helps improve your future matches.
             </p>
           </div>
@@ -251,7 +277,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             className={`w-full px-6 py-3 rounded-full transition-all ${
               canSubmit
                 ? 'bg-black text-white hover:bg-gray-800'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >
             Submit Review

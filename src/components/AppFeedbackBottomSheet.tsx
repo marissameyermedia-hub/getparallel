@@ -1,5 +1,6 @@
 import { X, Star } from 'lucide-react';
 import { useState } from 'react';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface AppFeedbackBottomSheetProps {
   isOpen: boolean;
@@ -22,6 +23,9 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
   const [rating, setRating] = useState<number | null>(null);
   const [message, setMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Hook handles Escape-to-close, body-scroll-lock, focus restore.
+  useModalA11y(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -53,25 +57,32 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/40 z-40"
         onClick={handleClose}
+        aria-hidden="true"
       />
 
       {/* Bottom Sheet */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-hidden animate-slide-up">
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-hidden animate-slide-up"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="app-feedback-title"
+      >
         <div className="flex flex-col max-h-[85vh]">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold">Send Feedback</h3>
+              <h3 id="app-feedback-title" className="text-lg font-semibold">Send Feedback</h3>
               <p className="text-sm text-gray-600 mt-0.5">Help us improve Parallel</p>
             </div>
             <button
               onClick={handleClose}
+              aria-label="Close"
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
@@ -79,10 +90,11 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
           <div className="flex-1 overflow-y-auto p-4 space-y-5">
             {/* Feedback Type Dropdown */}
             <div>
-              <label className="text-sm font-medium text-gray-900 mb-2 block">
+              <label htmlFor="app-feedback-type" className="text-sm font-medium text-gray-900 mb-2 block">
                 What's this about?
               </label>
               <select
+                id="app-feedback-type"
                 value={feedbackType}
                 onChange={(e) => setFeedbackType(e.target.value)}
                 className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
@@ -97,14 +109,17 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
 
             {/* Optional Star Rating */}
             <div>
-              <label className="text-sm font-medium text-gray-900 mb-2 block">
+              <span id="app-feedback-rating-label" className="text-sm font-medium text-gray-900 mb-2 block">
                 Rate your experience (optional)
-              </label>
-              <div className="flex gap-2">
+              </span>
+              <div className="flex gap-2" role="radiogroup" aria-labelledby="app-feedback-rating-label">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     onClick={() => setRating(rating === star ? null : star)}
+                    role="radio"
+                    aria-checked={rating === star}
+                    aria-label={`${star} star${star === 1 ? '' : 's'}`}
                     className="p-1 transition-transform hover:scale-110"
                   >
                     <Star
@@ -113,6 +128,7 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
                           ? 'fill-black stroke-black'
                           : 'fill-none stroke-gray-300'
                       }`}
+                      aria-hidden="true"
                     />
                   </button>
                 ))}
@@ -121,10 +137,11 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
 
             {/* Message Text Area */}
             <div>
-              <label className="text-sm font-medium text-gray-900 mb-2 block">
+              <label htmlFor="app-feedback-message" className="text-sm font-medium text-gray-900 mb-2 block">
                 Your feedback
               </label>
               <textarea
+                id="app-feedback-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Tell us what's on your mind..."
