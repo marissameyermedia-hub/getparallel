@@ -8,6 +8,7 @@ import {
   optOutOfPush,
   optInToPush,
   getPushPermissionState,
+  getPlayerId,
 } from '../../utils/onesignal';
 
 interface NotificationsViewProps {
@@ -122,6 +123,31 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
       setIsSaving(false);
     }
   };
+
+  // On mount: if push shows as enabled but this device has no player ID,
+  // silently try to register it. Handles the common case where push_enabled
+  // defaults to true but the user never went through the permission flow.
+  useEffect(() => {
+    if (isLoading) return;
+    if (!prefs.push_enabled) return;
+    const registerIfNeeded = async () => {
+      try {
+        const permState = await getPushPermissionState();
+        if (permState !== 'granted') return; // Don't prompt automatically
+        const existingId = await getPlayerId();
+        if (!existingId) return; // No subscription yet — wait for user to toggle
+        // We have permission + a player ID — save it to backend silently
+        const token = await getAuthToken();
+        if (!token) return;
+        await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+          body: JSON.stringify({ push_enabled: true, onesignal_player_id: existingId }),
+        });
+      } catch { /* silent — non-critical */ }
+    };
+    registerIfNeeded();
+  }, [isLoading, prefs.push_enabled]);
 
   // Push toggle handler — calls OneSignal to request/revoke permission,
   // saves the player ID to profiles so the backend can send notifications.
