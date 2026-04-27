@@ -133,9 +133,10 @@ export function AdminCaseDetail({
           <div className="flex items-center gap-4 mb-4">
             <button
               onClick={onBack}
+              aria-label="Back to dashboard"
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5" aria-hidden="true" />
             </button>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-1">

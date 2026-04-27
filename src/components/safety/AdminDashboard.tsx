@@ -201,9 +201,10 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
             <div className="flex items-center gap-4">
               <button
                 onClick={onBack}
+                aria-label="Go back"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" aria-hidden="true" />
               </button>
               <div>
                 <h1 className="text-2xl font-bold">Trust & Safety Dashboard</h1>
