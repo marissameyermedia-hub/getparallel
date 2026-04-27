@@ -1127,6 +1127,7 @@ function App() {
             onLogOut={handleLogOut}
             hasActivated={hasActivated}
             userName={userName}
+            userEmail={localStorage.getItem('parallel_user_email') || ''}
             hasVerified={hasVerified}
             userAnswers={userAnswers}
           />
