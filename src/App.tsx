@@ -929,6 +929,11 @@ function App() {
 
   return (
     <>
+      {/* Skip-to-content link for keyboard users — visually hidden until focused */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to main content
+      </a>
+
       {/* Header — hidden on fullscreen views */}
       {!isFullscreenView && (
         <Header
@@ -957,7 +962,7 @@ function App() {
       {/* Main content wrapper. Standard 64px top padding clears the
           Header. When the banner is visible we add ~42px more so content
           doesn't underlay the banner. */}
-      <div className={!isFullscreenView ? (showEmailBanner ? 'pt-[6.5rem]' : 'pt-16') : ''}>
+      <div id="main-content" className={!isFullscreenView ? (showEmailBanner ? 'pt-[6.5rem]' : 'pt-16') : ''}>
         {/* ── Reset Password ── */}
         {currentView === 'reset-password' && (
           <ResetPasswordPage
