@@ -14,6 +14,11 @@ export function BottomNav({ onNavigate, currentView, unreadMessageCount = 0 }: B
     return currentView === view;
   };
 
+  // Hard-hide during messaging so the nav never covers the input bar.
+  // App.tsx also conditionally renders this via isFullscreenView, but this
+  // inline guard is a belt-and-suspenders defence against stale builds.
+  if (currentView === 'messaging') return null;
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 z-50"
