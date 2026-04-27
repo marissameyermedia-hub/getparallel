@@ -195,7 +195,7 @@ export function MatchesView({
           >
             Invite a friend →
           </button>
-          <p className="text-sm text-gray-400 mt-4">
+          <p className="text-sm text-gray-500 mt-4">
             The more people you invite, the more people they invite, the better everyone's matches get.
           </p>
         </div>
@@ -273,7 +273,7 @@ export function MatchesView({
               className="text-amber-600 hover:text-amber-900 flex-shrink-0 mt-0.5"
               aria-label="Dismiss"
             >
-              <X size={16} />
+              <X size={16} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -288,7 +288,7 @@ export function MatchesView({
               </div>
               <div>
                 <p className="text-white font-medium text-sm">Verify your identity →</p>
-                <p className="text-gray-400 text-xs">Takes 2 minutes</p>
+                <p className="text-gray-500 text-xs">Takes 2 minutes</p>
               </div>
             </div>
             <button
@@ -388,7 +388,7 @@ export function MatchesView({
             >
               Invite a friend →
             </button>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500">
               The more people you invite, the more people they invite, the better everyone's matches get.
             </p>
           </div>
@@ -411,7 +411,7 @@ export function MatchesView({
             >
               Invite a friend →
             </button>
-            <p className="text-sm text-gray-400 mt-4">
+            <p className="text-sm text-gray-500 mt-4">
               The more people you invite, the more people they invite, the better everyone's matches get.
             </p>
           </div>

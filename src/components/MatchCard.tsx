@@ -253,8 +253,8 @@ export function MatchCard({
               className="w-12 h-12 border-2 border-gray-200 rounded-full hover:border-gray-400 transition-all flex flex-col items-center justify-center gap-0.5 flex-shrink-0"
               aria-label="Pass"
             >
-              <X size={16} className="text-gray-500" />
-              <span className="text-[10px] text-gray-400">Pass</span>
+              <X size={16} className="text-gray-500" aria-hidden="true" />
+              <span className="text-[10px] text-gray-500">Pass</span>
             </button>
             <button
               onClick={handleLikeClick}

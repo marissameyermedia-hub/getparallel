@@ -266,7 +266,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
           className="mb-8 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Go back"
         >
-          <ChevronLeft size={24} />
+          <ChevronLeft size={24} aria-hidden="true" />
         </button>
 
         <div className="mb-6">

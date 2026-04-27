@@ -178,7 +178,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
           {actionLabel}
         </button>
 
-        <p className="text-center text-xs text-gray-400 mt-3">
+        <p className="text-center text-xs text-gray-500 mt-3">
           {action === 'pause' && 'Your subscription continues. Profile hidden temporarily.'}
           {action === 'cancel' && 'Access continues until the end of your billing period.'}
           {action === 'delete' && 'This is permanent and cannot be undone.'}
@@ -494,7 +494,7 @@ export function AccountPage({
               </span>
             </div>
             {!isComplete && (
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-gray-500 mt-2">
                 Answering more questions improves your match quality.
               </p>
             )}
@@ -526,7 +526,7 @@ export function AccountPage({
             >
               <User size={20} className="text-white mb-2" />
               <p className="text-sm font-medium text-white">Edit Profile</p>
-              <p className="text-xs text-gray-400">Photos, bio, details</p>
+              <p className="text-xs text-gray-500">Photos, bio, details</p>
             </button>
 
             {/* Preview Profile — directly on account page */}
@@ -662,7 +662,7 @@ export function AccountPage({
                 <Heart size={20} className="text-gray-600" />
                 <div className="flex-1 text-left">
                   <p className="text-sm">Share your story</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Tell us how Parallel worked for you</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tell us how Parallel worked for you</p>
                 </div>
                 <ChevronRight size={16} className="text-gray-400" />
               </button>
@@ -670,7 +670,7 @@ export function AccountPage({
                 <FileText size={20} className="text-gray-600" />
                 <div className="flex-1 text-left">
                   <p className="text-sm">Send feedback</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Report a bug or share a thought</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Report a bug or share a thought</p>
                 </div>
                 <ChevronRight size={16} className="text-gray-400" />
               </button>
@@ -678,7 +678,7 @@ export function AccountPage({
                 <FileText size={20} className="text-gray-600" />
                 <div className="flex-1 text-left">
                   <p className="text-sm">Feature request</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Tell us what you'd like to see</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tell us what you'd like to see</p>
                 </div>
                 <ChevronRight size={16} className="text-gray-400" />
               </button>
@@ -697,7 +697,7 @@ export function AccountPage({
               <Pause size={20} className="text-gray-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1 text-left">
                 <p className="font-medium text-sm">{isPaused ? 'Resume My Profile' : 'Pause My Profile'}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-gray-500 mt-0.5">
                   {isPaused
                     ? 'Your profile is currently hidden. Tap to make it visible again.'
                     : 'Hides your profile and pauses your subscription. Your questionnaire and matches are saved. Resume anytime.'}
@@ -714,7 +714,7 @@ export function AccountPage({
                 <CreditCard size={20} className="text-gray-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 text-left">
                   <p className="font-medium text-sm">Cancel Subscription</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     Access continues until end of billing period
                   </p>
                 </div>
@@ -744,7 +744,7 @@ export function AccountPage({
             </button>
 
             {/* Reassurance line for older users anxious about being trapped */}
-            <p className="text-center text-xs text-gray-400 pt-1">
+            <p className="text-center text-xs text-gray-500 pt-1">
               Need to leave? You can always delete your account above — we make it easy.
             </p>
           </div>
@@ -783,7 +783,7 @@ export function AccountPage({
                     style={{ fontSize: '16px' }}
                   />
                   {/* Positive framing: show minimum before they type, affirm once they pass it, nothing in between */}
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-500 mt-1">
                     {storyText.length === 0
                       ? 'At least 10 characters — a couple of sentences is perfect.'
                       : storyText.length >= 10

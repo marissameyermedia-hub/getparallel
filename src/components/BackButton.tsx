@@ -12,7 +12,7 @@ export function BackButton({ onClick, className = '' }: BackButtonProps) {
       className={`fixed bottom-6 left-6 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors bg-white shadow-sm z-50 ${className}`}
       aria-label="Go back"
     >
-      <ChevronLeft size={22} />
+      <ChevronLeft size={22} aria-hidden="true" />
     </button>
   );
 }

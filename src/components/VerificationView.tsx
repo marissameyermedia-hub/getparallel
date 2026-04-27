@@ -158,7 +158,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
           className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors mb-8"
           aria-label="Go back"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={20} aria-hidden="true" />
         </button>
 
         {/* Header */}

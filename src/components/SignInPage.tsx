@@ -685,11 +685,11 @@ function PreviewMatchCard({
 
         {/* Action buttons — visually identical to MatchCard but decorative (no handlers) */}
         <div className="flex items-center gap-3 pt-1">
-          <div className="w-12 h-12 border-2 border-gray-200 rounded-full flex flex-col items-center justify-center gap-0.5 flex-shrink-0">
+          <div className="w-12 h-12 border-2 border-gray-200 rounded-full flex flex-col items-center justify-center gap-0.5 flex-shrink-0" aria-hidden="true">
             <X size={16} className="text-gray-500" />
-            <span className="text-[10px] text-gray-400">Pass</span>
+            <span className="text-[10px] text-gray-500">Pass</span>
           </div>
-          <div className="flex-1 h-12 rounded-full bg-black text-white flex items-center justify-center gap-2 font-medium">
+          <div className="flex-1 h-12 rounded-full bg-black text-white flex items-center justify-center gap-2 font-medium" aria-hidden="true">
             <Heart size={18} />
             <span className="text-sm">Like</span>
           </div>
