@@ -186,10 +186,12 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
           return;
         }
       } else {
-        // Turning off — opt out. If OneSignal isn't loaded yet, skip silently
-        // and just save push_enabled=false to the backend so the server
-        // won't send pushes. The player ID stays stored for when they re-enable.
-        try { await optOutOfPush(); } catch { /* SDK not ready — ignore */ }
+        // Turning off — save push_enabled=false to backend immediately.
+        // The server checks push_enabled before sending any notification,
+        // so this is sufficient to stop pushes. We don't call OneSignal here
+        // because it can hang if the SDK isn't in the expected state.
+        // Fire-and-forget optOut in background — non-blocking.
+        optOutOfPush().catch(() => {});
       }
 
       // Persist to backend regardless of whether SDK call succeeded
