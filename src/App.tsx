@@ -954,7 +954,7 @@ function App() {
 
   const isFullscreenView = [
     'onboarding', 'signin', 'account-creation', 'phone-verification',
-    'payment-confirmation', 'reset-password'
+    'payment-confirmation', 'reset-password', 'messaging'
   ].includes(currentView);
 
   // Soft email-verification gate: signed-in but unverified users see a
