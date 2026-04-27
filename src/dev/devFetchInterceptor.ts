@@ -29,15 +29,24 @@ function routeFor(path: string): unknown | null {
       conversations: MOCK_INBOX.map((m) => ({
         user_id_1: MOCK_USER_ID,
         user_id_2: m.matchId,
-        user1: { name: "You" },
-        user2: { name: m.matchName },
+        user1: { id: MOCK_USER_ID, name: "You", photoUrl: "" },
+        user2: { id: m.matchId, name: m.matchName, photoUrl: m.matchPhoto },
         last_message_at: m.hasMessages ? m.timestamp : null,
         created_at: m.timestamp,
       })),
     };
   }
+  if (clean.includes("/messages/realtime-config")) {
+    return { supabaseUrl: "https://mock.supabase.co", supabaseAnonKey: "mock-key", conversationId: "mock-conv-1", filter: "conversation_id=eq.mock-conv-1" };
+  }
+  if (clean.includes("/messages/mark-read")) {
+    return { success: true, count: 0 };
+  }
+  if (clean.includes("/messages/send")) {
+    return { success: true, message: { id: "mock-msg-" + Date.now(), senderId: MOCK_USER_ID, text: "", created_at: new Date().toISOString() }, conversationId: "mock-conv-1" };
+  }
   if (clean.includes("/messages/")) {
-    return { messages: MOCK_MESSAGES };
+    return { conversationId: "mock-conv-1", messages: MOCK_MESSAGES };
   }
   if (clean.endsWith("/auth/validate-token")) {
     return { success: true, name: "Riley" };
