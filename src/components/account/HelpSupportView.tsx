@@ -176,7 +176,7 @@ export function HelpSupportView({ onBack, onNavigate }: HelpSupportViewProps) {
             <details className="p-4 bg-gray-50 rounded-2xl">
               <summary className="font-medium cursor-pointer">How does the matching algorithm work?</summary>
               <p className="mt-3 text-sm text-gray-700 leading-relaxed">
-                Our algorithm analyzes your comprehensive questionnaire responses across lifestyle, values, interests, and personality traits. We prioritize compatibility in areas that matter most for long-term relationship success, including communication styles, life goals, and core values.
+                Our algorithm analyzes your questionnaire responses across 8 categories: Attachment & Emotional Health, Communication & Conflict, Life Goals, Values & Beliefs, Lifestyle Behaviors, Relationship Psychology, Attraction & Preferences, and Life Logistics. We prioritize compatibility in the areas that matter most for long-term relationship success, including communication styles, life goals, and core values.
               </p>
             </details>
 
