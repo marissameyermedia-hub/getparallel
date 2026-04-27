@@ -137,9 +137,9 @@ export function MatchesView({
           <div className="mb-8 flex justify-center">
             <ParallelIcon size={64} className="text-black" />
           </div>
-          <h2 className="text-3xl font-bold mb-4">Matching opens May 15th.</h2>
+          <h2 className="text-3xl font-bold mb-4">You're in the pool. Matching opens soon.</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
-            We're building the pool right now. Complete your questionnaire, invite friends, and get ready — the more people who join before launch day, the better everyone's first matches will be.
+            We're building the matching pool right now. Invite friends, and get ready — the more people who join before launch day, the better everyone's matches will be.
           </p>
           <div className="space-y-3 mb-8">
             <button
@@ -195,6 +195,9 @@ export function MatchesView({
           >
             Invite a friend →
           </button>
+          <p className="text-sm text-gray-400 mt-4">
+            The more people you invite, the more people they invite, the better everyone's matches get.
+          </p>
         </div>
       </div>
     );
@@ -255,7 +258,7 @@ export function MatchesView({
             <div className="flex-1">
               <p className="text-amber-900 font-medium text-sm">Please verify your email</p>
               <p className="text-amber-700 text-xs mt-0.5 leading-relaxed">
-                Check your inbox for a link from hello@getparallel.vip to get the best matches.
+                Check your inbox for a link from hello@getparallel.vip to get the best matches. Remember to check your junk folder.
               </p>
               <button
                 onClick={handleResendVerification}
@@ -284,7 +287,7 @@ export function MatchesView({
                 <ShieldCheck size={18} className="text-white" />
               </div>
               <div>
-                <p className="text-white font-medium text-sm">Get verified to stand out ✓</p>
+                <p className="text-white font-medium text-sm">Verify your identity →</p>
                 <p className="text-gray-400 text-xs">Takes 2 minutes</p>
               </div>
             </div>
@@ -313,13 +316,13 @@ export function MatchesView({
                   <div className="bg-white/95 rounded-2xl px-6 py-5 max-w-xs">
                     <p className="text-2xl font-semibold mb-1">{matches.length} match{matches.length !== 1 ? 'es' : ''} waiting</p>
                     <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                      Your top match is {matches[0]?.compatibilityScore}% compatible. Subscribe to see who they are and start messaging.
+                      Your top match is {matches[0]?.compatibilityScore}% compatible.
                     </p>
                     <button
                       onClick={onNavigateToPayment}
                       className="w-full bg-black text-white py-3 rounded-full font-medium hover:bg-gray-800 transition-colors text-[13px]"
                     >
-                      See your matches — from $6.58/mo
+                      See your matches →
                     </button>
                   </div>
                 </div>
@@ -327,7 +330,7 @@ export function MatchesView({
             </div>
           </div>
           <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-5 text-center">
-            <p className="font-semibold mb-1">🌱 Help us find better matches for you</p>
+            <p className="font-semibold mb-1">Help us find better matches for you.</p>
             <p className="text-sm text-gray-600 mb-4 leading-relaxed">
               Parallel is a new community. Every person you invite makes the pool better for everyone — including you.
             </p>
@@ -358,9 +361,26 @@ export function MatchesView({
             <div className="mb-8">
               <ParallelIcon size={64} className="text-black" />
             </div>
-            <h2 className="text-3xl font-bold mb-3">Your match suggestions are on their way!</h2>
+            <h2 className="text-3xl font-bold mb-4">Your matches are on their way.</h2>
+            <div className="w-full max-w-xs mb-6">
+              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-black rounded-full"
+                  style={{
+                    animation: 'matchingProgress 2.4s ease-in-out infinite',
+                  }}
+                />
+              </div>
+              <style>{`
+                @keyframes matchingProgress {
+                  0%   { width: 0%;   margin-left: 0%; }
+                  50%  { width: 60%;  margin-left: 20%; }
+                  100% { width: 0%;   margin-left: 100%; }
+                }
+              `}</style>
+            </div>
             <p className="text-gray-600 text-lg leading-relaxed mb-8 max-w-md">
-              We're finding your most compatible people. You'll get a text when they're ready.
+              We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
             </p>
             <button
               onClick={onNavigateToInvite || handleShareInvite}
@@ -369,7 +389,7 @@ export function MatchesView({
               Invite a friend →
             </button>
             <p className="text-sm text-gray-400">
-              The more people you invite, the better everyone's matches get.
+              The more people you invite, the more people they invite, the better everyone's matches get.
             </p>
           </div>
         ) : validMatches.length === 0 ? (
@@ -391,6 +411,9 @@ export function MatchesView({
             >
               Invite a friend →
             </button>
+            <p className="text-sm text-gray-400 mt-4">
+              The more people you invite, the more people they invite, the better everyone's matches get.
+            </p>
           </div>
         ) : (
           <SwipeableMatchView

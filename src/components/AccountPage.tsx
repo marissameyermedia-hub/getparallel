@@ -41,6 +41,7 @@ interface AccountPageProps {
   onLogOut: () => void;
   hasActivated: boolean;
   userName?: string;
+  userEmail?: string;
   hasVerified?: boolean;
   userAnswers?: Record<string, any>;
   /** @deprecated — completion is now computed from `userAnswers` against the
@@ -198,6 +199,7 @@ export function AccountPage({
   onLogOut,
   hasActivated,
   userName,
+  userEmail: initialUserEmail,
   hasVerified,
   userAnswers = {},
   // totalQuestions intentionally ignored — see prop comment above.
@@ -214,6 +216,13 @@ export function AccountPage({
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  // Email update state
+  const [currentEmail, setCurrentEmail] = useState(initialUserEmail || localStorage.getItem('parallel_user_email') || '');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailUpdateStatus, setEmailUpdateStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [emailUpdateError, setEmailUpdateError] = useState('');
 
   // Subscription detail — gracefully hydrated if backend exposes it, hidden if not
   const [subscriptionPlan, setSubscriptionPlan] = useState<string | null>(null);
@@ -264,6 +273,55 @@ export function AccountPage({
         .catch(() => { /* network failure — keep defaults, don't trigger blank-screen overlay */ });
     })();
   }, []);
+
+  const handleEmailUpdate = async () => {
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) {
+      setEmailUpdateError('Please enter a valid email address.');
+      return;
+    }
+    if (trimmed === currentEmail.toLowerCase()) {
+      setEmailUpdateError('That\'s already your current email.');
+      return;
+    }
+    setEmailUpdateStatus('saving');
+    setEmailUpdateError('');
+    const token = await getAccessToken();
+    if (!token) {
+      setEmailUpdateStatus('error');
+      setEmailUpdateError('Session expired — please sign in again.');
+      return;
+    }
+    try {
+      const res = await fetch(`${MISC_FUNCTION_URL}/account/update-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': publicAnonKey,
+        },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setEmailUpdateStatus('error');
+        setEmailUpdateError(data.error || 'Could not update email. Please try again.');
+        return;
+      }
+      // Update local state and localStorage so UI reflects immediately
+      setCurrentEmail(trimmed);
+      localStorage.setItem('parallel_user_email', trimmed);
+      setEmailUpdateStatus('success');
+      setNewEmail('');
+      setTimeout(() => {
+        setShowEmailModal(false);
+        setEmailUpdateStatus('idle');
+      }, 1800);
+    } catch {
+      setEmailUpdateStatus('error');
+      setEmailUpdateError('Network error. Please check your connection and try again.');
+    }
+  };
 
   const handleExitFeedbackConfirm = async (foundMatch: boolean, reason: string) => {
     const token = await getAccessToken();
@@ -458,6 +516,20 @@ export function AccountPage({
                   <p className="text-sm text-gray-600">Name</p>
                   <p>{userName || '—'}</p>
                 </div>
+              </div>
+
+              <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
+                <User size={20} className="text-gray-600" />
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="text-sm break-all">{currentEmail || '—'}</p>
+                </div>
+                <button
+                  onClick={() => { setNewEmail(''); setEmailUpdateStatus('idle'); setEmailUpdateError(''); setShowEmailModal(true); }}
+                  className="text-sm font-medium text-black underline flex-shrink-0"
+                >
+                  Edit
+                </button>
               </div>
 
               {/* Membership — now shows plan type, renewal date, and founding badge when available */}
@@ -730,6 +802,63 @@ export function AccountPage({
                 </div>
                 <button onClick={() => { setShowStoryModal(false); setStorySubmitted(false); setStoryText(''); setStoryHowLong(''); }} className="w-full mt-6 py-4 bg-black text-white rounded-full font-medium text-sm hover:bg-gray-800 transition-colors">
                   Done
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Email Update Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center">
+          <div className="bg-white rounded-3xl p-6 pb-10 sm:pb-6 w-full max-w-md">
+            {emailUpdateStatus === 'success' ? (
+              <div className="text-center py-4">
+                <p className="text-2xl mb-2">✓</p>
+                <p className="font-semibold text-lg mb-1">Email updated</p>
+                <p className="text-sm text-gray-500">
+                  A confirmation link has been sent to your new address. Click it to complete the change.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-lg font-semibold">Update email</h2>
+                  <button
+                    onClick={() => { setShowEmailModal(false); setEmailUpdateStatus('idle'); setEmailUpdateError(''); }}
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700 text-lg"
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 mb-1">Current email</p>
+                <p className="text-sm font-medium mb-5 break-all">{currentEmail || '—'}</p>
+                <label className="block text-sm text-gray-600 mb-1.5">New email address</label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={e => { setNewEmail(e.target.value); setEmailUpdateError(''); }}
+                  placeholder="you@example.com"
+                  className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-base outline-none focus:border-black transition-colors mb-1"
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') handleEmailUpdate(); }}
+                />
+                {emailUpdateError && (
+                  <p className="text-xs text-red-600 mb-3">{emailUpdateError}</p>
+                )}
+                {!emailUpdateError && (
+                  <p className="text-xs text-gray-400 mb-4">
+                    We'll send a confirmation link to your new address. Your email won't change until you click it.
+                  </p>
+                )}
+                <button
+                  onClick={handleEmailUpdate}
+                  disabled={emailUpdateStatus === 'saving' || !newEmail.trim()}
+                  className="w-full bg-black text-white py-3.5 rounded-full font-medium disabled:opacity-40 transition-opacity"
+                >
+                  {emailUpdateStatus === 'saving' ? 'Sending link…' : 'Send confirmation link'}
                 </button>
               </>
             )}

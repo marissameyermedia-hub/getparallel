@@ -271,7 +271,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
 
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Create Account</h1>
-          <p className="text-gray-600">Join people who are serious about finding the right person.</p>
+          <p className="text-gray-600">You deserve to have everything you want. Tell us what it is.</p>
         </div>
 
         {error && (

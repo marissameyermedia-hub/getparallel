@@ -136,7 +136,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 Professional matchmaking
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
-                Ready to get matched?
+                Find someone who aligns.
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
                 We're your matchmaker. You tell us what you want. We find the person you're looking for.
