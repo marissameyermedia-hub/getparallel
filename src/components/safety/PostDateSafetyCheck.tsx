@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { useModalA11y } from '../../utils/useModalA11y';
 
 interface PostDateSafetyCheckProps {
   isOpen: boolean;
@@ -30,6 +31,9 @@ export function PostDateSafetyCheck({
   const [concernDetails, setConcernDetails] = useState('');
   const [showConcernField, setShowConcernField] = useState(false);
 
+  // Wire Escape-to-close + body-scroll-lock + focus restore.
+  useModalA11y(isOpen, onClose);
+
   if (!isOpen) return null;
 
   const handleSubmit = () => {
@@ -57,16 +61,22 @@ export function PostDateSafetyCheck({
   const hasAnyConcerns = feltSafe === false || boundariesRespected === false || anythingMisleading === true;
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="post-date-safety-title"
+    >
       <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Post-Date Safety Check</h2>
+          <h2 id="post-date-safety-title" className="text-xl font-semibold">Post-Date Safety Check</h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 

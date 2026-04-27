@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, AlertTriangle, Upload, Check } from 'lucide-react';
+import { useModalA11y } from '../../utils/useModalA11y';
 
 interface ReportFlowProps {
   isOpen: boolean;
@@ -58,6 +59,18 @@ export function ReportFlow({
   const [screenshots, setScreenshots] = useState<File[]>([]);
   const [feelsUnsafe, setFeelsUnsafe] = useState(false);
 
+  // Wire Escape-to-close + body-scroll-lock + focus restore.
+  // Hooks must run before the early-return guard, so we inline the
+  // form-reset logic (same as handleClose below) instead of referencing it.
+  useModalA11y(isOpen, () => {
+    setStep('category');
+    setCategory('');
+    setDescription('');
+    setScreenshots([]);
+    setFeelsUnsafe(false);
+    onClose();
+  });
+
   if (!isOpen) return null;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,18 +102,24 @@ export function ReportFlow({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="report-flow-title"
+    >
       <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
+          <h2 id="report-flow-title" className="text-xl font-semibold">
             {step === 'confirmation' ? 'Report Submitted' : 'Report User'}
           </h2>
           <button
             onClick={handleClose}
+            aria-label="Close"
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
