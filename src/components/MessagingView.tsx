@@ -97,6 +97,7 @@ export function MessagingView({
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showStarters, setShowStarters] = useState(false);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [viewportOffsetTop, setViewportOffsetTop] = useState<number>(0);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -104,15 +105,25 @@ export function MessagingView({
   const currentUserId = localStorage.getItem('parallel_user_id') || '';
   const lastActiveText = formatLastActive(lastActiveAt);
 
-  // Track visualViewport so layout shrinks correctly when iOS keyboard opens.
-  // Without this the header gets pushed off screen when keyboard appears.
+  // Track visualViewport height AND offsetTop so the container shrinks
+  // correctly when the iOS keyboard opens and the viewport shifts up.
+  // - height: shrinks when keyboard appears → container shrinks, input stays visible
+  // - offsetTop: how far the visual viewport has shifted from the layout viewport top
+  //   → we translate the container down by this amount so it stays anchored correctly
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setViewportHeight(Math.round(vv.height));
+    const update = () => {
+      setViewportHeight(Math.round(vv.height));
+      setViewportOffsetTop(Math.round(vv.offsetTop));
+    };
     update();
     vv.addEventListener('resize', update);
-    return () => vv.removeEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
   }, []);
 
   // Lock body scroll while messaging view is open — prevents iOS from
@@ -255,7 +266,7 @@ export function MessagingView({
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, viewportHeight]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -367,12 +378,16 @@ export function MessagingView({
 
   return (
     <div
-      className="fixed left-0 right-0 top-0 bottom-0 flex flex-col bg-white overflow-hidden z-[60]"
+      className="fixed left-0 right-0 top-0 flex flex-col bg-white overflow-hidden z-[60]"
       style={{
-        // Use top/bottom anchoring instead of explicit height.
-        // 'bottom: 0' + 'top: 0' + 'fixed' = fills exactly the visual viewport
-        // including iOS Safari bottom toolbar, without needing dvh calculations.
-        paddingTop: 'env(safe-area-inset-top)',
+        // height = visual viewport height (shrinks when keyboard opens on iOS)
+        // transform = shift down by offsetTop so we stay anchored to the
+        //   visual viewport when iOS Safari scrolls the layout viewport up
+        //   to make room for the keyboard. Together these two keep the input
+        //   bar pinned just above the keyboard at all times.
+        height: viewportHeight ? `${viewportHeight}px` : '100dvh',
+        transform: viewportOffsetTop ? `translateY(${viewportOffsetTop}px)` : undefined,
+        paddingTop: viewportOffsetTop ? 0 : 'env(safe-area-inset-top)',
       }}
     >
 
