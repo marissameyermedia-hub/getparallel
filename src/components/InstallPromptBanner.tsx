@@ -175,20 +175,33 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
   const [canShowNativePrompt, setCanShowNativePrompt] = useState(false);
 
   useEffect(() => {
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches;
-    const isDismissed = localStorage.getItem('parallel_install_prompt_dismissed') === 'true';
+    const isInstalled = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as any).standalone === true; // iOS Safari standalone check
     const detected = detectDevice();
     setDevice(detected);
     setCanShowNativePrompt(!!window.deferredInstallPrompt);
 
-    if (hasCompletedOnboarding && !isInstalled && !isDismissed) {
+    // Snooze logic: dismissal stores a timestamp. Re-prompt after 7 days.
+    const SNOOZE_DAYS = 7;
+    const SNOOZE_MS = SNOOZE_DAYS * 24 * 60 * 60 * 1000;
+    const dismissedAt = localStorage.getItem('parallel_install_prompt_dismissed_at');
+    const isStillSnoozed = dismissedAt
+      ? Date.now() - parseInt(dismissedAt, 10) < SNOOZE_MS
+      : false;
+
+    // Skip on desktop with no native prompt available - the instructions there
+    // are awkward and most desktop users aren't going to install.
+    const isUselessForDesktop = (detected === 'desktop-other');
+
+    if (hasCompletedOnboarding && !isInstalled && !isStillSnoozed && !isUselessForDesktop) {
       const timer = setTimeout(() => setIsVisible(true), 2000);
       return () => clearTimeout(timer);
     }
   }, [hasCompletedOnboarding]);
 
   const handleDismiss = () => {
-    localStorage.setItem('parallel_install_prompt_dismissed', 'true');
+    // Store timestamp so we can re-prompt after 7 days
+    localStorage.setItem('parallel_install_prompt_dismissed_at', String(Date.now()));
     setIsVisible(false);
   };
 
@@ -201,7 +214,9 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
       await window.deferredInstallPrompt.prompt();
       const { outcome } = await window.deferredInstallPrompt.userChoice;
       if (outcome === 'accepted') {
-        localStorage.setItem('parallel_install_prompt_dismissed', 'true');
+        // Once installed, isInstalled check will skip the prompt forever.
+        // Set a far-future timestamp as belt-and-suspenders.
+        localStorage.setItem('parallel_install_prompt_dismissed_at', String(Date.now()));
         setIsVisible(false);
       }
       window.deferredInstallPrompt = null;
