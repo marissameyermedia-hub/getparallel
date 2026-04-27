@@ -89,9 +89,10 @@ export function InviteView({ onBack }: InviteViewProps) {
         <div className="flex items-center justify-between px-4 h-14">
           <button
             onClick={onBack}
+            aria-label="Go back"
             className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition-colors"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={24} aria-hidden="true" />
           </button>
           <h1 className="font-semibold absolute left-1/2 -translate-x-1/2">Invite Friends</h1>
           <div className="w-10"></div>
