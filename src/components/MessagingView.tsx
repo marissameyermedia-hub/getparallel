@@ -130,6 +130,32 @@ export function MessagingView({
     };
   }, []);
 
+  // Escape-to-close for the unmatch modal. We don't use the shared
+  // useModalA11y hook here because this view already manages body scroll
+  // and the visualViewport, and double-locking would break the iOS
+  // keyboard handling above.
+  useEffect(() => {
+    if (!showUnmatchModal) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setShowUnmatchModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [showUnmatchModal]);
+
+  // Escape-to-close for the safety popover menu.
+  useEffect(() => {
+    if (!showSafetyMenu) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowSafetyMenu(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [showSafetyMenu]);
+
   // When input gains focus, scroll messages to bottom instead of letting
   // iOS auto-scroll the page (which hides the header).
   const handleInputFocus = () => {
@@ -350,9 +376,14 @@ export function MessagingView({
 
       {/* Unmatch Modal */}
       {showUnmatchModal && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6">
+        <div
+          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="messaging-unmatch-title"
+        >
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full">
-            <h2 className="text-lg font-semibold mb-2">Unmatch {matchName}?</h2>
+            <h2 id="messaging-unmatch-title" className="text-lg font-semibold mb-2">Unmatch {matchName}?</h2>
             <p className="text-gray-500 mb-6 text-sm leading-relaxed">
               This conversation will end and they'll be removed from your matches. This can't be undone.
             </p>
@@ -367,15 +398,19 @@ export function MessagingView({
       {/* Header - fixed at top */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
         <div className="flex items-center gap-2.5">
-          <button onClick={onBack} className="p-1 -ml-1 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0">
-            <ArrowLeft size={20} />
+          <button
+            onClick={onBack}
+            aria-label="Back to inbox"
+            className="p-1 -ml-1 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+          >
+            <ArrowLeft size={20} aria-hidden="true" />
           </button>
 
           <div className="flex-shrink-0">
             {matchPhoto ? (
               <img src={matchPhoto} alt={matchName} className="w-10 h-10 rounded-full object-cover" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
                 <span className="text-white text-sm font-semibold">{getInitials(matchName)}</span>
               </div>
             )}
@@ -383,33 +418,52 @@ export function MessagingView({
 
           <div className="flex-1 min-w-0">
             <h2 className="text-base font-semibold truncate leading-tight">{matchName}</h2>
-            <p className="text-xs text-gray-400 leading-tight">{lastActiveText}</p>
+            <p className="text-xs text-gray-500 leading-tight">{lastActiveText}</p>
           </div>
 
           <div className="relative flex-shrink-0" ref={safetyMenuRef}>
-            <button onClick={() => setShowSafetyMenu(!showSafetyMenu)} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors">
-              <MoreVertical size={20} />
+            <button
+              onClick={() => setShowSafetyMenu(!showSafetyMenu)}
+              aria-label="More options"
+              aria-expanded={showSafetyMenu}
+              aria-haspopup="menu"
+              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <MoreVertical size={20} aria-hidden="true" />
             </button>
             {showSafetyMenu && (
-              <div className="w-48 bg-white rounded-2xl shadow-xl border border-gray-200 absolute right-0 top-10 z-50 overflow-hidden">
-                <button onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors text-left">
-                  <UserMinus size={16} className="text-gray-500" /><span className="text-sm">Unmatch</span>
+              <div className="w-48 bg-white rounded-2xl shadow-xl border border-gray-200 absolute right-0 top-10 z-50 overflow-hidden" role="menu">
+                <button
+                  onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
+                  role="menuitem"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <UserMinus size={16} className="text-gray-500" aria-hidden="true" /><span className="text-sm">Unmatch</span>
                 </button>
                 {onConfirmMet && !bothConfirmedMet && (
                   <button
                     onClick={() => { setShowSafetyMenu(false); onConfirmMet(matchId); }}
                     disabled={hasConfirmedMet}
+                    role="menuitem"
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors border-t border-gray-100 disabled:opacity-50 text-left"
                   >
-                    <Check size={16} className="text-gray-500" />
+                    <Check size={16} className="text-gray-500" aria-hidden="true" />
                     <span className="text-sm">{hasConfirmedMet ? 'Waiting for them…' : 'We Met in Person'}</span>
                   </button>
                 )}
-                <button onClick={handleReportUser} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors border-t border-gray-100 text-left">
-                  <Flag size={16} className="text-gray-500" /><span className="text-sm">Report</span>
+                <button
+                  onClick={handleReportUser}
+                  role="menuitem"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors border-t border-gray-100 text-left"
+                >
+                  <Flag size={16} className="text-gray-500" aria-hidden="true" /><span className="text-sm">Report</span>
                 </button>
-                <button onClick={handleBlockUser} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors border-t border-gray-100 text-left text-red-600">
-                  <Ban size={16} /><span className="text-sm">Block</span>
+                <button
+                  onClick={handleBlockUser}
+                  role="menuitem"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors border-t border-gray-100 text-left text-red-600"
+                >
+                  <Ban size={16} aria-hidden="true" /><span className="text-sm">Block</span>
                 </button>
               </div>
             )}
@@ -418,13 +472,19 @@ export function MessagingView({
       </div>
 
       {/* Messages area - ONLY this scrolls */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div
+        className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+        role="log"
+        aria-label={`Conversation with ${matchName}`}
+        aria-live="polite"
+      >
         {/* Conversation starters - more compact */}
         {messages.length === 0 && showStarters && mutualMatch && (
           <div className="mb-3">
             <div className="flex items-center gap-1.5 mb-2">
-              <Sparkles size={11} className="text-gray-400" />
-              <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">Conversation starters</span>
+              <Sparkles size={11} className="text-gray-500" aria-hidden="true" />
+              <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Conversation starters</span>
             </div>
             <div className="space-y-1.5">
               {STARTERS.map((starter, i) => (
@@ -443,13 +503,13 @@ export function MessagingView({
         {/* Locked empty state */}
         {!mutualMatch && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mb-3" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-500">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </div>
             <p className="text-sm font-semibold text-gray-800 mb-1">Messaging locked</p>
-            <p className="text-xs text-gray-400 leading-relaxed max-w-[220px]">
+            <p className="text-xs text-gray-500 leading-relaxed max-w-[220px]">
               Both of you need to like each other before messaging unlocks.
             </p>
           </div>
@@ -474,7 +534,7 @@ export function MessagingView({
                   {isLast && (
                     <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
                       <p className={`text-[10px] ${isMe ? 'text-gray-400' : 'text-gray-500'}`}>{formatTime(message.timestamp)}</p>
-                      {isMe && <CheckCheck size={10} className="text-gray-400" />}
+                      {isMe && <CheckCheck size={10} className="text-gray-400" aria-label="Sent" />}
                     </div>
                   )}
                 </div>
@@ -483,9 +543,9 @@ export function MessagingView({
           })}
 
           {isTyping && (
-            <div className="flex justify-start mt-1.5">
+            <div className="flex justify-start mt-1.5" aria-live="polite" aria-label={`${matchName} is typing`}>
               <div className="bg-gray-100 rounded-[18px] rounded-bl-[4px] px-3 py-2">
-                <div className="flex gap-1 items-center">
+                <div className="flex gap-1 items-center" aria-hidden="true">
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                   <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -508,7 +568,7 @@ export function MessagingView({
               onClick={() => onOpenDateReview(matchId)}
               className="w-full flex items-center justify-center gap-2 bg-black text-white px-5 py-2.5 rounded-full text-sm font-medium"
             >
-              <Check size={14} />
+              <Check size={14} aria-hidden="true" />
               Leave a Date Review
             </button>
           </div>
@@ -519,7 +579,7 @@ export function MessagingView({
             convo itself is locked (mutual match required) so we don't stack
             two competing "you can't message" reasons. */}
         {!isLocked && !emailVerified && (
-          <div className="mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+          <div className="mb-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200" role="status">
             <p className="text-xs text-amber-900 leading-snug">
               <span className="font-medium">Verify your email to send messages.</span>
               <span className="text-amber-800"> Tap "Resend" in the banner above to receive your verification link.</span>
@@ -533,7 +593,9 @@ export function MessagingView({
               ? 'bg-gray-100 border-gray-200 opacity-60'
               : 'bg-gray-50 border-gray-200 focus-within:bg-white focus-within:border-gray-300'
           }`}>
+            <label htmlFor="message-input" className="sr-only">Message {matchName}</label>
             <textarea
+              id="message-input"
               ref={textareaRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
@@ -555,9 +617,10 @@ export function MessagingView({
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || messagingDisabled}
+            aria-label="Send message"
             className="bg-black text-white p-2.5 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 active:scale-95"
           >
-            <Send size={16} />
+            <Send size={16} aria-hidden="true" />
           </button>
         </div>
       </div>

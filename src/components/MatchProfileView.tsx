@@ -4,6 +4,7 @@ import { Match } from '../types';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
+import { useModalA11y } from '../utils/useModalA11y';
 
 function getAuthHeaders(token: string) {
   return {
@@ -66,6 +67,11 @@ export function MatchProfileView({
   const [isMutual, setIsMutual] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
 
+  // Wire Escape-to-close + body-scroll-lock + focus restore for all 3 modals.
+  useModalA11y(showUnmatchModal, () => setShowUnmatchModal(false));
+  useModalA11y(showReportModal, () => setShowReportModal(false));
+  useModalA11y(showBlockModal, () => setShowBlockModal(false));
+
   const { user, compatibilityScore, matchDetails } = match;
   const photos = user.photos?.length ? user.photos : (user.photoUrl ? [user.photoUrl] : []);
   const politics = (user as any).politics as string | null | undefined;
@@ -103,6 +109,16 @@ export function MatchProfileView({
     }
     if (showSafetyMenu) document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showSafetyMenu]);
+
+  // Close the safety popover menu on Escape.
+  useEffect(() => {
+    if (!showSafetyMenu) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowSafetyMenu(false);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
   }, [showSafetyMenu]);
 
   const handlePass = () => { onPass(user.id); };
@@ -168,41 +184,48 @@ export function MatchProfileView({
       <div className="max-w-2xl mx-auto px-4 mb-4 flex items-center justify-between">
         <button
           onClick={onBack}
+          aria-label="Back to matches"
           className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors flex items-center gap-1"
         >
-          <ChevronLeft size={20} />
+          <ChevronLeft size={20} aria-hidden="true" />
           <span className="text-sm text-gray-600">Matches</span>
         </button>
         <div className="relative safety-menu-container">
           <button
             onClick={() => setShowSafetyMenu(!showSafetyMenu)}
+            aria-label="More options"
+            aria-expanded={showSafetyMenu}
+            aria-haspopup="menu"
             className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
           >
-            <MoreVertical size={20} />
+            <MoreVertical size={20} aria-hidden="true" />
           </button>
           {showSafetyMenu && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowSafetyMenu(false)} />
-              <div className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden z-50">
+              <div className="fixed inset-0 z-40" onClick={() => setShowSafetyMenu(false)} aria-hidden="true" />
+              <div className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden z-50" role="menu">
                 <button
                   onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
+                  role="menuitem"
                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
                 >
-                  <UserMinus size={18} className="text-gray-600" />
+                  <UserMinus size={18} className="text-gray-600" aria-hidden="true" />
                   <span>Unmatch</span>
                 </button>
                 <button
                   onClick={() => { setShowSafetyMenu(false); setShowReportModal(true); }}
+                  role="menuitem"
                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-t border-gray-100"
                 >
-                  <Flag size={18} className="text-gray-600" />
+                  <Flag size={18} className="text-gray-600" aria-hidden="true" />
                   <span>Report User</span>
                 </button>
                 <button
                   onClick={() => { setShowSafetyMenu(false); setShowBlockModal(true); }}
+                  role="menuitem"
                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-t border-gray-100 text-red-600"
                 >
-                  <Ban size={18} />
+                  <Ban size={18} aria-hidden="true" />
                   <span>Block User</span>
                 </button>
               </div>
@@ -213,9 +236,14 @@ export function MatchProfileView({
 
       {/* Unmatch Modal */}
       {showUnmatchModal && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6">
+        <div
+          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="unmatch-modal-title"
+        >
           <div className="bg-white rounded-3xl p-6 max-w-md w-full">
-            <h2 className="mb-3">Unmatch {user.name}?</h2>
+            <h2 id="unmatch-modal-title" className="mb-3">Unmatch {user.name}?</h2>
             <p className="text-gray-600 mb-6 text-sm leading-relaxed">
               They'll be removed from your matches and won't be able to contact you. You can unblock them anytime from Privacy & Safety in your account.
             </p>
@@ -229,9 +257,14 @@ export function MatchProfileView({
 
       {/* Report Modal */}
       {showReportModal && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6">
+        <div
+          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="report-modal-title"
+        >
           <div className="bg-white rounded-3xl p-6 max-w-md w-full">
-            <h2 className="mb-4">Report {user.name}</h2>
+            <h2 id="report-modal-title" className="mb-4">Report {user.name}</h2>
             {!showReportSuccess ? (
               <>
                 <p className="text-gray-600 mb-4 text-sm">Help us keep Parallel safe. Select the reason for your report.</p>
@@ -274,7 +307,7 @@ export function MatchProfileView({
                 <button onClick={() => setShowReportModal(false)} className="w-full py-3 mt-3 border-2 border-gray-200 rounded-full hover:border-gray-400 transition-colors">Cancel</button>
               </>
             ) : (
-              <div className="py-4 text-center space-y-2">
+              <div className="py-4 text-center space-y-2" role="status">
                 <p className="text-gray-700 font-medium">✓ Report submitted</p>
                 <p className="text-sm text-gray-500">Our team will review it as soon as possible.</p>
               </div>
@@ -285,9 +318,14 @@ export function MatchProfileView({
 
       {/* Block Modal */}
       {showBlockModal && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6">
+        <div
+          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="block-modal-title"
+        >
           <div className="bg-white rounded-3xl p-6 max-w-md w-full">
-            <h2 className="mb-4">Block {user.name}?</h2>
+            <h2 id="block-modal-title" className="mb-4">Block {user.name}?</h2>
             <p className="text-gray-600 mb-6 text-sm leading-relaxed">They won't be able to see your profile or message you.</p>
             <div className="space-y-3">
               <button onClick={async () => {
@@ -309,17 +347,27 @@ export function MatchProfileView({
         <div>
           <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border-2 border-gray-200">
             {photos[photoIndex] ? (
-              <img src={photos[photoIndex]} alt={user.name} className="w-full h-full object-cover" />
+              <img src={photos[photoIndex]} alt={`${user.name}, photo ${photoIndex + 1} of ${photos.length}`} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <p className="text-gray-400">No photo</p>
+                <p className="text-gray-500">No photo</p>
               </div>
             )}
             {photos.length > 1 && (
               <>
-                <div className="absolute left-0 top-0 w-1/3 h-full z-10 cursor-pointer" onClick={() => setPhotoIndex(i => Math.max(0, i - 1))} />
-                <div className="absolute right-0 top-0 w-1/3 h-full z-10 cursor-pointer" onClick={() => setPhotoIndex(i => Math.min(photos.length - 1, i + 1))} />
-                <div className="absolute top-3 left-0 right-0 flex justify-center gap-1 z-20">
+                <button
+                  type="button"
+                  className="absolute left-0 top-0 w-1/3 h-full z-10 cursor-pointer"
+                  onClick={() => setPhotoIndex(i => Math.max(0, i - 1))}
+                  aria-label="Previous photo"
+                />
+                <button
+                  type="button"
+                  className="absolute right-0 top-0 w-1/3 h-full z-10 cursor-pointer"
+                  onClick={() => setPhotoIndex(i => Math.min(photos.length - 1, i + 1))}
+                  aria-label="Next photo"
+                />
+                <div className="absolute top-3 left-0 right-0 flex justify-center gap-1 z-20" aria-hidden="true">
                   {photos.map((_, idx) => (
                     <div key={idx} className={`h-1 rounded-full transition-all ${idx === photoIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`} />
                   ))}
@@ -328,7 +376,7 @@ export function MatchProfileView({
             )}
             {user.isVerified && (
               <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-white px-3 py-1.5 rounded-full shadow-lg">
-                <ShieldCheck size={13} /><span className="text-xs font-medium">Verified</span>
+                <ShieldCheck size={13} aria-hidden="true" /><span className="text-xs font-medium">Verified</span>
               </div>
             )}
             <div className="absolute bottom-3 right-3 z-20 bg-white rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200">
@@ -339,7 +387,7 @@ export function MatchProfileView({
             </div>
           </div>
           {photos.length > 1 && (
-            <p className="text-center text-xs text-gray-400 mt-2">Photo {photoIndex + 1} of {photos.length} — tap sides to browse</p>
+            <p className="text-center text-xs text-gray-500 mt-2">Photo {photoIndex + 1} of {photos.length} — tap sides to browse</p>
           )}
         </div>
 
@@ -351,7 +399,7 @@ export function MatchProfileView({
           {(locationDisplay || user.pronouns) && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-gray-500 text-sm">
               {locationDisplay && (
-                <div className="flex items-center gap-1"><MapPin size={13} /><span>{locationDisplay}</span></div>
+                <div className="flex items-center gap-1"><MapPin size={13} aria-hidden="true" /><span>{locationDisplay}</span></div>
               )}
               {user.pronouns && <span>{user.pronouns}</span>}
             </div>
@@ -378,14 +426,21 @@ export function MatchProfileView({
                 return (
                   <div key={label}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm ${hasScore ? 'text-gray-700' : 'text-gray-400'}`}>{label}</span>
+                      <span className={`text-sm ${hasScore ? 'text-gray-700' : 'text-gray-500'}`}>{label}</span>
                       {hasScore ? (
                         <span className="text-sm font-medium text-gray-800">{score}%</span>
                       ) : (
-                        <span className="text-xs italic text-gray-400">Not enough data yet</span>
+                        <span className="text-xs italic text-gray-500">Not enough data yet</span>
                       )}
                     </div>
-                    <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="w-full h-2 bg-gray-100 rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={score}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`${label}${hasScore ? `: ${score} percent` : ': not enough data yet'}`}
+                    >
                       {hasScore && (
                         <div
                           className={`h-full ${barColor} rounded-full transition-all`}
@@ -407,7 +462,7 @@ export function MatchProfileView({
             <h3 className="text-sm font-semibold mb-3">Hobbies &amp; Interests</h3>
             {sharedHobbies.length > 0 && (
               <div className="mb-3">
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">You both enjoy</p>
+                <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">You both enjoy</p>
                 <div className="flex flex-wrap gap-2">
                   {sharedHobbies.map((hobby) => (
                     <span key={hobby} className="text-xs px-3 py-1.5 bg-black text-white rounded-full font-medium">
@@ -420,7 +475,7 @@ export function MatchProfileView({
             {otherHobbies.length > 0 && (
               <div>
                 {sharedHobbies.length > 0 && (
-                  <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">Also into</p>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">Also into</p>
                 )}
                 <div className="flex flex-wrap gap-2">
                   {otherHobbies.map((hobby) => (
@@ -441,9 +496,9 @@ export function MatchProfileView({
             <div className="grid grid-cols-1 gap-3">
               {profileDetails.map(({ icon: Icon, label, value }) => (
                 <div key={label} className="flex items-start gap-3">
-                  <Icon size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <Icon size={16} className="text-gray-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
                   <div>
-                    <p className="text-xs text-gray-400">{label}</p>
+                    <p className="text-xs text-gray-500">{label}</p>
                     <p className="text-sm text-gray-800">{value}</p>
                   </div>
                 </div>
@@ -456,17 +511,17 @@ export function MatchProfileView({
         {user.instagram && !isMutual && (
           <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-              <Lock size={14} className="text-gray-400" />
+              <Lock size={14} className="text-gray-500" aria-hidden="true" />
             </div>
             <div>
               <p className="text-xs font-medium text-gray-700">Instagram</p>
-              <p className="text-xs text-gray-400">Unlocks after you both like each other</p>
+              <p className="text-xs text-gray-500">Unlocks after you both like each other</p>
             </div>
           </div>
         )}
         {user.instagram && isMutual && (
-          <div className="flex items-center gap-1.5 text-gray-500 text-sm px-1">
-            <Instagram size={13} />
+          <div className="flex items-center gap-1.5 text-gray-600 text-sm px-1">
+            <Instagram size={13} aria-hidden="true" />
             <span>@{user.instagram}</span>
           </div>
         )}
@@ -476,7 +531,7 @@ export function MatchProfileView({
 
       {/* Fixed bottom action bar */}
       {isMutual ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 pb-8 z-[60]">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 pb-8 z-[60]" role="status" aria-live="polite">
           <div className="max-w-md mx-auto p-4 bg-black text-white rounded-2xl text-center">
             <p className="text-lg font-medium">🎉 It's a mutual match!</p>
             <p className="text-gray-300 text-sm mt-1">Taking you to messaging with {user.name}…</p>
@@ -487,21 +542,23 @@ export function MatchProfileView({
           <div className="max-w-2xl mx-auto flex items-center gap-4">
             <button
               onClick={handlePass}
+              aria-label={`Pass on ${user.name}`}
               className="w-14 h-14 border-2 border-gray-300 bg-white rounded-full hover:border-gray-400 transition-all flex flex-col items-center justify-center gap-0.5 shadow-sm flex-shrink-0"
             >
-              <X className="w-5 h-5 text-gray-500" />
-              <span className="text-[10px] text-gray-400">Pass</span>
+              <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
+              <span className="text-[10px] text-gray-500">Pass</span>
             </button>
             <button
               onClick={handleMatch}
               disabled={isLiked || isLiking}
+              aria-label={isLiked ? `Liked ${user.name}` : `Like ${user.name}`}
               className={`flex-1 h-14 rounded-full transition-all flex items-center justify-center gap-2 font-medium shadow-lg ${
                 isLiked ? 'bg-red-500 text-white cursor-default'
                 : isLiking ? 'bg-gray-400 text-white cursor-wait'
                 : 'bg-black text-white hover:bg-gray-800'
               }`}
             >
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} aria-hidden="true" />
               <span>{isLiked ? 'Liked ✓' : 'Like'}</span>
             </button>
           </div>
