@@ -66,13 +66,39 @@ export async function requestPushPermission(): Promise<string | null> {
     const OneSignal = await withTimeout(getOneSignal(), 8000, null);
     if (!OneSignal) return null;
 
-    await OneSignal.Notifications.requestPermission();
-    const granted = OneSignal.Notifications.permission;
-    if (!granted) return null;
+    // If permission already granted, skip the prompt and just get/register ID
+    const alreadyGranted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
 
-    // Give the SDK a moment to register the subscription
+    if (!alreadyGranted) {
+      // Show the browser permission prompt
+      await withTimeout(
+        OneSignal.Notifications.requestPermission(),
+        10000,
+        undefined
+      );
+      const granted = OneSignal.Notifications.permission;
+      if (!granted) return null;
+    }
+
+    // Give SDK a moment to register/re-register the subscription
     await new Promise(r => setTimeout(r, 1500));
-    const playerId = OneSignal.User?.PushSubscription?.id ?? null;
+
+    // Try to get existing player ID first
+    let playerId = OneSignal.User?.PushSubscription?.id ?? null;
+
+    // If no ID yet (e.g. after an opt-out), try subscribing
+    if (!playerId) {
+      try {
+        await withTimeout(
+          OneSignal.User?.PushSubscription?.optIn() ?? Promise.resolve(),
+          5000,
+          undefined
+        );
+        await new Promise(r => setTimeout(r, 1000));
+        playerId = OneSignal.User?.PushSubscription?.id ?? null;
+      } catch { /* ignore — return whatever ID we have */ }
+    }
+
     return playerId;
   } catch (err) {
     console.error('[OneSignal] requestPushPermission error:', err);
