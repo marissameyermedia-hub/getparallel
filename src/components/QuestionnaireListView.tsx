@@ -311,7 +311,7 @@ export function QuestionnaireListView({
       <div className="sticky top-0 bg-white border-b border-gray-100 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <button onClick={onClose} className="flex items-center gap-1 text-sm text-gray-600 hover:text-black transition-colors p-2 -ml-2">
-            <ChevronLeft size={18} />
+            <ChevronLeft size={18} aria-hidden="true" />
             Back
           </button>
           <h1 className="text-base font-semibold">My Questionnaire</h1>

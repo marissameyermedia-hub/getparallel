@@ -167,8 +167,8 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
       {/* Header */}
       <div className="pt-4 px-6 pb-2 flex-shrink-0 flex items-center justify-between">
         {onBack ? (
-          <button onClick={onBack} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ChevronLeft size={20} />
+          <button onClick={onBack} aria-label="Go back" className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
+            <ChevronLeft size={20} aria-hidden="true" />
           </button>
         ) : <div className="w-8" />}
         <div />

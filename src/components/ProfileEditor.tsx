@@ -210,7 +210,7 @@ export function ProfileEditor({
         <div className="max-w-[390px] mx-auto bg-white">
           <div className="sticky top-0 bg-white z-10 border-b border-gray-100 flex items-center justify-between px-4 py-3">
             <button onClick={() => setShowPreview(false)} className="flex items-center gap-1 text-sm font-medium hover:text-gray-600">
-              <ChevronLeft size={18} /> Back to editing
+              <ChevronLeft size={18} aria-hidden="true" /> Back to editing
             </button>
             <span className="text-sm font-medium text-gray-500">Preview</span>
             <div className="w-28" />
@@ -266,8 +266,8 @@ export function ProfileEditor({
         <div className="sticky top-0 bg-white z-10 border-b border-gray-100">
           <div className="flex items-center justify-between px-4 py-3">
             {onBack ? (
-              <button onClick={onBack} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-all">
-                <ChevronLeft size={22} />
+              <button onClick={onBack} aria-label="Back to account" className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-all">
+                <ChevronLeft size={22} aria-hidden="true" />
               </button>
             ) : <div className="w-10" />}
             <h1 className="text-base font-semibold flex-1 text-center">
@@ -307,11 +307,12 @@ export function ProfileEditor({
                     <div className="absolute top-1.5 left-1.5 bg-black text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">Main</div>
                   )}
                   <button onClick={() => handleRemovePhoto(index)}
+                    aria-label={`Remove photo ${index + 1}`}
                     className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center hover:bg-black transition-colors"
                   >
-                    <X size={12} className="text-white" />
+                    <X size={12} className="text-white" aria-hidden="true" />
                   </button>
-                  <div className="absolute bottom-1.5 left-1.5 w-5 h-5 bg-black/40 rounded-full flex items-center justify-center">
+                  <div className="absolute bottom-1.5 left-1.5 w-5 h-5 bg-black/40 rounded-full flex items-center justify-center" aria-hidden="true">
                     <GripVertical size={10} className="text-white" />
                   </div>
                 </div>
@@ -358,7 +359,7 @@ export function ProfileEditor({
                 style={{ fontSize: '16px' }}
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1 ml-1">This appears exactly as you type it on your profile.</p>
+            <p className="text-xs text-gray-500 mt-1 ml-1">This appears exactly as you type it on your profile.</p>
           </div>
 
           {/* Education */}
@@ -391,8 +392,8 @@ export function ProfileEditor({
               style={{ fontSize: '16px' }}
             />
             <div className="flex justify-between mt-1">
-              <p className="text-xs text-gray-400 ml-1">Specific details make it easier to start a conversation.</p>
-              <p className="text-xs text-gray-400">{bio.length}/300</p>
+              <p className="text-xs text-gray-500 ml-1">Specific details make it easier to start a conversation.</p>
+              <p className="text-xs text-gray-500">{bio.length}/300</p>
             </div>
           </div>
 
@@ -426,7 +427,7 @@ export function ProfileEditor({
                 style={{fontSize:'16px'}} 
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1 ml-1">Only visible to mutual matches — not shown on your public profile.</p>
+            <p className="text-xs text-gray-500 mt-1 ml-1">Only visible to mutual matches — not shown on your public profile.</p>
           </div>
 
           {/* Location — only during onboarding */}
@@ -489,7 +490,7 @@ export function ProfileEditor({
               ) : hasSaved && !isSaving ? '✓ Saved' : isOnboarding ? 'Finish Profile' : 'Save Profile'}
             </button>
             {!canSave && (
-              <p className="text-center text-sm text-gray-400">Add at least one photo to continue</p>
+              <p className="text-center text-sm text-gray-500">Add at least one photo to continue</p>
             )}
           </div>
         </div>

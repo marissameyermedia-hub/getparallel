@@ -240,8 +240,8 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // ── Saving spinner ───────────────────────────────────────────
   if (isSaving) {
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center gap-4">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center gap-4" role="status" aria-live="polite">
+        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" aria-hidden="true" />
         <p className="text-sm text-gray-500">Saving your profile…</p>
       </div>
     );
@@ -253,13 +253,13 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // saved question. Shows for ~200-500ms on a normal connection.
   if (!hasLoadedProgress) {
     return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center">
+      <div className="fixed inset-0 bg-white flex items-center justify-center" role="status" aria-live="polite">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-1">
+          <div className="flex gap-1" aria-hidden="true">
             <div className="w-1.5 h-8 bg-black rounded-full" />
             <div className="w-1.5 h-8 bg-black rounded-full" />
           </div>
-          <p className="text-sm text-gray-400">Loading your progress…</p>
+          <p className="text-sm text-gray-500">Loading your progress…</p>
         </div>
       </div>
     );
@@ -827,9 +827,10 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           <div className="max-w-md mx-auto flex items-center gap-3">
             <button
               onClick={() => handleBack()}
+              aria-label="Go back"
               className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors bg-white"
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft size={22} aria-hidden="true" />
             </button>
             <button
               onClick={() => {
