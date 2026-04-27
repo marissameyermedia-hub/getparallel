@@ -23,6 +23,12 @@
     Cache-Control = "no-cache, no-store, must-revalidate"
 
 [[headers]]
+  for = "/OneSignalSDKWorker.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
   for = "/OneSignalSDK.sw.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
