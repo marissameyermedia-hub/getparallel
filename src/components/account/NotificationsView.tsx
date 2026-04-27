@@ -13,6 +13,7 @@ import {
 interface NotificationsViewProps {
   userId: string;
   onBack: () => void;
+  onShowDiagnostics?: () => void;
 }
 
 interface NotificationPrefs {
@@ -29,7 +30,7 @@ const SMS_CONSENT_TEXT =
 
 const SMS_CONSENT_VERSION = 'v1-2026-04';
 
-export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
+export function NotificationsView({ userId, onBack, onShowDiagnostics }: NotificationsViewProps) {
   const [prefs, setPrefs] = useState<NotificationPrefs>({
     email_enabled: true,
     sms_enabled: false,
@@ -592,7 +593,15 @@ function Modal({
       >
         {children}
       </div>
-    </div>
+    
+        {onShowDiagnostics && (
+          <div className="mt-8 px-4 pb-8">
+            <button onClick={onShowDiagnostics} className="text-sm text-gray-500 underline">
+              Push notification diagnostics →
+            </button>
+          </div>
+        )}
+        </div>
   );
 }
 
