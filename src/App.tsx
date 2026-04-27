@@ -694,8 +694,8 @@ function App() {
     }
 
     if (isMutual && match) {
-      setSelectedMatchId(likedUserId);
-      setCurrentView('messaging');
+      // Don't navigate away — user stays on match cards and works through their lineup.
+      // Add to inbox state so badge updates and inbox is ready when they navigate.
       setInboxMessages(prev => {
         const existing = prev.find(m => m.matchId === likedUserId);
         if (existing) return prev.map(m => m.matchId === likedUserId ? { ...m, mutualMatch: true } : m);
@@ -705,11 +705,12 @@ function App() {
           matchPhoto: match.user.photoUrl,
           lastMessage: 'You matched! Say hello 👋',
           timestamp: new Date().toISOString(),
-          unread: true,
+          unread: false,
           compatibilityScore: match.compatibilityScore,
           mutualMatch: true
         }, ...prev];
       });
+      toast.success(`You matched with ${match.user.name.split(' ')[0]}! Check your inbox to say hi.`, { duration: 4000 });
     }
   };
 
