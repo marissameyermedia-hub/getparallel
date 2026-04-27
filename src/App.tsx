@@ -1019,7 +1019,7 @@ function App() {
 
       {/* PWA install prompt — shows on Home for non-installed users with a 7-day snooze.
           Only appears when user has completed onboarding and isn't already in a PWA install. */}
-      {hasCompletedOnboarding && currentView === 'home' && (
+      {hasCompletedOnboarding && currentView === 'matches' && (
         <InstallPromptBanner hasCompletedOnboarding={hasCompletedOnboarding} />
       )}
 
