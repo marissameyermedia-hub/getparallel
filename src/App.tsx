@@ -37,6 +37,7 @@ import { AppFeedbackBottomSheet } from './components/AppFeedbackBottomSheet';
 import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
+import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
@@ -851,6 +852,41 @@ function App() {
     setAppFeedbackSheet(false);
   };
 
+  // ── In-app notification handler ───────────────────────────────
+  // Called by InAppNotificationBanner whenever a new inbound message arrives.
+  // Updates the inbox unread state so the badge count stays accurate even
+  // when the user is on a non-inbox view.
+  const handleNewIncomingMessage = useCallback((
+    matchId: string,
+    senderName: string,
+    senderPhoto: string,
+    text: string,
+    compatibilityScore: number,
+  ) => {
+    setInboxMessages(prev => {
+      const existing = prev.find(m => m.matchId === matchId);
+      if (existing) {
+        // Update last message + mark unread (user isn't in that chat right now)
+        return prev.map(m =>
+          m.matchId === matchId
+            ? { ...m, lastMessage: text, timestamp: new Date().toISOString(), unread: true }
+            : m
+        );
+      }
+      // First message from this match — add to inbox
+      return [{
+        matchId,
+        matchName: senderName,
+        matchPhoto: senderPhoto,
+        lastMessage: text,
+        timestamp: new Date().toISOString(),
+        unread: true,
+        compatibilityScore,
+        mutualMatch: true,
+      }, ...prev];
+    });
+  }, []);
+
   const handleNPSSubmit = async (score: number, reason: string) => {
     const token = await getAccessToken();
     if (token) {
@@ -957,6 +993,26 @@ function App() {
             emailVerified={emailConfirmed}
           />
         </div>
+      )}
+
+      {/* In-app notification banner — slides in below the header when a new
+          message arrives while the user is on a different view. z-[60] puts
+          it above the email banner (z-40) but below modals (z-50+). */}
+      {userId && (
+        <InAppNotificationBanner
+          userId={userId}
+          activeMatchId={currentView === 'messaging' ? selectedMatchId : null}
+          currentView={currentView}
+          matches={matches}
+          onOpenChat={(matchId) => {
+            setSelectedMatchId(matchId);
+            setInboxMessages(prev =>
+              prev.map(m => m.matchId === matchId ? { ...m, unread: false } : m)
+            );
+            setCurrentView('messaging');
+          }}
+          onNewMessage={handleNewIncomingMessage}
+        />
       )}
 
       {/* Main content wrapper. Standard 64px top padding clears the
