@@ -862,9 +862,10 @@ export function QuestionScreen({
           <button
             onClick={onBack}
             disabled={!canGoBack}
+            aria-label="Previous question"
             className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors disabled:opacity-0 disabled:pointer-events-none"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={22} aria-hidden="true" />
           </button>
           <div className="flex-1">
             {onSave ? (

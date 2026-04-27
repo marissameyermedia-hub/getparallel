@@ -192,13 +192,14 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
           placeholder="Enter zip code"
           className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
         />
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
+            aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2"
           >
-            <X className="w-5 h-5 text-gray-400 hover:text-black transition-colors" />
+            <X className="w-5 h-5 text-gray-400 hover:text-black transition-colors" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -260,15 +261,17 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
         <div className="absolute right-4 top-4 flex flex-col gap-2">
           <button
             onClick={handleZoomIn}
+            aria-label="Zoom in"
             className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-lg"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-5 h-5" aria-hidden="true" />
           </button>
           <button
             onClick={handleZoomOut}
+            aria-label="Zoom out"
             className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-lg"
           >
-            <Minus className="w-5 h-5" />
+            <Minus className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -283,7 +286,7 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
             onClick={clearPin}
             className="absolute left-4 top-4 px-3 py-2 bg-white border-2 border-black rounded-lg text-sm font-medium hover:bg-black hover:text-white transition-all shadow-lg flex items-center gap-2"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
             Clear Pin
           </button>
         )}
