@@ -5,6 +5,10 @@
 #   service workers   → never cache (must always be re-fetched)
 #   static assets     → cache 1 week
 
+
+[build]
+  command = "npm run build"
+  publish = "dist"
 [[headers]]
   for = "/index.html"
   [headers.values]
