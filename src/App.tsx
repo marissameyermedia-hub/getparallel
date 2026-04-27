@@ -1409,7 +1409,7 @@ function App() {
             matchName={matches.find(m => m.user.id === selectedMatchId)?.user.name || ''}
             matchPhoto={matches.find(m => m.user.id === selectedMatchId)?.user.photoUrl || ''}
             compatibilityScore={matches.find(m => m.user.id === selectedMatchId)?.compatibilityScore || 85}
-            mutualMatch={mutualMatchIds.includes(selectedMatchId)}
+            mutualMatch={!!(mutualMatchIds.includes(selectedMatchId) || inboxMessages.some(m => m.matchId === selectedMatchId) || matches.some(m => m.user.id === selectedMatchId))}
             onBack={() => setCurrentView('inbox')}
             onConfirmMet={handleConfirmMet}
             hasConfirmedMet={metConfirmations[selectedMatchId]?.confirmed || false}
