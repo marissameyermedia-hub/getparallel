@@ -175,14 +175,13 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
           return;
         }
 
-        if (permState === 'granted') {
-          playerId = await optInToPush();
-        } else {
-          playerId = await requestPushPermission();
-        }
+        // Always go through requestPushPermission regardless of current state.
+        // It handles: already granted (skips prompt, gets ID), needs prompt, denied.
+        // optInToPush() can hang after a previous opt-out so we avoid it here.
+        playerId = await requestPushPermission();
 
         if (!playerId) {
-          // User dismissed the prompt — revert toggle visually, no error shown
+          // Permission denied or dismissed — revert toggle, no error shown
           return;
         }
       } else {
