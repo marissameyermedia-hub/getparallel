@@ -190,9 +190,11 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
                 value={phone}
                 onChange={(e) => setPhone(formatPhone(e.target.value))}
                 disabled={isSending}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? 'phone-step-error' : 'phone-step-hint'}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-gray-500"
               />
-              <p className="text-xs text-gray-500 mt-1.5">
+              <p id="phone-step-hint" className="text-xs text-gray-500 mt-1.5">
                 We'll send you a 6-digit code to verify it's you.
               </p>
             </div>
@@ -242,7 +244,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
             </p>
 
             {error && (
-              <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <div id="phone-step-error" role="alert" className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 {error}
               </div>
             )}
@@ -318,13 +320,15 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 disabled={isVerifying}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? 'code-step-error' : undefined}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:border-gray-500 tracking-widest text-center"
                 autoFocus
               />
             </div>
 
             {error && (
-              <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+              <div id="code-step-error" role="alert" className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 {error}
               </div>
             )}

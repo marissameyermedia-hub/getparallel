@@ -275,7 +275,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-2xl">
+          <div id="account-creation-error" role="alert" className="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-2xl">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
@@ -299,7 +299,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
           <div>
             <label htmlFor="email" className="block text-sm mb-2 text-gray-700">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
               <input
                 id="email"
                 type="email"
@@ -309,16 +309,18 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
                 placeholder="you@example.com"
                 className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
                 disabled={isLoading}
+                aria-invalid={emailError ? true : undefined}
+                aria-describedby={emailError ? 'email-error' : undefined}
                 style={{ fontSize: '16px' }}
               />
             </div>
-            {emailError && <p className="mt-1 text-xs text-red-500 ml-1">{emailError}</p>}
+            {emailError && <p id="email-error" role="alert" className="mt-1 text-xs text-red-600 ml-1">{emailError}</p>}
           </div>
 
           <div>
             <label htmlFor="phone" className="block text-sm mb-2 text-gray-700">Phone Number</label>
             <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
               <input
                 id="phone"
                 type="tel"
@@ -328,11 +330,13 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
                 placeholder="(555) 000-0000"
                 className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
                 disabled={isLoading}
+                aria-invalid={phoneError ? true : undefined}
+                aria-describedby={phoneError ? 'phone-error' : 'phone-hint'}
                 style={{ fontSize: '16px' }}
               />
             </div>
-            {phoneError && <p className="mt-1 text-xs text-red-500 ml-1">{phoneError}</p>}
-            <p className="mt-1.5 text-xs text-gray-400 ml-1">
+            {phoneError && <p id="phone-error" role="alert" className="mt-1 text-xs text-red-600 ml-1">{phoneError}</p>}
+            <p id="phone-hint" className="mt-1.5 text-xs text-gray-500 ml-1">
               We'll send a 6-digit code to this number to verify it's you.
             </p>
           </div>
@@ -349,27 +353,30 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
                 placeholder="Create a password"
                 className="w-full px-4 pr-12 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
                 disabled={isLoading}
+                aria-describedby={formData.password.length > 0 ? 'password-rules' : undefined}
                 style={{ fontSize: '16px' }}
               />
               <button
                 type="button"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
               </button>
             </div>
             {formData.password.length > 0 && (
-              <div className="mt-2 space-y-1 px-1">
+              <div id="password-rules" className="mt-2 space-y-1 px-1">
                 {PASSWORD_RULES.map((rule) => {
                   const met = rule.met(formData.password);
                   return (
                     <div key={rule.label} className="flex items-center gap-2">
                       {met
-                        ? <CheckCircle size={13} className="text-green-500 flex-shrink-0" />
-                        : <Circle size={13} className="text-gray-300 flex-shrink-0" />
+                        ? <CheckCircle size={13} className="text-green-500 flex-shrink-0" aria-hidden="true" />
+                        : <Circle size={13} className="text-gray-300 flex-shrink-0" aria-hidden="true" />
                       }
-                      <span className={`text-xs ${met ? 'text-green-600' : 'text-gray-400'}`}>
+                      <span className={`text-xs ${met ? 'text-green-700' : 'text-gray-600'}`}>
                         {rule.label}
                       </span>
                     </div>
@@ -396,18 +403,22 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
                     : 'border-gray-200 focus:border-black'
                 }`}
                 disabled={isLoading}
+                aria-invalid={formData.confirmPassword && formData.password !== formData.confirmPassword ? true : undefined}
+                aria-describedby={formData.confirmPassword && formData.password !== formData.confirmPassword ? 'confirm-password-error' : undefined}
                 style={{ fontSize: '16px' }}
               />
               <button
                 type="button"
+                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showConfirmPassword}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
-                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showConfirmPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
               </button>
             </div>
             {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-              <p className="mt-1 text-xs text-red-500 ml-1">Passwords don't match</p>
+              <p id="confirm-password-error" role="alert" className="mt-1 text-xs text-red-600 ml-1">Passwords don't match</p>
             )}
           </div>
 
@@ -423,15 +434,21 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
               maxLength={10}
               className="w-full px-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
               disabled={isLoading}
+              aria-invalid={
+                (dobDisplay.replace(/\D/g, '').length === 8 && !parseDobToIso(dobDisplay)) ||
+                (dobDisplay.replace(/\D/g, '').length === 8 && parseDobToIso(dobDisplay) && calculateAge(parseDobToIso(dobDisplay)!) < 18)
+                  ? true : undefined
+              }
+              aria-describedby="dob-hint dob-error"
               style={{ fontSize: '16px' }}
             />
             {dobDisplay.replace(/\D/g, '').length === 8 && !parseDobToIso(dobDisplay) && (
-              <p className="mt-1 text-xs text-red-500 ml-1">Please check your date of birth</p>
+              <p id="dob-error" role="alert" className="mt-1 text-xs text-red-600 ml-1">Please check your date of birth</p>
             )}
             {dobDisplay.replace(/\D/g, '').length === 8 && parseDobToIso(dobDisplay) && calculateAge(parseDobToIso(dobDisplay)!) < 18 && (
-              <p className="mt-1 text-xs text-red-500 ml-1">You must be at least 18 to use Parallel</p>
+              <p id="dob-error" role="alert" className="mt-1 text-xs text-red-600 ml-1">You must be at least 18 to use Parallel</p>
             )}
-            <p className="mt-1.5 text-xs text-gray-400 ml-1">
+            <p id="dob-hint" className="mt-1.5 text-xs text-gray-500 ml-1">
               🔒 Used to verify you're 18+ and auto-fill your age in the questionnaire. Never shown publicly.
             </p>
           </div>

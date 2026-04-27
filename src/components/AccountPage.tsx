@@ -879,21 +879,24 @@ export function AccountPage({
                 </div>
                 <p className="text-sm text-gray-500 mb-1">Current email</p>
                 <p className="text-sm font-medium mb-5 break-all">{currentEmail || '—'}</p>
-                <label className="block text-sm text-gray-600 mb-1.5">New email address</label>
+                <label htmlFor="new-email-input" className="block text-sm text-gray-600 mb-1.5">New email address</label>
                 <input
+                  id="new-email-input"
                   type="email"
                   value={newEmail}
                   onChange={e => { setNewEmail(e.target.value); setEmailUpdateError(''); }}
                   placeholder="you@example.com"
                   className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-base outline-none focus:border-black transition-colors mb-1"
                   autoFocus
+                  aria-invalid={emailUpdateError ? true : undefined}
+                  aria-describedby={emailUpdateError ? 'new-email-error' : 'new-email-hint'}
                   onKeyDown={e => { if (e.key === 'Enter') handleEmailUpdate(); }}
                 />
                 {emailUpdateError && (
-                  <p className="text-xs text-red-600 mb-3">{emailUpdateError}</p>
+                  <p id="new-email-error" role="alert" className="text-xs text-red-600 mb-3">{emailUpdateError}</p>
                 )}
                 {!emailUpdateError && (
-                  <p className="text-xs text-gray-400 mb-4">
+                  <p id="new-email-hint" className="text-xs text-gray-500 mb-4">
                     We'll send a confirmation link to your new address. Your email won't change until you click it.
                   </p>
                 )}

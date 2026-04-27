@@ -347,7 +347,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   <p className="text-gray-600 text-sm mb-6">Sign in to your Parallel account.</p>
 
                   {error && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl">
+                    <div id="sign-in-error" role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl">
                       <p className="text-sm text-red-600">{error}</p>
                     </div>
                   )}
@@ -356,7 +356,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <div>
                       <label htmlFor="email" className="block text-xs mb-1.5 text-gray-700 font-medium">Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                         <input
                           id="email"
                           type="email"
@@ -366,6 +366,8 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                           className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
                           required
                           disabled={isLoading}
+                          aria-invalid={error ? true : undefined}
+                          aria-describedby={error ? 'sign-in-error' : undefined}
                           style={{ fontSize: '16px' }}
                         />
                       </div>
@@ -374,7 +376,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <div>
                       <label htmlFor="password" className="block text-xs mb-1.5 text-gray-700 font-medium">Password</label>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                         <input
                           id="password"
                           type="password"
@@ -384,6 +386,8 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                           className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
                           required
                           disabled={isLoading}
+                          aria-invalid={error ? true : undefined}
+                          aria-describedby={error ? 'sign-in-error' : undefined}
                           style={{ fontSize: '16px' }}
                         />
                       </div>
@@ -432,7 +436,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   <p className="text-gray-600 text-sm mb-6">We'll email you a secure reset link.</p>
 
                   {resetError && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl">
+                    <div id="reset-error" role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-2xl">
                       <p className="text-sm text-red-600">{resetError}</p>
                     </div>
                   )}
@@ -441,7 +445,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <div>
                       <label htmlFor="resetEmail" className="block text-xs mb-1.5 text-gray-700 font-medium">Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
                         <input
                           id="resetEmail"
                           type="email"
@@ -451,6 +455,8 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                           className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
                           required
                           disabled={resetLoading}
+                          aria-invalid={resetError ? true : undefined}
+                          aria-describedby={resetError ? 'reset-error' : undefined}
                           style={{ fontSize: '16px' }}
                         />
                       </div>
