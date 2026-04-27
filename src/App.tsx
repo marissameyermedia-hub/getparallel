@@ -38,6 +38,7 @@ import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
+import { PushDiagnostics } from './components/account/PushDiagnostics';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
@@ -63,7 +64,7 @@ function App() {
     | 'matches' | 'questionnaire' | 'account' | 'profile' | 'my-profile'
     | 'payment-details' | 'privacy-safety' | 'notifications' | 'pause-profile'
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
-    | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
+    | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox' | 'push-diagnostics'
     | 'verification' | 'invite-friends' | 'reset-password'
     | 'preview-profile'
   >('signin');
@@ -1340,7 +1341,11 @@ function App() {
           <PrivacySafetyView onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'notifications' && (
-          <NotificationsView userId={userId ?? ''} onBack={() => setCurrentView('account')} />
+          <NotificationsView userId={userId ?? ''} onBack={() => setCurrentView('account')} onShowDiagnostics={() => setCurrentView('push-diagnostics')} />
+        )}
+
+        {currentView === 'push-diagnostics' && (
+          <PushDiagnostics onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'pause-profile' && (
           <PauseProfileView onBack={() => setCurrentView('account')} hasActivated={hasActivated} />
