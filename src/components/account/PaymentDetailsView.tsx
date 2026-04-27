@@ -20,7 +20,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
           className="mb-6 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Go back"
         >
-          <ChevronLeft size={28} />
+          <ChevronLeft size={28} aria-hidden="true" />
         </button>
 
         <h1 className="mb-6">Payment Details</h1>

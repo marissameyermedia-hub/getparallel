@@ -71,7 +71,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
           className="mb-6 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Go back"
         >
-          <ChevronLeft size={28} />
+          <ChevronLeft size={28} aria-hidden="true" />
         </button>
 
         <div className="text-center mb-8">

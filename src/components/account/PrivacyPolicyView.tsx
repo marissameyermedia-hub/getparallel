@@ -13,7 +13,7 @@ export function PrivacyPolicyView({ onBack }: PrivacyPolicyViewProps) {
           className="mb-6 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
           aria-label="Go back"
         >
-          <ChevronLeft size={28} />
+          <ChevronLeft size={28} aria-hidden="true" />
         </button>
 
         <div className="flex items-center gap-3 mb-6">

@@ -103,7 +103,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
     <div className="min-h-screen bg-white pt-6 pb-36 px-6">
       <div className="max-w-2xl mx-auto">
         <button onClick={onBack} className="mb-6 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Go back">
-          <ChevronLeft size={28} />
+          <ChevronLeft size={28} aria-hidden="true" />
         </button>
         <h1 className="mb-3">Privacy & Safety</h1>
         <p className="text-gray-600 mb-8">Control who can see your profile and how you interact</p>
