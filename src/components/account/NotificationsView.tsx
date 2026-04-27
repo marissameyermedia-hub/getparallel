@@ -3,6 +3,12 @@ import { Loader2, ChevronLeft, Info } from 'lucide-react';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 import { supabase, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { useModalA11y } from '../../utils/useModalA11y';
+import {
+  requestPushPermission,
+  optOutOfPush,
+  optInToPush,
+  getPushPermissionState,
+} from '../../utils/onesignal';
 
 interface NotificationsViewProps {
   userId: string;
@@ -111,6 +117,67 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
       setPrefs(newPrefs);
     } catch (err: any) {
       setError(err.message || 'Could not save preferences');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Push toggle handler — calls OneSignal to request/revoke permission,
+  // saves the player ID to profiles so the backend can send notifications.
+  const handlePushToggle = async (newValue: boolean) => {
+    setIsSaving(true);
+    setError('');
+    try {
+      let playerId: string | null = null;
+
+      if (newValue) {
+        const permState = await getPushPermissionState();
+
+        if (permState === 'denied') {
+          // Browser has permanently blocked — can't prompt again
+          setError(
+            'Notifications are blocked in your browser settings. To enable, click the lock icon in your address bar and allow notifications for getparallel.vip.'
+          );
+          setIsSaving(false);
+          return;
+        }
+
+        if (permState === 'granted') {
+          // Already granted — opt back in (no re-prompt needed)
+          playerId = await optInToPush();
+        } else {
+          // 'default' — show the browser permission prompt
+          playerId = await requestPushPermission();
+        }
+
+        if (!playerId) {
+          // User dismissed the prompt or something went wrong
+          setIsSaving(false);
+          return;
+        }
+      } else {
+        // Turning off — opt out of delivery (doesn't revoke browser permission)
+        await optOutOfPush();
+      }
+
+      // Persist push_enabled + player ID to backend
+      const token = await getAuthToken();
+      const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'apikey': publicAnonKey,
+        },
+        body: JSON.stringify({
+          push_enabled: newValue,
+          ...(playerId ? { onesignal_player_id: playerId } : {}),
+        }),
+      });
+      if (!res.ok) throw new Error('Could not save push preference');
+      setPrefs({ ...prefs, push_enabled: newValue });
+    } catch (err: any) {
+      setError(err.message || 'Could not update push notifications');
     } finally {
       setIsSaving(false);
     }
@@ -241,7 +308,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             label="Push notifications"
             sublabel="In-app and device notifications"
             value={prefs.push_enabled}
-            onChange={(v) => savePref({ ...prefs, push_enabled: v })}
+            onChange={handlePushToggle}
             disabled={isSaving}
           />
 
