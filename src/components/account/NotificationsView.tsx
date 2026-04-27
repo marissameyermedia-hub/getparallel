@@ -41,6 +41,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPushSaving, setIsPushSaving] = useState(false);
   const [showSmsConsentModal, setShowSmsConsentModal] = useState(false);
   const [showSmsOffConfirm, setShowSmsOffConfirm] = useState(false);
   const [error, setError] = useState('');
@@ -125,8 +126,16 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
   // Push toggle handler — calls OneSignal to request/revoke permission,
   // saves the player ID to profiles so the backend can send notifications.
   const handlePushToggle = async (newValue: boolean) => {
-    setIsSaving(true);
+    // Push uses its own saving state so it NEVER freezes the other toggles.
+    // A 10-second safety timeout ensures it can't hang forever if the
+    // OneSignal SDK is slow to load or the promise never resolves.
+    setIsPushSaving(true);
     setError('');
+
+    const safetyTimeout = setTimeout(() => {
+      setIsPushSaving(false);
+    }, 10000);
+
     try {
       let playerId: string | null = null;
 
@@ -134,33 +143,30 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
         const permState = await getPushPermissionState();
 
         if (permState === 'denied') {
-          // Browser has permanently blocked — can't prompt again
           setError(
             'Notifications are blocked in your browser settings. To enable, click the lock icon in your address bar and allow notifications for getparallel.vip.'
           );
-          setIsSaving(false);
           return;
         }
 
         if (permState === 'granted') {
-          // Already granted — opt back in (no re-prompt needed)
           playerId = await optInToPush();
         } else {
-          // 'default' — show the browser permission prompt
           playerId = await requestPushPermission();
         }
 
         if (!playerId) {
-          // User dismissed the prompt or something went wrong
-          setIsSaving(false);
+          // User dismissed the prompt — revert toggle visually, no error shown
           return;
         }
       } else {
-        // Turning off — opt out of delivery (doesn't revoke browser permission)
-        await optOutOfPush();
+        // Turning off — opt out. If OneSignal isn't loaded yet, skip silently
+        // and just save push_enabled=false to the backend so the server
+        // won't send pushes. The player ID stays stored for when they re-enable.
+        try { await optOutOfPush(); } catch { /* SDK not ready — ignore */ }
       }
 
-      // Persist push_enabled + player ID to backend
+      // Persist to backend regardless of whether SDK call succeeded
       const token = await getAuthToken();
       const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
         method: 'PUT',
@@ -179,7 +185,8 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
     } catch (err: any) {
       setError(err.message || 'Could not update push notifications');
     } finally {
-      setIsSaving(false);
+      clearTimeout(safetyTimeout);
+      setIsPushSaving(false);
     }
   };
 
@@ -309,7 +316,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             sublabel="In-app and device notifications"
             value={prefs.push_enabled}
             onChange={handlePushToggle}
-            disabled={isSaving}
+            disabled={isPushSaving}
           />
 
           {/* SMS Toggle — Telnyx 10DLC compliant */}
