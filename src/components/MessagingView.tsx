@@ -367,7 +367,7 @@ export function MessagingView({
 
   return (
     <div
-      className="fixed left-0 right-0 top-0 flex flex-col bg-white overflow-hidden"
+      className="fixed left-0 right-0 top-0 flex flex-col bg-white overflow-hidden z-[60]"
       style={{
         height: viewportHeight ? `${viewportHeight}px` : '100dvh',
         paddingTop: 'env(safe-area-inset-top)',
@@ -560,7 +560,7 @@ export function MessagingView({
       {/* Input bar - more compact */}
       <div
         className="flex-shrink-0 bg-white border-t border-gray-200 px-3 py-2"
-        style={{ paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
+        style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
       >
         {onOpenDateReview && bothConfirmedMet && (
           <div className="mb-2">

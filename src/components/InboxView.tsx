@@ -73,7 +73,7 @@ export function InboxView({
           timestamp: convo.last_message_at || convo.created_at || new Date().toISOString(),
           unread: existing?.unread ?? false,
           compatibilityScore: existing?.compatibilityScore || 0,
-          mutualMatch: mutualIds.has(otherId),
+          mutualMatch: mutualIds.has(otherId) || !!convo.last_message_at,
           hasMessages,
         };
       });
