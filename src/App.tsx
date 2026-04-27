@@ -39,6 +39,7 @@ import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { InstallPromptBanner } from './components/InstallPromptBanner';
+import { PushSubscriptionSync } from './components/PushSubscriptionSync';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
@@ -1022,6 +1023,8 @@ function App() {
       {hasCompletedOnboarding && currentView === 'matches' && (
         <InstallPromptBanner hasCompletedOnboarding={hasCompletedOnboarding} />
       )}
+
+      <PushSubscriptionSync accessToken={accessToken} />
 
       {/* Main content wrapper. Standard 64px top padding clears the
           Header. When the banner is visible we add ~42px more so content
