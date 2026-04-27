@@ -68,8 +68,8 @@ export function InboxView({
         return {
           matchId: otherId,
           matchName: otherUser?.name || existing?.matchName || 'Unknown',
-          matchPhoto: existing?.matchPhoto || '',
-          lastMessage: existing?.lastMessage || 'You matched! Say hello 👋',
+          matchPhoto: otherUser?.photoUrl || existing?.matchPhoto || '',
+          lastMessage: convo.last_message || existing?.lastMessage || 'You matched! Say hello 👋',
           timestamp: convo.last_message_at || convo.created_at || new Date().toISOString(),
           unread: existing?.unread ?? false,
           compatibilityScore: existing?.compatibilityScore || 0,
