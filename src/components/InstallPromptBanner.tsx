@@ -193,16 +193,47 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
     // are awkward and most desktop users aren't going to install.
     const isUselessForDesktop = (detected === 'desktop-other');
 
-    if (hasCompletedOnboarding && !isInstalled && !isStillSnoozed && !isUselessForDesktop) {
-      const timer = setTimeout(() => setIsVisible(true), 2000);
+    // Auto-trigger: only after the user's FIRST LIKE (set by App.tsx via
+    // localStorage 'parallel_first_like_at'). That's the moment they have
+    // skin in the game and want to come back to the app. We no longer
+    // auto-fire 2s after onboarding completion.
+    const firstLikeAt = localStorage.getItem('parallel_first_like_at');
+    const shouldAutoShow = hasCompletedOnboarding
+      && !isInstalled
+      && !isStillSnoozed
+      && !isUselessForDesktop
+      && !!firstLikeAt;
+
+    if (shouldAutoShow) {
+      const timer = setTimeout(() => setIsVisible(true), 600);
       return () => clearTimeout(timer);
     }
   }, [hasCompletedOnboarding]);
+
+  // Imperative open: the SetupChecklist row dispatches this event when the
+  // user taps "Add to home screen". We honor it regardless of the snooze
+  // since it's an explicit user action.
+  useEffect(() => {
+    const onOpen = () => {
+      const isInstalled = window.matchMedia('(display-mode: standalone)').matches
+        || (window.navigator as any).standalone === true;
+      if (isInstalled) return;
+      const detected = detectDevice();
+      if (detected === 'desktop-other') return;
+      setDevice(detected);
+      setCanShowNativePrompt(!!window.deferredInstallPrompt);
+      setIsVisible(true);
+    };
+    window.addEventListener('parallel:open-install-prompt', onOpen);
+    return () => window.removeEventListener('parallel:open-install-prompt', onOpen);
+  }, []);
 
   const handleDismiss = () => {
     // Store timestamp so we can re-prompt after 7 days
     localStorage.setItem('parallel_install_prompt_dismissed_at', String(Date.now()));
     setIsVisible(false);
+    // Tell the SetupChecklist to re-evaluate (PWA row should disappear)
+    try { window.dispatchEvent(new CustomEvent('parallel:pwa-status')); } catch { /* noop */ }
   };
 
   // Hook handles Escape-to-close, body-scroll-lock, focus restore.
@@ -218,6 +249,7 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
         // Set a far-future timestamp as belt-and-suspenders.
         localStorage.setItem('parallel_install_prompt_dismissed_at', String(Date.now()));
         setIsVisible(false);
+        try { window.dispatchEvent(new CustomEvent('parallel:pwa-status')); } catch { /* noop */ }
       }
       window.deferredInstallPrompt = null;
     } catch (err) {
