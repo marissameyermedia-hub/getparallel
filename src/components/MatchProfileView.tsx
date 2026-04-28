@@ -192,7 +192,7 @@ export function MatchProfileView({
   ].filter(Boolean) as { icon: any; label: string; value: string }[];
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-32">
+    <div className="min-h-screen bg-white pt-20 pb-40">
 
       {/* Header */}
       <div className="max-w-2xl mx-auto px-4 mb-4 flex items-center justify-between">
