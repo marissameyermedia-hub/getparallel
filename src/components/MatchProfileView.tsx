@@ -147,7 +147,13 @@ export function MatchProfileView({
         onMatch(user.id);
         if (data.isMutual === true) {
           setIsMutual(true);
-          setTimeout(() => { onOpenChat(user.id); }, 1500);
+          // Show the "🎉 It's a mutual match!" celebration banner for 1.5s, then
+          // return the user to their matches list. They are NOT yanked into
+          // messaging — instead, the parent's onMatch handler (handleMatchAction
+          // in App.tsx) shows a toast that softly invites them to check their
+          // inbox when they're ready. This keeps the user working through their
+          // lineup of matches instead of pulling them out of the flow.
+          setTimeout(() => { onBack(); }, 1500);
         } else {
           onBack();
         }
