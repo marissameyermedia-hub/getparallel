@@ -44,6 +44,7 @@ import { EnablePushBanner } from './components/EnablePushBanner';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
+import { NavigationProgress } from './components/NavigationProgress';
 import { ChevronLeft } from 'lucide-react';
 
 const getHeaders = (token: string) => ({
@@ -969,6 +970,8 @@ function App() {
 
   return (
     <>
+      <NavigationProgress />
+
       {/* Skip-to-content link for keyboard users — visually hidden until focused */}
       <a href="#main-content" className="skip-to-content">
         Skip to main content
