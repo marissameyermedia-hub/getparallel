@@ -16,7 +16,6 @@ import { MessagingView } from './components/MessagingView';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { ProfileEditor } from './components/ProfileEditor';
-import { EmailVerificationBanner } from './components/EmailVerificationBanner';
 import { PaymentDetailsView } from './components/account/PaymentDetailsView';
 import { PrivacySafetyView } from './components/account/PrivacySafetyView';
 import { NotificationsView } from './components/account/NotificationsView';
@@ -677,6 +676,17 @@ function App() {
       return updated;
     });
 
+    // Stamp the first-like timestamp the very first time the user likes
+    // somebody. This unlocks the PWA install prompt (which now waits for
+    // first-like rather than auto-firing on onboarding completion) and
+    // surfaces the "Add to home screen" row in the SetupChecklist card.
+    try {
+      if (!localStorage.getItem('parallel_first_like_at')) {
+        localStorage.setItem('parallel_first_like_at', String(Date.now()));
+        window.dispatchEvent(new CustomEvent('parallel:first-like'));
+      }
+    } catch { /* localStorage unavailable; harmless */ }
+
     const match = matches.find(m => m.user.id === likedUserId);
     const token = await getAccessToken();
 
@@ -963,12 +973,6 @@ function App() {
     'payment-confirmation', 'reset-password', 'messaging'
   ].includes(currentView);
 
-  // Soft email-verification gate: signed-in but unverified users see a
-  // yellow banner just below the Header. Banner is hidden on fullscreen
-  // (signup/onboarding) views to avoid layout chaos. Outbound messaging
-  // is also gated inside MessagingView via the emailVerified prop.
-  const showEmailBanner = !!accessToken && !emailConfirmed && !isFullscreenView;
-
   return (
     <>
       <NavigationProgress />
@@ -989,23 +993,13 @@ function App() {
         />
       )}
 
-      {/* Email verification banner — sits just below the fixed Header
-          (Header is fixed top-0 z-50, ~64px tall). Banner is fixed at
-          top-16 (= 64px) with z-40 so it slots immediately under the
-          header. Visible on every signed-in non-fullscreen view, including
-          matches/home and messaging. */}
-      {showEmailBanner && (
-        <div className="fixed top-16 left-0 right-0 z-40">
-          <EmailVerificationBanner
-            accessToken={accessToken}
-            emailVerified={emailConfirmed}
-          />
-        </div>
-      )}
+      {/* The standalone yellow EmailVerificationBanner used to live here.
+          It's been replaced by the unified SetupChecklist card rendered at
+          the top of MatchesView (Home only). The MessagingView still gates
+          outbound sends on emailVerified independently. */}
 
       {/* In-app notification banner — slides in below the header when a new
-          message arrives while the user is on a different view. z-[60] puts
-          it above the email banner (z-40) but below modals (z-50+). */}
+          message arrives while the user is on a different view. */}
       {userId && (
         <InAppNotificationBanner
           userId={userId}
@@ -1023,8 +1017,11 @@ function App() {
         />
       )}
 
-      {/* PWA install prompt — shows on Home for non-installed users with a 7-day snooze.
-          Only appears when user has completed onboarding and isn't already in a PWA install. */}
+      {/* PWA install prompt modal. No longer auto-fires on onboarding;
+          fires only after the user's first like (set via
+          localStorage.parallel_first_like_at) OR when explicitly opened
+          from the SetupChecklist row via the parallel:open-install-prompt
+          event. Mounted here so the event listener is always live. */}
       {hasCompletedOnboarding && currentView === 'matches' && (
         <InstallPromptBanner hasCompletedOnboarding={hasCompletedOnboarding} />
       )}
@@ -1035,10 +1032,8 @@ function App() {
         <EnablePushBanner accessToken={accessToken} />
       )}
 
-      {/* Main content wrapper. Standard 64px top padding clears the
-          Header. When the banner is visible we add ~42px more so content
-          doesn't underlay the banner. */}
-      <div id="main-content" className={!isFullscreenView ? (showEmailBanner ? 'pt-[6.5rem]' : 'pt-16') : ''}>
+      {/* Main content wrapper. 64px top padding clears the fixed Header. */}
+      <div id="main-content" className={!isFullscreenView ? 'pt-16' : ''}>
         {/* ── Reset Password ── */}
         {currentView === 'reset-password' && (
           <ResetPasswordPage
@@ -1188,6 +1183,8 @@ function App() {
             onPass={handlePassAction}
             onLike={handleMatchAction}
             likedMatchIds={new Set(acceptedMatchIds)}
+            accessToken={accessToken}
+            emailVerified={emailConfirmed}
           />
         )}
 

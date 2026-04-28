@@ -4,10 +4,10 @@ import { toast } from 'sonner';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import { ParallelIcon } from './ParallelIcon';
 import { parallelQuestionnaire } from '../data/parallelQuestionnaire_updated';
 import { getAccessToken } from '../utils/auth';
+import { SetupChecklist } from './SetupChecklist';
 
 // ── PRE_LAUNCH flag ────────────────────────────────────────────
 // Set to true during pre-launch period.
@@ -42,6 +42,9 @@ interface MatchesViewProps {
   onPass?: (matchId: string) => void;
   onLike?: (matchId: string) => void;
   likedMatchIds?: Set<string>;
+  // Used by the SetupChecklist card at the top of Home.
+  accessToken?: string | null;
+  emailVerified?: boolean;
 }
 
 export function MatchesView({
@@ -60,6 +63,8 @@ export function MatchesView({
   onPass,
   onLike,
   likedMatchIds,
+  accessToken = null,
+  emailVerified = true,
 }: MatchesViewProps) {
   const [lastPassedMatchId, setLastPassedMatchId] = useState<string | null>(null);
 
@@ -243,27 +248,18 @@ export function MatchesView({
 
   return (
     <div className="bg-white">
-      {hasActivated && !isVerified && onVerify && (
-        <div className="bg-gradient-to-r from-gray-900 to-black border-b border-gray-800 px-4 py-3">
-          <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <ShieldCheck size={18} className="text-white" />
-              </div>
-              <div>
-                <p className="text-white font-medium text-sm">Verify your identity →</p>
-                <p className="text-gray-500 text-xs">Takes 2 minutes</p>
-              </div>
-            </div>
-            <button
-              onClick={onVerify}
-              className="bg-white text-black px-4 py-1.5 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors flex-shrink-0"
-            >
-              Verify Now
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Unified onboarding checklist: replaces the old standalone yellow
+          email banner, the black "Verify your identity" bar, and the
+          auto-firing PWA install prompt. One card, ranked by priority,
+          dismissible, only on Home. */}
+      <SetupChecklist
+        accessToken={accessToken}
+        emailVerified={emailVerified}
+        identityVerified={isVerified}
+        onOpenInstallPrompt={() => {
+          try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
+        }}
+      />
 
       {!hasActivated && matches.length > 0 && (
         <div className="max-w-md mx-auto px-4 pt-6 pb-4">
