@@ -31,6 +31,8 @@ function makeUser(overrides: Partial<User>): User {
     smoking: "No",
     pets: "Dog",
     religion: "Spiritual",
+    politics: "Liberal",
+    hobbies: ["Hiking", "Cooking", "Reading", "Live music", "Yoga", "Travel"],
     relationshipIntention: "Long-term",
     isVerified: true,
     answers: {},

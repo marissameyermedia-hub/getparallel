@@ -30,6 +30,13 @@ export interface User {
   smoking?: string;
   pets?: string;
   religion?: string;
+  politics?: string;
+  /**
+   * The user's hobby selections (Q3.9). MatchProfileView splits these into
+   * "you both enjoy" (intersected with self.hobbies) vs "also into".
+   * Surfaced by the matches edge function from user_answers.
+   */
+  hobbies?: string[];
   relationshipIntention?: string;
   isVerified?: boolean; // Verified via Persona
   answers: UserAnswers;
