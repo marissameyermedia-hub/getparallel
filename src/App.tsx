@@ -1415,6 +1415,7 @@ function App() {
               accessToken={accessToken}
               isLiked={acceptedMatchIds.includes(selectedMatchId)}
               passFeedbackOpen={!!passSheet}
+              alreadyMatched={mutualMatchIds.includes(selectedMatchId) || inboxMessages.some(m => m.matchId === selectedMatchId)}
             />
           );
         })()}
@@ -1433,6 +1434,7 @@ function App() {
             bothConfirmedMet={metConfirmations[selectedMatchId]?.bothConfirmed || false}
             onOpenDateReview={handleOpenDateReview}
             emailVerified={emailConfirmed}
+            onViewProfile={(matchId) => { setSelectedMatchId(matchId); setCurrentView('profile'); }}
           />
         )}
 
