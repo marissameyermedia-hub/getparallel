@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
+import { InboxSkeleton } from './Skeletons';
+import { progress } from './NavigationProgress';
 
 interface Message {
   matchId: string;
@@ -39,11 +41,22 @@ export function InboxView({
 }: InboxViewProps) {
   const [localMessages, setLocalMessages] = useState<Message[]>(propMessages);
   const [waiting, setWaiting] = useState<WaitingMutual[]>([]);
+  // Initial load tracker. Subsequent polls (every 5s) don't re-trigger the
+  // skeleton — they just update silently in the background.
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const fetchAll = useCallback(async () => {
+  const fetchAll = useCallback(async (isInitial: boolean) => {
     const token = await getAccessToken();
-    if (!token) return;
+    if (!token) {
+      // No token = can't load. Still mark loaded so we don't show skeleton forever.
+      if (isInitial) setHasLoadedOnce(true);
+      return;
+    }
+    // Tie initial load into the global progress bar so the user sees feedback
+    // even if the skeleton itself is missed somehow. Background polls don't
+    // trigger the bar (would feel jittery if it flashed every 5 seconds).
+    if (isInitial) progress.start();
     try {
       const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey };
       const [convoRes, mutualRes, waitingRes] = await Promise.all([
@@ -82,12 +95,19 @@ export function InboxView({
       setWaiting(waitingData.waiting || []);
     } catch (err) {
       console.error('InboxView: failed to fetch', err);
+    } finally {
+      if (isInitial) {
+        setHasLoadedOnce(true);
+        progress.done();
+      }
     }
   }, [propMessages]);
 
   useEffect(() => {
-    fetchAll();
-    const interval = setInterval(fetchAll, 5000);
+    fetchAll(true);
+    // Background poll every 5s. Doesn't trigger the skeleton — the user keeps
+    // seeing real content while we silently refresh.
+    const interval = setInterval(() => fetchAll(false), 5000);
     return () => clearInterval(interval);
   }, [fetchAll]);
 
@@ -135,6 +155,11 @@ export function InboxView({
   };
 
   const hasAnything = waiting.length > 0 || activeConversations.length > 0;
+
+  // Show skeleton on first load. Subsequent updates render in place.
+  if (!hasLoadedOnce) {
+    return <InboxSkeleton />;
+  }
 
   return (
     <div className="flex flex-col bg-white" style={{ height: '100dvh' }}>
