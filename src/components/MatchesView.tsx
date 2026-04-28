@@ -14,6 +14,17 @@ import { getAccessToken } from '../utils/auth';
 // Flip to false on launch day — no deploy needed if using env var.
 const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH !== 'false';
 
+// Stock photos used behind the locked-preview blur for unactivated users.
+// These are royalty-free Unsplash portraits — never real seed photos. The
+// images are heavily blurred at render time, so identifiable detail is
+// obscured; they exist mainly to give a sense that real people are behind
+// the wall and to mirror the geometry of the real swipe view.
+const LOCKED_PREVIEW_PHOTOS = [
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80',
+  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&q=80',
+];
+
 interface MatchesViewProps {
   matches: Match[];
   onRetakeQuestionnaire: () => void;
@@ -356,42 +367,140 @@ export function MatchesView({
             ))}
           </div>
         ) : matches.length === 0 ? (
-          // ── Combined: processing + no matches yet state ────────
-          <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-            <div className="mb-8">
-              <ParallelIcon size={64} className="text-black" />
-            </div>
-            <h2 className="text-3xl font-bold mb-4">Your matches are on their way.</h2>
-            <div className="w-full max-w-xs mb-6">
-              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          // ── Locked / waiting state ─────────────────────────────────
+          // Two sub-states based on whether the user has paid:
+          //   1. !hasActivated — show a blurred swipe-card preview behind a
+          //      paywall card. This is the user's first taste of the swipe
+          //      view UI, deliberately obscured to drive payment conversion.
+          //      Tapping anywhere on the card stack opens pricing.
+          //   2.  hasActivated && matches.length === 0 — they've paid but
+          //      backend hasn't generated matches yet. Rare (the seed-match
+          //      trigger is synchronous on Finish Profile) but possible if
+          //      the user paid before completing onboarding. Keep the
+          //      "matches on their way" copy from before.
+          !hasActivated ? (
+            <div className="max-w-md mx-auto px-4 pt-4 pb-8">
+              {/* Blurred 3-card stack — mirrors SwipeableMatchView geometry
+                  (max-w-md, rounded-3xl, inset-x-3 top-2 stacked-card pattern)
+                  so when the user pays it transitions seamlessly to the real
+                  view. The mock photos are royalty-free Unsplash portraits;
+                  we never use real seed photos for marketing. The blur is
+                  heavy enough to obscure faces while still giving a sense
+                  that real people are behind the wall. */}
+              <div className="relative mb-4" style={{ minHeight: '60vh' }}>
+                {/* Card behind (deepest, smallest) */}
                 <div
-                  className="h-full bg-black rounded-full"
-                  style={{
-                    animation: 'matchingProgress 2.4s ease-in-out infinite',
-                  }}
+                  className="absolute inset-x-6 top-4 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200"
+                  style={{ zIndex: 0 }}
+                  aria-hidden="true"
                 />
+                {/* Middle card */}
+                <div
+                  className="absolute inset-x-3 top-2 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200 overflow-hidden"
+                  style={{ zIndex: 1 }}
+                  aria-hidden="true"
+                >
+                  <img
+                    src={LOCKED_PREVIEW_PHOTOS[1]}
+                    alt=""
+                    className="w-full h-full object-cover blur-2xl scale-110 opacity-80"
+                  />
+                </div>
+                {/* Top card — most visible (still blurred) */}
+                <div
+                  className="relative rounded-3xl border-2 border-gray-200 overflow-hidden bg-gray-100"
+                  style={{ zIndex: 2, aspectRatio: '3/4' }}
+                  aria-hidden="true"
+                >
+                  <img
+                    src={LOCKED_PREVIEW_PHOTOS[0]}
+                    alt=""
+                    className="w-full h-full object-cover blur-2xl scale-110"
+                  />
+                  {/* Faux compatibility pill — suggests the real UI without revealing data */}
+                  <div className="absolute top-4 right-4 bg-white/95 rounded-full px-3 py-1.5 backdrop-blur-sm">
+                    <p className="text-sm font-bold">87%</p>
+                  </div>
+
+                  {/* Paywall overlay card — the conversion CTA */}
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center px-6">
+                    <div className="bg-white rounded-2xl px-6 py-6 max-w-xs w-full text-center shadow-2xl">
+                      <p className="text-xs uppercase tracking-wide text-gray-500 font-medium mb-2">
+                        Your matches are ready
+                      </p>
+                      <h3 className="text-2xl font-bold mb-2 leading-tight">
+                        Unlock your matches
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-5 leading-relaxed">
+                        We've matched you with people who line up on what actually matters.
+                      </p>
+                      <button
+                        onClick={onNavigateToPayment}
+                        className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors text-sm mb-3"
+                      >
+                        See who matched you →
+                      </button>
+                      <p className="text-xs text-gray-400">
+                        Founding members: $79/year
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <style>{`
-                @keyframes matchingProgress {
-                  0%   { width: 0%;   margin-left: 0%; }
-                  50%  { width: 60%;  margin-left: 20%; }
-                  100% { width: 0%;   margin-left: 100%; }
-                }
-              `}</style>
+
+              {/* Secondary CTA — invite a friend. Same as before but smaller
+                  and de-emphasized since the primary CTA is now the unlock. */}
+              <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-5 text-center mt-4">
+                <p className="font-semibold mb-1 text-sm">Want better matches?</p>
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                  Invite friends — every person you bring in makes the pool better for everyone.
+                </p>
+                <button
+                  onClick={onNavigateToInvite || handleShareInvite}
+                  className="w-full border-2 border-black text-black py-2.5 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
+                >
+                  Invite a friend →
+                </button>
+              </div>
             </div>
-            <p className="text-gray-600 text-lg leading-relaxed mb-8 max-w-md">
-              We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
-            </p>
-            <button
-              onClick={onNavigateToInvite || handleShareInvite}
-              className="bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium mb-4"
-            >
-              Invite a friend →
-            </button>
-            <p className="text-sm text-gray-500">
-              The more people you invite, the more people they invite, the better everyone's matches get.
-            </p>
-          </div>
+          ) : (
+            // hasActivated && matches.length === 0 — paid, waiting on backend
+            <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
+              <div className="mb-8">
+                <ParallelIcon size={64} className="text-black" />
+              </div>
+              <h2 className="text-3xl font-bold mb-4">Your matches are on their way.</h2>
+              <div className="w-full max-w-xs mb-6">
+                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-black rounded-full"
+                    style={{
+                      animation: 'matchingProgress 2.4s ease-in-out infinite',
+                    }}
+                  />
+                </div>
+                <style>{`
+                  @keyframes matchingProgress {
+                    0%   { width: 0%;   margin-left: 0%; }
+                    50%  { width: 60%;  margin-left: 20%; }
+                    100% { width: 0%;   margin-left: 100%; }
+                  }
+                `}</style>
+              </div>
+              <p className="text-gray-600 text-lg leading-relaxed mb-8 max-w-md">
+                We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
+              </p>
+              <button
+                onClick={onNavigateToInvite || handleShareInvite}
+                className="bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium mb-4"
+              >
+                Invite a friend →
+              </button>
+              <p className="text-sm text-gray-500">
+                The more people you invite, the more people they invite, the better everyone's matches get.
+              </p>
+            </div>
+          )
         ) : validMatches.length === 0 ? (
           // ── All caught up state ────────────────────────────────
           <div className="py-12 max-w-md mx-auto text-center">
