@@ -44,6 +44,11 @@ interface MessagingViewProps {
    * gallery) aren't affected.
    */
   emailVerified?: boolean;
+  /**
+   * Optional handler — when provided, tapping the match's photo or name in the
+   * chat header opens their full profile (the same MatchProfileView shown from
+   * the matches/home view). When omitted, the photo/name are non-interactive.
+   */
   onViewProfile?: (matchId: string) => void;
 }
 
@@ -70,8 +75,9 @@ function formatLastActive(lastActiveAt: string | null | undefined): string {
   return 'Active recently';
 }
 
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+function getInitials(name: string | null | undefined) {
+  if (!name || typeof name !== 'string') return '?';
+  return name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2) || '?';
 }
 
 export function MessagingView({
@@ -89,6 +95,7 @@ export function MessagingView({
   sharedValues,
   lastActiveAt,
   emailVerified = true,
+  onViewProfile,
 }: MessagingViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -424,20 +431,52 @@ export function MessagingView({
             <ArrowLeft size={20} aria-hidden="true" />
           </button>
 
-          <div className="flex-shrink-0">
-            {matchPhoto ? (
-              <img src={matchPhoto} alt={matchName} className="w-10 h-10 rounded-full object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
-                <span className="text-white text-sm font-semibold">{getInitials(matchName)}</span>
-              </div>
-            )}
-          </div>
+          {/* Photo + name → open profile if onViewProfile is provided.
+              We split into two adjacent buttons so the visual layout doesn't
+              shift; one handles the photo tap, one handles the name tap. */}
+          {onViewProfile ? (
+            <>
+              <button
+                onClick={() => onViewProfile(matchId)}
+                aria-label={`View ${matchName || 'match'}'s profile`}
+                className="flex-shrink-0 active:opacity-60 transition-opacity"
+              >
+                {matchPhoto ? (
+                  <img src={matchPhoto} alt={matchName} className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
+                    <span className="text-white text-sm font-semibold">{getInitials(matchName)}</span>
+                  </div>
+                )}
+              </button>
 
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-semibold truncate leading-tight">{matchName}</h2>
-            <p className="text-xs text-gray-500 leading-tight">{lastActiveText}</p>
-          </div>
+              <button
+                onClick={() => onViewProfile(matchId)}
+                aria-label={`View ${matchName || 'match'}'s profile`}
+                className="flex-1 min-w-0 text-left active:opacity-60 transition-opacity"
+              >
+                <h2 className="text-base font-semibold truncate leading-tight">{matchName}</h2>
+                <p className="text-xs text-gray-500 leading-tight">{lastActiveText}</p>
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex-shrink-0">
+                {matchPhoto ? (
+                  <img src={matchPhoto} alt={matchName} className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
+                    <span className="text-white text-sm font-semibold">{getInitials(matchName)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-semibold truncate leading-tight">{matchName}</h2>
+                <p className="text-xs text-gray-500 leading-tight">{lastActiveText}</p>
+              </div>
+            </>
+          )}
 
           <div className="relative flex-shrink-0" ref={safetyMenuRef}>
             <button

@@ -23,6 +23,12 @@ interface MatchProfileViewProps {
   accessToken?: string | null;
   isLiked?: boolean;
   passFeedbackOpen?: boolean;
+  /**
+   * When true, the user is viewing the profile of someone they've already
+   * matched with (arriving from inbox or messaging). The bottom Like/Pass
+   * action bar is replaced with a "Message" button that returns to chat.
+   * Defaults to false (normal browse-from-home behavior).
+   */
   alreadyMatched?: boolean;
   /** @deprecated — shared hobbies now come from matchDetails.sharedHobbies */
   myHobbies?: string[];
@@ -58,6 +64,7 @@ export function MatchProfileView({
   onMatch,
   onPass,
   isLiked = false,
+  alreadyMatched = false,
 }: MatchProfileViewProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
@@ -508,8 +515,8 @@ export function MatchProfileView({
           </div>
         )}
 
-        {/* Instagram */}
-        {user.instagram && !isMutual && (
+        {/* Instagram — locked when not yet mutual, visible when mutual or already-matched */}
+        {user.instagram && !isMutual && !alreadyMatched && (
           <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
               <Lock size={14} className="text-gray-500" aria-hidden="true" />
@@ -520,7 +527,7 @@ export function MatchProfileView({
             </div>
           </div>
         )}
-        {user.instagram && isMutual && (
+        {user.instagram && (isMutual || alreadyMatched) && (
           <div className="flex items-center gap-1.5 text-gray-600 text-sm px-1">
             <Instagram size={13} aria-hidden="true" />
             <span>@{user.instagram}</span>
@@ -530,8 +537,23 @@ export function MatchProfileView({
         <div className="h-8" />
       </div>
 
-      {/* Fixed bottom action bar */}
-      {isMutual ? (
+      {/* Fixed bottom action bar.
+          - alreadyMatched (arrived from inbox/messaging): Message button.
+          - isMutual (just liked, became mutual): celebration banner.
+          - default (browsing from home): Pass + Like buttons. */}
+      {alreadyMatched ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-8 z-[60]">
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={() => onOpenChat(user.id)}
+              aria-label={`Message ${user.name}`}
+              className="w-full h-14 rounded-full bg-black text-white font-medium flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
+            >
+              <span>Message {user.name}</span>
+            </button>
+          </div>
+        </div>
+      ) : isMutual ? (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 pb-8 z-[60]" role="status" aria-live="polite">
           <div className="max-w-md mx-auto p-4 bg-black text-white rounded-2xl text-center">
             <p className="text-lg font-medium">🎉 It's a mutual match!</p>

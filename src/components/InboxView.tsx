@@ -127,8 +127,11 @@ export function InboxView({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  // Defensive: handle null/undefined/empty names so this can never crash the
+  // inbox the way it did when /mutual-waiting returned bare UUIDs without name.
+  const getInitials = (name: string | null | undefined) => {
+    if (!name || typeof name !== 'string') return '?';
+    return name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2) || '?';
   };
 
   const hasAnything = waiting.length > 0 || activeConversations.length > 0;
@@ -150,7 +153,8 @@ export function InboxView({
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
 
-        {/* "Mutual matches waiting" horizontal row — only shows if there are waiting mutuals */}
+        {/* "Mutual matches waiting" horizontal row — only shows if there are waiting mutuals.
+            Waiting circles split into two tap zones: tap photo → profile, tap name → chat. */}
         {waiting.length > 0 && (
           <div className="border-b border-gray-100 py-4">
             <div className="px-5 mb-3">
@@ -161,67 +165,84 @@ export function InboxView({
             <div className="overflow-x-auto -mx-1 px-4 pb-1 scrollbar-hide">
               <div className="flex gap-3">
                 {waiting.map((w) => (
-                  <button
+                  <div
                     key={w.id}
-                    onClick={() => onOpenChat(w.id)}
-                    className="flex-shrink-0 flex flex-col items-center gap-1.5 w-16 active:opacity-60 transition-opacity"
+                    className="flex-shrink-0 flex flex-col items-center gap-1.5 w-16"
                   >
-                    <div className="relative">
+                    {/* Photo button → opens full profile */}
+                    <button
+                      onClick={() => onViewProfile(w.id)}
+                      aria-label={`View ${w.name || 'match'}'s profile`}
+                      className="relative active:opacity-60 transition-opacity"
+                    >
                       {w.photo ? (
                         <img
                           src={w.photo}
-                          alt={w.name}
+                          alt={w.name || 'Match'}
                           className="w-16 h-16 rounded-full object-cover ring-2 ring-black/5"
                         />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center ring-2 ring-black/5">
+                        <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center ring-2 ring-black/5" aria-hidden="true">
                           <span className="text-white text-base font-semibold">
                             {getInitials(w.name)}
                           </span>
                         </div>
                       )}
                       {/* Subtle "new" dot */}
-                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-black rounded-full border-2 border-white" />
-                    </div>
-                    <span className="text-xs text-gray-700 truncate w-full text-center">
-                      {w.name}
-                    </span>
-                  </button>
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-black rounded-full border-2 border-white" aria-hidden="true" />
+                    </button>
+                    {/* Name button → opens chat */}
+                    <button
+                      onClick={() => onOpenChat(w.id)}
+                      aria-label={`Open chat with ${w.name || 'match'}`}
+                      className="text-xs text-gray-700 truncate w-full text-center active:opacity-60 transition-opacity"
+                    >
+                      {w.name || 'Match'}
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
         )}
 
-        {/* Active conversations */}
+        {/* Active conversations.
+            Row split: tap photo → profile, tap rest of row → chat. */}
         {activeConversations.length > 0 && (
           <div>
             {activeConversations.map((message, index) => (
               <div key={message.matchId}>
-                <button
-                  className="w-full flex items-center gap-3 px-5 py-3.5 active:bg-gray-50 transition-colors text-left"
-                  onClick={() => onOpenChat(message.matchId)}
-                >
-                  <div className="relative flex-shrink-0">
+                <div className="w-full flex items-center gap-3 px-5 py-3.5 active:bg-gray-50 transition-colors">
+                  {/* Photo → opens full profile */}
+                  <button
+                    onClick={() => onViewProfile(message.matchId)}
+                    aria-label={`View ${message.matchName || 'match'}'s profile`}
+                    className="relative flex-shrink-0 active:opacity-60 transition-opacity"
+                  >
                     {message.matchPhoto ? (
                       <img
                         src={message.matchPhoto}
-                        alt={message.matchName}
+                        alt={message.matchName || 'Match'}
                         className="w-14 h-14 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
                         <span className="text-white text-base font-semibold">
                           {getInitials(message.matchName)}
                         </span>
                       </div>
                     )}
                     {message.unread && (
-                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-black rounded-full border-2 border-white" />
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-black rounded-full border-2 border-white" aria-hidden="true" />
                     )}
-                  </div>
+                  </button>
 
-                  <div className="flex-1 min-w-0">
+                  {/* Rest of row → opens chat */}
+                  <button
+                    onClick={() => onOpenChat(message.matchId)}
+                    aria-label={`Open chat with ${message.matchName || 'match'}`}
+                    className="flex-1 min-w-0 text-left"
+                  >
                     <div className="flex items-center justify-between mb-0.5">
                       <span className={`text-base truncate ${message.unread ? 'font-semibold text-black' : 'font-medium text-gray-800'}`}>
                         {message.matchName}
@@ -233,8 +254,8 @@ export function InboxView({
                     <p className={`text-sm truncate ${message.unread ? 'text-black font-medium' : 'text-gray-500'}`}>
                       {message.lastMessage}
                     </p>
-                  </div>
-                </button>
+                  </button>
+                </div>
                 {index < activeConversations.length - 1 && (
                   <div className="ml-[76px] h-px bg-gray-100" />
                 )}
