@@ -192,7 +192,7 @@ export function MatchProfileView({
   ].filter(Boolean) as { icon: any; label: string; value: string }[];
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-32">
+    <div className="min-h-screen bg-white pt-20 pb-40">
 
       {/* Header */}
       <div className="max-w-2xl mx-auto px-4 mb-4 flex items-center justify-between">
@@ -548,7 +548,7 @@ export function MatchProfileView({
           - isMutual (just liked, became mutual): celebration banner.
           - default (browsing from home): Pass + Like buttons. */}
       {alreadyMatched ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-8 z-[60]">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
           <div className="max-w-2xl mx-auto">
             <button
               onClick={() => onOpenChat(user.id)}
@@ -567,7 +567,7 @@ export function MatchProfileView({
           </div>
         </div>
       ) : (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-8 z-[60]">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
           <div className="max-w-2xl mx-auto flex items-center gap-4">
             <button
               onClick={handlePass}

@@ -453,28 +453,8 @@ export function AccountPage({
             </div>
           )}
 
-          {/* Verification prominence — elevated when not verified */}
-          {hasActivated && !hasVerified && (
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-3xl p-6 mb-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <ShieldCheck className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-white mb-1">Get verified ✓</h2>
-                  <p className="text-blue-100 text-sm mb-4 leading-relaxed">
-                    Add a blue checkmark to your profile. Takes about 2 minutes and builds trust with matches.
-                  </p>
-                  <button
-                    onClick={() => onNavigate?.('verification')}
-                    className="w-full bg-white text-blue-700 py-3 rounded-full font-medium hover:bg-blue-50 transition-colors text-sm"
-                  >
-                    Verify my identity
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* "Get verified" card removed — identity verification is now
+              surfaced via the matchmaking checklist on the home page. */}
 
           {/* Questionnaire completion card — whole card is tappable, no redundant Continue → */}
           <button className="w-full text-left bg-white border-2 border-gray-200 rounded-3xl p-5 mb-4 hover:border-gray-300 transition-colors" onClick={() => onNavigate?.('questionnaire')}>

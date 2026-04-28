@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Match } from '../types';
 import { Undo2 } from 'lucide-react';
 import { MatchCard } from './MatchCard';
@@ -38,6 +38,13 @@ export function SwipeableMatchView({
   const currentMatch = matches.length > 0 ? matches[safeIndex] : null;
   const nextMatch = safeIndex < matches.length - 1 ? matches[safeIndex + 1] : null;
   const progress = matches.length > 0 ? ((safeIndex + 1) / matches.length) * 100 : 0;
+
+  // Reset scroll to top whenever a new profile (re)renders so the header and
+  // any "You matched with…" banner are fully visible instead of overlapping
+  // mid-scroll content.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [safeIndex, currentMatch?.user?.id]);
 
   if (!matches || matches.length === 0 || !currentMatch) {
     return (
