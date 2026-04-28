@@ -59,7 +59,8 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSuspended, setIsSuspended] = useState(false);
   const [suspensionMessage, setSuspensionMessage] = useState('');
-<
+  const [emailConfirmed, setEmailConfirmed] = useState(true); // true by default so existing users aren't gated
+  const [currentView, setCurrentView] = useState<
     | 'signin' | 'account-creation' | 'phone-verification' | 'onboarding'
     | 'pricing' | 'payment-confirmation'
     | 'matches' | 'questionnaire' | 'account' | 'profile' | 'my-profile'
