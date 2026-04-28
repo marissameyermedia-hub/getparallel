@@ -175,6 +175,16 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
   const [canShowNativePrompt, setCanShowNativePrompt] = useState(false);
 
   useEffect(() => {
+    // Stamp first-visit timestamp on the very first load. Used below to
+    // delay the install prompt by 24h so new users aren't overwhelmed
+    // during onboarding.
+    const FIRST_VISIT_KEY = 'parallel_first_visit_at';
+    let firstVisitAt = localStorage.getItem(FIRST_VISIT_KEY);
+    if (!firstVisitAt) {
+      firstVisitAt = String(Date.now());
+      localStorage.setItem(FIRST_VISIT_KEY, firstVisitAt);
+    }
+
     const isInstalled = window.matchMedia('(display-mode: standalone)').matches
       || (window.navigator as any).standalone === true; // iOS Safari standalone check
     const detected = detectDevice();
@@ -193,16 +203,17 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
     // are awkward and most desktop users aren't going to install.
     const isUselessForDesktop = (detected === 'desktop-other');
 
-    // Auto-trigger: only after the user's FIRST LIKE (set by App.tsx via
-    // localStorage 'parallel_first_like_at'). That's the moment they have
-    // skin in the game and want to come back to the app. We no longer
-    // auto-fire 2s after onboarding completion.
-    const firstLikeAt = localStorage.getItem('parallel_first_like_at');
+    // 24-hour delay from first visit. Gives new users time to explore the
+    // app before we suggest installing it to their home screen.
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+    const msSinceFirstVisit = Date.now() - parseInt(firstVisitAt, 10);
+    const hasWaited24h = msSinceFirstVisit >= TWENTY_FOUR_HOURS_MS;
+
     const shouldAutoShow = hasCompletedOnboarding
       && !isInstalled
       && !isStillSnoozed
       && !isUselessForDesktop
-      && !!firstLikeAt;
+      && hasWaited24h;
 
     if (shouldAutoShow) {
       const timer = setTimeout(() => setIsVisible(true), 600);
