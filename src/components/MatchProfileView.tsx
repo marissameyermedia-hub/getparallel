@@ -82,13 +82,13 @@ export function MatchProfileView({
 
   const { user, compatibilityScore, matchDetails } = match;
   const photos = user.photos?.length ? user.photos : (user.photoUrl ? [user.photoUrl] : []);
-  const politics = (user as any).politics as string | null | undefined;
-  const religion = (user as any).religion as string | null | undefined;
+  const politics = user.politics ?? undefined;
+  const religion = user.religion ?? undefined;
   const locationDisplay = (user as any).locationDisplay as string | null | undefined;
 
   // Hobbies: shared come from backend (matchDetails.sharedHobbies),
   // other comes from their full hobby list minus the shared ones.
-  const allTheirHobbies = ((user as any).hobbies as string[] | null | undefined) ?? [];
+  const allTheirHobbies = user.hobbies ?? [];
   const sharedHobbies = matchDetails?.sharedHobbies ?? [];
   const sharedSet = new Set(sharedHobbies);
   const otherHobbies = allTheirHobbies.filter(h => !sharedSet.has(h));
@@ -180,9 +180,9 @@ export function MatchProfileView({
     user.career ? { icon: Briefcase, label: 'Career', value: user.career } : null,
     religion ? { icon: Church, label: 'Religion', value: religion } : null,
     politics ? { icon: Vote, label: 'Politics', value: politics } : null,
-    (user as any).drinking ? { icon: Wine, label: 'Drinking', value: (user as any).drinking } : null,
-    (user as any).smoking ? { icon: Cigarette, label: 'Smoking', value: (user as any).smoking } : null,
-    (user as any).pets ? { icon: PawPrint, label: 'Pets', value: (user as any).pets } : null,
+    user.drinking ? { icon: Wine, label: 'Drinking', value: user.drinking } : null,
+    user.smoking ? { icon: Cigarette, label: 'Smoking', value: user.smoking } : null,
+    user.pets ? { icon: PawPrint, label: 'Pets', value: user.pets } : null,
   ].filter(Boolean) as { icon: any; label: string; value: string }[];
 
   return (
