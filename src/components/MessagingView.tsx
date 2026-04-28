@@ -44,6 +44,7 @@ interface MessagingViewProps {
    * gallery) aren't affected.
    */
   emailVerified?: boolean;
+  onViewProfile?: (matchId: string) => void;
 }
 
 const STARTERS = [

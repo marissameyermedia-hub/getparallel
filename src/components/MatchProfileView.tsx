@@ -23,6 +23,7 @@ interface MatchProfileViewProps {
   accessToken?: string | null;
   isLiked?: boolean;
   passFeedbackOpen?: boolean;
+  alreadyMatched?: boolean;
   /** @deprecated — shared hobbies now come from matchDetails.sharedHobbies */
   myHobbies?: string[];
 }
