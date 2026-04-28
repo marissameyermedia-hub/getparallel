@@ -59,9 +59,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSuspended, setIsSuspended] = useState(false);
   const [suspensionMessage, setSuspensionMessage] = useState('');
-  const [emailConfirmed, setEmailConfirmed] = useState(true); // true by default so existing users aren't gated
-  const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
-  const [currentView, setCurrentView] = useState<
+<
     | 'signin' | 'account-creation' | 'phone-verification' | 'onboarding'
     | 'pricing' | 'payment-confirmation'
     | 'matches' | 'questionnaire' | 'account' | 'profile' | 'my-profile'
@@ -194,9 +192,6 @@ function App() {
         const data = await matchesRes.json();
         if (Array.isArray(data.matches)) {
           setMatches(data.matches);
-        }
-        if (data.emailConfirmationRequired === true) {
-          setEmailConfirmationRequired(true);
         }
       }
     } catch (err) {
@@ -1192,7 +1187,6 @@ function App() {
             onPass={handlePassAction}
             onLike={handleMatchAction}
             likedMatchIds={new Set(acceptedMatchIds)}
-            emailConfirmationRequired={emailConfirmationRequired}
           />
         )}
 
