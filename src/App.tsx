@@ -73,6 +73,10 @@ function App() {
   >('signin');
 
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  // Tracks how the user arrived at the profile view. Determines whether the
+  // bottom action bar shows Like/Pass (browsing from home) or Message (came
+  // from a chat they've already matched with).
+  const [profileSource, setProfileSource] = useState<'home' | 'chat'>('home');
   const [phoneToVerify, setPhoneToVerify] = useState<string>('');
   const [userProfile, setUserProfile] = useState<{
     photos: string[];
@@ -663,6 +667,7 @@ function App() {
       setCurrentView('pricing');
     } else {
       setSelectedMatchId(matchId);
+      setProfileSource('home');
       setCurrentView('profile');
     }
   };
@@ -1418,7 +1423,7 @@ function App() {
               accessToken={accessToken}
               isLiked={acceptedMatchIds.includes(selectedMatchId)}
               passFeedbackOpen={!!passSheet}
-              alreadyMatched={mutualMatchIds.includes(selectedMatchId) || inboxMessages.some(m => m.matchId === selectedMatchId)}
+              alreadyMatched={profileSource === 'chat'}
             />
           );
         })()}
@@ -1437,7 +1442,7 @@ function App() {
             bothConfirmedMet={metConfirmations[selectedMatchId]?.bothConfirmed || false}
             onOpenDateReview={handleOpenDateReview}
             emailVerified={emailConfirmed}
-            onViewProfile={(matchId) => { setSelectedMatchId(matchId); setCurrentView('profile'); }}
+            onViewProfile={(matchId) => { setSelectedMatchId(matchId); setProfileSource('chat'); setCurrentView('profile'); }}
           />
         )}
 
@@ -1452,6 +1457,7 @@ function App() {
             }}
             onViewProfile={(matchId) => {
               setSelectedMatchId(matchId);
+              setProfileSource('chat');
               setCurrentView('profile');
             }}
             hasActivated={hasActivated}
