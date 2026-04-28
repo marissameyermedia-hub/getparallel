@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';
-import { ShieldCheck, X } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { ParallelIcon } from './ParallelIcon';
 import { parallelQuestionnaire } from '../data/parallelQuestionnaire_updated';
 import { getAccessToken } from '../utils/auth';
@@ -42,7 +42,6 @@ interface MatchesViewProps {
   onPass?: (matchId: string) => void;
   onLike?: (matchId: string) => void;
   likedMatchIds?: Set<string>;
-  emailConfirmationRequired?: boolean;
 }
 
 export function MatchesView({
@@ -61,26 +60,8 @@ export function MatchesView({
   onPass,
   onLike,
   likedMatchIds,
-  emailConfirmationRequired = false,
 }: MatchesViewProps) {
   const [lastPassedMatchId, setLastPassedMatchId] = useState<string | null>(null);
-  const [showEmailBanner, setShowEmailBanner] = useState(true);
-  const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
-
-  const handleResendVerification = async () => {
-    const token = await getAccessToken();
-    if (!token || resendStatus !== 'idle') return;
-    setResendStatus('sending');
-    try {
-      await fetch(`${MISC_FUNCTION_URL}/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-      });
-      setResendStatus('sent');
-    } catch {
-      setResendStatus('idle');
-    }
-  };
 
   // Evaluate showIf visibility using the user's actual answers — same logic as OnboardingFlow
   const isQuestionVisible = (question: any, answers: Record<string, any>): boolean => {
@@ -262,34 +243,6 @@ export function MatchesView({
 
   return (
     <div className="bg-white">
-      {/* Email confirmation banner — non-blocking, dismissible */}
-      {emailConfirmationRequired && showEmailBanner && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
-          <div className="max-w-md mx-auto flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <p className="text-amber-900 font-medium text-sm">Please verify your email</p>
-              <p className="text-amber-700 text-xs mt-0.5 leading-relaxed">
-                Check your inbox for a link from hello@getparallel.vip to get the best matches. Remember to check your junk folder.
-              </p>
-              <button
-                onClick={handleResendVerification}
-                disabled={resendStatus !== 'idle'}
-                className="mt-2 text-xs font-medium text-amber-900 underline disabled:opacity-50"
-              >
-                {resendStatus === 'sent' ? 'Email sent ✓' : resendStatus === 'sending' ? 'Sending…' : 'Resend verification email'}
-              </button>
-            </div>
-            <button
-              onClick={() => setShowEmailBanner(false)}
-              className="text-amber-600 hover:text-amber-900 flex-shrink-0 mt-0.5"
-              aria-label="Dismiss"
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {hasActivated && !isVerified && onVerify && (
         <div className="bg-gradient-to-r from-gray-900 to-black border-b border-gray-800 px-4 py-3">
           <div className="max-w-md mx-auto flex items-center justify-between gap-4">
