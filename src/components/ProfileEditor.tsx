@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, GripVertical, ChevronLeft, User, Briefcase, GraduationCap, Instagram, MapPin, Plus, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, Lock } from 'lucide-react';
+import { Upload, X, GripVertical, ChevronLeft, Briefcase, GraduationCap, Instagram, MapPin, Plus, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, Lock } from 'lucide-react';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { LocationPicker } from './LocationPicker';
@@ -265,184 +265,174 @@ export function ProfileEditor({
   const canSave = uploadedPhotos.length > 0;
 
   // ── Preview overlay ──────────────────────────────────────────
-  // This must look exactly like a real match card so the user can see what
-  // their profile looks like to others. Mirrors MatchProfileView's structure:
-  // photo carousel (tap left/right to browse), name+age+height row,
-  // location/pronouns subline, bio prose, Hobbies & Interests card,
-  // Profile Basics card (education / career / religion / politics /
-  // drinking / smoking / pets), Instagram pill. The only differences from a
-  // real match card: no compatibility breakdown bars (those don't apply to
-  // self-preview), no Like/Pass action bar, no safety menu.
+  // This must look IDENTICAL to a real match card so the user can see what
+  // their profile looks like to potential matches. Lifts MatchProfileView's
+  // exact structure verbatim:
+  //   - max-w-2xl outer wrapper, pt-20 pb-40 spacing
+  //   - aspect-[4/5] photo card with rounded-3xl border-2, page indicator
+  //     dots at top of photo, Verified pill bottom-left, "Photo X of Y"
+  //     caption below
+  //   - Name+age+height heading OUTSIDE photo, location+pronouns subline
+  //   - Bio as prose
+  //   - Hobbies & Interests card
+  //   - Profile Basics card with education / career / religion / politics /
+  //     drinking / smoking / pets
+  //   - Instagram locked-style pill
+  //
+  // Differences from a real match card (intentional, not bugs):
+  //   - No compatibility breakdown bars (you don't have a score with self)
+  //   - No compatibility pill in the photo bottom-right (same reason)
+  //   - No Like/Pass action bar
+  //   - No safety menu
+  //   - Hobbies all rendered in gray (no "you both enjoy" comparison)
   if (showPreview) {
     return (
-      <div className="min-h-screen bg-white overflow-y-auto pb-12">
-        <div className="max-w-[390px] mx-auto bg-white">
-          <div className="sticky top-0 bg-white z-10 border-b border-gray-100 flex items-center justify-between px-4 py-3">
-            <button onClick={() => setShowPreview(false)} className="flex items-center gap-1 text-sm font-medium hover:text-gray-600">
-              <ChevronLeft size={18} aria-hidden="true" /> Back to editing
-            </button>
-            <span className="text-sm font-medium text-gray-500">Preview</span>
-            <div className="w-28" />
-          </div>
+      <div className="min-h-screen bg-white pb-20">
+        {/* Sticky header — kept from previous preview so the user has a
+            "Back to editing" anchor while reviewing the card. */}
+        <div className="sticky top-0 bg-white z-10 border-b border-gray-100 flex items-center justify-between px-4 py-3">
+          <button
+            onClick={() => setShowPreview(false)}
+            className="flex items-center gap-1 text-sm font-medium hover:text-gray-600"
+          >
+            <ChevronLeft size={18} aria-hidden="true" /> Back to editing
+          </button>
+          <span className="text-sm font-medium text-gray-500">Preview</span>
+          <div className="w-28" />
+        </div>
 
-          {/* Photo carousel */}
-          {previewPhotos[previewPhotoIndex] ? (
-            <div className="relative aspect-[3/4] bg-gray-100">
-              <img
-                src={previewPhotos[previewPhotoIndex]}
-                alt={`Photo ${previewPhotoIndex + 1}`}
-                className="w-full h-full object-cover"
-              />
-              {/* Tap zones: left half goes back, right half goes forward */}
+        <div className="max-w-2xl mx-auto px-4 pt-6 space-y-5">
+
+          {/* Photo carousel — lifted verbatim from MatchProfileView */}
+          <div>
+            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden border-2 border-gray-200">
+              {previewPhotos[previewPhotoIndex] ? (
+                <img
+                  src={previewPhotos[previewPhotoIndex]}
+                  alt={`${displayName}, photo ${previewPhotoIndex + 1} of ${previewPhotos.length}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <p className="text-gray-500">No photo</p>
+                </div>
+              )}
               {previewPhotos.length > 1 && (
                 <>
                   <button
+                    type="button"
+                    className="absolute left-0 top-0 w-1/3 h-full z-10 cursor-pointer"
                     onClick={goPrevPhoto}
-                    disabled={previewPhotoIndex === 0}
                     aria-label="Previous photo"
-                    className="absolute inset-y-0 left-0 w-1/3 disabled:opacity-0"
                   />
                   <button
+                    type="button"
+                    className="absolute right-0 top-0 w-1/3 h-full z-10 cursor-pointer"
                     onClick={goNextPhoto}
-                    disabled={previewPhotoIndex === previewPhotos.length - 1}
                     aria-label="Next photo"
-                    className="absolute inset-y-0 right-0 w-1/3 disabled:opacity-0"
                   />
-                  {/* Photo dots indicator */}
-                  <div className="absolute top-3 left-0 right-0 flex justify-center gap-1.5 px-4 pointer-events-none">
-                    {previewPhotos.map((_, i) => (
+                  <div className="absolute top-3 left-0 right-0 flex justify-center gap-1 z-20" aria-hidden="true">
+                    {previewPhotos.map((_, idx) => (
                       <div
-                        key={i}
-                        className={`h-1 flex-1 max-w-[40px] rounded-full ${
-                          i === previewPhotoIndex ? 'bg-white' : 'bg-white/40'
+                        key={idx}
+                        className={`h-1 rounded-full transition-all ${
+                          idx === previewPhotoIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'
                         }`}
                       />
                     ))}
                   </div>
                 </>
               )}
-              {/* Name + age overlay on hero photo (only on first photo) */}
-              {previewPhotoIndex === 0 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                  <h2 className="text-white text-2xl font-semibold">
-                    {displayName}{userAge ? `, ${userAge}` : ''}{heightStr ? ` · ${heightStr}` : ''}
-                  </h2>
-                  {(location?.locationDisplay || pronouns) && (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-white/80 text-sm">
-                      {location?.locationDisplay && (
-                        <div className="flex items-center gap-1">
-                          <MapPin size={13} aria-hidden="true" />
-                          <span>{location.locationDisplay}</span>
-                        </div>
-                      )}
-                      {pronouns && <span>{pronouns}</span>}
-                    </div>
-                  )}
+              {isVerified && (
+                <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+                  <ShieldCheck size={13} aria-hidden="true" />
+                  <span className="text-xs font-medium">Verified</span>
                 </div>
               )}
             </div>
-          ) : (
-            <div className="aspect-[3/4] bg-gray-100 flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <User size={48} className="mx-auto mb-2" aria-hidden="true" />
-                <p className="text-sm">No photos yet</p>
-                <p className="text-xs mt-1">Add photos to preview your profile</p>
+            {previewPhotos.length > 1 && (
+              <p className="text-center text-xs text-gray-500 mt-2">
+                Photo {previewPhotoIndex + 1} of {previewPhotos.length} — tap sides to browse
+              </p>
+            )}
+          </div>
+
+          {/* Name / age / height / location / pronouns */}
+          <div>
+            <h1 className="text-2xl font-bold">
+              {displayName}{userAge ? `, ${userAge}` : ''}{heightStr ? ` · ${heightStr}` : ''}
+            </h1>
+            {(location?.locationDisplay || pronouns) && (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-gray-500 text-sm">
+                {location?.locationDisplay && (
+                  <div className="flex items-center gap-1">
+                    <MapPin size={13} aria-hidden="true" />
+                    <span>{location.locationDisplay}</span>
+                  </div>
+                )}
+                {pronouns && <span>{pronouns}</span>}
+              </div>
+            )}
+          </div>
+
+          {/* Bio as prose (no gray card wrapper) */}
+          {bio && (
+            <p className="text-[15px] text-gray-700 leading-relaxed">{bio}</p>
+          )}
+
+          {/* Hobbies & Interests — self-preview shows all in gray since
+              there's no "shared with you" comparison. */}
+          {hobbies.length > 0 && (
+            <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
+              <h3 className="text-sm font-semibold mb-3">Hobbies &amp; Interests</h3>
+              <div className="flex flex-wrap gap-2">
+                {hobbies.map((hobby) => (
+                  <span key={hobby} className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full">
+                    {hobby}
+                  </span>
+                ))}
               </div>
             </div>
           )}
-          {previewPhotos.length > 1 && (
-            <p className="text-center text-xs text-gray-500 mt-2">
-              Photo {previewPhotoIndex + 1} of {previewPhotos.length} — tap sides to browse
-            </p>
+
+          {/* Profile Basics */}
+          {profileDetails.length > 0 && (
+            <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
+              <h3 className="text-sm font-semibold mb-3">Profile Basics</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {profileDetails.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="flex items-start gap-3">
+                    <Icon size={16} className="text-gray-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                    <div>
+                      <p className="text-xs text-gray-500">{label}</p>
+                      <p className="text-sm text-gray-800">{value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
-          <div className="px-6 py-6 space-y-4">
-            {/* If we have no photos, surface name/age here instead of in the photo overlay */}
-            {!previewPhotos[0] && (
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {displayName}{userAge ? `, ${userAge}` : ''}{heightStr ? ` · ${heightStr}` : ''}
-                </h1>
-                {(location?.locationDisplay || pronouns) && (
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-gray-500 text-sm">
-                    {location?.locationDisplay && (
-                      <div className="flex items-center gap-1">
-                        <MapPin size={13} aria-hidden="true" />
-                        <span>{location.locationDisplay}</span>
-                      </div>
-                    )}
-                    {pronouns && <span>{pronouns}</span>}
-                  </div>
-                )}
+          {/* Instagram — locked-style card matching what a non-mutual match
+              would see. Mirrors MatchProfileView's "Unlocks after you both
+              like each other" pattern so the user understands the privacy
+              behavior. */}
+          {instagram && (
+            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                <Lock size={14} className="text-gray-500" aria-hidden="true" />
               </div>
-            )}
-
-            {isVerified && (
-              <div className="flex items-center gap-2 text-blue-600 text-sm">
-                <ShieldCheck size={16} aria-hidden="true" />
-                <span className="font-medium">Identity Verified</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-700">Instagram</p>
+                <p className="text-xs text-gray-500">Unlocks for matches after you both like each other</p>
               </div>
-            )}
+              <Instagram size={16} className="text-gray-400 flex-shrink-0" aria-hidden="true" />
+            </div>
+          )}
 
-            {/* Bio as prose */}
-            {bio && (
-              <p className="text-[15px] text-gray-700 leading-relaxed">{bio}</p>
-            )}
-
-            {/* Hobbies & Interests — self-preview shows all in grey since
-                there's no "shared with you" comparison to draw against. */}
-            {hobbies.length > 0 && (
-              <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
-                <h3 className="text-sm font-semibold mb-3">Hobbies &amp; Interests</h3>
-                <div className="flex flex-wrap gap-2">
-                  {hobbies.map((hobby) => (
-                    <span key={hobby} className="text-xs px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full">
-                      {hobby}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Profile Basics */}
-            {profileDetails.length > 0 && (
-              <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
-                <h3 className="text-sm font-semibold mb-3">Profile Basics</h3>
-                <div className="grid grid-cols-1 gap-3">
-                  {profileDetails.map(({ icon: Icon, label, value }) => (
-                    <div key={label} className="flex items-start gap-3">
-                      <Icon size={16} className="text-gray-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                      <div>
-                        <p className="text-xs text-gray-500">{label}</p>
-                        <p className="text-sm text-gray-800">{value}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Instagram — shown to mirror the locked card a non-mutual match
-                would see. We render it with the same lock styling so the user
-                understands their handle won't appear until both people like
-                each other. */}
-            {instagram && (
-              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                  <Lock size={14} className="text-gray-500" aria-hidden="true" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-700">Instagram</p>
-                  <p className="text-xs text-gray-500">Unlocks for matches after you both like each other</p>
-                </div>
-                <Instagram size={16} className="text-gray-400 flex-shrink-0" aria-hidden="true" />
-              </div>
-            )}
-
-            <p className="text-xs text-gray-400 text-center pt-4">
-              This is how your profile appears to potential matches
-            </p>
-          </div>
+          <p className="text-xs text-gray-400 text-center pt-4">
+            This is how your profile appears to potential matches
+          </p>
         </div>
       </div>
     );
