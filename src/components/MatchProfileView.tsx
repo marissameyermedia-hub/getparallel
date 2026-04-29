@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Briefcase, GraduationCap, Instagram, Heart, X, Flag, Ban, ChevronLeft, MoreVertical, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, UserMinus, Lock } from 'lucide-react';
+import { MapPin, Briefcase, GraduationCap, Instagram, Heart, X, Flag, Ban, ChevronLeft, MoreVertical, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, UserMinus, Lock, Pencil } from 'lucide-react';
 import { Match } from '../types';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -30,6 +30,22 @@ interface MatchProfileViewProps {
    * Defaults to false (normal browse-from-home behavior).
    */
   alreadyMatched?: boolean;
+  /**
+   * When true, the user is previewing their *own* profile. Changes the UX
+   * in five ways so they don't think the example data is real:
+   *   1. Sticky banner at top: "Preview mode — compatibility scores are example data"
+   *   2. Score badge text: "Preview / Sample score" (instead of e.g. "100% / Exceptional Match")
+   *   3. Compatibility Breakdown gets an italic disclaimer noting bars are illustrative
+   *   4. Instagram unlocks (so they can verify their own handle is right)
+   *   5. Bottom Pass/Like action bar replaced with single "Edit Profile" button
+   * Also hides the safety menu (block/report/unmatch don't apply to yourself).
+   */
+  isPreview?: boolean;
+  /**
+   * Called when the user taps the "Edit Profile" button in preview mode.
+   * Required when isPreview=true; ignored otherwise.
+   */
+  onEditProfile?: () => void;
   /** @deprecated — shared hobbies now come from matchDetails.sharedHobbies */
   myHobbies?: string[];
 }
@@ -65,6 +81,8 @@ export function MatchProfileView({
   onPass,
   isLiked = false,
   alreadyMatched = false,
+  isPreview = false,
+  onEditProfile,
 }: MatchProfileViewProps) {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
@@ -194,16 +212,33 @@ export function MatchProfileView({
   return (
     <div className="min-h-screen bg-white pt-20 pb-40">
 
+      {/* Preview-mode banner — sticky just under the header so it stays
+          visible whether the user is on photos, breakdown, or basics.
+          Renders only when isPreview=true. */}
+      {isPreview && (
+        <div
+          className="sticky top-0 z-40 bg-amber-50 border-b border-amber-200 px-4 py-2"
+          role="status"
+        >
+          <p className="max-w-2xl mx-auto text-xs text-amber-900 leading-snug">
+            <span className="font-semibold">Preview mode</span> — this is how matches see your profile. Compatibility scores shown are example data.
+          </p>
+        </div>
+      )}
+
       {/* Header */}
       <div className="max-w-2xl mx-auto px-4 mb-4 flex items-center justify-between">
         <button
           onClick={onBack}
-          aria-label="Back to matches"
+          aria-label={isPreview ? 'Back to account' : 'Back to matches'}
           className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors flex items-center gap-1"
         >
           <ChevronLeft size={20} aria-hidden="true" />
-          <span className="text-sm text-gray-600">Matches</span>
+          <span className="text-sm text-gray-600">{isPreview ? 'Account' : 'Matches'}</span>
         </button>
+        {/* Safety menu (block / report / unmatch) is hidden in preview —
+            those actions don't apply to your own profile. */}
+        {!isPreview && (
         <div className="relative safety-menu-container">
           <button
             onClick={() => setShowSafetyMenu(!showSafetyMenu)}
@@ -246,6 +281,7 @@ export function MatchProfileView({
             </>
           )}
         </div>
+        )}
       </div>
 
       {/* Unmatch Modal */}
@@ -395,8 +431,17 @@ export function MatchProfileView({
             )}
             <div className="absolute bottom-3 right-3 z-20 bg-white rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200">
               <div className="text-center">
-                <div className="text-base font-bold leading-none">{compatibilityScore}%</div>
-                <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">{getCompatibilityLabel(compatibilityScore)}</div>
+                {isPreview ? (
+                  <>
+                    <div className="text-base font-bold leading-none">Preview</div>
+                    <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">Sample score</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-base font-bold leading-none">{compatibilityScore}%</div>
+                    <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">{getCompatibilityLabel(compatibilityScore)}</div>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -429,7 +474,13 @@ export function MatchProfileView({
             Static for now. Categories with no score show "Not enough data yet". */}
         {showBreakdownSection && (
           <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
-            <h3 className="text-sm font-semibold mb-4">Compatibility Breakdown</h3>
+            <h3 className="text-sm font-semibold mb-1">Compatibility Breakdown</h3>
+            {isPreview && (
+              <p className="text-xs italic text-gray-500 mb-4 leading-snug">
+                Sample data — actual scores depend on the person viewing your profile.
+              </p>
+            )}
+            {!isPreview && <div className="mb-4" />}
             <div className="space-y-3.5">
               {CATEGORY_ORDER.map((label) => {
                 const raw = breakdown[label];
@@ -521,33 +572,74 @@ export function MatchProfileView({
           </div>
         )}
 
-        {/* Instagram — locked when not yet mutual, visible when mutual or already-matched */}
-        {user.instagram && !isMutual && !alreadyMatched && (
-          <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-              <Lock size={14} className="text-gray-500" aria-hidden="true" />
+        {/* Instagram
+            - In preview: always unlocked so the user can verify their own
+              handle is correct. If they haven't entered one, show a CTA
+              pointing to Edit Profile.
+            - For real matches: locked when not yet mutual, visible when
+              mutual or already-matched. */}
+        {isPreview ? (
+          user.instagram ? (
+            <div className="flex items-center gap-1.5 text-gray-600 text-sm px-1">
+              <Instagram size={13} aria-hidden="true" />
+              <span>@{user.instagram}</span>
             </div>
-            <div>
-              <p className="text-xs font-medium text-gray-700">Instagram</p>
-              <p className="text-xs text-gray-500">Unlocks after you both like each other</p>
+          ) : (
+            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                <Instagram size={14} className="text-gray-500" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-700">Instagram</p>
+                <p className="text-xs text-gray-500">Add your handle in Edit Profile</p>
+              </div>
             </div>
-          </div>
-        )}
-        {user.instagram && (isMutual || alreadyMatched) && (
-          <div className="flex items-center gap-1.5 text-gray-600 text-sm px-1">
-            <Instagram size={13} aria-hidden="true" />
-            <span>@{user.instagram}</span>
-          </div>
+          )
+        ) : (
+          <>
+            {user.instagram && !isMutual && !alreadyMatched && (
+              <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                  <Lock size={14} className="text-gray-500" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-700">Instagram</p>
+                  <p className="text-xs text-gray-500">Unlocks after you both like each other</p>
+                </div>
+              </div>
+            )}
+            {user.instagram && (isMutual || alreadyMatched) && (
+              <div className="flex items-center gap-1.5 text-gray-600 text-sm px-1">
+                <Instagram size={13} aria-hidden="true" />
+                <span>@{user.instagram}</span>
+              </div>
+            )}
+          </>
         )}
 
         <div className="h-8" />
       </div>
 
       {/* Fixed bottom action bar.
+          - isPreview: single "Edit Profile" button — Pass/Like don't apply
+            to your own profile and would just be dead UX.
           - alreadyMatched (arrived from inbox/messaging): Message button.
           - isMutual (just liked, became mutual): celebration banner.
           - default (browsing from home): Pass + Like buttons. */}
-      {alreadyMatched ? (
+      {isPreview ? (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
+          <div className="max-w-2xl mx-auto">
+            <button
+              onClick={() => onEditProfile?.()}
+              aria-label="Edit your profile"
+              className="w-full h-14 rounded-full bg-black text-white font-medium flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
+            >
+              <Pencil size={18} aria-hidden="true" />
+              <span>Edit Profile</span>
+            </button>
+          </div>
+        </div>
+      ) : alreadyMatched ? (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
           <div className="max-w-2xl mx-auto">
             <button
