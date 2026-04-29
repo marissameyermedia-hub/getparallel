@@ -550,6 +550,18 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentView]);
 
+  // ── SetupChecklist deep-link to /account/notifications ────────
+  // The "Turn on SMS alerts" row in the SetupChecklist dispatches this
+  // event when no onOpenNotifications prop is passed. Listening here
+  // keeps the SetupChecklist self-contained (it doesn't need MatchesView
+  // to thread the prop through).
+
+  useEffect(() => {
+    const openNotifications = () => setCurrentView('notifications');
+    window.addEventListener('parallel:open-notifications', openNotifications);
+    return () => window.removeEventListener('parallel:open-notifications', openNotifications);
+  }, []);
+
   // ── Persist last view so refresh restores correct screen ──────
 
   useEffect(() => {
@@ -1156,12 +1168,15 @@ function App() {
         )}
 
         {/* ── Phone Verification ── */}
+        {/* Telnyx 10DLC live as of April 2026 — phone verification is now
+            required for new signups. The previous beta-only skip is gone.
+            Existing users (who skipped before SMS was live) opt in later
+            via the "Turn on SMS alerts" row in the SetupChecklist on Home. */}
         {currentView === 'phone-verification' && (
           <PhoneVerificationPage
             phone={phoneToVerify}
             accessToken={accessToken || ''}
             onVerified={() => setCurrentView('onboarding')}
-            onSkip={() => setCurrentView('onboarding')}
           />
         )}
 
