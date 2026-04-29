@@ -258,16 +258,38 @@ function App() {
               if (data.ok) {
                 // Email confirmed successfully
                 setEmailConfirmed(true);
-                
-                // If user is logged in, navigate to matches
-                const storedToken = await getAccessToken();
+
+                // v6 of the email function returns access/refresh tokens so we
+                // can sign the user in directly even if their browser session
+                // was cleared (e.g., they clicked the link on a different
+                // device than they signed up on). If tokens are present,
+                // install them in the Supabase client and use the access
+                // token immediately. If not, fall back to whatever session
+                // the browser already has.
+                let storedToken: string | null = null;
+                if (data.accessToken && data.refreshToken) {
+                  try {
+                    await supabase.auth.setSession({
+                      access_token: data.accessToken,
+                      refresh_token: data.refreshToken,
+                    });
+                    storedToken = data.accessToken;
+                  } catch (sessErr) {
+                    console.error('setSession from verify-confirm failed:', sessErr);
+                  }
+                }
+                if (!storedToken) {
+                  storedToken = await getAccessToken();
+                }
+
                 if (storedToken) {
                   await fetchUserData(storedToken);
                   await fetchMatches(storedToken);
                   setCurrentView('matches');
                   toast.success(`Email verified — welcome!`, { duration: 4000 });
                 } else {
-                  // Not logged in, go to signin
+                  // Truly no way to sign them in. Fall through to signin
+                  // with a friendly toast.
                   setCurrentView('signin');
                   toast.success('Email verified! Please sign in.', { duration: 4000 });
                 }
