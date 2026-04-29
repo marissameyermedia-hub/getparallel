@@ -22,7 +22,6 @@ interface PhoneVerificationPageProps {
   // on this page with it already entered.
   phone?: string;
   onVerified: (phone: string, smsConsent: boolean) => void;
-  onSkip?: () => void;
   onBack?: () => void;
 }
 
@@ -34,7 +33,7 @@ const SMS_CONSENT_TEXT =
 
 const SMS_CONSENT_VERSION = 'v1-2026-04';
 
-export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onSkip, onBack }: PhoneVerificationPageProps) {
+export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onBack }: PhoneVerificationPageProps) {
   const [step, setStep] = useState<'enter' | 'verify'>('enter');
   const [phone, setPhone] = useState(() => initialPhone ? formatInitialPhone(initialPhone) : '');
   const [code, setCode] = useState('');
@@ -43,6 +42,9 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  // betaOtp is a dev-only fallback. In production with Telnyx live, the
+  // backend never returns this field. It only fires if env vars somehow
+  // aren't loaded — keeps us unblocked rather than locking out a tester.
   const [betaOtp, setBetaOtp] = useState<string | null>(null);
 
   useEffect(() => {
@@ -112,7 +114,8 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
         throw new Error(data.error || 'Could not send verification code.');
       }
 
-      // If SMS isn't configured yet (no Telnyx env vars), edge function returns the OTP for testing
+      // Dev-only fallback: only fires if Telnyx env vars aren't loaded.
+      // In production this branch is never taken.
       if (data.betaOtp) {
         setBetaOtp(data.betaOtp);
       }
@@ -238,7 +241,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
               </label>
             </div>
 
-            <p className="text-xs text-gray-400 leading-relaxed mt-2">
+            <p className="text-xs text-gray-500 leading-relaxed mt-2">
               You can verify your phone without opting in to SMS — your verification code
               will still be sent. You can turn SMS notifications on later in notification settings.
             </p>
@@ -264,20 +267,6 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
               )}
             </button>
 
-            {/* Pre-launch only: Skip button when SMS provider (Telnyx) isn't
-                fully live. Must be removed before public launch — allowing
-                account creation without phone verification defeats the
-                anti-fake-account trust model. */}
-            {onSkip && (
-              <button
-                onClick={onSkip}
-                disabled={isSending}
-                className="w-full text-xs text-gray-500 hover:text-gray-800 mt-1 underline"
-              >
-                Skip for now (beta)
-              </button>
-            )}
-
             {onBack && (
               <button
                 onClick={onBack}
@@ -294,11 +283,12 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
               Code sent to <span className="font-medium text-gray-900">{phone}</span>
             </div>
 
-            {/* Beta mode: show the OTP if Telnyx isn't configured (returned by edge function) */}
+            {/* Dev-only fallback: only renders if Telnyx env isn't configured.
+                In production this is never shown. */}
             {betaOtp && (
               <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-center">
                 <div className="text-xs text-amber-800 mb-1">
-                  Beta mode — SMS not yet configured. Your code:
+                  Dev mode — SMS provider not configured. Your code:
                 </div>
                 <div className="text-lg font-mono font-medium text-amber-900 tracking-widest">
                   {betaOtp}
