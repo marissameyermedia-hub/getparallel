@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
-import { EMAIL_FUNCTION_URL } from '../utils/supabase/client';
+import { EMAIL_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 // SetupChecklist
@@ -14,19 +14,20 @@ import { publicAnonKey } from '../utils/supabase/info';
 //   - Profile complete (always checked, decorative)
 //   - Verify your email (clickable; resends verification email; on
 //     success animates to green ✓ and disappears from the list)
+//   - Turn on SMS alerts (clickable; routes to /account/notifications
+//     where the user can opt in. Hides once sms_enabled=true.)
 //   - Add to home screen (only appears once user has liked at least
 //     one match; tapping it opens the existing PWA install modal)
 //
 // Coming-soon rows (greyed, non-clickable, shown for transparency):
 //   - Verify your identity   [Coming soon]
-//   - Turn on SMS alerts     [Coming soon]
 //
 // Behavior:
 //   - Card is collapsible. "Hide" collapses to a small pill at the top
 //     of Home that says "Setup (N left)". Tap pill to re-expand.
-//   - Card hides entirely once email is verified AND PWA is dismissed
-//     or installed (the only two actionable items during beta).
-//   - Card never appears if user has nothing to do.
+//   - Card hides entirely once email is verified, SMS opted in, and PWA
+//     is dismissed or installed. Card never appears if user has nothing
+//     to do.
 
 const COLLAPSED_KEY = 'parallel_setup_collapsed_v1';
 const FIRST_LIKE_KEY = 'parallel_first_like_at';
@@ -38,6 +39,9 @@ interface SetupChecklistProps {
   emailVerified: boolean;
   identityVerified: boolean;
   onOpenInstallPrompt: () => void;
+  // Navigates to /account/notifications when SMS row is tapped.
+  // Optional — falls back to a no-op if not provided (gracefully degrades).
+  onOpenNotifications?: () => void;
 }
 
 export function SetupChecklist({
@@ -45,6 +49,7 @@ export function SetupChecklist({
   emailVerified,
   identityVerified: _identityVerified, // currently unused (identity is coming-soon)
   onOpenInstallPrompt,
+  onOpenNotifications,
 }: SetupChecklistProps) {
   // ── state ────────────────────────────────────────────────────────
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -55,6 +60,48 @@ export function SetupChecklist({
   const [emailSending, setEmailSending] = useState(false);
   const [emailJustVerified, setEmailJustVerified] = useState(false);
   const [emailError, setEmailError] = useState<string>('');
+
+  // SMS opt-in status. Fetched from /notifications/preferences on mount
+  // and re-fetched on focus so this row clears as soon as the user opts
+  // in from the Notifications page and comes back.
+  const [smsEnabled, setSmsEnabled] = useState<boolean>(false);
+  const [smsLoaded, setSmsLoaded] = useState<boolean>(false);
+
+  const fetchSmsStatus = async () => {
+    if (!accessToken) return;
+    try {
+      const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': publicAnonKey,
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSmsEnabled(Boolean(data?.sms_enabled));
+      }
+    } catch { /* noop — leave smsEnabled at last known value */ }
+    finally {
+      setSmsLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchSmsStatus();
+    const onFocus = () => fetchSmsStatus();
+    window.addEventListener('focus', onFocus);
+    // Optional broadcast hook for NotificationsView to fire after a
+    // successful opt-in, so the checklist updates without a tab switch.
+    window.addEventListener('parallel:sms-status', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('parallel:sms-status', onFocus);
+    };
+    // accessToken never changes mid-session in practice; gating on it here
+    // ensures we don't fire before sign-in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
 
   // Has the user liked at least one match? Drives whether we show PWA row.
   // We re-read from localStorage on mount and on focus, since likes happen
@@ -102,8 +149,12 @@ export function SetupChecklist({
 
   // ── derived: which actionable rows are still pending? ────────────
   const emailPending = !emailVerified && !emailJustVerified;
+  // Only show the SMS row once we've loaded prefs (avoids briefly showing
+  // it for users who already opted in). Hides the row once enabled.
+  const smsPending = smsLoaded && !smsEnabled;
   const pwaPending = hasLiked && !pwaDone;
-  const actionableCount = (emailPending ? 1 : 0) + (pwaPending ? 1 : 0);
+  const actionableCount =
+    (emailPending ? 1 : 0) + (smsPending ? 1 : 0) + (pwaPending ? 1 : 0);
 
   // Hide the card entirely when the user has nothing actionable left.
   // Coming-soon rows don't count — they aren't tasks the user can do.
@@ -147,6 +198,16 @@ export function SetupChecklist({
       setEmailError('Network error. Try again.');
     } finally {
       setEmailSending(false);
+    }
+  };
+
+  const handleSmsTap = () => {
+    if (onOpenNotifications) {
+      onOpenNotifications();
+    } else {
+      // Fallback — broadcast an event the parent can listen for if it
+      // hasn't wired the prop. Prevents a dead row.
+      try { window.dispatchEvent(new CustomEvent('parallel:open-notifications')); } catch { /* noop */ }
     }
   };
 
@@ -237,12 +298,26 @@ export function SetupChecklist({
             <ComingSoonTag />
           </li>
 
-          {/* SMS alerts — coming soon */}
-          <li className="flex items-center gap-3 px-4 py-3 opacity-60">
-            <CheckCircle />
-            <span className="flex-1 text-sm text-gray-700">Turn on SMS alerts</span>
-            <ComingSoonTag />
-          </li>
+          {/* SMS alerts — actionable, hides once sms_enabled=true */}
+          {smsPending && (
+            <li>
+              <button
+                type="button"
+                onClick={handleSmsTap}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                aria-label="Turn on SMS alerts"
+              >
+                <CheckCircle />
+                <span className="flex-1 min-w-0">
+                  <span className="text-sm block text-gray-900">Turn on SMS alerts</span>
+                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
+                    Get a text when you match or get a message
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+              </button>
+            </li>
+          )}
 
           {/* PWA install — only after first like */}
           {pwaPending && (
