@@ -580,14 +580,21 @@ function Modal({
 }) {
   return (
     <div
-      className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 px-4 pb-4 sm:pb-0"
+      // Center on all screen sizes (was bottom-anchoring on mobile, which
+      // caused the dialog's action buttons to sit behind the iOS home
+      // indicator + bottom nav). Centering with px padding leaves room
+      // even on the smallest iPhone heights.
+      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 py-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby={labelledBy}
     >
       <div
-        className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl"
+        // max-h + overflow-y-auto: if the consent text + buttons exceed the
+        // viewport (small phones, large text), the modal scrolls internally
+        // so the action buttons are always reachable.
+        className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {children}
