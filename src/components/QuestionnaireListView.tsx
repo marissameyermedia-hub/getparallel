@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { parallelQuestionnaire, Question } from '../data/parallelQuestionnaire_updated';
 import { QuestionScreen } from './onboarding/QuestionScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
+import { useModalA11y } from '../utils/useModalA11y';
 
 interface QuestionnaireListViewProps {
   answers: Record<string, any>;
@@ -258,9 +259,56 @@ export function QuestionnaireListView({
     }
   };
 
+  // Save the current answer (bypassing the 1500ms debounce) and exit the
+  // editor. Used both by the Back button in QuestionScreen and by the
+  // Escape-key handler in useModalA11y so both paths share identical save
+  // logic. Without this extraction, Escape would skip the save and tapping
+  // Back within 1500ms of answering would cancel the pending debounce timer
+  // and silently drop the answer.
+  const closeEditor = useCallback(async () => {
+    if (editingQuestion && editingAnswer !== undefined && editingAnswer !== null) {
+      const token = await getAccessToken();
+      if (token) {
+        const before = { ...answers, [editingQuestion.id]: editingAnswer };
+        const updatedAnswers = stripStaleConditionalAnswers(before);
+        for (const key of Object.keys(before)) {
+          if (!(key in updatedAnswers)) onUpdateAnswer(key, null);
+        }
+        fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': publicAnonKey,
+          },
+          body: JSON.stringify({ answers: updatedAnswers }),
+        }).catch(() => {});
+        onUpdateAnswer(editingQuestion.id, editingAnswer);
+      }
+    }
+    setEditingQuestion(null);
+    setEditingAnswer(null);
+  }, [answers, editingAnswer, editingQuestion, onUpdateAnswer]);
+
+  // Locks body scroll, listens for Escape to close, and restores focus to
+  // the question row that opened the editor.
+  useModalA11y(editingQuestion !== null, closeEditor);
+
   if (editingQuestion) {
+    // Fixed-position fullscreen overlay so the editor isn't sandwiched
+    // between the App Header (top) and the BottomNav (bottom). Without this,
+    // the wrapper inherited only viewport - 64px - 70px of available height
+    // while still being styled as 100dvh, which pushed Save & Exit / Save &
+    // Continue below the visible area on long questions (hobby grid, MS_MAX
+    // questions with many options, paragraph inputs, etc). flex flex-col is
+    // critical: QuestionScreen relies on `flex-1 min-h-0 overflow-y-auto` on
+    // its scroll area, which only works inside a flex parent with a fixed
+    // height. z-[60] keeps it above the InAppNotificationBanner.
     return (
-      <div className="bg-white overflow-hidden" style={{ height: '100dvh' }}>
+      <div
+        className="fixed inset-0 z-[60] bg-white flex flex-col"
+        style={{ height: '100dvh', overflow: 'hidden' }}
+      >
         <QuestionScreen
           question={{ ...editingQuestion, noAutoAdvance: true } as any}
           answer={editingAnswer}
@@ -270,33 +318,7 @@ export function QuestionnaireListView({
             // debounce timer in saveAnswersToSupabase always has the latest value.
             onUpdateAnswer(editingQuestion.id, ans);
           }}
-          onBack={async () => {
-            // Fire a direct backend write on Back, bypassing the 1500ms debounce.
-            // Without this, tapping Back within 1500ms of answering cancels the
-            // pending debounce timer and the answer is silently lost.
-            if (editingAnswer !== undefined && editingAnswer !== null) {
-              const token = await getAccessToken();
-              if (token) {
-                const before = { ...answers, [editingQuestion.id]: editingAnswer };
-                const updatedAnswers = stripStaleConditionalAnswers(before);
-                for (const key of Object.keys(before)) {
-                  if (!(key in updatedAnswers)) onUpdateAnswer(key, null);
-                }
-                fetch(`${ONBOARDING_FUNCTION_URL}/user/profile`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'apikey': publicAnonKey,
-                  },
-                  body: JSON.stringify({ answers: updatedAnswers }),
-                }).catch(() => {});
-                onUpdateAnswer(editingQuestion.id, editingAnswer);
-              }
-            }
-            setEditingQuestion(null);
-            setEditingAnswer(null);
-          }}
+          onBack={closeEditor}
           onContinue={handleContinueToNext}
           canGoBack={true}
           chapterTitle={`EDITING: ${editingQuestion.id}`}
