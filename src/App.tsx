@@ -1388,6 +1388,8 @@ function App() {
               accessToken={accessToken}
               isLiked={false}
               alreadyMatched={false}
+              isPreview={true}
+              onEditProfile={() => setCurrentView('my-profile')}
             />
           );
         })()}
