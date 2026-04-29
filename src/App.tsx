@@ -992,7 +992,13 @@ function App() {
 
   const isFullscreenView = [
     'onboarding', 'signin', 'account-creation', 'phone-verification',
-    'payment-confirmation', 'reset-password', 'messaging'
+    'payment-confirmation', 'reset-password', 'messaging',
+    // my-profile: editor has its own sticky header + fixed save bar; the
+    // BottomNav (z-50) was rendering on top of the save bar (z-20) on every
+    // small viewport, hiding the Save Profile button entirely.
+    // preview-profile: full-screen photo carousel layout — bottom nav
+    // shouldn't compete with it.
+    'my-profile', 'preview-profile',
   ].includes(currentView);
 
   return (
@@ -1269,6 +1275,10 @@ function App() {
             initialEducation={userProfile.education}
             initialInstagram={userProfile.instagram}
             initialPronouns={userProfile.pronouns}
+            initialName={userName}
+            userAnswers={userAnswers}
+            userDateOfBirth={userDateOfBirth}
+            isVerified={hasVerified}
           />
         )}
 
