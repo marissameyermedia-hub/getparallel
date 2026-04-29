@@ -1298,99 +1298,97 @@ function App() {
         )}
 
         {/* ── Preview Profile ── */}
+        {/*
+         * Renders the *actual* MatchProfileView component fed a synthetic
+         * Match built from the signed-in user's own data. This way the
+         * preview is literally the same UI another person sees when they
+         * tap into Marissa's card on Home — no separate hand-rolled layout
+         * to drift over time.
+         *
+         * Notes on the synthetic Match:
+         *   - compatibilityScore is intentionally 100 (preview is "perfect
+         *     match with yourself"). The breakdown shows 100% across all 8
+         *     categories so the bars render fully filled.
+         *   - Unwraps {value, isDealbreaker} answer wrappers to plain
+         *     strings before passing to User fields, matching how the
+         *     matches edge function flattens them server-side.
+         *   - Action handlers are wired to no-ops (the preview is read-only
+         *     — Pass / Like / Message / Block all do nothing). onBack
+         *     returns to the Account page where the preview was launched.
+         */}
         {currentView === 'preview-profile' && (() => {
-          const displayName = userName || '';
           const userAge = userDateOfBirth
             ? Math.floor((Date.now() - new Date(userDateOfBirth).getTime()) / 31557600000)
-            : undefined;
+            : 0;
+
+          // Helper: unwrap {value, isDealbreaker} -> value, return string or undefined
+          const unwrap = (raw: any): string | undefined => {
+            if (raw == null) return undefined;
+            const v = (typeof raw === 'object' && 'value' in raw) ? raw.value : raw;
+            if (v == null || v === '') return undefined;
+            return String(v);
+          };
+          const unwrapArray = (raw: any): string[] | undefined => {
+            if (raw == null) return undefined;
+            const v = (typeof raw === 'object' && 'value' in raw) ? raw.value : raw;
+            if (!Array.isArray(v) || v.length === 0) return undefined;
+            return v.map(String);
+          };
+
+          const previewMatch: Match = {
+            user: {
+              id: userId || 'preview',
+              name: userName || 'You',
+              age: userAge,
+              bio: userProfile.bio || '',
+              photoUrl: userProfile.photos[0] || '',
+              photos: userProfile.photos,
+              pronouns: userProfile.pronouns || undefined,
+              education: userProfile.education || undefined,
+              career: userProfile.career || undefined,
+              instagram: userProfile.instagram || undefined,
+              isVerified: hasVerified,
+              // Profile Basics fields — pulled from questionnaire answers,
+              // matching what the matches edge function returns for other users
+              drinking: unwrap(userAnswers['3.1']),
+              smoking: unwrap(userAnswers['3.3']),
+              pets: unwrap(userAnswers['3.8']),
+              hobbies: unwrapArray(userAnswers['3.9']),
+              politics: unwrap(userAnswers['6.1']),
+              religion: unwrap(userAnswers['6.2']),
+              answers: {} as any,
+              preferences: {} as any,
+            },
+            compatibilityScore: 100,
+            matchDetails: {
+              // 100 across all 8 categories so the breakdown bars render
+              // fully filled and the layout is identical to a real match.
+              breakdown: {
+                'Attachment & Emotional Health': 100,
+                'Communication & Conflict': 100,
+                'Life Goals': 100,
+                'Values & Beliefs': 100,
+                'Financial & Career': 100,
+                'Intimacy & Connection': 100,
+                'Lifestyle Behaviors': 100,
+                'Social & Shared Life': 100,
+              },
+            },
+          };
+
+          const noop = () => {};
 
           return (
-            <div className="min-h-screen bg-white overflow-y-auto">
-              <div className="max-w-[390px] mx-auto bg-white">
-                {/* Header — matches ProfileEditor preview style */}
-                <div className="sticky top-0 bg-white z-10 border-b border-gray-100 flex items-center justify-between px-4 py-3">
-                  <button
-                    onClick={() => setCurrentView('account')}
-                    className="flex items-center gap-1 text-sm font-medium hover:text-gray-600"
-                  >
-                    <ChevronLeft size={18} /> Back to account
-                  </button>
-                  <span className="text-sm font-medium text-gray-500">Preview</span>
-                  <div className="w-28" />
-                </div>
-
-                {/* Main photo */}
-                {userProfile.photos[0] ? (
-                  <div className="relative aspect-[3/4] bg-gray-100">
-                    <img src={userProfile.photos[0]} alt="Main" className="w-full h-full object-cover" />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                      <h2 className="text-white text-2xl font-semibold">
-                        {displayName}{userAge ? `, ${userAge}` : ''}
-                      </h2>
-                      {userProfile.career && <p className="text-white/80 text-sm mt-1">{userProfile.career}</p>}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="aspect-[3/4] bg-gray-100 flex items-center justify-center">
-                    <div className="text-center text-gray-400">
-                      <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center mx-auto mb-2">
-                        <ChevronLeft size={24} className="text-gray-400 rotate-180" />
-                      </div>
-                      <p className="text-sm">No photos yet</p>
-                      <p className="text-xs mt-1">Add photos in Edit Profile</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Profile details */}
-                <div className="px-6 py-6 space-y-4">
-                  <div className="space-y-3">
-                    {userProfile.career && (
-                      <div className="flex items-center gap-3 text-gray-700">
-                        <span className="text-gray-400">💼</span>
-                        <span>{userProfile.career}</span>
-                      </div>
-                    )}
-                    {userProfile.education && (
-                      <div className="flex items-center gap-3 text-gray-700">
-                        <span className="text-gray-400">🎓</span>
-                        <span>{userProfile.education}</span>
-                      </div>
-                    )}
-                    {hasVerified && (
-                      <div className="flex items-center gap-2 text-blue-600">
-                        <span>✓</span>
-                        <span className="text-sm font-medium">Identity Verified</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {userProfile.bio && (
-                    <div className="pt-2">
-                      <h3 className="text-sm font-medium text-gray-500 mb-2">About Me</h3>
-                      <p className="text-gray-800 leading-relaxed">{userProfile.bio}</p>
-                    </div>
-                  )}
-
-                  {userProfile.photos.length > 1 && (
-                    <div className="pt-2">
-                      <h3 className="text-sm font-medium text-gray-500 mb-3">More Photos</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {userProfile.photos.slice(1).map((photo, i) => (
-                          <div key={i} className="aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100">
-                            <img src={photo} alt={`Photo ${i + 2}`} className="w-full h-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <p className="text-xs text-gray-400 text-center pt-4">
-                    This is how your profile appears to matches
-                  </p>
-                </div>
-              </div>
-            </div>
+            <MatchProfileView
+              match={previewMatch}
+              onBack={() => setCurrentView('account')}
+              onOpenChat={noop}
+              onMatch={noop}
+              onPass={noop}
+              accessToken={accessToken}
+              isLiked={false}
+              alreadyMatched={false}
+            />
           );
         })()}
 
