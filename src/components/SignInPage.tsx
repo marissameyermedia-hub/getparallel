@@ -233,7 +233,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           <div className="space-y-10">
             <Step
               number="01"
-              title="Answer 55 questions"
+              title="Answer 68 questions"
               body="Tell us exactly what you want — attraction, lifestyle, values, dealbreakers, the life you're building. About 15 minutes. Saves as you go."
             />
             <Step

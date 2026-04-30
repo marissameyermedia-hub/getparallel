@@ -657,7 +657,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
               <div className="flex items-start gap-4">
                 <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">1</div>
                 <div>
-                  <p className="font-medium text-gray-900">Answer 65 questions about yourself</p>
+                  <p className="font-medium text-gray-900">Answer 68 questions about yourself</p>
                   <p className="text-sm text-gray-500 mt-0.5">Takes about 15 minutes. Saves automatically as you go — you can close and come back anytime.</p>
                 </div>
               </div>

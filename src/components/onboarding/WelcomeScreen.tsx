@@ -51,7 +51,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">The questionnaire</h3>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  55 questions covering values, lifestyle, attraction, dealbreakers, and the life you're building.
+                  68 questions covering values, lifestyle, attraction, dealbreakers, and the life you're building.
                   About 15 minutes. Saves automatically — you can stop and come back anytime.
                 </p>
               </div>
