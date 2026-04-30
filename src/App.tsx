@@ -418,7 +418,18 @@ function App() {
           }
 
           const onboardingComplete = !!userData?.has_completed_onboarding;
-          if (onboardingComplete) {
+          // ── Phone verification gate ──
+          // Telnyx 10DLC went live April 2026 — phone verification is now
+          // required before onboarding. If the user has a phone set on their
+          // profile but hasn't verified it, route them to PhoneVerificationPage
+          // regardless of where they were trying to go. This blocks the
+          // bypass where a user could hit browser back from the OTP page,
+          // triggering session restore and landing them in OnboardingFlow.
+          const needsPhoneVerification = !!userData?.phone && userData?.phone_verified === false;
+          if (needsPhoneVerification) {
+            setPhoneToVerify(userData.phone);
+            setCurrentView('phone-verification');
+          } else if (onboardingComplete) {
             await fetchMatches(session.access_token);
             const lastView = localStorage.getItem('parallel_last_view') as any;
             const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
@@ -463,7 +474,14 @@ function App() {
               }
 
               const onboardingComplete = !!userData?.has_completed_onboarding;
-              if (onboardingComplete) {
+              // Same phone verification gate as above — blocks the bypass
+              // when session restore runs from a stored token (e.g., user
+              // refreshed mid-flow on PhoneVerificationPage).
+              const needsPhoneVerification = !!userData?.phone && userData?.phone_verified === false;
+              if (needsPhoneVerification) {
+                setPhoneToVerify(userData.phone);
+                setCurrentView('phone-verification');
+              } else if (onboardingComplete) {
                 await fetchMatches(storedToken);
                 const lastView = localStorage.getItem('parallel_last_view') as any;
                 const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
@@ -634,6 +652,21 @@ function App() {
               success: false,
               error: 'Please set your location before finishing your profile.',
               locationRequired: true
+            };
+          }
+
+          // Check for phone verification required (v6 backend gate). This is the
+          // backstop for the frontend phone-verification gate — if a user finds
+          // any way to reach OnboardingFlow without verifying their phone, the
+          // backend will refuse and we route them back to PhoneVerificationPage.
+          if (response.status === 403 && errorData.phoneVerificationRequired === true) {
+            if (errorData.phone) setPhoneToVerify(errorData.phone);
+            setCurrentView('phone-verification');
+            toast('Please verify your phone number to continue.', { duration: 4000 });
+            return {
+              success: false,
+              error: 'Please verify your phone number to continue.',
+              phoneVerificationRequired: true,
             };
           }
 
