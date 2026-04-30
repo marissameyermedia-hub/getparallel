@@ -61,8 +61,14 @@ export function AppFooter({ onNavigate }: AppFooterProps) {
             Community Guidelines
           </button>
 
+          {/* Accessibility statement — links to static /accessibility page (HTML in /public).
+              Required as a public, indexable URL for ADA defense (search engines and
+              plaintiff firms can find it without signing in). Opens in a new tab so the
+              user's signed-in session and onboarding/match flow are preserved. */}
           <a
-            href="mailto:legal@getparallel.vip?subject=Accessibility%20feedback"
+            href="/accessibility"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hover:text-black transition-colors hover:underline underline-offset-2"
           >
             Accessibility
