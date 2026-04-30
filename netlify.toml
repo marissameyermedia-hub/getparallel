@@ -45,3 +45,37 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=(self)"
+
+# ── Static policy pages ────────────────────────────────────────────
+# Serve HTML files directly at clean URLs, before the SPA fallback.
+# Files live in /public and are copied to /dist root on build.
+[[redirects]]
+  from = "/privacy"
+  to   = "/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to   = "/terms.html"
+  status = 200
+
+[[redirects]]
+  from = "/guidelines"
+  to   = "/guidelines.html"
+  status = 200
+
+[[redirects]]
+  from = "/consumer-health-data"
+  to   = "/consumer-health-data.html"
+  status = 200
+
+[[redirects]]
+  from = "/help"
+  to   = "/help.html"
+  status = 200
+
+# SPA fallback — must come LAST so policy pages above take priority
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
