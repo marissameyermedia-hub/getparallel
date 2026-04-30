@@ -74,6 +74,11 @@
   to   = "/help.html"
   status = 200
 
+[[redirects]]
+  from = "/accessibility"
+  to   = "/accessibility.html"
+  status = 200
+
 # SPA fallback — must come LAST so policy pages above take priority
 [[redirects]]
   from   = "/*"
