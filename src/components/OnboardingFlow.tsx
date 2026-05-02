@@ -676,6 +676,15 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 </div>
               </div>
             </div>
+
+            {/* Photo heads-up — set expectation now so users don't bail mid-flow
+                hunting for photos. Surfaces the requirement before they invest
+                15+ minutes in the questionnaire. */}
+            <div className="mt-6 rounded-2xl bg-gray-50 border border-gray-100 p-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <span className="font-medium">Heads up:</span> you'll want 2–3 photos of yourself ready when you build your profile.
+              </p>
+            </div>
           </div>
         </div>
         <div

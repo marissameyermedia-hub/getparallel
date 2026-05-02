@@ -513,7 +513,15 @@ export function ProfileEditor({
                     }`}
                   >
                     {isFirstEmpty && isUploading ? (
-                      <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+                      <>
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-500 rounded-full animate-spin" />
+                        {/* Surfaces what's actually happening (PhotoDNA/content
+                            scan + EXIF strip + upload). Without this the user
+                            wonders if it's stuck. */}
+                        <span className="text-[10px] text-gray-500 mt-1 px-1 text-center leading-tight">
+                          Scanning your photo…
+                        </span>
+                      </>
                     ) : (
                       <>
                         <Plus size={16} />

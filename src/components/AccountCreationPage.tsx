@@ -22,6 +22,10 @@ interface AccountCreationPageProps {
   }) => void;
   onBack: () => void;
   onNavigate?: (view: string) => void;
+  // Captured from ?ref=CODE upstream. When present, we surface a small
+  // green "you were referred" banner above the form to build trust at the
+  // exact moment the user is deciding whether to hand over their info.
+  referralCode?: string | null;
 }
 
 function normalizePhone(raw: string): string {
@@ -95,7 +99,7 @@ async function logToSAgreement(accessToken: string): Promise<void> {
   }
 }
 
-export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountCreationPageProps) {
+export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCode }: AccountCreationPageProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -273,6 +277,20 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate }: AccountC
           <h1 className="text-3xl font-bold mb-2">Create Account</h1>
           <p className="text-gray-600">You deserve to have everything you want. Tell us what it is.</p>
         </div>
+
+        {/* Referral acknowledgement — only shown when ?ref=CODE was captured.
+            Builds trust at the exact moment the user is handing over PII.
+            We don't show the inviter's name yet (no backend lookup endpoint);
+            once /referral/by-code lands, swap "A friend" for the actual name. */}
+        {referralCode && (
+          <div role="status" className="mb-4 p-3 bg-green-50 border border-green-200 rounded-2xl flex items-center gap-2">
+            <CheckCircle size={18} className="text-green-600 flex-shrink-0" aria-hidden="true" />
+            <p className="text-sm text-green-800">
+              <span className="font-medium">A friend referred you to Parallel.</span>{' '}
+              <span className="text-green-700">Welcome.</span>
+            </p>
+          </div>
+        )}
 
         {error && (
           <div id="account-creation-error" role="alert" className="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-2xl">

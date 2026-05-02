@@ -118,6 +118,26 @@ function App() {
   const [appFeedbackSheet, setAppFeedbackSheet] = useState(false);
   const [npsSheet, setNpsSheet] = useState(false);
 
+  // Captured from ?ref=CODE on first load. Persists in localStorage so it
+  // survives the trip through SignIn → AccountCreation. Cleared after the
+  // user finishes account creation (the backend ties it to the user there).
+  const [referralCode, setReferralCode] = useState<string | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get('ref');
+      if (fromUrl) {
+        localStorage.setItem('parallel_referral_code', fromUrl);
+        // Strip ?ref= from the URL so a refresh doesn't re-capture it.
+        params.delete('ref');
+        const newSearch = params.toString();
+        const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+        window.history.replaceState({}, '', newUrl);
+        return fromUrl;
+      }
+      return localStorage.getItem('parallel_referral_code');
+    } catch { return null; }
+  });
+
   const answerSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Data fetchers ─────────────────────────────────────────────
@@ -1152,12 +1172,19 @@ function App() {
         {/* ── Account Creation ── */}
         {currentView === 'account-creation' && (
           <AccountCreationPage
+            referralCode={referralCode}
             onComplete={async (userData) => {
               if (userData.accessToken && userData.userId) {
                 setAccessToken(userData.accessToken);
                 setUserId(userData.userId);
                 localStorage.setItem('parallel_access_token', userData.accessToken);
                 localStorage.setItem('parallel_user_id', userData.userId);
+                // Referral has now been tied to the user account on signup.
+                // Drop it from local state + storage so it isn't re-applied later.
+                if (referralCode) {
+                  try { localStorage.removeItem('parallel_referral_code'); } catch { /* noop */ }
+                  setReferralCode(null);
+                }
                 if (userData.dateOfBirth) {
                   setUserDateOfBirth(userData.dateOfBirth);
                 }

@@ -69,7 +69,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">Your profile</h3>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Photos, a short bio, a few basics. Kept brief on purpose — we'd rather you spend time on the questionnaire.
+                  2–3 photos, a short bio, a few basics. Kept brief on purpose — we'd rather you spend time on the questionnaire.
                 </p>
               </div>
             </motion.div>
