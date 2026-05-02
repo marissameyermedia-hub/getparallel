@@ -1542,6 +1542,7 @@ function App() {
             onOpenDateReview={handleOpenDateReview}
             emailVerified={emailConfirmed}
             onViewProfile={(matchId) => { setSelectedMatchId(matchId); setProfileSource('chat'); setCurrentView('profile'); }}
+            sharedHobbies={matches.find(m => m.user.id === selectedMatchId)?.matchDetails?.sharedHobbies}
           />
         )}
 

@@ -54,12 +54,58 @@ interface MessagingViewProps {
   onViewProfile?: (matchId: string) => void;
 }
 
-const STARTERS = [
+// Generic fallback starters — used when we don't have shared hobbies for the
+// match, or as filler if there are fewer than 4 hobby-based prompts. Kept on
+// the lighter side intentionally — no "what are you looking for" / values /
+// dealbreaker territory. The point is to start a conversation, not screen.
+const FALLBACK_STARTERS = [
   "What's something you're really into right now?",
   "Best trip you've ever taken?",
   "What does a perfect Sunday look like for you?",
-  "What made you want to try Parallel?",
+  "Recommend me something — book, show, podcast, anything.",
 ];
+
+// Build a small bank of hobby-flavored openers from the shared-hobbies list.
+// Pulls 1-2 hobbies in to make it feel personal without being an interview.
+// Hobbies come from Q3.9 and are user-typed strings ("hiking", "cooking"),
+// so we lowercase + trim before splicing them into copy.
+function buildHobbyStarters(hobbies: string[]): string[] {
+  if (!hobbies || hobbies.length === 0) return [];
+  const cleaned = hobbies
+    .map(h => (h || '').toString().trim())
+    .filter(h => h.length > 0 && h.length < 40);
+  if (cleaned.length === 0) return [];
+
+  // Use lowercase for in-sentence usage but keep the original casing for the
+  // "you both like X" lead. Many hobby labels are already lowercase.
+  const lower = (s: string) => s.toLowerCase();
+
+  const starters: string[] = [];
+  const top = cleaned.slice(0, 3);
+
+  // Each template references one hobby. Light, low-stakes, easy to answer.
+  if (top[0]) {
+    starters.push(`Looks like we both like ${lower(top[0])} — what got you into it?`);
+    starters.push(`What's your go-to ${lower(top[0])} spot or recommendation?`);
+  }
+  if (top[1]) {
+    starters.push(`We've both got ${lower(top[1])} on our profiles — when's the last time you did that?`);
+  }
+  if (top[2]) {
+    starters.push(`${top[2].charAt(0).toUpperCase() + top[2].slice(1)} or ${lower(top[0])} — which would you pick this weekend?`);
+  }
+
+  return starters;
+}
+
+// Pick 4 starters total: hobby-based first (up to 3), padded with generic
+// lighter prompts. Keeps the UI consistent at 4 chips regardless of how
+// many shared hobbies the backend returns.
+function getStartersFor(sharedHobbies?: string[]): string[] {
+  const hobbyBased = buildHobbyStarters(sharedHobbies || []).slice(0, 3);
+  const remaining = 4 - hobbyBased.length;
+  return [...hobbyBased, ...FALLBACK_STARTERS.slice(0, remaining)];
+}
 
 function formatLastActive(lastActiveAt: string | null | undefined): string {
   if (!lastActiveAt) return 'Active recently';
@@ -581,7 +627,9 @@ export function MessagingView({
         aria-label={`Conversation with ${matchName}`}
         aria-live="polite"
       >
-        {/* Conversation starters - more compact */}
+        {/* Conversation starters - more compact.
+            Hobby-tailored when we have sharedHobbies, generic light prompts
+            otherwise. Always 4 chips so the layout is stable. */}
         {messages.length === 0 && showStarters && mutualMatch && (
           <div className="mb-3">
             <div className="flex items-center gap-1.5 mb-2">
@@ -589,7 +637,7 @@ export function MessagingView({
               <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Conversation starters</span>
             </div>
             <div className="space-y-1.5">
-              {STARTERS.map((starter, i) => (
+              {getStartersFor(sharedHobbies).map((starter, i) => (
                 <button
                   key={i}
                   onClick={() => handleUseStarter(starter)}
