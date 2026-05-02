@@ -4,83 +4,110 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    /* ── Parallel brand palette ─────────────────────────────────────
+       Cream       #F5F2EE  →  34 26% 95%   (backgrounds, cards)
+       Void        #0D0D0F  →  240 7%  5%   (primary text, near-black)
+       Purple      #7B5EA7  →  264 29% 51%  (brand accent, CTAs)
+       Soft Violet #A98FD0  →  264 41% 69%  (hover states, // on dark)
+       Linen       #E8E4DE  →  36  18% 89%  (borders, dividers)
+       Stone       #8A8690  →  264 4%  55%  (secondary / muted text)
+       Deep Ink    #1E1C22  →  260 10% 12%  (dark card surfaces)
+       Dusk        #2E2A36  →  260 12% 19%  (dark borders, dark UI)
+    ─────────────────────────────────────────────────────────────── */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    /* Core surfaces */
+    --background:        34 26% 95%;   /* Cream — never pure white */
+    --foreground:        240 7% 5%;    /* Void  — never pure black */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --card:              34 26% 95%;   /* Cream */
+    --card-foreground:   240 7% 5%;    /* Void */
 
-    --primary: 240 79% 5%;
-    --primary-foreground: 0 0% 100%;
+    --popover:           34 26% 95%;   /* Cream */
+    --popover-foreground: 240 7% 5%;   /* Void */
 
-    --secondary: 220 14% 95%;
-    --secondary-foreground: 240 79% 5%;
+    /* Interactive */
+    --primary:           264 29% 51%;  /* Parallel Purple — CTAs */
+    --primary-foreground: 34 26% 95%;  /* Cream text on purple */
 
-    --muted: 240 9% 93%;
-    --muted-foreground: 240 7% 48%;
+    --secondary:         36 18% 89%;   /* Linen — secondary surfaces */
+    --secondary-foreground: 240 7% 5%; /* Void */
 
-    --accent: 220 14% 93%;
-    --accent-foreground: 240 79% 5%;
+    --muted:             36 18% 89%;   /* Linen */
+    --muted-foreground:  264 4% 55%;   /* Stone */
 
-    --destructive: 348 79% 46%;
-    --destructive-foreground: 0 0% 100%;
+    --accent:            264 41% 69%;  /* Soft Violet — hover / highlights */
+    --accent-foreground: 34 26% 95%;   /* Cream */
 
-    --border: 0 0% 0%;
-    --border-opacity: 0.1;
-    --input: 240 9% 96%;
-    --input-background: 240 9% 96%;
-    --switch-background: 220 7% 81%;
-    --ring: 0 0% 67%;
+    --destructive:       348 79% 46%;  /* Keep red for errors — unchanged */
+    --destructive-foreground: 34 26% 95%;
+
+    /* Borders & inputs */
+    --border:            36 18% 89%;   /* Linen */
+    --border-opacity:    1;
+    --input:             36 18% 89%;   /* Linen */
+    --input-background:  34 26% 95%;   /* Cream */
+    --switch-background: 264 4% 55%;   /* Stone */
+    --ring:              264 29% 51%;  /* Purple focus ring */
 
     --radius: 0.625rem;
 
+    /* Charts — keep originals, unrelated to brand palette */
     --chart-1: 22 90% 55%;
     --chart-2: 184 35% 52%;
     --chart-3: 227 35% 35%;
     --chart-4: 84 75% 70%;
     --chart-5: 70 75% 65%;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 240 79% 5%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 14%;
-    --sidebar-border: 0 0% 91%;
-    --sidebar-ring: 0 0% 67%;
+    /* Sidebar */
+    --sidebar-background:          34 26% 95%;   /* Cream */
+    --sidebar-foreground:          240 7% 5%;    /* Void */
+    --sidebar-primary:             264 29% 51%;  /* Purple */
+    --sidebar-primary-foreground:  34 26% 95%;   /* Cream */
+    --sidebar-accent:              36 18% 89%;   /* Linen */
+    --sidebar-accent-foreground:   240 7% 5%;    /* Void */
+    --sidebar-border:              36 18% 89%;   /* Linen */
+    --sidebar-ring:                264 29% 51%;  /* Purple */
+
+    /* ── Parallel-specific tokens (used in inline styles + AppHeader) ── */
+    --parallel-void:         #0D0D0F;
+    --parallel-cream:        #F5F2EE;
+    --parallel-purple:       #7B5EA7;
+    --parallel-soft-violet:  #A98FD0;
+    --parallel-linen:        #E8E4DE;
+    --parallel-stone:        #8A8690;
+    --parallel-deep-ink:     #1E1C22;
+    --parallel-dusk:         #2E2A36;
   }
 
+  /* Dark mode — Parallel dark palette */
   .dark {
-    --background: 0 0% 9%;
-    --foreground: 0 0% 98%;
+    --background:        240 7% 5%;    /* Void */
+    --foreground:        34 26% 95%;   /* Cream */
 
-    --card: 0 0% 9%;
-    --card-foreground: 0 0% 98%;
+    --card:              260 10% 12%;  /* Deep Ink */
+    --card-foreground:   34 26% 95%;   /* Cream */
 
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 98%;
+    --popover:           260 10% 12%;  /* Deep Ink */
+    --popover-foreground: 34 26% 95%;  /* Cream */
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 14%;
+    --primary:           264 41% 69%;  /* Soft Violet — lighter on dark */
+    --primary-foreground: 240 7% 5%;   /* Void */
 
-    --secondary: 0 0% 19%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary:         260 12% 19%;  /* Dusk */
+    --secondary-foreground: 34 26% 95%;
 
-    --muted: 0 0% 19%;
-    --muted-foreground: 0 0% 67%;
+    --muted:             260 12% 19%;  /* Dusk */
+    --muted-foreground:  264 4% 55%;   /* Stone */
 
-    --accent: 0 0% 19%;
-    --accent-foreground: 0 0% 98%;
+    --accent:            264 29% 51%;  /* Purple */
+    --accent-foreground: 34 26% 95%;   /* Cream */
 
-    --destructive: 0 70% 35%;
+    --destructive:       0 70% 35%;
     --destructive-foreground: 0 75% 55%;
 
-    --border: 0 0% 19%;
-    --input: 0 0% 19%;
-    --ring: 0 0% 38%;
+    --border:            260 12% 19%;  /* Dusk */
+    --input:             260 12% 19%;  /* Dusk */
+    --ring:              264 41% 69%;  /* Soft Violet */
 
     --chart-1: 264 70% 50%;
     --chart-2: 162 50% 55%;
@@ -88,14 +115,14 @@
     --chart-4: 304 75% 55%;
     --chart-5: 16 85% 60%;
 
-    --sidebar-background: 0 0% 14%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 264 70% 50%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 19%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 19%;
-    --sidebar-ring: 0 0% 38%;
+    --sidebar-background:          260 10% 12%;  /* Deep Ink */
+    --sidebar-foreground:          34 26% 95%;   /* Cream */
+    --sidebar-primary:             264 41% 69%;  /* Soft Violet */
+    --sidebar-primary-foreground:  34 26% 95%;   /* Cream */
+    --sidebar-accent:              260 12% 19%;  /* Dusk */
+    --sidebar-accent-foreground:   34 26% 95%;   /* Cream */
+    --sidebar-border:              260 12% 19%;  /* Dusk */
+    --sidebar-ring:                264 41% 69%;  /* Soft Violet */
   }
 }
 
@@ -144,15 +171,15 @@
   width: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(0 0% 95%);
+  background: hsl(36 18% 89%);  /* Linen */
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 75%);
+  background: hsl(264 4% 55%);  /* Stone */
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(0 0% 63%);
+  background: hsl(264 29% 51%); /* Purple */
 }
 
 @keyframes pulse-slow {
@@ -191,18 +218,14 @@
    ACCESSIBILITY
    ───────────────────────────────────────────────────────────── */
 
-/* Skip-to-main-content link.
-   Hidden visually until a keyboard user tabs to it (focus-visible).
-   This is the FIRST focusable element in App.tsx so keyboard users
-   can bypass the header/banner and jump straight to page content. */
 .skip-to-content {
   position: absolute;
   left: 1rem;
   top: -40px;
   z-index: 100;
   padding: 0.5rem 1rem;
-  background: #000;
-  color: #fff;
+  background: var(--parallel-void);
+  color: var(--parallel-cream);
   border-radius: 9999px;
   font-size: 0.875rem;
   font-weight: 500;
@@ -212,12 +235,10 @@
 .skip-to-content:focus,
 .skip-to-content:focus-visible {
   top: 1rem;
-  outline: 2px solid #fff;
+  outline: 2px solid var(--parallel-purple);
   outline-offset: 2px;
 }
 
-/* Screen-reader-only utility (Tailwind ships sr-only but we re-declare
-   here so it works in plain CSS contexts and survives any class purging). */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -230,9 +251,6 @@
   border: 0;
 }
 
-/* Respect the user's OS-level "reduce motion" preference.
-   Disables/shortens all animations and transitions for users with
-   vestibular disorders. WCAG 2.3.3. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
