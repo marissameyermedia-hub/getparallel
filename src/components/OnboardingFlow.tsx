@@ -43,7 +43,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
 
   const [showWelcome, setShowWelcome] = useState(false);
   const [showLocationStep, setShowLocationStep] = useState(false);
-  const [showTimeEstimate, setShowTimeEstimate] = useState(true);
+  const showTimeEstimate = false; // removed — info now lives in WelcomeScreen (May 2026)
   const [showPart2Transition, setShowPart2Transition] = useState(false);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
@@ -200,15 +200,12 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
               // photo_upload is written by ProfileEditor during photo uploads —
               // both map to the Create Profile screen
               setShowCreateProfileTitle(true);
-              setShowTimeEstimate(false);
             } else if (step === 'location') {
               setShowLocationStep(true);
-              setShowTimeEstimate(false);
               setShowResumeMessage(true);
               setTimeout(() => setShowResumeMessage(false), 3000);
             } else if (step === 'part2_transition') {
               setShowPart2Transition(true);
-              setShowTimeEstimate(false);
               setShowResumeMessage(true);
               setTimeout(() => setShowResumeMessage(false), 3000);
             } else if (step.startsWith('chapter_')) {
@@ -222,7 +219,6 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 setCurrentChapterIndex(chapterIdx);
                 setCurrentQuestionIndex(questionIdx);
               }
-              setShowTimeEstimate(false);
               setShowResumeMessage(true);
               setTimeout(() => setShowResumeMessage(false), 3000);
             }
@@ -595,7 +591,6 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
         setCurrentQuestionIndex(lastQ >= 0 ? lastQ : prevChapter.questions.length - 1);
         window.scrollTo(0, 0);
       } else {
-        setShowTimeEstimate(true);
         window.scrollTo(0, 0);
       }
     }
@@ -694,7 +689,6 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           <div className="max-w-md mx-auto">
             <button
               onClick={() => {
-                setShowTimeEstimate(false);
                 setShowLocationStep(true);
                 saveStep('location');
               }}

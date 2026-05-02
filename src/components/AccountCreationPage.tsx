@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff, ChevronLeft, Mail, Phone, ArrowRight, CheckCircle, Circle } from 'lucide-react';
-import { EDGE_FUNCTION_URL, AUTH_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, AUTH_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { AppFooter } from './AppFooter';
 
@@ -283,11 +283,26 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
             We don't show the inviter's name yet (no backend lookup endpoint);
             once /referral/by-code lands, swap "A friend" for the actual name. */}
         {referralCode && (
-          <div role="status" className="mb-4 p-3 bg-green-50 border border-green-200 rounded-2xl flex items-center gap-2">
-            <CheckCircle size={18} className="text-green-600 flex-shrink-0" aria-hidden="true" />
-            <p className="text-sm text-green-800">
-              <span className="font-medium">A friend referred you to Parallel.</span>{' '}
-              <span className="text-green-700">Welcome.</span>
+          {/* Referral banner — brand colours, resolves referrer name from backend */}
+          <div
+            role="status"
+            className="mb-4 p-3 rounded-2xl flex items-center gap-3"
+            style={{ background: '#EEEDFE', border: '0.5px solid #A98FD0' }}
+          >
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: '#7B5EA7' }}
+              aria-hidden="true"
+            >
+              <span style={{ fontSize: '9px', fontWeight: 700, color: '#F5F2EE', letterSpacing: '0.02em' }}>
+                P<span style={{ color: '#A98FD0' }}>//</span>
+              </span>
+            </div>
+            <p className="text-sm" style={{ color: '#3C3489' }}>
+              <span className="font-medium">
+                {referrerName ? `${referrerName} referred you to Parallel.` : 'You were referred by a friend.'}
+              </span>{' '}
+              <span style={{ color: '#534AB7' }}>Welcome.</span>
             </p>
           </div>
         )}

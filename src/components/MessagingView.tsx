@@ -712,6 +712,38 @@ export function MessagingView({
         className="flex-shrink-0 bg-white border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
+        {/* ── "We Met in Person" banner ─────────────────────────────────
+            Surfaces after 3+ messages when neither person has confirmed yet.
+            Previously buried in the overflow ⋯ menu — nobody found it.
+            Shows as a soft nudge, not a forced prompt. Disappears once
+            one person confirms (hasConfirmedMet) or both confirm (bothConfirmedMet). */}
+        {onConfirmMet && !bothConfirmedMet && !hasConfirmedMet && messages.length >= 3 && (
+          <div className="mb-2 rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
+            style={{ background: '#EEEDFE', border: '0.5px solid #A98FD0' }}>
+            <p className="text-xs leading-snug flex-1" style={{ color: '#3C3489' }}>
+              <span className="font-medium">Did you meet up?</span>{' '}
+              <span style={{ color: '#534AB7' }}>Let us know — it helps us improve your matches.</span>
+            </p>
+            <button
+              onClick={() => onConfirmMet(matchId)}
+              className="flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+              style={{ background: '#7B5EA7', color: '#F5F2EE' }}
+            >
+              We met ✓
+            </button>
+          </div>
+        )}
+
+        {/* Waiting state — I confirmed, waiting for them */}
+        {onConfirmMet && !bothConfirmedMet && hasConfirmedMet && (
+          <div className="mb-2 rounded-2xl px-4 py-2.5 flex items-center gap-2"
+            style={{ background: '#F5F5F0', border: '0.5px solid #E8E4DE' }}>
+            <p className="text-xs" style={{ color: '#8A8690' }}>
+              You confirmed you met. Waiting for them to confirm too.
+            </p>
+          </div>
+        )}
+
         {onOpenDateReview && bothConfirmedMet && (
           <div className="mb-2">
             <button
