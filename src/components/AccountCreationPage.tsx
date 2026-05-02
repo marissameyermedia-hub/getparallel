@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, EyeOff, ChevronLeft, Mail, Phone, ArrowRight, CheckCircle, Circle } from 'lucide-react';
 import { EDGE_FUNCTION_URL, AUTH_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
@@ -117,6 +117,33 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  // Resolved inviter's first name, when a ref code is present and the
+  // /referral/by-code endpoint returns one. Falls back to "a friend"
+  // copy when the endpoint isn't there yet or returns nothing.
+  const [referrerName, setReferrerName] = useState<string | null>(null);
+
+  // Look up the inviter's name when we have a referral code. Best-effort —
+  // any error path (404, network, malformed) just leaves referrerName null
+  // and the banner reads "You were referred by a friend." Anonymous so it
+  // works pre-signup.
+  useEffect(() => {
+    if (!referralCode) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${MISC_FUNCTION_URL}/referral/by-code?code=${encodeURIComponent(referralCode)}`, {
+          headers: { 'apikey': publicAnonKey },
+        });
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        const name = data && (data.firstName || data.name);
+        if (!cancelled && typeof name === 'string' && name.trim()) {
+          setReferrerName(name.trim().split(' ')[0]);
+        }
+      } catch { /* noop — fall back to anonymous copy */ }
+    })();
+    return () => { cancelled = true; };
+  }, [referralCode]);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -282,8 +309,8 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
             Builds trust at the exact moment the user is handing over PII.
             We don't show the inviter's name yet (no backend lookup endpoint);
             once /referral/by-code lands, swap "A friend" for the actual name. */}
+        {/* Referral banner — brand colours, resolves referrer name from backend */}
         {referralCode && (
-          {/* Referral banner — brand colours, resolves referrer name from backend */}
           <div
             role="status"
             className="mb-4 p-3 rounded-2xl flex items-center gap-3"
