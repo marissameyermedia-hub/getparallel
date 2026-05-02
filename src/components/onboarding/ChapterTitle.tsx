@@ -34,7 +34,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
   const motivationalText = MOTIVATIONAL_COPY[chapterNumber] || 'Keep going — great matches await.';
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-parallel-cream">
       {/* Scrollable content */}
       <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-8 pb-4" style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="max-w-md w-full mx-auto text-center">
@@ -56,7 +56,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
             </div>
             <div className="w-full bg-gray-100 rounded-full h-1.5">
               <motion.div
-                className="bg-black h-1.5 rounded-full"
+                className="bg-parallel-void h-1.5 rounded-full"
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -76,7 +76,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
               className="w-16 h-16 rounded-full mx-auto flex items-center justify-center mb-4"
               style={{ backgroundColor: '#000000' }}
             >
-              <span className="text-white text-2xl font-medium">{chapterNumber}</span>
+              <span className="text-parallel-cream text-2xl font-medium">{chapterNumber}</span>
             </div>
           </motion.div>
 
@@ -95,7 +95,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
 
       {/* Sticky footer with CTA + back button */}
       <div
-        className="flex-shrink-0 bg-white border-t border-gray-100 px-4 pt-3"
+        className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 px-4 pt-3"
         style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-md mx-auto flex items-center gap-3">
@@ -103,7 +103,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
             <button
               onClick={onBack}
               aria-label="Go back"
-              className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors bg-white"
+              className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors bg-parallel-cream"
             >
               <ChevronLeft size={22} aria-hidden="true" />
             </button>
@@ -113,7 +113,7 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
           <motion.button
             onClick={onContinue}
             whileTap={{ scale: 0.98 }}
-            className="flex-1 py-4 px-6 rounded-full text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg text-lg font-medium"
+            className="flex-1 py-4 px-6 rounded-full text-parallel-cream flex items-center justify-center gap-2 transition-all hover:shadow-lg text-lg font-medium"
             style={{
               backgroundColor: '#000000',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',

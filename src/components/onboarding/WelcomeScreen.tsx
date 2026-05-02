@@ -11,7 +11,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
   const firstName = userName?.split(' ')[0];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-parallel-cream flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-start px-6 pt-10 pb-32 overflow-auto">
         <div className="max-w-md w-full">
 
@@ -22,7 +22,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="text-center mb-10"
           >
-            <div className="w-16 h-16 rounded-full bg-black mx-auto flex items-center justify-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-parallel-void mx-auto flex items-center justify-center mb-6">
               <ParallelIcon size={32} className="text-parallel-soft-violet" />
             </div>
             <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-3 font-medium">
@@ -45,8 +45,8 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               transition={{ duration: 0.45, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-start gap-4"
             >
-              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-full bg-parallel-void flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-4 h-4 text-parallel-cream" />
               </div>
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">The questionnaire</h3>
@@ -63,8 +63,8 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               transition={{ duration: 0.45, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-start gap-4"
             >
-              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <Heart className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-full bg-parallel-void flex items-center justify-center flex-shrink-0">
+                <Heart className="w-4 h-4 text-parallel-cream" />
               </div>
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">Your profile</h3>
@@ -80,8 +80,8 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
               transition={{ duration: 0.45, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-start gap-4"
             >
-              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center flex-shrink-0">
-                <MessageCircle className="w-4 h-4 text-white" />
+              <div className="w-10 h-10 rounded-full bg-parallel-void flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-4 h-4 text-parallel-cream" />
               </div>
               <div className="pt-1.5">
                 <h3 className="font-semibold tracking-tight mb-1">Your matches</h3>
@@ -109,11 +109,11 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
       </div>
 
       {/* ── CTA — fixed at bottom ─────────────────────────────── */}
-      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-white border-t border-gray-100">
+      <div className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-parallel-cream border-t border-gray-100">
         <div className="max-w-md mx-auto">
           <button
             onClick={onContinue}
-            className="w-full py-4 px-6 rounded-full bg-black text-white font-medium transition-all hover:bg-gray-800 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+            className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream font-medium transition-all hover:bg-parallel-purple/90 flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
           >
             Start the questionnaire
             <ArrowRight size={18} />

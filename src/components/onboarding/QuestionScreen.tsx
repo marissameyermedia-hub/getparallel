@@ -351,7 +351,7 @@ export function QuestionScreen({
     isDealbreakerEligibleAnswer;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-white">
+    <div className="flex-1 flex flex-col min-h-0 bg-parallel-cream">
 
       {/* Question number row */}
       {chapterTitle && (
@@ -399,7 +399,7 @@ export function QuestionScreen({
               className="flex items-center justify-between bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 mb-4"
             >
               <div className="flex-1 pr-3">
-                <p className="text-sm font-semibold text-black">Make this a dealbreaker</p>
+                <p className="text-sm font-semibold text-parallel-void">Make this a dealbreaker</p>
                 <p className="text-xs text-gray-500 mt-0.5">We'll only match you with people whose answer aligns with yours</p>
               </div>
               <button
@@ -410,9 +410,9 @@ export function QuestionScreen({
                   setDealbreakerJustToggled(newVal);
                   saveAnswer(localAnswer, newVal);
                 }}
-                className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${isDealbreaker ? 'bg-black' : 'bg-gray-300'}`}
+                className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${isDealbreaker ? 'bg-parallel-void' : 'bg-gray-300'}`}
               >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isDealbreaker ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                <span className={`absolute top-0.5 w-5 h-5 bg-parallel-cream rounded-full shadow transition-transform ${isDealbreaker ? 'translate-x-6' : 'translate-x-0.5'}`} />
               </button>
             </motion.div>
           )}
@@ -422,7 +422,7 @@ export function QuestionScreen({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mb-4 p-4 rounded-xl border-2 border-black bg-white"
+              className="mb-4 p-4 rounded-xl border-2 border-parallel-void bg-parallel-cream"
             >
               <p className="text-sm text-gray-700 leading-relaxed">
                 You have <span className="font-semibold">{totalDealbreakers} dealbreakers</span> set. More dealbreakers means a smaller — but more aligned — match pool.
@@ -462,16 +462,16 @@ export function QuestionScreen({
                       onClick={() => handleSelectOption(option)}
                       whileTap={{ scale: 0.98 }}
                       className={`w-full rounded-xl border-2 text-left transition-all px-5 py-3 ${
-                        localAnswer === option ? 'border-black bg-black/5' : 'border-gray-200 hover:border-gray-300'
+                        localAnswer === option ? 'border-parallel-void bg-parallel-void/5' : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-base">{option}</span>
                         {localAnswer === option && (
                           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                            className="w-6 h-6 rounded-full bg-black flex items-center justify-center flex-shrink-0"
+                            className="w-6 h-6 rounded-full bg-parallel-void flex items-center justify-center flex-shrink-0"
                           >
-                            <Check size={14} className="text-white" />
+                            <Check size={14} className="text-parallel-cream" />
                           </motion.div>
                         )}
                       </div>
@@ -520,18 +520,18 @@ export function QuestionScreen({
                         value={hobbySearch}
                         onChange={e => setHobbySearch(e.target.value)}
                         placeholder="Search or browse by category ↓"
-                        className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors text-sm"
+                        className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors text-sm"
                       />
                       {hobbySearch && (
                         <button onClick={() => setHobbySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">×</button>
                       )}
                     </div>
                     {selected.length > 0 && !hobbySearch && (
-                      <div className="flex flex-wrap gap-2 p-3 bg-black/5 rounded-2xl border border-black/10">
+                      <div className="flex flex-wrap gap-2 p-3 bg-parallel-void/5 rounded-2xl border border-parallel-void/10">
                         {selected.map(hobby => (
                           <button key={hobby}
                             onClick={() => { const n = selected.filter(h => h !== hobby); setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                            className="flex items-center gap-1 bg-black text-white text-xs font-medium px-3 py-1.5 rounded-full"
+                            className="flex items-center gap-1 bg-parallel-purple text-parallel-cream text-xs font-medium px-3 py-1.5 rounded-full"
                           >
                             {hobby}<span className="ml-1 opacity-60">×</span>
                           </button>
@@ -552,7 +552,7 @@ export function QuestionScreen({
                                   const n = isSelected ? selected.filter(h => h !== hobby) : [...selected, hobby];
                                   setLocalAnswer(n); saveAnswer(n, isDealbreaker);
                                 }}
-                                className={`text-sm px-3 py-2 rounded-full border-2 transition-all font-medium ${isSelected ? 'border-black bg-black text-white' : isDisabled ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:border-gray-400 text-black'}`}
+                                className={`text-sm px-3 py-2 rounded-full border-2 transition-all font-medium ${isSelected ? 'border-parallel-purple bg-parallel-purple text-parallel-cream' : isDisabled ? 'border-gray-100 text-gray-300 cursor-not-allowed' : 'border-gray-200 hover:border-gray-400 text-parallel-void'}`}
                               >
                                 {hobby}
                               </button>
@@ -595,7 +595,7 @@ export function QuestionScreen({
                         <motion.button key={option}
                           onClick={() => handleSelectOption(option)}
                           whileTap={{ scale: 0.95 }}
-                          className={`rounded-full border-2 transition-all font-medium text-sm px-4 py-2 ${isSelected ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-300 text-black'}`}
+                          className={`rounded-full border-2 transition-all font-medium text-sm px-4 py-2 ${isSelected ? 'border-parallel-purple bg-parallel-purple text-parallel-cream' : 'border-gray-200 hover:border-gray-300 text-parallel-void'}`}
                         >
                           {option}
                         </motion.button>
@@ -612,13 +612,13 @@ export function QuestionScreen({
                 <div className="flex bg-gray-100 rounded-full p-1 w-fit">
                   <button
                     onClick={() => switchHeightUnit('imperial')}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${heightUnit === 'imperial' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${heightUnit === 'imperial' ? 'bg-parallel-cream text-parallel-void shadow-sm' : 'text-gray-500'}`}
                   >
                     ft / in
                   </button>
                   <button
                     onClick={() => switchHeightUnit('cm')}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${heightUnit === 'cm' ? 'bg-white text-black shadow-sm' : 'text-gray-500'}`}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${heightUnit === 'cm' ? 'bg-parallel-cream text-parallel-void shadow-sm' : 'text-gray-500'}`}
                   >
                     cm
                   </button>
@@ -642,7 +642,7 @@ export function QuestionScreen({
                         className={`w-full p-4 rounded-2xl border-2 focus:outline-none transition-colors text-lg font-medium ${
                           heightFtValue && heightValid ? 'border-green-400 focus:border-green-500' :
                           heightFtValue && !heightValid ? 'border-red-300 focus:border-red-400' :
-                          'border-gray-200 focus:border-black'
+                          'border-gray-200 focus:border-parallel-purple'
                         }`}
                         style={{ fontSize: '16px' }}
                       />
@@ -658,7 +658,7 @@ export function QuestionScreen({
                         min={0} max={11}
                         className={`w-full p-4 rounded-2xl border-2 focus:outline-none transition-colors text-lg font-medium ${
                           heightFtValue && heightValid ? 'border-green-400 focus:border-green-500' :
-                          'border-gray-200 focus:border-black'
+                          'border-gray-200 focus:border-parallel-purple'
                         }`}
                         style={{ fontSize: '16px' }}
                       />
@@ -676,7 +676,7 @@ export function QuestionScreen({
                       className={`w-full p-4 rounded-2xl border-2 focus:outline-none transition-colors text-lg font-medium ${
                         heightCmValue && heightValid ? 'border-green-400 focus:border-green-500' :
                         heightCmValue && !heightValid ? 'border-red-300 focus:border-red-400' :
-                        'border-gray-200 focus:border-black'
+                        'border-gray-200 focus:border-parallel-purple'
                       }`}
                       style={{ fontSize: '16px' }}
                     />
@@ -701,7 +701,7 @@ export function QuestionScreen({
                   <select
                     value={localAnswer?.min || 18}
                     onChange={e => { const n = { ...localAnswer, min: parseInt(e.target.value) }; setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none bg-white"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none bg-parallel-cream"
                   >
                     {Array.from({ length: 63 }, (_, i) => i + 18).map(age => (
                       <option key={age} value={age}>{age}</option>
@@ -713,7 +713,7 @@ export function QuestionScreen({
                   <select
                     value={localAnswer?.max || 80}
                     onChange={e => { const n = { ...localAnswer, max: parseInt(e.target.value) }; setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none bg-white"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none bg-parallel-cream"
                   >
                     {Array.from({ length: 63 }, (_, i) => i + 18).map(age => (
                       <option key={age} value={age}>{age}</option>
@@ -730,7 +730,7 @@ export function QuestionScreen({
                   <label className="block text-sm text-gray-600 mb-2">Min — Feet</label>
                   <select value={localAnswer?.minFeet || 3}
                     onChange={e => { const n = { minFeet: parseInt(e.target.value), minInches: localAnswer?.minInches || 0, maxFeet: localAnswer?.maxFeet || 8, maxInches: localAnswer?.maxInches || 0 }; setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none bg-white"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none bg-parallel-cream"
                   >
                     {Array.from({ length: 6 }, (_, i) => i + 3).map(ft => <option key={ft} value={ft}>{ft}'</option>)}
                   </select>
@@ -739,7 +739,7 @@ export function QuestionScreen({
                   <label className="block text-sm text-gray-600 mb-2">Min — Inches</label>
                   <select value={localAnswer?.minInches || 0}
                     onChange={e => { const n = { ...localAnswer, minInches: parseInt(e.target.value) }; setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none bg-white"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none bg-parallel-cream"
                   >
                     {Array.from({ length: 12 }, (_, i) => i).map(inch => <option key={inch} value={inch}>{inch}"</option>)}
                   </select>
@@ -748,7 +748,7 @@ export function QuestionScreen({
                   <label className="block text-sm text-gray-600 mb-2">Max — Feet</label>
                   <select value={localAnswer?.maxFeet || 8}
                     onChange={e => { const n = { ...localAnswer, maxFeet: parseInt(e.target.value) }; setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none bg-white"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none bg-parallel-cream"
                   >
                     {Array.from({ length: 6 }, (_, i) => i + 3).map(ft => <option key={ft} value={ft}>{ft}'</option>)}
                   </select>
@@ -757,7 +757,7 @@ export function QuestionScreen({
                   <label className="block text-sm text-gray-600 mb-2">Max — Inches</label>
                   <select value={localAnswer?.maxInches || 0}
                     onChange={e => { const n = { ...localAnswer, maxInches: parseInt(e.target.value) }; setLocalAnswer(n); saveAnswer(n, isDealbreaker); }}
-                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none bg-white"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none bg-parallel-cream"
                   >
                     {Array.from({ length: 12 }, (_, i) => i).map(inch => <option key={inch} value={inch}>{inch}"</option>)}
                   </select>
@@ -773,9 +773,9 @@ export function QuestionScreen({
                     onDragStart={() => handleDragStart(option)}
                     onDragOver={e => handleDragOver(e, option)}
                     onDragEnd={handleDragEnd}
-                    className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-move ${draggedItem === option ? 'border-black opacity-50' : 'border-gray-200'}`}
+                    className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-move ${draggedItem === option ? 'border-parallel-void opacity-50' : 'border-gray-200'}`}
                   >
-                    <div className="w-7 h-7 rounded-full bg-black text-white text-sm flex items-center justify-center flex-shrink-0">{index + 1}</div>
+                    <div className="w-7 h-7 rounded-full bg-parallel-purple text-parallel-cream text-sm flex items-center justify-center flex-shrink-0">{index + 1}</div>
                     <GripVertical className="w-4 h-4 text-gray-400" />
                     <span className="flex-1 text-sm">{option}</span>
                   </motion.div>
@@ -791,7 +791,7 @@ export function QuestionScreen({
                     onChange={e => handleTextChange(i, e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && isAnswered()) { e.preventDefault(); onContinue(); } }}
                     placeholder="Type here..."
-                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                    className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                     style={{ fontSize: '16px' }}
                   />
                 ))}
@@ -804,7 +804,7 @@ export function QuestionScreen({
                 onChange={e => { const v = e.target.value ? parseInt(e.target.value) : null; setLocalAnswer(v); saveAnswer(v, isDealbreaker); }}
                 onKeyDown={e => { if (e.key === 'Enter' && isAnswered()) { e.preventDefault(); onContinue(); } }}
                 placeholder="Enter a number" min={18} max={100}
-                className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                 style={{ fontSize: '16px' }}
               />
             )}
@@ -814,7 +814,7 @@ export function QuestionScreen({
               <input type="date" value={textInputs[0] || ''}
                 onChange={e => handleTextChange(0, e.target.value)}
                 max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                 style={{ fontSize: '16px' }}
               />
             )}
@@ -827,7 +827,7 @@ export function QuestionScreen({
                   placeholder="Type your answer here..."
                   rows={5}
                   maxLength={question.maxCharacters || 300}
-                  className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors resize-none"
+                  className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors resize-none"
                   style={{ fontSize: '16px' }}
                 />
                 {question.maxCharacters && (
@@ -839,7 +839,7 @@ export function QuestionScreen({
             {/* UPLOAD */}
             {question.type === 'UPLOAD' && (
               <label className="w-full cursor-pointer">
-                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-black transition-colors">
+                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-parallel-void transition-colors">
                   <Upload size={32} className="mx-auto mb-3 text-gray-400" />
                   <p className="font-medium">{localAnswer ? 'File uploaded ✓' : 'Click to upload'}</p>
                 </div>
@@ -855,7 +855,7 @@ export function QuestionScreen({
 
       {/* Bottom CTA — sticky footer, never fixed */}
       <div
-        className="flex-shrink-0 bg-white border-t border-gray-100 py-3 px-4"
+        className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 py-3 px-4"
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
       >
         <div className="max-w-md mx-auto flex items-center gap-3">
@@ -863,7 +863,7 @@ export function QuestionScreen({
             onClick={onBack}
             disabled={!canGoBack}
             aria-label="Previous question"
-            className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors disabled:opacity-0 disabled:pointer-events-none"
+            className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors disabled:opacity-0 disabled:pointer-events-none"
           >
             <ChevronLeft size={22} aria-hidden="true" />
           </button>
@@ -871,10 +871,10 @@ export function QuestionScreen({
             {onSave ? (
               <div className="flex gap-2">
                 <button onClick={onSave} disabled={!isAnswered()}
-                  className="flex-1 py-2.5 px-3 rounded-full text-white transition-all disabled:opacity-40 bg-black text-sm font-medium"
+                  className="flex-1 py-2.5 px-3 rounded-full text-parallel-cream transition-all disabled:opacity-40 bg-parallel-void text-sm font-medium"
                 >Save & Exit</button>
                 <button onClick={onContinue}
-                  className="flex-1 py-2.5 px-3 text-black border-2 border-black rounded-full text-sm font-medium hover:bg-gray-50"
+                  className="flex-1 py-2.5 px-3 text-parallel-void border-2 border-parallel-void rounded-full text-sm font-medium hover:bg-gray-50"
                 >Save & Continue</button>
               </div>
             ) : (
@@ -885,13 +885,13 @@ export function QuestionScreen({
                     onClick={() => { setDealbreakerJustToggled(false); onContinue(); }}
                     disabled={!isAnswered()}
                     whileTap={isAnswered() ? { scale: 0.98 } : {}}
-                    className="w-full py-4 px-6 rounded-full text-white transition-all disabled:opacity-40 bg-black text-lg font-medium"
+                    className="w-full py-4 px-6 rounded-full text-parallel-cream transition-all disabled:opacity-40 bg-parallel-void text-lg font-medium"
                   >
                     Continue
                   </motion.button>
                   {!question.hasDealbreaker && (
                     <button onClick={onContinue}
-                      className="w-full py-3 px-6 text-gray-600 hover:text-black transition-colors text-sm font-medium border-2 border-gray-300 rounded-full hover:border-gray-400"
+                      className="w-full py-3 px-6 text-gray-600 hover:text-parallel-void transition-colors text-sm font-medium border-2 border-gray-300 rounded-full hover:border-gray-400"
                     >
                       Skip for now
                     </button>

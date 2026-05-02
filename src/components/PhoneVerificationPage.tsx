@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Loader2, Check } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { MISC_FUNCTION_URL } from '../utils/supabase/client';
-import { ParallelIcon } from './ParallelIcon';
+import { ParallelWordmark } from './ParallelWordmark';
 
 // Formats an incoming phone number (from signup) for display in our input.
 // Handles raw digits, +1XXXXXXXXXX format, and anything in between.
@@ -166,12 +166,12 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-parallel-cream flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <ParallelIcon size={24} className="text-parallel-purple" />
-            <h1 className="text-2xl font-medium tracking-tight">Parallel</h1>
+          {/* Pre-app brand mark per brand book — replaces the older icon + "Parallel" lockup. */}
+          <div className="flex items-center justify-center mb-1">
+            <ParallelWordmark variant="light" sizeClassName="text-2xl" />
           </div>
           <p className="text-sm text-gray-500 mt-1">
             {step === 'enter' ? 'Verify your phone number' : 'Enter your verification code'}
@@ -255,7 +255,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
             <button
               onClick={sendCode}
               disabled={!phoneIsValid || isSending}
-              className="w-full bg-black text-white py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+              className="w-full bg-parallel-purple text-parallel-cream py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
             >
               {isSending ? (
                 <>
@@ -326,7 +326,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
             <button
               onClick={verifyCode}
               disabled={code.length !== 6 || isVerifying}
-              className="w-full bg-black text-white py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+              className="w-full bg-parallel-purple text-parallel-cream py-2.5 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
             >
               {isVerifying ? (
                 <>

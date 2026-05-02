@@ -7,15 +7,15 @@ interface DealbreakerExplanationScreenProps {
 
 export function DealbreakerExplanationScreen({ onContinue }: DealbreakerExplanationScreenProps) {
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen bg-parallel-cream">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          className="mb-8 w-24 h-24 rounded-full bg-black flex items-center justify-center"
+          className="mb-8 w-24 h-24 rounded-full bg-parallel-void flex items-center justify-center"
         >
-          <AlertCircle className="w-12 h-12 text-white" />
+          <AlertCircle className="w-12 h-12 text-parallel-cream" />
         </motion.div>
 
         <motion.h1
@@ -56,7 +56,7 @@ export function DealbreakerExplanationScreen({ onContinue }: DealbreakerExplanat
       <div className="p-6">
         <button
           onClick={onContinue}
-          className="w-full bg-black text-white py-4 rounded-full text-lg font-medium hover:bg-gray-800 transition-colors"
+          className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full text-lg font-medium hover:bg-parallel-purple/90 transition-colors"
         >
           Got it
         </button>

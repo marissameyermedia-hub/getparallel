@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 import { ParallelIcon } from './ParallelIcon';
+import { ParallelWordmark } from './ParallelWordmark';
 
 interface ResetPasswordPageProps {
   onComplete: () => void;
@@ -64,7 +65,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
 
   if (!sessionReady) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-parallel-cream flex items-center justify-center">
         <div className="text-center">
           <div className="flex justify-center mb-3">
             <ParallelIcon size={32} className="text-parallel-purple" />
@@ -76,13 +77,13 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-start px-6 pt-16">
+    <div className="min-h-screen bg-parallel-cream flex flex-col items-center justify-start px-6 pt-16">
       <div className="max-w-md w-full">
 
-        {/* Logo */}
+        {/* Logo — pre-app PARA//EL. wordmark per brand book */}
         <div className="text-center mb-10">
           <div className="flex justify-center mb-4">
-            <ParallelIcon size={32} className="text-parallel-purple" />
+            <ParallelWordmark variant="light" sizeClassName="text-2xl" />
           </div>
           <h1 className="text-2xl font-medium mb-2">Set a new password</h1>
           <p className="text-gray-500 text-sm">Choose something secure — at least 8 characters.</p>
@@ -97,7 +98,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="At least 8 characters"
-              className="w-full p-4 pr-12 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+              className="w-full p-4 pr-12 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
             />
             <button
               type="button"
@@ -118,7 +119,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter your password"
-              className="w-full p-4 pr-12 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+              className="w-full p-4 pr-12 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && password && confirmPassword) handleSubmit();
               }}
@@ -144,7 +145,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
         <button
           onClick={handleSubmit}
           disabled={isLoading || !password || !confirmPassword}
-          className="w-full py-4 px-6 rounded-full bg-black text-white font-medium text-lg transition-all hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream font-medium text-lg transition-all hover:bg-parallel-purple/90 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Updating...' : 'Update password'}
         </button>

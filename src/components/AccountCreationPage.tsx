@@ -263,7 +263,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-12">
+    <div className="min-h-screen bg-parallel-cream flex flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
         <button
           onClick={onBack}
@@ -308,7 +308,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Your full name"
-              className="w-full px-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
               disabled={isLoading}
               style={{ fontSize: '16px' }}
             />
@@ -325,7 +325,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
                 onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setEmailError(''); }}
                 onBlur={handleEmailBlur}
                 placeholder="you@example.com"
-                className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                 disabled={isLoading}
                 aria-invalid={emailError ? true : undefined}
                 aria-describedby={emailError ? 'email-error' : undefined}
@@ -346,7 +346,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
                 onChange={handlePhoneChange}
                 onBlur={handlePhoneBlur}
                 placeholder="(555) 000-0000"
-                className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full pl-12 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                 disabled={isLoading}
                 aria-invalid={phoneError ? true : undefined}
                 aria-describedby={phoneError ? 'phone-error' : 'phone-hint'}
@@ -369,7 +369,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 onFocus={() => setPasswordFocused(true)}
                 placeholder="Create a password"
-                className="w-full px-4 pr-12 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full px-4 pr-12 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                 disabled={isLoading}
                 aria-describedby={formData.password.length > 0 ? 'password-rules' : undefined}
                 style={{ fontSize: '16px' }}
@@ -418,7 +418,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
                     ? 'border-red-300 focus:border-red-400'
                     : formData.confirmPassword && formData.password === formData.confirmPassword
                     ? 'border-green-300 focus:border-green-400'
-                    : 'border-gray-200 focus:border-black'
+                    : 'border-gray-200 focus:border-parallel-purple'
                 }`}
                 disabled={isLoading}
                 aria-invalid={formData.confirmPassword && formData.password !== formData.confirmPassword ? true : undefined}
@@ -450,7 +450,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
               onChange={handleDobChange}
               placeholder="MM/DD/YYYY"
               maxLength={10}
-              className="w-full px-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
               disabled={isLoading}
               aria-invalid={
                 (dobDisplay.replace(/\D/g, '').length === 8 && !parseDobToIso(dobDisplay)) ||
@@ -475,12 +475,12 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
               SMS consent is collected separately on PhoneVerificationPage. */}
           <div
             className={`flex items-start gap-3 p-4 rounded-2xl border-2 transition-colors cursor-pointer ${
-              agreedToTerms ? 'border-black bg-gray-50' : 'border-gray-200'
+              agreedToTerms ? 'border-parallel-void bg-gray-50' : 'border-gray-200'
             }`}
             onClick={() => setAgreedToTerms(!agreedToTerms)}
           >
             <div className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center flex-shrink-0 border-2 transition-colors ${
-              agreedToTerms ? 'bg-black border-black' : 'border-gray-300'
+              agreedToTerms ? 'bg-parallel-void border-parallel-void' : 'border-gray-300'
             }`}>
               {agreedToTerms && (
                 <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
@@ -493,7 +493,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onNavigate?.('terms-service'); }}
-                className="underline text-black font-medium"
+                className="underline text-parallel-void font-medium"
               >
                 Terms of Service
               </button>
@@ -501,7 +501,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onNavigate?.('privacy-policy'); }}
-                className="underline text-black font-medium"
+                className="underline text-parallel-void font-medium"
               >
                 Privacy Policy
               </button>
@@ -516,7 +516,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
           <button
             type="submit"
             disabled={isLoading || !agreedToTerms}
-            className="w-full bg-black text-white py-4 rounded-full hover:bg-gray-800 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
@@ -533,7 +533,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
         </form>
 
         <div className="text-center mt-6">
-          <button onClick={onBack} className="text-gray-600 hover:text-black transition-colors">
+          <button onClick={onBack} className="text-gray-600 hover:text-parallel-void transition-colors">
             ← Back to Sign In
           </button>
         </div>

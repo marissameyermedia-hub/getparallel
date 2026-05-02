@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ParallelIcon } from './ParallelIcon';
+import { ParallelWordmark } from './ParallelWordmark';
 import { Mail, Lock, ArrowRight, X, Check, ShieldCheck, MapPin, Heart } from 'lucide-react';
 import { AppFooter } from './AppFooter';
 import { supabase } from '../utils/supabase/client';
@@ -112,19 +113,15 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
   useModalA11y(showSignIn, closeSignInModal);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-parallel-cream flex flex-col">
       {/* ── Top nav ───────────────────────────────────────────────── */}
-      <nav className="w-full border-b border-gray-100 bg-white sticky top-0 z-30">
+      <nav className="w-full border-b border-gray-100 bg-parallel-cream sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
-              <ParallelIcon size={16} className="text-parallel-soft-violet" />
-            </div>
-            <span className="font-semibold tracking-tight">Parallel</span>
-          </div>
+          {/* Pre-app brand mark — full PARA//EL. wordmark per brand book. */}
+          <ParallelWordmark variant="light" sizeClassName="text-base" />
           <button
             onClick={() => setShowSignIn(true)}
-            className="text-sm text-gray-600 hover:text-black transition-colors font-medium"
+            className="text-sm text-gray-600 hover:text-parallel-void transition-colors font-medium"
           >
             Sign in
           </button>
@@ -150,14 +147,14 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={onShowExplainer}
-                  className="w-full sm:w-auto bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
+                  className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
                 >
                   Get matched
                   <ArrowRight size={18} />
                 </button>
                 <button
                   onClick={() => setShowSignIn(true)}
-                  className="text-gray-600 hover:text-black transition-colors font-medium text-sm py-4 sm:px-4"
+                  className="text-gray-600 hover:text-parallel-void transition-colors font-medium text-sm py-4 sm:px-4"
                 >
                   Already a member? Sign in
                 </button>
@@ -293,14 +290,14 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
             <button
               onClick={onShowExplainer}
-              className="w-full sm:w-auto bg-black text-white px-10 py-4 rounded-full hover:bg-gray-800 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
+              className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-10 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
             >
               Get matched
               <ArrowRight size={18} />
             </button>
             <button
               onClick={() => setShowSignIn(true)}
-              className="text-gray-600 hover:text-black transition-colors font-medium text-sm py-4 sm:px-4"
+              className="text-gray-600 hover:text-parallel-void transition-colors font-medium text-sm py-4 sm:px-4"
             >
               Already a member? Sign in
             </button>
@@ -317,23 +314,23 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
       {/* ── Sign-in modal ─────────────────────────────────────────── */}
       {showSignIn && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 bg-parallel-void/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-150"
           onClick={closeSignInModal}
           role="dialog"
           aria-modal="true"
           aria-labelledby="sign-in-modal-title"
         >
           <div
-            className="bg-white rounded-3xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+            className="bg-parallel-cream rounded-3xl w-full max-w-md shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
-              <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center" aria-hidden="true">
+              <div className="w-10 h-10 rounded-full bg-parallel-void flex items-center justify-center" aria-hidden="true">
                 <ParallelIcon size={20} className="text-parallel-soft-violet" />
               </div>
               <button
                 onClick={closeSignInModal}
-                className="text-gray-400 hover:text-black transition-colors"
+                className="text-gray-400 hover:text-parallel-void transition-colors"
                 aria-label="Close"
               >
                 <X size={20} aria-hidden="true" />
@@ -363,7 +360,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="you@example.com"
-                          className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                          className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                           required
                           disabled={isLoading}
                           aria-invalid={error ? true : undefined}
@@ -383,7 +380,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                          className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                           required
                           disabled={isLoading}
                           aria-invalid={error ? true : undefined}
@@ -396,7 +393,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full bg-black text-white py-3.5 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
+                      className="w-full bg-parallel-purple text-parallel-cream py-3.5 rounded-full hover:bg-parallel-purple/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
                     >
                       {isLoading ? (
                         <>
@@ -410,7 +407,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   <div className="text-center mt-4 space-y-2">
                     <button
                       onClick={handleForgotPasswordClick}
-                      className="text-gray-500 hover:text-black transition-colors text-sm block w-full"
+                      className="text-gray-500 hover:text-parallel-void transition-colors text-sm block w-full"
                     >
                       Forgot password?
                     </button>
@@ -421,7 +418,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                           closeSignInModal();
                           onShowExplainer();
                         }}
-                        className="text-black font-medium hover:underline text-sm"
+                        className="text-parallel-void font-medium hover:underline text-sm"
                       >
                         Create an account
                       </button>
@@ -452,7 +449,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                           value={resetEmail}
                           onChange={(e) => setResetEmail(e.target.value)}
                           placeholder="you@example.com"
-                          className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                          className="w-full pl-11 pr-4 py-3 rounded-full border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                           required
                           disabled={resetLoading}
                           aria-invalid={resetError ? true : undefined}
@@ -466,7 +463,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                       type="button"
                       onClick={handleSendResetLink}
                       disabled={resetLoading}
-                      className="w-full bg-black text-white py-3.5 rounded-full hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
+                      className="w-full bg-parallel-purple text-parallel-cream py-3.5 rounded-full hover:bg-parallel-purple/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center font-medium mt-2"
                     >
                       {resetLoading ? (
                         <>
@@ -479,7 +476,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <button
                       type="button"
                       onClick={handleBackToSignIn}
-                      className="w-full text-gray-500 hover:text-black transition-colors text-sm py-2"
+                      className="w-full text-gray-500 hover:text-parallel-void transition-colors text-sm py-2"
                     >
                       Back to sign in
                     </button>
@@ -494,13 +491,13 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   </div>
                   <h2 className="text-2xl font-semibold tracking-tight mb-2 text-center">Check your email</h2>
                   <p className="text-gray-600 text-sm mb-6 text-center">
-                    We've sent a reset link to <span className="font-medium text-black">{resetEmail}</span>.
+                    We've sent a reset link to <span className="font-medium text-parallel-void">{resetEmail}</span>.
                     If you don't see it, check your spam folder.
                   </p>
                   <button
                     type="button"
                     onClick={handleBackToSignIn}
-                    className="w-full bg-black text-white py-3.5 rounded-full hover:bg-gray-800 transition-all font-medium"
+                    className="w-full bg-parallel-purple text-parallel-cream py-3.5 rounded-full hover:bg-parallel-purple/90 transition-all font-medium"
                   >
                     Back to sign in
                   </button>
@@ -535,8 +532,8 @@ function Step({ number, title, body }: { number: string; title: string; body: st
 function Feature({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-5 h-5 rounded-full bg-black flex-shrink-0 mt-1 flex items-center justify-center">
-        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+      <div className="w-5 h-5 rounded-full bg-parallel-void flex-shrink-0 mt-1 flex items-center justify-center">
+        <Check className="w-3 h-3 text-parallel-cream" strokeWidth={3} />
       </div>
       <div>
         <h3 className="font-semibold mb-1 tracking-tight">{title}</h3>
@@ -614,7 +611,7 @@ function PreviewMatchCard({
   breakdown: Record<string, number>;
 }) {
   return (
-    <div className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-xl">
+    <div className="bg-parallel-cream rounded-2xl border-2 border-gray-200 overflow-hidden shadow-xl">
       {/* Photo zone — aspect-[3/4] */}
       <div className="relative aspect-[3/4] bg-gray-100">
         <img src={photoUrl} alt={name} className="w-full h-full object-cover" />
@@ -622,12 +619,12 @@ function PreviewMatchCard({
         {/* Verified badge — top left */}
         {verified && (
           <div className="absolute top-3 left-3 bg-blue-500 rounded-full p-1.5 shadow-lg z-20">
-            <ShieldCheck size={16} className="text-white" />
+            <ShieldCheck size={16} className="text-parallel-cream" />
           </div>
         )}
 
         {/* Compatibility badge — top right (two-line: score + label) */}
-        <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200 z-20">
+        <div className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200 z-20">
           <div className="text-center">
             <div className="text-base font-bold leading-none">{score}%</div>
             <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">{getMatchLabel(score)}</div>
@@ -636,12 +633,12 @@ function PreviewMatchCard({
 
         {/* Name/age/height/location overlay at bottom of photo */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 z-10">
-          <p className="text-white text-xl font-semibold leading-tight">
+          <p className="text-parallel-cream text-xl font-semibold leading-tight">
             {name}, {age}{height ? ` · ${height}` : ''}
           </p>
           <div className="flex items-center gap-1 mt-1">
-            <MapPin size={12} className="text-white/70 flex-shrink-0" />
-            <p className="text-white/80 text-xs">{location}</p>
+            <MapPin size={12} className="text-parallel-cream/70 flex-shrink-0" />
+            <p className="text-parallel-cream/80 text-xs">{location}</p>
           </div>
         </div>
       </div>
@@ -661,7 +658,7 @@ function PreviewMatchCard({
             {CATEGORY_ORDER.map((label) => {
               const raw = breakdown[label];
               const hasScore = typeof raw === 'number' && raw > 0;
-              const barColor = CATEGORY_COLORS[label] || 'bg-black';
+              const barColor = CATEGORY_COLORS[label] || 'bg-parallel-void';
               return (
                 <div key={label}>
                   <div className="flex items-center justify-between mb-1">
@@ -689,7 +686,7 @@ function PreviewMatchCard({
             <X size={16} className="text-gray-500" />
             <span className="text-[10px] text-gray-500">Pass</span>
           </div>
-          <div className="flex-1 h-12 rounded-full bg-black text-white flex items-center justify-center gap-2 font-medium" aria-hidden="true">
+          <div className="flex-1 h-12 rounded-full bg-parallel-purple text-parallel-cream flex items-center justify-center gap-2 font-medium" aria-hidden="true">
             <Heart size={18} />
             <span className="text-sm">Like</span>
           </div>

@@ -240,8 +240,8 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // ── Saving spinner ───────────────────────────────────────────
   if (isSaving) {
     return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center gap-4" role="status" aria-live="polite">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" aria-hidden="true" />
+      <div className="fixed inset-0 bg-parallel-cream z-50 flex flex-col items-center justify-center gap-4" role="status" aria-live="polite">
+        <div className="w-8 h-8 border-2 border-parallel-void border-t-transparent rounded-full animate-spin" aria-hidden="true" />
         <p className="text-sm text-gray-500">Saving your profile…</p>
       </div>
     );
@@ -253,11 +253,11 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // saved question. Shows for ~200-500ms on a normal connection.
   if (!hasLoadedProgress) {
     return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center" role="status" aria-live="polite">
+      <div className="fixed inset-0 bg-parallel-cream flex items-center justify-center" role="status" aria-live="polite">
         <div className="flex flex-col items-center gap-3">
           <div className="flex gap-1" aria-hidden="true">
-            <div className="w-1.5 h-8 bg-black rounded-full" />
-            <div className="w-1.5 h-8 bg-black rounded-full" />
+            <div className="w-1.5 h-8 bg-parallel-void rounded-full" />
+            <div className="w-1.5 h-8 bg-parallel-void rounded-full" />
           </div>
           <p className="text-sm text-gray-500">Loading your progress…</p>
         </div>
@@ -317,7 +317,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // ── Profile completion screen ────────────────────────────────
   if (showProfileCompletion) {
     return (
-      <div className="flex flex-col min-h-screen bg-white">
+      <div className="flex flex-col min-h-screen bg-parallel-cream">
         {saveError && (
           <div className="bg-red-50 border-b-2 border-red-200 px-6 py-3 flex-shrink-0 flex items-start gap-3">
             <span className="text-red-500 text-lg flex-shrink-0">⚠</span>
@@ -368,7 +368,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // ── "Create Profile" chapter title screen ────────────────────
   if (showCreateProfileTitle) {
     return (
-      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+      <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh', overflow: 'hidden' }}>
         {onNavigate && (
           <SimpleHeader
             onNavigate={onNavigate}
@@ -379,7 +379,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           />
         )}
         <div
-          className="flex-1 min-h-0 flex flex-col max-w-[390px] mx-auto w-full bg-white"
+          className="flex-1 min-h-0 flex flex-col max-w-[390px] mx-auto w-full bg-parallel-cream"
         >
           <ChapterTitle
             title="Create Profile"
@@ -629,7 +629,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // ── TIME ESTIMATE SCREEN ─────────────────────────────────────
   if (showTimeEstimate && !showWelcome) {
     return (
-      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+      <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh', overflow: 'hidden' }}>
         {onNavigate && (
           <SimpleHeader
             onNavigate={onNavigate}
@@ -655,21 +655,21 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
             </p>
             <div className="space-y-5">
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">1</div>
+                <div className="w-8 h-8 rounded-full bg-parallel-purple text-parallel-cream flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">1</div>
                 <div>
                   <p className="font-medium text-gray-900">Answer 68 questions about yourself</p>
                   <p className="text-sm text-gray-500 mt-0.5">Takes about 15 minutes. Saves automatically as you go — you can close and come back anytime.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">2</div>
+                <div className="w-8 h-8 rounded-full bg-parallel-purple text-parallel-cream flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">2</div>
                 <div>
                   <p className="font-medium text-gray-900">We run our compatibility algorithm</p>
                   <p className="text-sm text-gray-500 mt-0.5">Your answers are matched against others across 8 compatibility categories — no random swiping.</p>
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">3</div>
+                <div className="w-8 h-8 rounded-full bg-parallel-purple text-parallel-cream flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">3</div>
                 <div>
                   <p className="font-medium text-gray-900">Meet people who actually match</p>
                   <p className="text-sm text-gray-500 mt-0.5">See exactly why you matched — and what might be different. Then decide if you want to connect.</p>
@@ -688,7 +688,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           </div>
         </div>
         <div
-          className="flex-shrink-0 bg-white border-t border-gray-100 px-6 pt-3"
+          className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 px-6 pt-3"
           style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
         >
           <div className="max-w-md mx-auto">
@@ -698,7 +698,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 setShowLocationStep(true);
                 saveStep('location');
               }}
-              className="w-full py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
+              className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream text-lg font-medium transition-all hover:bg-parallel-purple/90"
             >
               Let's go →
             </button>
@@ -745,7 +745,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
     };
 
     return (
-      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+      <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh', overflow: 'hidden' }}>
         {showResumeMessage && (
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200 px-6 py-3 flex-shrink-0">
             <p className="text-center text-blue-900 font-medium text-sm">
@@ -769,7 +769,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           </div>
         </div>
         <div
-          className="flex-shrink-0 bg-white border-t border-gray-100 px-6 pt-3"
+          className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 px-6 pt-3"
           style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
         >
           <div className="max-w-md mx-auto">
@@ -778,7 +778,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 setShowLocationStep(false);
                 saveStep('chapter_0_intro');
               }}
-              className="w-full py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
+              className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream text-lg font-medium transition-all hover:bg-parallel-purple/90"
             >
               {onboardingLocation ? 'Continue →' : 'Skip for now →'}
             </button>
@@ -796,7 +796,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   // ── Part 2 transition screen ─────────────────────────────────
   if (showPart2Transition) {
     return (
-      <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+      <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh', overflow: 'hidden' }}>
         {onNavigate && (
           <SimpleHeader
             onNavigate={onNavigate}
@@ -830,14 +830,14 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           </div>
         </div>
         <div
-          className="flex-shrink-0 bg-white border-t border-gray-100 px-4 pt-3"
+          className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 px-4 pt-3"
           style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
         >
           <div className="max-w-md mx-auto flex items-center gap-3">
             <button
               onClick={() => handleBack()}
               aria-label="Go back"
-              className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-black transition-colors bg-white"
+              className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors bg-parallel-cream"
             >
               <ChevronLeft size={22} aria-hidden="true" />
             </button>
@@ -850,7 +850,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
                 saveStep(`chapter_${nextIdx}_intro`);
                 window.scrollTo(0, 0);
               }}
-              className="flex-1 py-4 px-6 rounded-full bg-black text-white text-lg font-medium transition-all hover:bg-gray-800"
+              className="flex-1 py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream text-lg font-medium transition-all hover:bg-parallel-purple/90"
             >
               Let's go →
             </button>
@@ -863,7 +863,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   const currentQuestion = currentChapter.questions[currentQuestionIndex];
 
   return (
-    <div className="flex flex-col bg-white" style={{ height: '100dvh', overflow: 'hidden' }}>
+    <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh', overflow: 'hidden' }}>
       {onNavigate && (
         <SimpleHeader
           onNavigate={onNavigate}
@@ -875,7 +875,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
       )}
 
       <div
-        className="max-w-[390px] mx-auto w-full bg-white flex flex-col flex-1 min-h-0"
+        className="max-w-[390px] mx-auto w-full bg-parallel-cream flex flex-col flex-1 min-h-0"
       >
         {showResumeMessage && (
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200 px-6 py-3 flex-shrink-0">

@@ -190,7 +190,7 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
             }
           }}
           placeholder="Enter zip code"
-          className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+          className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
         />
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
         {searchQuery && (
@@ -199,7 +199,7 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
             aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2"
           >
-            <X className="w-5 h-5 text-gray-400 hover:text-black transition-colors" aria-hidden="true" />
+            <X className="w-5 h-5 text-gray-400 hover:text-parallel-void transition-colors" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -208,7 +208,7 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
       <div className="relative w-full h-96 rounded-2xl overflow-hidden border-2 border-gray-200">
         <div
           ref={mapRef}
-          className={`w-full h-full bg-white ${isDragging ? 'cursor-grabbing' : 'cursor-crosshair'}`}
+          className={`w-full h-full bg-parallel-cream ${isDragging ? 'cursor-grabbing' : 'cursor-crosshair'}`}
           onClick={handleMapClick}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -245,14 +245,14 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
                 top: '50%',
               }}
             >
-              <MapPin className="w-10 h-10 text-black fill-black drop-shadow-lg" />
+              <MapPin className="w-10 h-10 text-parallel-void fill-black drop-shadow-lg" />
             </div>
           )}
 
           {/* Crosshair at center when no pin selected */}
           {!selectedPin && (
             <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-              <div className="w-8 h-8 border-2 border-black rounded-full opacity-30" />
+              <div className="w-8 h-8 border-2 border-parallel-void rounded-full opacity-30" />
             </div>
           )}
         </div>
@@ -262,21 +262,21 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
           <button
             onClick={handleZoomIn}
             aria-label="Zoom in"
-            className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-lg"
+            className="w-10 h-10 bg-parallel-cream border-2 border-parallel-void rounded-lg flex items-center justify-center hover:bg-parallel-purple hover:text-parallel-cream transition-all shadow-lg"
           >
             <Plus className="w-5 h-5" aria-hidden="true" />
           </button>
           <button
             onClick={handleZoomOut}
             aria-label="Zoom out"
-            className="w-10 h-10 bg-white border-2 border-black rounded-lg flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-lg"
+            className="w-10 h-10 bg-parallel-cream border-2 border-parallel-void rounded-lg flex items-center justify-center hover:bg-parallel-purple hover:text-parallel-cream transition-all shadow-lg"
           >
             <Minus className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
         {/* Zoom Level Indicator */}
-        <div className="absolute left-4 bottom-4 px-3 py-2 bg-white/90 backdrop-blur-sm rounded-lg border border-gray-200 text-xs font-medium">
+        <div className="absolute left-4 bottom-4 px-3 py-2 bg-parallel-cream/90 backdrop-blur-sm rounded-lg border border-gray-200 text-xs font-medium">
           {getZoomDescription()}
         </div>
 
@@ -284,7 +284,7 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
         {selectedPin && (
           <button
             onClick={clearPin}
-            className="absolute left-4 top-4 px-3 py-2 bg-white border-2 border-black rounded-lg text-sm font-medium hover:bg-black hover:text-white transition-all shadow-lg flex items-center gap-2"
+            className="absolute left-4 top-4 px-3 py-2 bg-parallel-cream border-2 border-parallel-void rounded-lg text-sm font-medium hover:bg-parallel-purple hover:text-parallel-cream transition-all shadow-lg flex items-center gap-2"
           >
             <X className="w-4 h-4" aria-hidden="true" />
             Clear Pin
