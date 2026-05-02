@@ -167,6 +167,12 @@ export function InviteView({ onBack }: InviteViewProps) {
   const challenge = getChallenge(ripples);
   const progressPct = getProgressPct(ripples, challenge);
   const referralLink = data?.referralLink ?? 'https://getparallel.vip';
+  // The fallback link doesn't include ?ref=CODE — sharing it would credit
+  // nobody. Treat the share buttons as "still loading" until the real link
+  // (with the user's referral code) lands. Belt-and-suspenders on top of
+  // the isLoading gate, in case /referral/dashboard returns 200 with an
+  // empty referralLink.
+  const hasValidReferralLink = !!data?.referralLink && data.referralLink.includes('ref=');
   const nudge = SHARE_NUDGES[Math.min(Math.floor(ripples / 12), SHARE_NUDGES.length - 1)];
 
   const accentColor = tier?.bar ?? '#7B5EA7';
@@ -402,9 +408,12 @@ export function InviteView({ onBack }: InviteViewProps) {
             "{nudge}"
           </div>
 
-          {/* Share buttons */}
-          {isLoading ? (
-            <div className="h-12 bg-gray-100 rounded-full animate-pulse" />
+          {/* Share buttons.
+              Skeleton stays up while either (a) the dashboard call is in
+              flight, or (b) it returned without a real ?ref= link. Prevents
+              the user from sharing a code-less URL that credits nobody. */}
+          {isLoading || !hasValidReferralLink ? (
+            <div className="h-12 bg-gray-100 rounded-full animate-pulse" aria-label="Loading share link" />
           ) : (
             <div className="flex gap-3">
               <button
