@@ -10,9 +10,11 @@ import { getAccessToken } from '../utils/auth';
 import { SetupChecklist } from './SetupChecklist';
 
 // ── PRE_LAUNCH flag ────────────────────────────────────────────
-// Set to true during pre-launch period.
-// Flip to false on launch day — no deploy needed if using env var.
-const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH !== 'false';
+// Defaults to FALSE. Set VITE_PRE_LAUNCH=true in Netlify env vars
+// to show the pre-launch holding state. Remove or set to false on
+// launch day — no code deploy needed.
+// NOTE: PricingPage.tsx uses the same pattern — always keep them in sync.
+const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH === 'true';
 
 // Stock photos used behind the locked-preview blur for unactivated users.
 // These are royalty-free Unsplash portraits — never real seed photos. The
@@ -136,7 +138,7 @@ export function MatchesView({
           </div>
           <h2 className="text-3xl font-bold mb-4">You're in the pool. Matching opens soon.</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
-            We're building the matching pool right now. Invite friends, and get ready — the more people who join before launch day, the better everyone's matches will be.
+            We're building the matching pool right now. Invite friends — the bigger the pool, the better the matches.
           </p>
           <div className="space-y-3 mb-8">
             <button
@@ -366,102 +368,138 @@ export function MatchesView({
                     alt=""
                     className="w-full h-full object-cover blur-2xl scale-110"
                   />
-                  {/* Faux compatibility pill — suggests the real UI without revealing data */}
-                  <div className="absolute top-4 right-4 bg-white/95 rounded-full px-3 py-1.5 backdrop-blur-sm">
-                    <p className="text-sm font-bold">87%</p>
-                  </div>
-
-                  {/* Paywall overlay card — the conversion CTA */}
+                  {/* Paywall overlay card — honest copy, no fake data */}
                   <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center px-6">
                     <div className="bg-white rounded-2xl px-6 py-6 max-w-xs w-full text-center shadow-2xl">
                       <p className="text-xs uppercase tracking-wide text-gray-500 font-medium mb-2">
-                        Your matches are ready
+                        Matching in progress
                       </p>
                       <h3 className="text-2xl font-bold mb-2 leading-tight">
-                        Unlock your matches
+                        Your matches are coming soon
                       </h3>
                       <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-                        We've matched you with people who line up on what actually matters.
+                        The more people in the pool, the better your matches will be.
                       </p>
                       <button
                         onClick={onNavigateToPayment}
                         className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors text-sm mb-3"
                       >
-                        See who matched you →
+                        Get notified when ready →
                       </button>
-                      <p className="text-xs text-gray-400">
-                        Founding members: $79/year
-                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Secondary CTA — invite a friend. Same as before but smaller
-                  and de-emphasized since the primary CTA is now the unlock. */}
-              <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-5 text-center mt-4">
-                <p className="font-semibold mb-1 text-sm">Want better matches?</p>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                  Invite friends — every person you bring in makes the pool better for everyone.
+              {/* Referral growth callout — speed up your own matches by growing the pool */}
+              <div
+                className="rounded-2xl p-5 text-center mt-4"
+                style={{ background: 'linear-gradient(135deg, #EEEDFE 0%, #F5F2EE 100%)' }}
+              >
+                <p className="font-semibold mb-1 text-sm" style={{ color: '#534AB7' }}>
+                  // Speed up your matches
+                </p>
+                <p className="text-sm mb-4 leading-relaxed" style={{ color: '#3C3489' }}>
+                  Every person you invite grows the pool. The bigger the pool, the faster your matches appear — and the better they get.
                 </p>
                 <button
                   onClick={onNavigateToInvite || handleShareInvite}
-                  className="w-full border-2 border-black text-black py-2.5 rounded-full text-sm font-medium hover:bg-gray-100 transition-colors"
+                  className="w-full py-2.5 rounded-full text-sm font-medium transition-colors"
+                  style={{ background: '#7B5EA7', color: '#F5F2EE' }}
                 >
                   Invite a friend →
                 </button>
               </div>
             </div>
           ) : (
-            // hasActivated && matches.length === 0 — paid, waiting on backend
-            <div className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4">
-              <div className="mb-8">
-                <ParallelIcon size={64} className="text-black" />
-              </div>
-              <h2 className="text-3xl font-bold mb-4">Your matches are on their way.</h2>
-              <div className="w-full max-w-xs mb-6">
-                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            // hasActivated && matches.length === 0 — paid, waiting on backend.
+            // SetupChecklist shown here too — user may still have identity
+            // verification pending even after paying.
+            <div className="pb-8">
+              <SetupChecklist
+                accessToken={accessToken}
+                emailVerified={emailVerified}
+                isVerified={isVerified}
+              />
+              <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+                <div className="mb-6">
+                  {/* P// circle mark — locked brand mark */}
                   <div
-                    className="h-full bg-black rounded-full"
-                    style={{
-                      animation: 'matchingProgress 2.4s ease-in-out infinite',
-                    }}
-                  />
+                    className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
+                    style={{ background: '#0D0D0F' }}
+                    aria-hidden="true"
+                  >
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#F5F2EE', letterSpacing: '.02em' }}>
+                      P<span style={{ color: '#A98FD0' }}>//</span>
+                    </span>
+                  </div>
                 </div>
-                <style>{`
-                  @keyframes matchingProgress {
-                    0%   { width: 0%;   margin-left: 0%; }
-                    50%  { width: 60%;  margin-left: 20%; }
-                    100% { width: 0%;   margin-left: 100%; }
-                  }
-                `}</style>
+                <h2 className="text-3xl font-bold mb-4">Your matches are on their way.</h2>
+                <div className="w-full max-w-xs mb-6">
+                  <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-black rounded-full"
+                      style={{ animation: 'matchingProgress 2.4s ease-in-out infinite' }}
+                    />
+                  </div>
+                  <style>{`
+                    @keyframes matchingProgress {
+                      0%   { width: 0%;   margin-left: 0%; }
+                      50%  { width: 60%;  margin-left: 20%; }
+                      100% { width: 0%;   margin-left: 100%; }
+                    }
+                  `}</style>
+                </div>
+                <p className="text-gray-600 text-lg leading-relaxed mb-4 max-w-md">
+                  We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
+                </p>
+                {/* Timeout fallback — if matching never runs, user isn't stranded */}
+                <p className="text-sm text-gray-400 mb-8">
+                  Taking longer than expected?{' '}
+                  <a href="mailto:support@getparallel.vip" className="underline text-gray-500 hover:text-black transition-colors">
+                    Contact support →
+                  </a>
+                </p>
+                <button
+                  onClick={onNavigateToInvite || handleShareInvite}
+                  className="bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium mb-3"
+                >
+                  Invite a friend →
+                </button>
+                <p className="text-sm text-gray-500">
+                  The more people you invite, the more people they invite, the better everyone's matches get.
+                </p>
               </div>
-              <p className="text-gray-600 text-lg leading-relaxed mb-8 max-w-md">
-                We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
-              </p>
-              <button
-                onClick={onNavigateToInvite || handleShareInvite}
-                className="bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium mb-4"
-              >
-                Invite a friend →
-              </button>
-              <p className="text-sm text-gray-500">
-                The more people you invite, the more people they invite, the better everyone's matches get.
-              </p>
             </div>
           )
         ) : validMatches.length === 0 ? (
           // ── All caught up state ────────────────────────────────
-          <div className="py-12 max-w-md mx-auto text-center">
-            <h2 className="text-2xl mb-3">You're all caught up</h2>
-            <p className="text-gray-600 mb-8 text-base leading-relaxed">
-              You've reviewed all your current match suggestions. Check back soon — new people are added regularly.
+          // Primary CTA is "wait" not "change preferences" — that framing
+          // implies the user did something wrong. Threshold transparency
+          // note explains why matches may be fewer than expected.
+          <div className="py-12 max-w-md mx-auto text-center px-4">
+            <div className="text-3xl mb-4" aria-hidden="true">✓</div>
+            <h2 className="text-2xl font-bold mb-3">You're all caught up</h2>
+            <p className="text-gray-600 mb-4 text-base leading-relaxed">
+              You've reviewed all your current matches. New people join regularly — check back soon.
             </p>
+            {/* Threshold transparency — some matches may have been filtered below the
+                compatibility threshold without the user knowing. Surface this so they
+                understand why the screen is empty, and what they can do about it. */}
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 mb-8 text-sm text-gray-600 leading-relaxed text-left">
+              Some matches may not have appeared because their compatibility score was below the current threshold for your pool size. Adjusting your preferences can help surface more people.
+            </div>
+            <button
+              onClick={onNavigateToInvite || handleShareInvite}
+              className="w-full bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium mb-3"
+            >
+              Wait for new matches
+            </button>
             <button
               onClick={onRetakeQuestionnaire}
-              className="w-full bg-white border-2 border-black text-black px-8 py-3 rounded-full hover:bg-gray-50 transition-all mb-3"
+              className="w-full border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-full hover:border-gray-400 transition-colors text-base mb-3"
             >
-              Update Preferences
+              Adjust preferences →
             </button>
             <button
               onClick={onNavigateToInvite || handleShareInvite}
