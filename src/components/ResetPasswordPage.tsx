@@ -67,7 +67,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="flex justify-center mb-3">
-            <ParallelIcon size={32} className="text-black" />
+            <ParallelIcon size={32} className="text-parallel-purple" />
           </div>
           <p className="text-gray-500 text-sm mt-2">Verifying your reset link...</p>
         </div>
@@ -82,7 +82,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="flex justify-center mb-4">
-            <ParallelIcon size={32} className="text-black" />
+            <ParallelIcon size={32} className="text-parallel-purple" />
           </div>
           <h1 className="text-2xl font-medium mb-2">Set a new password</h1>
           <p className="text-gray-500 text-sm">Choose something secure — at least 8 characters.</p>

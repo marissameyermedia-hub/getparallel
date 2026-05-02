@@ -118,7 +118,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center">
-              <ParallelIcon size={16} className="text-white" />
+              <ParallelIcon size={16} className="text-parallel-soft-violet" />
             </div>
             <span className="font-semibold tracking-tight">Parallel</span>
           </div>
@@ -329,7 +329,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
               <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center" aria-hidden="true">
-                <ParallelIcon size={20} className="text-white" />
+                <ParallelIcon size={20} className="text-parallel-soft-violet" />
               </div>
               <button
                 onClick={closeSignInModal}

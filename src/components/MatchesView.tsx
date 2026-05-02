@@ -134,7 +134,7 @@ export function MatchesView({
       <div className="bg-white min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
           <div className="mb-8 flex justify-center">
-            <ParallelIcon size={64} className="text-black" />
+            <ParallelIcon size={64} className="text-parallel-purple" />
           </div>
           <h2 className="text-3xl font-bold mb-4">You're in the pool. Matching opens soon.</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
@@ -165,7 +165,7 @@ export function MatchesView({
       <div className="bg-white pt-20 min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md text-center">
           <div className="mb-8 flex justify-center">
-            <ParallelIcon size={64} className="text-black" />
+            <ParallelIcon size={64} className="text-parallel-purple" />
           </div>
           <h2 className="text-3xl font-bold mb-3">Finish your questionnaire to unlock your matches</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-8">

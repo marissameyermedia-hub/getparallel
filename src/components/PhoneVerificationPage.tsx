@@ -170,7 +170,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-1">
-            <ParallelIcon size={24} className="text-black" />
+            <ParallelIcon size={24} className="text-parallel-purple" />
             <h1 className="text-2xl font-medium tracking-tight">Parallel</h1>
           </div>
           <p className="text-sm text-gray-500 mt-1">

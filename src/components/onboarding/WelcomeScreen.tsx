@@ -23,7 +23,7 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
             className="text-center mb-10"
           >
             <div className="w-16 h-16 rounded-full bg-black mx-auto flex items-center justify-center mb-6">
-              <ParallelIcon size={32} className="text-white" />
+              <ParallelIcon size={32} className="text-parallel-soft-violet" />
             </div>
             <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-3 font-medium">
               Welcome to Parallel

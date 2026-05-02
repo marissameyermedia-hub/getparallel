@@ -51,7 +51,7 @@ export function SwipeableMatchView({
       <div className="min-h-[60vh] bg-white flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <div className="flex justify-center mb-6">
-            <ParallelIcon size={48} className="text-black" />
+            <ParallelIcon size={48} className="text-parallel-purple" />
           </div>
           <h2 className="text-2xl font-medium mb-3">Your match suggestions are on the way</h2>
           <p className="text-gray-600 leading-relaxed">
