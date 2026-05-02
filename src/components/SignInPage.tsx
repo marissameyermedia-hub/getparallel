@@ -131,10 +131,14 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
       {/* ── HERO ──────────────────────────────────────────────────── */}
       <section className="w-full">
         <div className="max-w-6xl mx-auto px-6 pt-16 pb-16 md:pt-20 md:pb-24">
-          <div className="grid md:grid-cols-[1.1fr_1fr] gap-12 md:gap-16 items-center">
+          {/* Anchor both columns at the top — the card stack on the right is
+              taller than the copy on the left, and items-center was pulling the
+              headline halfway down the viewport. */}
+          <div className="grid md:grid-cols-[1.1fr_1fr] gap-12 md:gap-16 items-start">
 
-            {/* Left: copy */}
-            <div>
+            {/* Left: copy. md:pt-4 nudges the headline down just enough so it
+                visually sits across from the top edge of the angled cards. */}
+            <div className="md:pt-4">
               <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-5 font-medium">
                 Professional matchmaking
               </p>
@@ -161,10 +165,12 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               </div>
             </div>
 
-            {/* Right: two match cards, one M, one F, visually overlapped */}
+            {/* Right: two match cards, one M, one F, visually overlapped.
+                Reduced max width + tamed translations so the stack stays
+                inside the hero section and doesn't dwarf the headline. */}
             <div className="relative py-4 md:py-8">
-              <div className="relative max-w-sm mx-auto">
-                <div className="md:-translate-x-6 md:-translate-y-4 md:rotate-[-3deg] transition-transform">
+              <div className="relative max-w-[320px] mx-auto">
+                <div className="md:-translate-x-4 md:rotate-[-3deg] transition-transform">
                   <PreviewMatchCard
                     name="Daniel"
                     age={31}
@@ -186,7 +192,10 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     }}
                   />
                 </div>
-                <div className="md:translate-x-8 md:-translate-y-24 md:rotate-[4deg] relative md:absolute md:inset-x-0 md:top-0 mt-6 md:mt-0 transition-transform">
+                {/* Maya: previously had md:-translate-y-24 which pushed her above
+                    the section into the navbar. -translate-y-8 keeps the overlap
+                    effect without breaking the layout. */}
+                <div className="md:translate-x-6 md:-translate-y-8 md:rotate-[4deg] relative md:absolute md:inset-x-0 md:top-0 mt-6 md:mt-0 transition-transform">
                   <PreviewMatchCard
                     name="Maya"
                     age={28}
