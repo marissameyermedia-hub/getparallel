@@ -58,14 +58,14 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 z-40"
+        className="fixed inset-0 bg-parallel-void/40 z-40"
         onClick={handleClose}
         aria-hidden="true"
       />
 
       {/* Bottom Sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-hidden animate-slide-up"
+        className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-50 max-h-[85vh] overflow-hidden animate-slide-up"
         role="dialog"
         aria-modal="true"
         aria-labelledby="app-feedback-title"
@@ -97,7 +97,7 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
                 id="app-feedback-type"
                 value={feedbackType}
                 onChange={(e) => setFeedbackType(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
               >
                 {FEEDBACK_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -146,7 +146,7 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Tell us what's on your mind..."
                 rows={6}
-                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors resize-none"
+                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors resize-none"
               />
             </div>
           </div>
@@ -158,7 +158,7 @@ export function AppFeedbackBottomSheet({ isOpen, onClose, onSubmit }: AppFeedbac
               disabled={!message.trim() || isSubmitting}
               className={`w-full px-6 py-3 rounded-full transition-all font-medium ${
                 message.trim() && !isSubmitting
-                  ? 'bg-black text-white hover:bg-gray-800'
+                  ? 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
             >

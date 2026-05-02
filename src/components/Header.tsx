@@ -11,7 +11,7 @@ interface HeaderProps {
 
 export function Header({ onNavigate, currentView, isSignedIn = true, unreadMessageCount = 0, showInbox = false }: HeaderProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+    <header className="fixed top-0 left-0 right-0 bg-parallel-cream border-b border-gray-200 z-50">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo - clickable to navigate to matches */}
         <button

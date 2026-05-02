@@ -106,7 +106,7 @@ export function AdminCaseDetail({
   if (showConfirmation) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-8 max-w-md text-center">
+        <div className="bg-parallel-cream rounded-lg border border-gray-200 p-8 max-w-md text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-green-600" />
           </div>
@@ -116,7 +116,7 @@ export function AdminCaseDetail({
           </p>
           <button
             onClick={onBack}
-            className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+            className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-lg font-medium hover:bg-parallel-purple/90 transition-colors"
           >
             Return to Dashboard
           </button>
@@ -128,7 +128,7 @@ export function AdminCaseDetail({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-parallel-cream border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center gap-4 mb-4">
             <button
@@ -169,7 +169,7 @@ export function AdminCaseDetail({
           {/* Main Content - Left Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Report Details */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-parallel-cream rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold mb-4">Report Details</h2>
               
               <div className="space-y-4">
@@ -206,7 +206,7 @@ export function AdminCaseDetail({
             </div>
 
             {/* Chat History */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-parallel-cream rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
                 Chat History
@@ -218,7 +218,7 @@ export function AdminCaseDetail({
                       <div className={`inline-block px-4 py-2 rounded-lg ${
                         msg.sender === 'accused' 
                           ? 'bg-gray-100 text-gray-900' 
-                          : 'bg-black text-white'
+                          : 'bg-parallel-purple text-parallel-cream'
                       }`}>
                         <p className="text-sm">{msg.message}</p>
                       </div>
@@ -231,7 +231,7 @@ export function AdminCaseDetail({
 
             {/* Prior Reports */}
             {caseData.priorReports > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-parallel-cream rounded-lg border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   Prior Reports ({caseData.priorReports})
@@ -261,7 +261,7 @@ export function AdminCaseDetail({
           {/* Right Column - Actions & Info */}
           <div className="space-y-6">
             {/* User Info Cards */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-parallel-cream rounded-lg border border-gray-200 p-4">
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                 <User className="w-4 h-4" />
                 Accused User
@@ -299,7 +299,7 @@ export function AdminCaseDetail({
               </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-parallel-cream rounded-lg border border-gray-200 p-4">
               <h3 className="text-sm font-semibold mb-3">Reporter</h3>
               <p className="text-sm text-gray-900">{caseData.reporterName}</p>
               <p className="text-xs text-gray-600">ID: {caseData.reporterId}</p>
@@ -326,7 +326,7 @@ export function AdminCaseDetail({
             </div>
 
             {/* Moderation Actions */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-parallel-cream rounded-lg border border-gray-200 p-4">
               <h3 className="text-sm font-semibold mb-3">Take Action</h3>
               <div className="space-y-2">
                 {[
@@ -342,7 +342,7 @@ export function AdminCaseDetail({
                     onClick={() => setSelectedAction(action.value)}
                     className={`w-full text-left px-3 py-2 rounded-lg border-2 text-sm transition-all ${
                       selectedAction === action.value
-                        ? 'border-black bg-gray-50'
+                        ? 'border-parallel-void bg-gray-50'
                         : `${action.color} hover:border-gray-400`
                     }`}
                   >
@@ -353,27 +353,27 @@ export function AdminCaseDetail({
             </div>
 
             {/* Internal Notes */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-parallel-cream rounded-lg border border-gray-200 p-4">
               <h3 className="text-sm font-semibold mb-3">Internal Notes</h3>
               <textarea
                 value={internalNotes}
                 onChange={(e) => setInternalNotes(e.target.value)}
                 placeholder="Document your reasoning and findings..."
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black resize-none text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple resize-none text-sm"
               />
             </div>
 
             {/* Response to User (if applicable) */}
             {selectedAction && ['warning', 'temp-suspend', 'request-response'].includes(selectedAction) && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="bg-parallel-cream rounded-lg border border-gray-200 p-4">
                 <h3 className="text-sm font-semibold mb-3">Message to User</h3>
                 <textarea
                   value={responseToUser}
                   onChange={(e) => setResponseToUser(e.target.value)}
                   placeholder="This message will be sent to the accused user..."
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black resize-none text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple resize-none text-sm"
                 />
               </div>
             )}
@@ -382,7 +382,7 @@ export function AdminCaseDetail({
             <button
               onClick={handleTakeAction}
               disabled={!selectedAction || !internalNotes.trim()}
-              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-lg font-medium hover:bg-parallel-purple/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Submit Action
             </button>

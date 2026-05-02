@@ -236,7 +236,7 @@ export function SetupChecklist({
   // ── expanded card ────────────────────────────────────────────────
   return (
     <div className="max-w-md mx-auto px-4 pt-3" id="setup-checklist-card">
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="bg-parallel-cream border border-gray-200 rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900 text-[15px]">Your matchmaking checklist</h2>
@@ -354,7 +354,7 @@ function CheckCircle({ done = false }: { done?: boolean }) {
         className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0"
         aria-hidden="true"
       >
-        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+        <Check className="w-3 h-3 text-parallel-cream" strokeWidth={3} />
       </span>
     );
   }

@@ -213,8 +213,8 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
   const selectMonthly = () => setBilling('monthly');
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="sticky top-0 bg-white border-b border-gray-100 z-10 px-6 py-3">
+    <div className="min-h-screen bg-parallel-cream">
+      <div className="sticky top-0 bg-parallel-cream border-b border-gray-100 z-10 px-6 py-3">
         <button
           onClick={onBack}
           className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -231,7 +231,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           <motion.div
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-5 bg-black text-white rounded-2xl p-4"
+            className="mb-5 bg-parallel-purple text-parallel-cream rounded-2xl p-4"
           >
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Founding pricing ends at launch</p>
             <p className="text-sm leading-relaxed">
@@ -266,7 +266,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
               'Start messaging',
             ].map((f) => (
               <li key={f} className="flex items-start gap-2">
-                <Check size={14} className="text-black mt-0.5 flex-shrink-0" />
+                <Check size={14} className="text-parallel-void mt-0.5 flex-shrink-0" />
                 <span className="text-sm text-gray-800">{f}</span>
               </li>
             ))}
@@ -290,17 +290,17 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             onClick={selectAnnual}
             className={`w-full text-left rounded-2xl p-4 border-2 transition-all ${
               billing === 'annual'
-                ? 'border-black bg-black text-white'
-                : 'border-gray-200 bg-white text-black hover:border-gray-400'
+                ? 'border-parallel-purple bg-parallel-purple text-parallel-cream'
+                : 'border-gray-200 bg-parallel-cream text-parallel-void hover:border-gray-400'
             }`}
           >
             <div className="flex items-start gap-3">
               {/* Radio indicator */}
               <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1 flex items-center justify-center ${
-                billing === 'annual' ? 'border-white bg-white' : 'border-gray-300 bg-white'
+                billing === 'annual' ? 'border-white bg-parallel-cream' : 'border-gray-300 bg-parallel-cream'
               }`}>
                 {billing === 'annual' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-black" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-parallel-void" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -313,13 +313,13 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   {PRE_LAUNCH && (
                     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      billing === 'annual' ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-700'
+                      billing === 'annual' ? 'bg-parallel-cream/15 text-parallel-cream' : 'bg-gray-100 text-gray-700'
                     }`}>
                       ⭐ Founding Rate
                     </span>
                   )}
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                    billing === 'annual' ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-700'
+                    billing === 'annual' ? 'bg-parallel-cream/15 text-parallel-cream' : 'bg-gray-100 text-gray-700'
                   }`}>
                     Save 73%
                   </span>
@@ -339,16 +339,16 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             onClick={selectMonthly}
             className={`w-full text-left rounded-2xl p-4 border-2 transition-all ${
               billing === 'monthly'
-                ? 'border-black bg-black text-white'
-                : 'border-gray-200 bg-white text-black hover:border-gray-400'
+                ? 'border-parallel-purple bg-parallel-purple text-parallel-cream'
+                : 'border-gray-200 bg-parallel-cream text-parallel-void hover:border-gray-400'
             }`}
           >
             <div className="flex items-start gap-3">
               <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1 flex items-center justify-center ${
-                billing === 'monthly' ? 'border-white bg-white' : 'border-gray-300 bg-white'
+                billing === 'monthly' ? 'border-white bg-parallel-cream' : 'border-gray-300 bg-parallel-cream'
               }`}>
                 {billing === 'monthly' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-black" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-parallel-void" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -387,7 +387,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             className="relative mb-3"
           >
             {processing && (
-              <div className="absolute inset-0 z-10 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-2xl">
+              <div className="absolute inset-0 z-10 bg-parallel-cream/90 backdrop-blur-sm flex items-center justify-center rounded-2xl">
                 <div className="flex items-center gap-2 text-gray-700">
                   <Loader size={18} className="animate-spin" />
                   Confirming your subscription…
@@ -415,7 +415,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             <button
               type="button"
               onClick={() => setShowDetails(v => !v)}
-              className="w-full flex items-center justify-between text-sm text-gray-600 hover:text-black transition-colors"
+              className="w-full flex items-center justify-between text-sm text-gray-600 hover:text-parallel-void transition-colors"
             >
               <span>Auto-renewal details &amp; cancellation</span>
               {showDetails ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -465,7 +465,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                   <button
                     type="button"
                     onClick={() => onNavigate('terms-service')}
-                    className="underline hover:text-black transition-colors"
+                    className="underline hover:text-parallel-void transition-colors"
                   >
                     Terms of Service
                   </button>
@@ -473,7 +473,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                   <button
                     type="button"
                     onClick={() => onNavigate('privacy-policy')}
-                    className="underline hover:text-black transition-colors"
+                    className="underline hover:text-parallel-void transition-colors"
                   >
                     Privacy Policy
                   </button>
@@ -481,7 +481,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                   <button
                     type="button"
                     onClick={() => onNavigate('refund-policy')}
-                    className="underline hover:text-black transition-colors"
+                    className="underline hover:text-parallel-void transition-colors"
                   >
                     Refund Policy
                   </button>

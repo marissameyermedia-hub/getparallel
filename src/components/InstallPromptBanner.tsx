@@ -36,8 +36,8 @@ function detectDevice(): DeviceType {
 }
 
 function InstallInstructions({ device }: { device: DeviceType }) {
-  const stepStyle = "flex items-start gap-3 p-3 bg-white rounded-xl border border-gray-100";
-  const numStyle = "w-6 h-6 bg-black text-white text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5";
+  const stepStyle = "flex items-start gap-3 p-3 bg-parallel-cream rounded-xl border border-gray-100";
+  const numStyle = "w-6 h-6 bg-parallel-purple text-parallel-cream text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0 mt-0.5";
 
   if (device === 'ios-safari') {
     return (
@@ -273,12 +273,12 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/40 z-40"
+        className="fixed inset-0 bg-parallel-void/40 z-40"
         onClick={handleDismiss}
         aria-hidden="true"
       />
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 shadow-2xl"
+        className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-50 shadow-2xl"
         role="dialog"
         aria-modal="true"
         aria-labelledby="install-prompt-title"
@@ -293,10 +293,10 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
           </button>
 
           <div className="px-6 pt-6 pb-8">
-            <div className="inline-block bg-black text-white text-xs font-semibold px-3 py-1 rounded-full mb-4">
+            <div className="inline-block bg-parallel-purple text-parallel-cream text-xs font-semibold px-3 py-1 rounded-full mb-4">
               BETTER EXPERIENCE
             </div>
-            <h2 id="install-prompt-title" className="text-2xl font-semibold text-black mb-2">
+            <h2 id="install-prompt-title" className="text-2xl font-semibold text-parallel-void mb-2">
               Add Parallel to your home screen
             </h2>
             <p className="text-gray-600 text-base leading-relaxed mb-6">
@@ -309,7 +309,7 @@ export function InstallPromptBanner({ hasCompletedOnboarding }: InstallPromptBan
             {canShowNativePrompt && (device === 'android-chrome') && (
               <button
                 onClick={handleNativeInstall}
-                className="w-full bg-black text-white px-6 py-4 rounded-full hover:bg-gray-800 transition-all font-medium text-base mb-3"
+                className="w-full bg-parallel-purple text-parallel-cream px-6 py-4 rounded-full hover:bg-parallel-purple/90 transition-all font-medium text-base mb-3"
               >
                 Add to Home Screen
               </button>

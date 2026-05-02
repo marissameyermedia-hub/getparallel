@@ -120,8 +120,8 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             aria-label={`${value} of 5`}
             className={`w-12 h-12 rounded-full border-2 transition-all ${
               rating !== null && value <= rating
-                ? 'bg-black text-white border-black'
-                : 'bg-white text-gray-500 border-gray-300 hover:border-gray-400'
+                ? 'bg-parallel-purple text-parallel-cream border-parallel-void'
+                : 'bg-parallel-cream text-gray-500 border-gray-300 hover:border-gray-400'
             }`}
           >
             {value}
@@ -133,12 +133,12 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-parallel-void/50 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="date-review-title"
     >
-      <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-parallel-cream rounded-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -166,8 +166,8 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
                 aria-checked={wouldGoAgain === true}
                 className={`flex-1 px-6 py-3 rounded-full border-2 transition-all ${
                   wouldGoAgain === true
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                    ? 'bg-parallel-purple text-parallel-cream border-parallel-void'
+                    : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
                 Yes
@@ -178,8 +178,8 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
                 aria-checked={wouldGoAgain === false}
                 className={`flex-1 px-6 py-3 rounded-full border-2 transition-all ${
                   wouldGoAgain === false
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                    ? 'bg-parallel-purple text-parallel-cream border-parallel-void'
+                    : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
                 No
@@ -227,9 +227,9 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
                     className={`px-4 py-2 rounded-full border-2 transition-all ${
                       selectedReasons.includes(reason.id)
                         ? reason.isSafety
-                          ? 'bg-red-600 text-white border-red-600'
-                          : 'bg-black text-white border-black'
-                        : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                          ? 'bg-red-600 text-parallel-cream border-red-600'
+                          : 'bg-parallel-purple text-parallel-cream border-parallel-void'
+                        : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
                     }`}
                   >
                     {reason.label}
@@ -276,7 +276,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             disabled={!canSubmit}
             className={`w-full px-6 py-3 rounded-full transition-all ${
               canSubmit
-                ? 'bg-black text-white hover:bg-gray-800'
+                ? 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >

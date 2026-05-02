@@ -48,7 +48,7 @@ export function SwipeableMatchView({
 
   if (!matches || matches.length === 0 || !currentMatch) {
     return (
-      <div className="min-h-[60vh] bg-white flex items-center justify-center p-8">
+      <div className="min-h-[60vh] bg-parallel-cream flex items-center justify-center p-8">
         <div className="text-center max-w-md">
           <div className="flex justify-center mb-6">
             <ParallelIcon size={48} className="text-parallel-purple" />
@@ -82,7 +82,7 @@ export function SwipeableMatchView({
   const showCounter = matches.length > 1;
 
   return (
-    <div className="bg-white flex flex-col">
+    <div className="bg-parallel-cream flex flex-col">
       <div className="px-4 pt-4 pb-2 max-w-md mx-auto w-full">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -96,7 +96,7 @@ export function SwipeableMatchView({
         </div>
         <div className="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-black rounded-full transition-all duration-300"
+            className="h-full bg-parallel-void rounded-full transition-all duration-300"
             style={{ width: showCounter ? `${progress}%` : '100%' }}
           />
         </div>
@@ -105,7 +105,7 @@ export function SwipeableMatchView({
       {canUndo && (
         <div className="flex justify-start px-4 pt-1 pb-0 max-w-md mx-auto w-full">
           <button onClick={handleUndo}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-black transition-colors"
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-parallel-void transition-colors"
           >
             <Undo2 size={14} />
             <span>Undo last pass</span>

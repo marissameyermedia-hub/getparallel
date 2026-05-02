@@ -104,17 +104,17 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
   };
 
   return (
-    <div className="min-h-screen bg-white pt-6 pb-24 px-6">
+    <div className="min-h-screen bg-parallel-cream pt-6 pb-24 px-6">
       <div className="max-w-2xl mx-auto">
         <button onClick={onBack} className="mb-6 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Go back">
           <ChevronLeft size={28} aria-hidden="true" />
         </button>
         <h1 className="mb-3">Pause My Profile</h1>
         <p className="text-gray-600 mb-8">Take a break without losing your matches or data</p>
-        <div className={`rounded-2xl p-6 mb-6 ${isPaused ? 'bg-gray-100' : 'bg-black text-white'}`}>
+        <div className={`rounded-2xl p-6 mb-6 ${isPaused ? 'bg-gray-100' : 'bg-parallel-purple text-parallel-cream'}`}>
           <div className="flex items-center gap-3 mb-3">
-            {isPaused ? <Pause className="w-6 h-6 text-gray-600" aria-hidden="true" /> : <Play className="w-6 h-6 text-white" aria-hidden="true" />}
-            <h2 className={isPaused ? 'text-black' : 'text-white'}>{isPaused ? 'Profile is Paused' : 'Profile is Active'}</h2>
+            {isPaused ? <Pause className="w-6 h-6 text-gray-600" aria-hidden="true" /> : <Play className="w-6 h-6 text-parallel-cream" aria-hidden="true" />}
+            <h2 className={isPaused ? 'text-parallel-void' : 'text-parallel-cream'}>{isPaused ? 'Profile is Paused' : 'Profile is Active'}</h2>
           </div>
           <p className={isPaused ? 'text-gray-700' : 'text-gray-300'}>
             {isPaused ? "Your profile is hidden. Messaging is disabled until you unpause." : 'Your profile is visible and you can receive new matches.'}
@@ -139,7 +139,7 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
             ))}
           </div>
         </div>
-        <button onClick={handleTogglePause} className="w-full py-4 px-6 rounded-full bg-black text-white hover:bg-gray-800 transition-colors">
+        <button onClick={handleTogglePause} className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90 transition-colors">
           {isPaused ? 'Resume My Profile' : 'Pause My Profile'}
         </button>
 
@@ -166,12 +166,12 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
 
         {showConfirmation && (
           <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
+            className="fixed inset-0 bg-parallel-void/50 flex items-center justify-center p-6 z-50"
             role="dialog"
             aria-modal="true"
             aria-labelledby="pause-confirm-title"
           >
-            <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+            <div className="bg-parallel-cream rounded-3xl p-6 max-w-md w-full">
               <h3 id="pause-confirm-title" className="mb-3">Pause your profile?</h3>
               <p className="text-gray-700 mb-3">While paused:</p>
               <ul className="text-sm text-gray-600 space-y-2 mb-6">
@@ -181,25 +181,25 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
                 <li className="flex items-start gap-2"><span className="text-gray-400 mt-0.5" aria-hidden="true">•</span>Unpause anytime to reactivate instantly</li>
               </ul>
               <div className="flex gap-3">
-                <button onClick={() => setShowConfirmation(false)} className="flex-1 py-3 px-6 rounded-full border-2 border-gray-200 hover:border-black transition-colors">Cancel</button>
-                <button onClick={confirmPause} className="flex-1 py-3 px-6 rounded-full bg-black text-white hover:bg-gray-800 transition-colors">Pause Profile</button>
+                <button onClick={() => setShowConfirmation(false)} className="flex-1 py-3 px-6 rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors">Cancel</button>
+                <button onClick={confirmPause} className="flex-1 py-3 px-6 rounded-full bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90 transition-colors">Pause Profile</button>
               </div>
             </div>
           </div>
         )}
         {showCancelConfirm && (
           <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50"
+            className="fixed inset-0 bg-parallel-void/50 flex items-center justify-center p-6 z-50"
             role="dialog"
             aria-modal="true"
             aria-labelledby="cancel-confirm-title"
           >
-            <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+            <div className="bg-parallel-cream rounded-3xl p-6 max-w-md w-full">
               <h3 id="cancel-confirm-title" className="mb-3">Cancel Subscription?</h3>
               <p className="text-gray-700 mb-6">Your access continues until the end of your current billing period. Your matches and questionnaire data are saved — you can resubscribe anytime.</p>
               <div className="flex gap-3">
-                <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-3 px-6 rounded-full border-2 border-gray-200 hover:border-black transition-colors">Keep subscription</button>
-                <button onClick={handleCancelSubscription} className="flex-1 py-3 px-6 rounded-full bg-black text-white hover:bg-gray-800 transition-colors">
+                <button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-3 px-6 rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors">Keep subscription</button>
+                <button onClick={handleCancelSubscription} className="flex-1 py-3 px-6 rounded-full bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90 transition-colors">
                   {cancelLoading ? 'Canceling...' : 'Cancel Subscription'}
                 </button>
               </div>

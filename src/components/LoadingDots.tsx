@@ -4,7 +4,7 @@ export function LoadingDots() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="w-2 h-2 rounded-full bg-black inline-block"
+          className="w-2 h-2 rounded-full bg-parallel-void inline-block"
           style={{
             animation: 'paralleldots 1.2s ease-in-out infinite',
             animationDelay: `${i * 0.2}s`,

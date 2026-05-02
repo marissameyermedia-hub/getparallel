@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-white flex items-center justify-center px-6">
+        <div className="min-h-screen bg-parallel-cream flex items-center justify-center px-6">
           <div className="max-w-md w-full text-center">
             <div className="w-20 h-20 rounded-full bg-red-100 mx-auto flex items-center justify-center mb-4">
               <span className="text-4xl">⚠️</span>
@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-xs text-gray-400 mb-6">Screenshot this and send to Marissa</p>
             <button
               onClick={() => { localStorage.clear(); window.location.href = '/'; }}
-              className="w-full bg-black text-white py-4 rounded-full font-semibold"
+              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-semibold"
             >
               Restart app
             </button>

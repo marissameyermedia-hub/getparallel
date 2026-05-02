@@ -155,7 +155,7 @@ export function InAppNotificationBanner({
             dismiss();
             onOpenChat(banner.matchId);
           }}
-          className="w-full flex items-center gap-3 bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-lg hover:shadow-xl transition-shadow text-left"
+          className="w-full flex items-center gap-3 bg-parallel-cream border border-gray-200 rounded-2xl px-4 py-3 shadow-lg hover:shadow-xl transition-shadow text-left"
           aria-label={`New message from ${banner.senderName} — tap to open`}
         >
           {/* Avatar */}
@@ -174,7 +174,7 @@ export function InAppNotificationBanner({
             )}
             {/* Unread dot */}
             <span
-              className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-black rounded-full border-2 border-white"
+              className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-parallel-void rounded-full border-2 border-white"
               aria-hidden="true"
             />
           </div>

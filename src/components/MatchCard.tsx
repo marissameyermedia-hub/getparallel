@@ -119,7 +119,7 @@ export function MatchCard({
           handleCardClick();
         }
       }}
-      className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden cursor-pointer transition-all active:scale-[0.99] active:bg-gray-50 hover:border-gray-300"
+      className="bg-parallel-cream rounded-2xl border-2 border-gray-200 overflow-hidden cursor-pointer transition-all active:scale-[0.99] active:bg-gray-50 hover:border-gray-300"
     >
       {/* Photo zone — single photo, overlay with name/age/height/location,
           compatibility badge top right, verified badge top left */}
@@ -135,11 +135,11 @@ export function MatchCard({
               <div className="w-full h-full bg-gradient-to-br from-gray-300 via-gray-200 to-gray-300" />
             )}
             <div className="absolute inset-0 flex items-center justify-center">
-              <Lock size={48} className="text-white" />
+              <Lock size={48} className="text-parallel-cream" />
             </div>
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 z-10">
-              <p className="text-white text-xl font-semibold">{user.age} years old</p>
-              <p className="text-white/70 text-sm mt-0.5">Subscribe to unlock your matches →</p>
+              <p className="text-parallel-cream text-xl font-semibold">{user.age} years old</p>
+              <p className="text-parallel-cream/70 text-sm mt-0.5">Subscribe to unlock your matches →</p>
             </div>
           </div>
         ) : (
@@ -148,7 +148,7 @@ export function MatchCard({
               <img src={primaryPhoto} alt={user.name} className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                <div className="w-20 h-20 bg-gray-400 rounded-full flex items-center justify-center text-white text-2xl font-semibold">
+                <div className="w-20 h-20 bg-gray-400 rounded-full flex items-center justify-center text-parallel-cream text-2xl font-semibold">
                   {getInitials(user.name)}
                 </div>
               </div>
@@ -157,26 +157,26 @@ export function MatchCard({
             {/* Verified badge — top left */}
             {user.isVerified && (
               <div className="absolute top-3 left-3 bg-blue-500 rounded-full p-1.5 shadow-lg z-20">
-                <ShieldCheck size={16} className="text-white" />
+                <ShieldCheck size={16} className="text-parallel-cream" />
               </div>
             )}
 
             {/* "Interested in you" chip — shown only if the other user liked first */}
             {hasLikedMe && !user.isVerified && (
-              <div className="absolute top-3 left-3 bg-white text-black text-xs font-medium px-2 py-1 rounded-full z-10">
+              <div className="absolute top-3 left-3 bg-parallel-cream text-parallel-void text-xs font-medium px-2 py-1 rounded-full z-10">
                 ❤️ Interested in you
               </div>
             )}
 
             {/* Name, age, height, location overlay at bottom of photo */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 z-10">
-              <p className="text-white text-xl font-semibold leading-tight">
+              <p className="text-parallel-cream text-xl font-semibold leading-tight">
                 {user.name}, {user.age}{heightDisplay ? ` · ${heightDisplay}` : ''}
               </p>
               {locationLine && (
                 <div className="flex items-center gap-1 mt-1">
-                  <MapPin size={12} className="text-white/70 flex-shrink-0" />
-                  <p className="text-white/80 text-xs">{locationLine}</p>
+                  <MapPin size={12} className="text-parallel-cream/70 flex-shrink-0" />
+                  <p className="text-parallel-cream/80 text-xs">{locationLine}</p>
                 </div>
               )}
             </div>
@@ -184,7 +184,7 @@ export function MatchCard({
         )}
 
         {/* Compatibility badge — top right */}
-        <div className="absolute top-3 right-3 bg-white rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200 z-20">
+        <div className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200 z-20">
           <div className="text-center">
             <div className="text-base font-bold leading-none">{compatibilityScore}%</div>
             <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">{getMatchLabel(compatibilityScore)}</div>
@@ -197,7 +197,7 @@ export function MatchCard({
         <div className="p-5 space-y-3">
           <button
             onClick={handleUnlockClick}
-            className="w-full bg-black text-white rounded-full hover:bg-gray-800 transition-all font-medium text-base py-4 px-6"
+            className="w-full bg-parallel-purple text-parallel-cream rounded-full hover:bg-parallel-purple/90 transition-all font-medium text-base py-4 px-6"
           >
             Unlock who's waiting for you →
           </button>
@@ -221,7 +221,7 @@ export function MatchCard({
                   const raw = breakdown[label];
                   const hasScore = typeof raw === 'number' && raw > 0;
                   const score = hasScore ? (raw as number) : 0;
-                  const barColor = CATEGORY_COLORS[label] || 'bg-black';
+                  const barColor = CATEGORY_COLORS[label] || 'bg-parallel-void';
 
                   return (
                     <div key={label}>
@@ -260,7 +260,7 @@ export function MatchCard({
               onClick={handleLikeClick}
               disabled={isLiked}
               className={`flex-1 h-12 rounded-full transition-all flex items-center justify-center gap-2 font-medium ${
-                isLiked ? 'bg-red-500 text-white cursor-default' : 'bg-black text-white hover:bg-gray-800'
+                isLiked ? 'bg-red-500 text-parallel-cream cursor-default' : 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
               }`}
             >
               <Heart size={18} className={isLiked ? 'fill-current' : ''} />

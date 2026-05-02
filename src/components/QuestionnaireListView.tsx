@@ -306,7 +306,7 @@ export function QuestionnaireListView({
     // height. z-[60] keeps it above the InAppNotificationBanner.
     return (
       <div
-        className="fixed inset-0 z-[60] bg-white flex flex-col"
+        className="fixed inset-0 z-[60] bg-parallel-cream flex flex-col"
         style={{ height: '100dvh', overflow: 'hidden' }}
       >
         <QuestionScreen
@@ -329,10 +329,10 @@ export function QuestionnaireListView({
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="sticky top-0 bg-white border-b border-gray-100 z-10">
+    <div className="min-h-screen bg-parallel-cream">
+      <div className="sticky top-0 bg-parallel-cream border-b border-gray-100 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={onClose} className="flex items-center gap-1 text-sm text-gray-600 hover:text-black transition-colors p-2 -ml-2">
+          <button onClick={onClose} className="flex items-center gap-1 text-sm text-gray-600 hover:text-parallel-void transition-colors p-2 -ml-2">
             <ChevronLeft size={18} aria-hidden="true" />
             Back
           </button>
@@ -348,7 +348,7 @@ export function QuestionnaireListView({
             <span className="text-sm font-semibold">{completionPct}%</span>
           </div>
           <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-full bg-black rounded-full transition-all" style={{ width: `${completionPct}%` }} />
+            <div className="h-full bg-parallel-void rounded-full transition-all" style={{ width: `${completionPct}%` }} />
           </div>
           {completionPct < 100 && (
             <p className="text-xs text-gray-400 mt-2">More complete answers = better matches. Tap any section to edit.</p>
@@ -372,14 +372,14 @@ export function QuestionnaireListView({
                   const isExpanded = expandedSection === section.id;
 
                   return (
-                    <div key={section.id} className="bg-white border-2 border-gray-200 rounded-2xl overflow-hidden">
+                    <div key={section.id} className="bg-parallel-cream border-2 border-gray-200 rounded-2xl overflow-hidden">
                       <button
                         onClick={() => setExpandedSection(isExpanded ? null : section.id)}
                         className="w-full px-4 py-4 flex items-center gap-3 hover:bg-gray-50 transition-colors text-left"
                       >
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${sectionComplete ? 'bg-black' : 'bg-gray-200'}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${sectionComplete ? 'bg-parallel-void' : 'bg-gray-200'}`}>
                           {sectionComplete
-                            ? <Check size={12} className="text-white" />
+                            ? <Check size={12} className="text-parallel-cream" />
                             : <span className="text-xs text-gray-500">{sectionAnswered}</span>
                           }
                         </div>
@@ -404,7 +404,7 @@ export function QuestionnaireListView({
                                 onClick={() => handleEditQuestion(question)}
                                 className={`w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors text-left ${!isLast ? 'border-b border-gray-100' : ''}`}
                               >
-                                <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${answered ? 'bg-black' : 'bg-gray-300'}`} />
+                                <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${answered ? 'bg-parallel-void' : 'bg-gray-300'}`} />
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm text-gray-800 leading-snug">{question.text}</p>
                                   <p className={`text-xs mt-0.5 truncate ${answered ? 'text-gray-500' : 'text-gray-300 italic'}`}>{summary}</p>
@@ -419,7 +419,7 @@ export function QuestionnaireListView({
                               const toEdit = firstUnanswered || sectionQuestions[0];
                               handleEditQuestion(toEdit);
                             }}
-                            className="w-full px-4 py-3 text-center text-xs text-black font-medium hover:bg-gray-50 transition-colors border-t border-gray-100"
+                            className="w-full px-4 py-3 text-center text-xs text-parallel-void font-medium hover:bg-gray-50 transition-colors border-t border-gray-100"
                           >
                             {sectionComplete ? 'Edit this section →' : 'Continue this section →'}
                           </button>

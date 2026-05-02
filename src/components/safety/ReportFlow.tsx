@@ -103,14 +103,14 @@ export function ReportFlow({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-parallel-void/60 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="report-flow-title"
     >
-      <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-parallel-cream rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-parallel-cream border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 id="report-flow-title" className="text-xl font-semibold">
             {step === 'confirmation' ? 'Report Submitted' : 'Report User'}
           </h2>
@@ -128,7 +128,7 @@ export function ReportFlow({
           <div className="p-6 space-y-6">
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
-                Reporting: <span className="font-medium text-black">{reportedUserName}</span>
+                Reporting: <span className="font-medium text-parallel-void">{reportedUserName}</span>
               </p>
               <p className="text-sm text-gray-600">
                 Your report is confidential and will be reviewed by our Trust & Safety team within 24-48 hours.
@@ -145,7 +145,7 @@ export function ReportFlow({
                   onClick={() => setCategory(cat)}
                   className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
                     category === cat
-                      ? 'border-black bg-gray-50'
+                      ? 'border-parallel-void bg-gray-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -157,7 +157,7 @@ export function ReportFlow({
             <button
               onClick={() => setStep('details')}
               disabled={!category}
-              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-lg font-medium hover:bg-parallel-purple/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Continue
             </button>
@@ -169,7 +169,7 @@ export function ReportFlow({
           <div className="p-6 space-y-6">
             <button
               onClick={() => setStep('category')}
-              className="text-sm text-gray-600 hover:text-black"
+              className="text-sm text-gray-600 hover:text-parallel-void"
             >
               ← Back
             </button>
@@ -189,7 +189,7 @@ export function ReportFlow({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Provide as much detail as possible. Include dates, times, and specific behaviors if relevant."
                 rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black resize-none text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple resize-none text-sm"
               />
               <p className="text-xs text-gray-500">
                 {description.length}/1000 characters
@@ -242,7 +242,7 @@ export function ReportFlow({
                       onClick={() => setFeelsUnsafe(true)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         feelsUnsafe
-                          ? 'bg-red-600 text-white'
+                          ? 'bg-red-600 text-parallel-cream'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -252,7 +252,7 @@ export function ReportFlow({
                       onClick={() => setFeelsUnsafe(false)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                         !feelsUnsafe
-                          ? 'bg-black text-white'
+                          ? 'bg-parallel-purple text-parallel-cream'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
@@ -277,7 +277,7 @@ export function ReportFlow({
             <button
               onClick={handleSubmit}
               disabled={!description.trim() || description.length > 1000}
-              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-lg font-medium hover:bg-parallel-purple/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               Submit Report
             </button>
@@ -321,7 +321,7 @@ export function ReportFlow({
 
             <button
               onClick={handleClose}
-              className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+              className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-lg font-medium hover:bg-parallel-purple/90 transition-colors"
             >
               Close
             </button>

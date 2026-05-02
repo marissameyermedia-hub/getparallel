@@ -9,12 +9,12 @@ interface AppHeaderProps {
 
 export function AppHeader({ onNavigate }: AppHeaderProps) {
   return (
-    <div className="w-full bg-white border-b border-gray-100 py-3 px-5">
+    <div className="w-full bg-parallel-cream border-b border-gray-100 py-3 px-5">
       <div className="max-w-7xl mx-auto flex items-center">
         <button
           onClick={onNavigate}
           disabled={!onNavigate}
-          className="flex items-center justify-center w-9 h-9 rounded-full bg-black hover:opacity-80 transition-opacity disabled:pointer-events-none"
+          className="flex items-center justify-center w-9 h-9 rounded-full bg-parallel-void hover:opacity-80 transition-opacity disabled:pointer-events-none"
           aria-label="Parallel — go to home"
         >
           {/* P// circle mark — locked brand mark for in-app nav */}

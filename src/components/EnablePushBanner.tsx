@@ -132,7 +132,7 @@ export function EnablePushBanner({ accessToken }: EnablePushBannerProps) {
 
   return (
     <div
-      className="fixed top-16 left-3 right-3 z-30 bg-black text-white rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3"
+      className="fixed top-16 left-3 right-3 z-30 bg-parallel-purple text-parallel-cream rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3"
       role="region"
       aria-label="Notification setup"
     >
@@ -143,7 +143,7 @@ export function EnablePushBanner({ accessToken }: EnablePushBannerProps) {
       <button
         onClick={handleEnable}
         disabled={isEnabling}
-        className="bg-white text-black text-sm font-semibold px-3 py-1.5 rounded-full disabled:opacity-50 flex-shrink-0"
+        className="bg-parallel-cream text-parallel-void text-sm font-semibold px-3 py-1.5 rounded-full disabled:opacity-50 flex-shrink-0"
         aria-label="Enable push notifications"
       >
         {isEnabling ? '...' : 'Enable'}

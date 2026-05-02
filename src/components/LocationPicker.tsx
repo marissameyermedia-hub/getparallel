@@ -205,7 +205,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
             type="button"
             onClick={handleUseCurrentLocation}
             disabled={isGettingLocation}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-parallel-purple text-parallel-cream rounded-xl hover:bg-parallel-purple/90 transition-colors disabled:opacity-50"
           >
             {isGettingLocation ? (
               <>
@@ -223,7 +223,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
           <button
             type="button"
             onClick={() => setMode('search')}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-gray-900 border-2 border-gray-300 rounded-xl hover:border-gray-400 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-parallel-cream text-gray-900 border-2 border-gray-300 rounded-xl hover:border-gray-400 transition-colors"
           >
             <Search className="w-5 h-5" />
             Search for a city
@@ -241,7 +241,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for your city..."
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-black focus:outline-none"
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-parallel-purple focus:outline-none"
             />
             {isSearching && (
               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
@@ -250,7 +250,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
 
           {/* Search results dropdown */}
           {showDropdown && searchResults.length > 0 && (
-            <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
+            <div className="absolute z-10 w-full mt-2 bg-parallel-cream border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-y-auto">
               {searchResults.slice(0, 5).map((result, index) => (
                 <button
                   key={index}

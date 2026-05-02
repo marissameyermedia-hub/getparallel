@@ -131,7 +131,7 @@ export function MatchesView({
   // ── PRE_LAUNCH holding state — shown above everything else ────
   if (PRE_LAUNCH) {
     return (
-      <div className="bg-white min-h-screen flex items-center justify-center px-6">
+      <div className="bg-parallel-cream min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
           <div className="mb-8 flex justify-center">
             <ParallelIcon size={64} className="text-parallel-purple" />
@@ -143,13 +143,13 @@ export function MatchesView({
           <div className="space-y-3 mb-8">
             <button
               onClick={onNavigateToInvite || handleShareInvite}
-              className="w-full bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
+              className="w-full bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium"
             >
               Invite a friend →
             </button>
             <button
               onClick={onNavigateToPayment}
-              className="w-full border-2 border-black text-black px-8 py-4 rounded-full hover:bg-gray-50 transition-colors text-base font-medium"
+              className="w-full border-2 border-parallel-void text-parallel-void px-8 py-4 rounded-full hover:bg-gray-50 transition-colors text-base font-medium"
             >
               Lock in founding pricing →
             </button>
@@ -162,7 +162,7 @@ export function MatchesView({
   // ── Incomplete questionnaire state ────────────────────────────
   if (isQuestionnaireIncomplete) {
     return (
-      <div className="bg-white pt-20 min-h-screen flex items-center justify-center px-4">
+      <div className="bg-parallel-cream pt-20 min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md text-center">
           <div className="mb-8 flex justify-center">
             <ParallelIcon size={64} className="text-parallel-purple" />
@@ -177,14 +177,14 @@ export function MatchesView({
             </div>
             <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-black transition-all"
+                className="h-full bg-parallel-void transition-all"
                 style={{ width: `${Math.min((answeredQuestionsCount / totalQuestions) * 100, 100)}%` }}
               />
             </div>
           </div>
           <button
             onClick={onViewQuestionnaire}
-            className="w-full bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
+            className="w-full bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium"
           >
             Continue questionnaire →
           </button>
@@ -249,7 +249,7 @@ export function MatchesView({
   };
 
   return (
-    <div className="bg-white">
+    <div className="bg-parallel-cream">
       {/* Unified onboarding checklist: replaces the old standalone yellow
           email banner, the black "Verify your identity" bar, and the
           auto-firing PWA install prompt. One card, ranked by priority,
@@ -274,15 +274,15 @@ export function MatchesView({
                   alt="Your match"
                   className="w-full aspect-[3/4] object-cover blur-md scale-105"
                 />
-                <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center text-center px-6">
-                  <div className="bg-white/95 rounded-2xl px-6 py-5 max-w-xs">
+                <div className="absolute inset-0 bg-parallel-void/30 flex flex-col items-center justify-center text-center px-6">
+                  <div className="bg-parallel-cream/95 rounded-2xl px-6 py-5 max-w-xs">
                     <p className="text-2xl font-semibold mb-1">{matches.length} match{matches.length !== 1 ? 'es' : ''} waiting</p>
                     <p className="text-sm text-gray-600 mb-4 leading-relaxed">
                       Your top match is {matches[0]?.compatibilityScore}% compatible.
                     </p>
                     <button
                       onClick={onNavigateToPayment}
-                      className="w-full bg-black text-white py-3 rounded-full font-medium hover:bg-gray-800 transition-colors text-[13px]"
+                      className="w-full bg-parallel-purple text-parallel-cream py-3 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors text-[13px]"
                     >
                       See your matches →
                     </button>
@@ -298,7 +298,7 @@ export function MatchesView({
             </p>
             <button
               onClick={onNavigateToInvite || handleShareInvite}
-              className="w-full border-2 border-black text-black py-3 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+              className="w-full border-2 border-parallel-void text-parallel-void py-3 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
             >Invite a friend →</button>
           </div>
         </div>
@@ -308,7 +308,7 @@ export function MatchesView({
         {isLoading ? (
           <div className="max-w-md mx-auto space-y-6">
             {[1, 2].map(i => (
-              <div key={i} className="bg-white border-2 border-gray-200 rounded-3xl overflow-hidden animate-pulse">
+              <div key={i} className="bg-parallel-cream border-2 border-gray-200 rounded-3xl overflow-hidden animate-pulse">
                 <div className="aspect-[3/4] bg-gray-200"></div>
                 <div className="p-6 space-y-3">
                   <div className="h-6 bg-gray-200 rounded-full w-3/4"></div>
@@ -369,8 +369,8 @@ export function MatchesView({
                     className="w-full h-full object-cover blur-2xl scale-110"
                   />
                   {/* Paywall overlay card — honest copy, no fake data */}
-                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center px-6">
-                    <div className="bg-white rounded-2xl px-6 py-6 max-w-xs w-full text-center shadow-2xl">
+                  <div className="absolute inset-0 bg-parallel-void/40 flex flex-col items-center justify-center px-6">
+                    <div className="bg-parallel-cream rounded-2xl px-6 py-6 max-w-xs w-full text-center shadow-2xl">
                       <p className="text-xs uppercase tracking-wide text-gray-500 font-medium mb-2">
                         Matching in progress
                       </p>
@@ -382,7 +382,7 @@ export function MatchesView({
                       </p>
                       <button
                         onClick={onNavigateToPayment}
-                        className="w-full bg-black text-white py-3 rounded-full font-semibold hover:bg-gray-800 transition-colors text-sm mb-3"
+                        className="w-full bg-parallel-purple text-parallel-cream py-3 rounded-full font-semibold hover:bg-parallel-purple/90 transition-colors text-sm mb-3"
                       >
                         Get notified when ready →
                       </button>
@@ -438,7 +438,7 @@ export function MatchesView({
                 <div className="w-full max-w-xs mb-6">
                   <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-black rounded-full"
+                      className="h-full bg-parallel-void rounded-full"
                       style={{ animation: 'matchingProgress 2.4s ease-in-out infinite' }}
                     />
                   </div>
@@ -456,13 +456,13 @@ export function MatchesView({
                 {/* Timeout fallback — if matching never runs, user isn't stranded */}
                 <p className="text-sm text-gray-400 mb-8">
                   Taking longer than expected?{' '}
-                  <a href="mailto:support@getparallel.vip" className="underline text-gray-500 hover:text-black transition-colors">
+                  <a href="mailto:support@getparallel.vip" className="underline text-gray-500 hover:text-parallel-void transition-colors">
                     Contact support →
                   </a>
                 </p>
                 <button
                   onClick={onNavigateToInvite || handleShareInvite}
-                  className="bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium mb-3"
+                  className="bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium mb-3"
                 >
                   Invite a friend →
                 </button>
@@ -491,7 +491,7 @@ export function MatchesView({
             </div>
             <button
               onClick={onNavigateToInvite || handleShareInvite}
-              className="w-full bg-black text-white px-8 py-4 rounded-full hover:bg-gray-800 transition-colors text-base font-medium mb-3"
+              className="w-full bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium mb-3"
             >
               Wait for new matches
             </button>

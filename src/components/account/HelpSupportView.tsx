@@ -7,7 +7,7 @@ interface HelpSupportViewProps {
 
 export function HelpSupportView({ onBack, onNavigate }: HelpSupportViewProps) {
   return (
-    <div className="min-h-screen bg-white pt-6 pb-36 px-6">
+    <div className="min-h-screen bg-parallel-cream pt-6 pb-36 px-6">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={onBack}
@@ -212,19 +212,19 @@ export function HelpSupportView({ onBack, onNavigate }: HelpSupportViewProps) {
           <div className="space-y-2">
             <button
               onClick={() => onNavigate?.('community-guidelines')}
-              className="block text-sm text-gray-700 hover:text-black text-left"
+              className="block text-sm text-gray-700 hover:text-parallel-void text-left"
             >
               Community Guidelines
             </button>
             <button
               onClick={() => onNavigate?.('privacy-policy')}
-              className="block text-sm text-gray-700 hover:text-black text-left"
+              className="block text-sm text-gray-700 hover:text-parallel-void text-left"
             >
               Privacy Policy
             </button>
             <button
               onClick={() => onNavigate?.('terms-service')}
-              className="block text-sm text-gray-700 hover:text-black text-left"
+              className="block text-sm text-gray-700 hover:text-parallel-void text-left"
             >
               Terms of Service
             </button>

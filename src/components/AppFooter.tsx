@@ -16,7 +16,7 @@ interface AppFooterProps {
 
 export function AppFooter({ onNavigate }: AppFooterProps) {
   return (
-    <footer className="w-full border-t border-gray-100 bg-white pb-24">
+    <footer className="w-full border-t border-gray-100 bg-parallel-cream pb-24">
       <div className="max-w-2xl mx-auto px-6 py-6">
 
         <p className="text-center text-xs text-gray-400 mb-4">
@@ -26,7 +26,7 @@ export function AppFooter({ onNavigate }: AppFooterProps) {
         <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-400">
           <button
             onClick={() => onNavigate('privacy-policy')}
-            className="hover:text-black transition-colors hover:underline underline-offset-2"
+            className="hover:text-parallel-void transition-colors hover:underline underline-offset-2"
           >
             Privacy Policy
           </button>
@@ -35,28 +35,28 @@ export function AppFooter({ onNavigate }: AppFooterProps) {
               cannot be merged with or referenced from inside the general Privacy Policy link */}
           <button
             onClick={() => onNavigate('consumer-health-data-policy')}
-            className="hover:text-black transition-colors hover:underline underline-offset-2"
+            className="hover:text-parallel-void transition-colors hover:underline underline-offset-2"
           >
             Consumer Health Data Policy (WA)
           </button>
 
           <button
             onClick={() => onNavigate('terms-service')}
-            className="hover:text-black transition-colors hover:underline underline-offset-2"
+            className="hover:text-parallel-void transition-colors hover:underline underline-offset-2"
           >
             Terms of Service
           </button>
 
           <button
             onClick={() => onNavigate('refund-policy')}
-            className="hover:text-black transition-colors hover:underline underline-offset-2"
+            className="hover:text-parallel-void transition-colors hover:underline underline-offset-2"
           >
             Refund Policy
           </button>
 
           <button
             onClick={() => onNavigate('community-guidelines')}
-            className="hover:text-black transition-colors hover:underline underline-offset-2"
+            className="hover:text-parallel-void transition-colors hover:underline underline-offset-2"
           >
             Community Guidelines
           </button>
@@ -69,7 +69,7 @@ export function AppFooter({ onNavigate }: AppFooterProps) {
             href="/accessibility"
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-black transition-colors hover:underline underline-offset-2"
+            className="hover:text-parallel-void transition-colors hover:underline underline-offset-2"
           >
             Accessibility
           </a>

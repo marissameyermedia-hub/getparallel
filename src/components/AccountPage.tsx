@@ -86,12 +86,12 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[100] flex items-end justify-center"
+      className="fixed inset-0 bg-parallel-void/50 z-[100] flex items-end justify-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="exit-feedback-title"
     >
-      <div className="bg-white rounded-t-3xl w-full max-w-md p-6 pb-10 max-h-[85vh] overflow-y-auto">
+      <div className="bg-parallel-cream rounded-t-3xl w-full max-w-md p-6 pb-10 max-h-[85vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 id="exit-feedback-title" className="text-lg font-semibold">Before you go</h2>
@@ -110,7 +110,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
                 setReason('I found someone on Parallel 🎉');
               }}
               className={`py-3 px-4 rounded-2xl border-2 text-sm font-medium transition-all ${
-                foundMatch === true ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-400'
+                foundMatch === true ? 'border-parallel-purple bg-parallel-purple text-parallel-cream' : 'border-gray-200 hover:border-gray-400'
               }`}
             >
               Yes! 🎉
@@ -121,7 +121,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
                 if (reason === 'I found someone on Parallel 🎉') setReason('');
               }}
               className={`py-3 px-4 rounded-2xl border-2 text-sm font-medium transition-all ${
-                foundMatch === false ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-400'
+                foundMatch === false ? 'border-parallel-purple bg-parallel-purple text-parallel-cream' : 'border-gray-200 hover:border-gray-400'
               }`}
             >
               Not yet
@@ -138,7 +138,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
             </p>
             <button
               onClick={() => setReason('I found someone on Parallel 🎉')}
-              className="mt-3 text-xs text-black underline"
+              className="mt-3 text-xs text-parallel-void underline"
             >
               I'd love to share my story →
             </button>
@@ -155,7 +155,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
                   key={r}
                   onClick={() => setReason(r)}
                   className={`w-full py-3 px-4 rounded-xl border-2 text-left text-sm transition-all ${
-                    reason === r ? 'border-black bg-black/5 font-medium' : 'border-gray-200 hover:border-gray-400'
+                    reason === r ? 'border-parallel-void bg-parallel-void/5 font-medium' : 'border-gray-200 hover:border-gray-400'
                   }`}
                 >
                   {r}
@@ -171,8 +171,8 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
           disabled={!canConfirm}
           className={`w-full py-4 rounded-full font-medium text-base transition-all ${
             action === 'delete'
-              ? 'bg-red-600 text-white hover:bg-red-700 disabled:opacity-40'
-              : 'bg-black text-white hover:bg-gray-800 disabled:opacity-40'
+              ? 'bg-red-600 text-parallel-cream hover:bg-red-700 disabled:opacity-40'
+              : 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90 disabled:opacity-40'
           } disabled:cursor-not-allowed`}
         >
           {actionLabel}
@@ -410,7 +410,7 @@ export function AccountPage({
   const renewalLine = hasActivated && renewalDate ? `Renews ${formatBillingDate(renewalDate)}` : null;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-parallel-cream flex flex-col">
 
       {/* Exit Feedback Sheet */}
       {exitFeedbackAction && (
@@ -434,17 +434,17 @@ export function AccountPage({
 
           {/* Upgrade nudge for free users */}
           {!hasActivated && (
-            <div className="bg-black text-white rounded-3xl p-6 mb-6">
+            <div className="bg-parallel-purple text-parallel-cream rounded-3xl p-6 mb-6">
               <div className="flex items-start gap-4">
                 <span className="text-2xl">🔓</span>
                 <div className="flex-1">
-                  <h2 className="text-white mb-1">You haven't subscribed yet</h2>
+                  <h2 className="text-parallel-cream mb-1">You haven't subscribed yet</h2>
                   <p className="text-gray-300 text-sm mb-4 leading-relaxed">
                     Subscribe to see your full matches, unlock messaging, and connect with compatible people.
                   </p>
                   <button
                     onClick={() => onNavigate?.('pricing')}
-                    className="w-full bg-white text-black py-3 rounded-full font-medium hover:bg-gray-100 transition-colors text-sm"
+                    className="w-full bg-parallel-cream text-parallel-void py-3 rounded-full font-medium hover:bg-gray-100 transition-colors text-sm"
                   >
                     See plans — from $6.58/mo
                   </button>
@@ -457,7 +457,7 @@ export function AccountPage({
               surfaced via the matchmaking checklist on the home page. */}
 
           {/* Questionnaire completion card — whole card is tappable, no redundant Continue → */}
-          <button className="w-full text-left bg-white border-2 border-gray-200 rounded-3xl p-5 mb-4 hover:border-gray-300 transition-colors" onClick={() => onNavigate?.('questionnaire')}>
+          <button className="w-full text-left bg-parallel-cream border-2 border-gray-200 rounded-3xl p-5 mb-4 hover:border-gray-300 transition-colors" onClick={() => onNavigate?.('questionnaire')}>
             <div className="flex items-center gap-2 mb-3">
               <BarChart2 size={18} className="text-gray-600" />
               <p className="font-medium text-sm">My Matching Questionnaire</p>
@@ -465,7 +465,7 @@ export function AccountPage({
             <div className="flex items-center gap-3">
               <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-black rounded-full transition-all"
+                  className="h-full bg-parallel-void rounded-full transition-all"
                   style={{ width: `${completionPct}%` }}
                 />
               </div>
@@ -502,10 +502,10 @@ export function AccountPage({
             {/* Edit Profile */}
             <button
               onClick={() => onNavigate?.('my-profile')}
-              className="bg-black text-white rounded-2xl p-4 hover:bg-gray-800 transition-colors text-left"
+              className="bg-parallel-purple text-parallel-cream rounded-2xl p-4 hover:bg-parallel-purple/90 transition-colors text-left"
             >
-              <User size={20} className="text-white mb-2" />
-              <p className="text-sm font-medium text-white">Edit Profile</p>
+              <User size={20} className="text-parallel-cream mb-2" />
+              <p className="text-sm font-medium text-parallel-cream">Edit Profile</p>
               <p className="text-xs text-gray-500">Photos, bio, details</p>
             </button>
 
@@ -521,7 +521,7 @@ export function AccountPage({
           </div>
 
           {/* Account Info */}
-          <div className="bg-white border-2 border-gray-200 rounded-3xl p-6 mb-6">
+          <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">
             <h3 className="mb-4 text-sm font-medium text-gray-500">Account Info</h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
@@ -540,7 +540,7 @@ export function AccountPage({
                 </div>
                 <button
                   onClick={() => { setNewEmail(''); setEmailUpdateStatus('idle'); setEmailUpdateError(''); setShowEmailModal(true); }}
-                  className="text-sm font-medium text-black underline flex-shrink-0"
+                  className="text-sm font-medium text-parallel-void underline flex-shrink-0"
                 >
                   Edit
                 </button>
@@ -554,7 +554,7 @@ export function AccountPage({
                   <div className="flex items-center gap-2 flex-wrap">
                     <p>{membershipLine}</p>
                     {isFoundingMember && (
-                      <span className="text-xs font-medium text-black bg-black/5 border border-black/10 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-medium text-parallel-void bg-parallel-void/5 border border-parallel-void/10 px-2 py-0.5 rounded-full">
                         Founding member
                       </span>
                     )}
@@ -564,7 +564,7 @@ export function AccountPage({
                   )}
                 </div>
                 {!hasActivated && (
-                  <button onClick={() => onNavigate?.('pricing')} className="text-sm font-medium text-black underline mt-0.5">
+                  <button onClick={() => onNavigate?.('pricing')} className="text-sm font-medium text-parallel-void underline mt-0.5">
                     Upgrade
                   </button>
                 )}
@@ -592,7 +592,7 @@ export function AccountPage({
           {/* Verification — lower-weight version, shown only when already verified
               (the big unverified prompt lives above the fold now) */}
           {hasVerified && (
-            <div className="bg-white border-2 border-gray-200 rounded-3xl p-6 mb-6">
+            <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">
               <h3 className="mb-4 text-sm font-medium text-gray-500">Verification Status</h3>
               <div className="flex items-center gap-3">
                 <ShieldCheck size={20} className="text-blue-500" />
@@ -607,7 +607,7 @@ export function AccountPage({
           )}
 
           {/* Support & Legal */}
-          <div className="bg-white border-2 border-gray-200 rounded-3xl p-6 mb-6">
+          <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">
             <h3 className="mb-4 text-sm font-medium text-gray-500">Support & Legal</h3>
             <div className="space-y-1">
               <button onClick={() => onNavigate?.('help-support')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
@@ -635,7 +635,7 @@ export function AccountPage({
           </div>
 
           {/* Feedback */}
-          <div className="bg-white border-2 border-gray-200 rounded-3xl p-6 mb-6">
+          <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">
             <h3 className="mb-4 text-sm font-medium text-gray-500">Feedback</h3>
             <div className="space-y-1">
               <button onClick={() => setShowStoryModal(true)} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
@@ -672,7 +672,7 @@ export function AccountPage({
             {/* Pause — label and description update based on current isPaused state */}
             <button
               onClick={() => setExitFeedbackAction('pause')}
-              className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-black transition-colors flex items-start gap-3"
+              className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-parallel-void transition-colors flex items-start gap-3"
             >
               <Pause size={20} className="text-gray-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1 text-left">
@@ -689,7 +689,7 @@ export function AccountPage({
             {hasActivated && (
               <button
                 onClick={() => setExitFeedbackAction('cancel')}
-                className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-black transition-colors flex items-start gap-3"
+                className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-parallel-void transition-colors flex items-start gap-3"
               >
                 <CreditCard size={20} className="text-gray-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 text-left">
@@ -703,7 +703,7 @@ export function AccountPage({
 
             <button
               onClick={onLogOut}
-              className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-black transition-colors flex items-center gap-3"
+              className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-parallel-void transition-colors flex items-center gap-3"
             >
               <LogOut size={20} className="text-gray-600" />
               <span className="flex-1 text-left text-sm font-medium">Log Out</span>
@@ -735,12 +735,12 @@ export function AccountPage({
       {/* Share Story Modal */}
       {showStoryModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center"
+          className="fixed inset-0 bg-parallel-void/50 z-50 flex items-end justify-center p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="share-story-title"
         >
-          <div className="bg-white rounded-3xl p-6 pb-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-parallel-cream rounded-3xl p-6 pb-8 w-full max-w-md max-h-[90vh] overflow-y-auto">
             {!storySubmitted ? (
               <>
                 <div className="flex items-center justify-between mb-1">
@@ -759,7 +759,7 @@ export function AccountPage({
                     onChange={e => setStoryText(e.target.value)}
                     placeholder="We matched on Parallel and..."
                     rows={5}
-                    className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-black transition-colors"
+                    className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-parallel-purple transition-colors"
                     style={{ fontSize: '16px' }}
                   />
                   {/* Positive framing: show minimum before they type, affirm once they pass it, nothing in between */}
@@ -778,7 +778,7 @@ export function AccountPage({
                     value={storyHowLong}
                     onChange={e => setStoryHowLong(e.target.value)}
                     placeholder="e.g. 6 months, 1 year..."
-                    className="w-full border-2 border-gray-200 rounded-full px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
+                    className="w-full border-2 border-gray-200 rounded-full px-4 py-3 text-sm focus:outline-none focus:border-parallel-purple transition-colors"
                     style={{ fontSize: '16px' }}
                   />
                 </div>
@@ -801,7 +801,7 @@ export function AccountPage({
                       setStorySubmitted(true);
                     }}
                     disabled={storyText.trim().length < 10 || storySubmitting}
-                    className="w-full py-4 bg-black text-white rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+                    className="w-full py-4 bg-parallel-purple text-parallel-cream rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-parallel-purple/90 transition-colors"
                   >
                     {storySubmitting ? 'Submitting…' : 'Submit story'}
                   </button>
@@ -813,13 +813,13 @@ export function AccountPage({
             ) : (
               <>
                 <div className="text-center py-4">
-                  <div className="w-14 h-14 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Heart size={24} className="text-white" />
+                  <div className="w-14 h-14 bg-parallel-void rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Heart size={24} className="text-parallel-cream" />
                   </div>
                   <h2 className="text-lg font-semibold mb-2">Thank you ❤️</h2>
                   <p className="text-sm text-gray-500 leading-relaxed">Your story means a lot. We'll review it and may feature it on our site.</p>
                 </div>
-                <button onClick={() => { setShowStoryModal(false); setStorySubmitted(false); setStoryText(''); setStoryHowLong(''); }} className="w-full mt-6 py-4 bg-black text-white rounded-full font-medium text-sm hover:bg-gray-800 transition-colors">
+                <button onClick={() => { setShowStoryModal(false); setStorySubmitted(false); setStoryText(''); setStoryHowLong(''); }} className="w-full mt-6 py-4 bg-parallel-purple text-parallel-cream rounded-full font-medium text-sm hover:bg-parallel-purple/90 transition-colors">
                   Done
                 </button>
               </>
@@ -831,12 +831,12 @@ export function AccountPage({
       {/* Email Update Modal */}
       {showEmailModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center"
+          className="fixed inset-0 bg-parallel-void/50 z-50 flex items-end justify-center p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="email-update-title"
         >
-          <div className="bg-white rounded-3xl p-6 pb-10 sm:pb-6 w-full max-w-md">
+          <div className="bg-parallel-cream rounded-3xl p-6 pb-10 sm:pb-6 w-full max-w-md">
             {emailUpdateStatus === 'success' ? (
               <div className="text-center py-4">
                 <p className="text-2xl mb-2">✓</p>
@@ -866,7 +866,7 @@ export function AccountPage({
                   value={newEmail}
                   onChange={e => { setNewEmail(e.target.value); setEmailUpdateError(''); }}
                   placeholder="you@example.com"
-                  className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-base outline-none focus:border-black transition-colors mb-1"
+                  className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-base outline-none focus:border-parallel-purple transition-colors mb-1"
                   autoFocus
                   aria-invalid={emailUpdateError ? true : undefined}
                   aria-describedby={emailUpdateError ? 'new-email-error' : 'new-email-hint'}
@@ -883,7 +883,7 @@ export function AccountPage({
                 <button
                   onClick={handleEmailUpdate}
                   disabled={emailUpdateStatus === 'saving' || !newEmail.trim()}
-                  className="w-full bg-black text-white py-3.5 rounded-full font-medium disabled:opacity-40 transition-opacity"
+                  className="w-full bg-parallel-purple text-parallel-cream py-3.5 rounded-full font-medium disabled:opacity-40 transition-opacity"
                 >
                   {emailUpdateStatus === 'saving' ? 'Sending link…' : 'Send confirmation link'}
                 </button>
@@ -896,12 +896,12 @@ export function AccountPage({
       {/* Feedback / Feature Request Modal */}
       {feedbackModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-50 flex items-end justify-center p-4 sm:items-center"
+          className="fixed inset-0 bg-parallel-void/50 z-50 flex items-end justify-center p-4 sm:items-center"
           role="dialog"
           aria-modal="true"
           aria-labelledby="feedback-modal-title"
         >
-          <div className="bg-white rounded-3xl p-6 pb-10 sm:pb-6 w-full max-w-md">
+          <div className="bg-parallel-cream rounded-3xl p-6 pb-10 sm:pb-6 w-full max-w-md">
             {!feedbackSubmitted ? (
               <>
                 <div className="flex items-center justify-between mb-4">
@@ -924,7 +924,7 @@ export function AccountPage({
                   onChange={e => setFeedbackMessage(e.target.value)}
                   placeholder={feedbackModal === 'feature' ? "I'd love it if Parallel could..." : "I noticed that..."}
                   rows={5}
-                  className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-black transition-colors mb-5"
+                  className="w-full border-2 border-gray-200 rounded-2xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-parallel-purple transition-colors mb-5"
                   style={{ fontSize: '16px' }}
                 />
                 <button
@@ -948,7 +948,7 @@ export function AccountPage({
                     setFeedbackSubmitted(true);
                   }}
                   disabled={feedbackMessage.trim().length < 5 || feedbackSubmitting}
-                  className="w-full py-4 bg-black text-white rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+                  className="w-full py-4 bg-parallel-purple text-parallel-cream rounded-full font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-parallel-purple/90 transition-colors"
                 >
                   {feedbackSubmitting ? 'Sending…' : 'Send'}
                 </button>
@@ -962,15 +962,15 @@ export function AccountPage({
             ) : (
               <>
                 <div className="text-center py-4">
-                  <div className="w-14 h-14 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                    <FileText size={24} className="text-white" />
+                  <div className="w-14 h-14 bg-parallel-void rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileText size={24} className="text-parallel-cream" />
                   </div>
                   <h2 className="text-lg font-semibold mb-2">Thanks!</h2>
                   <p className="text-sm text-gray-500 leading-relaxed">We got your message and will read it carefully.</p>
                 </div>
                 <button
                   onClick={() => { setFeedbackModal(null); setFeedbackSubmitted(false); setFeedbackMessage(''); }}
-                  className="w-full mt-6 py-4 bg-black text-white rounded-full font-medium text-sm hover:bg-gray-800 transition-colors"
+                  className="w-full mt-6 py-4 bg-parallel-purple text-parallel-cream rounded-full font-medium text-sm hover:bg-parallel-purple/90 transition-colors"
                 >
                   Done
                 </button>

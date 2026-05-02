@@ -6,7 +6,7 @@ interface TermsServiceViewProps {
 
 export function TermsServiceView({ onBack }: TermsServiceViewProps) {
   return (
-    <div className="min-h-screen bg-white pt-6 pb-36 px-6">
+    <div className="min-h-screen bg-parallel-cream pt-6 pb-36 px-6">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={onBack}

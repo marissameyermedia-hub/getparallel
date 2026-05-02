@@ -176,10 +176,10 @@ export function InboxView({
   }
 
   return (
-    <div className="flex flex-col bg-white" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh' }}>
 
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-100 px-5 pt-5 pb-4">
+      <div className="flex-shrink-0 bg-parallel-cream border-b border-gray-100 px-5 pt-5 pb-4">
         <div className="flex items-baseline justify-between">
           <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
           {unreadCount > 0 && (
@@ -236,13 +236,13 @@ export function InboxView({
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center ring-2 ring-black/5" aria-hidden="true">
-                          <span className="text-white text-base font-semibold">
+                          <span className="text-parallel-cream text-base font-semibold">
                             {getInitials(w.name)}
                           </span>
                         </div>
                       )}
                       {/* Subtle "new" dot */}
-                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-black rounded-full border-2 border-white" aria-hidden="true" />
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-parallel-void rounded-full border-2 border-white" aria-hidden="true" />
                     </button>
                     {/* Name button → opens chat */}
                     <button
@@ -280,13 +280,13 @@ export function InboxView({
                       />
                     ) : (
                       <div className="w-14 h-14 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
-                        <span className="text-white text-base font-semibold">
+                        <span className="text-parallel-cream text-base font-semibold">
                           {getInitials(message.matchName)}
                         </span>
                       </div>
                     )}
                     {message.unread && (
-                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-black rounded-full border-2 border-white" aria-hidden="true" />
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-parallel-void rounded-full border-2 border-white" aria-hidden="true" />
                     )}
                   </button>
 
@@ -297,14 +297,14 @@ export function InboxView({
                     className="flex-1 min-w-0 text-left"
                   >
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className={`text-base truncate ${message.unread ? 'font-semibold text-black' : 'font-medium text-gray-800'}`}>
+                      <span className={`text-base truncate ${message.unread ? 'font-semibold text-parallel-void' : 'font-medium text-gray-800'}`}>
                         {message.matchName}
                       </span>
                       <span className="text-xs text-gray-400 flex-shrink-0 ml-2 tabular-nums">
                         {formatTimestamp(message.timestamp)}
                       </span>
                     </div>
-                    <p className={`text-sm truncate ${message.unread ? 'text-black font-medium' : 'text-gray-500'}`}>
+                    <p className={`text-sm truncate ${message.unread ? 'text-parallel-void font-medium' : 'text-gray-500'}`}>
                       {message.lastMessage}
                     </p>
                   </button>

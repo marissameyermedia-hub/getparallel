@@ -11,7 +11,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
   const [showVerifyPrompt, setShowVerifyPrompt] = useState(true);
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-6">
+    <div className="min-h-screen bg-parallel-cream flex items-center justify-center px-6">
       <div className="max-w-sm w-full text-center">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -19,8 +19,8 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
           transition={{ duration: 0.4, type: 'spring' }}
           className="mb-8"
         >
-          <div className="w-24 h-24 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={44} className="text-white" />
+          <div className="w-24 h-24 bg-parallel-void rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle size={44} className="text-parallel-cream" />
           </div>
           <h1 className="text-4xl mb-3">You're in.</h1>
           <p className="text-gray-600 leading-relaxed">
@@ -36,8 +36,8 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
             className="bg-gray-50 border-2 border-gray-200 rounded-3xl p-6 mb-6 text-left"
           >
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center flex-shrink-0">
-                <ShieldCheck size={22} className="text-white" />
+              <div className="w-12 h-12 bg-parallel-void rounded-full flex items-center justify-center flex-shrink-0">
+                <ShieldCheck size={22} className="text-parallel-cream" />
               </div>
               <div className="flex-1">
                 <p className="font-semibold mb-1">Get your verified badge</p>
@@ -46,7 +46,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
                 </p>
                 <button
                   onClick={onVerify}
-                  className="w-full bg-black text-white py-3 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-parallel-purple text-parallel-cream py-3 rounded-full text-sm font-medium hover:bg-parallel-purple/90 transition-colors flex items-center justify-center gap-2"
                 >
                   Verify my identity
                   <ArrowRight size={16} />
@@ -67,7 +67,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             onClick={onContinue}
-            className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors"
+            className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors"
           >
             See my matches
           </motion.button>

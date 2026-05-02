@@ -43,14 +43,14 @@ export function NPSBottomSheet({ isOpen, onClose, onSubmit }: NPSBottomSheetProp
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 z-40"
+        className="fixed inset-0 bg-parallel-void/40 z-40"
         onClick={handleSkip}
         aria-hidden="true"
       />
 
       {/* Bottom Sheet */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-hidden animate-slide-up"
+        className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-50 max-h-[85vh] overflow-hidden animate-slide-up"
         role="dialog"
         aria-modal="true"
         aria-labelledby="nps-title"
@@ -91,8 +91,8 @@ export function NPSBottomSheet({ isOpen, onClose, onSubmit }: NPSBottomSheetProp
                       aria-label={`${score}`}
                       className={`aspect-square rounded-lg border-2 transition-all text-sm font-medium ${
                         selectedScore === score
-                          ? 'bg-black text-white border-black'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                          ? 'bg-parallel-purple text-parallel-cream border-parallel-void'
+                          : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
                       }`}
                     >
                       {score}
@@ -117,7 +117,7 @@ export function NPSBottomSheet({ isOpen, onClose, onSubmit }: NPSBottomSheetProp
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="Your feedback helps us improve..."
                 rows={3}
-                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors resize-none"
+                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors resize-none"
               />
             </div>
           </div>
@@ -129,7 +129,7 @@ export function NPSBottomSheet({ isOpen, onClose, onSubmit }: NPSBottomSheetProp
               disabled={selectedScore === null || isSubmitting}
               className={`w-full px-6 py-3 rounded-full transition-all font-medium ${
                 selectedScore !== null && !isSubmitting
-                  ? 'bg-black text-white hover:bg-gray-800'
+                  ? 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
             >

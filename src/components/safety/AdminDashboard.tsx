@@ -195,7 +195,7 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="bg-parallel-cream border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -222,13 +222,13 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by case number, user name..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple text-sm"
               />
             </div>
             <select
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black text-sm"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple text-sm"
             >
               <option value="all">All Priorities</option>
               <option value="critical">Critical</option>
@@ -246,8 +246,8 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
                 onClick={() => setFilterStatus(status)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                   filterStatus === status
-                    ? 'bg-black text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    ? 'bg-parallel-purple text-parallel-cream'
+                    : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
                 }`}
               >
                 {status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
@@ -263,7 +263,7 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
       {/* Cases List */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {filteredCases.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <div className="bg-parallel-cream rounded-lg border border-gray-200 p-12 text-center">
             <p className="text-gray-600">No cases match your filters</p>
           </div>
         ) : (
@@ -272,7 +272,7 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
               <button
                 key={case_.id}
                 onClick={() => setSelectedCase(case_)}
-                className="w-full bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-all text-left"
+                className="w-full bg-parallel-cream rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-all text-left"
               >
                 <div className="flex items-start gap-4">
                   {/* Priority Indicator */}

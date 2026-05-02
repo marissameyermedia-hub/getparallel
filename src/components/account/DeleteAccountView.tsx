@@ -64,7 +64,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
   };
 
   return (
-    <div className="min-h-screen bg-white pt-6 pb-24 px-6">
+    <div className="min-h-screen bg-parallel-cream pt-6 pb-24 px-6">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={onBack}
@@ -109,14 +109,14 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
                 If you need a break, you can pause your profile instead. This will hide you from
                 matches while keeping your account and data safe.
               </p>
-              <button onClick={onBack} className="text-black hover:text-gray-700 font-medium">
+              <button onClick={onBack} className="text-parallel-void hover:text-gray-700 font-medium">
                 Go to Pause Profile →
               </button>
             </div>
 
             <button
               onClick={() => setShowConfirmation(true)}
-              className="w-full py-4 px-6 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium"
+              className="w-full py-4 px-6 bg-red-600 text-parallel-cream rounded-full hover:bg-red-700 transition-colors font-medium"
             >
               Continue to Delete Account
             </button>
@@ -155,7 +155,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
               disabled={confirmText.toLowerCase() !== 'delete' || isDeleting}
               className={`w-full py-4 px-6 rounded-full font-medium transition-colors mb-3 flex items-center justify-center gap-2 ${
                 confirmText.toLowerCase() === 'delete' && !isDeleting
-                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  ? 'bg-red-600 text-parallel-cream hover:bg-red-700'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >

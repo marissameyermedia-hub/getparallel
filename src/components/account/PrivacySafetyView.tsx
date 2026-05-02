@@ -100,7 +100,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white pt-6 pb-36 px-6">
+    <div className="min-h-screen bg-parallel-cream pt-6 pb-36 px-6">
       <div className="max-w-2xl mx-auto">
         <button onClick={onBack} className="mb-6 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Go back">
           <ChevronLeft size={28} aria-hidden="true" />
@@ -108,11 +108,11 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
         <h1 className="mb-3">Privacy & Safety</h1>
         <p className="text-gray-600 mb-8">Control who can see your profile and how you interact</p>
 
-        <div className="bg-black text-white rounded-2xl p-6 mb-6">
+        <div className="bg-parallel-purple text-parallel-cream rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-3">
-            <Shield className="w-6 h-6 text-white flex-shrink-0 mt-1" />
+            <Shield className="w-6 h-6 text-parallel-cream flex-shrink-0 mt-1" />
             <div>
-              <h3 className="text-white mb-2">Our Safety Commitment</h3>
+              <h3 className="text-parallel-cream mb-2">Our Safety Commitment</h3>
               <p className="text-gray-300 text-sm leading-relaxed">We take user safety seriously and actively moderate behavior that violates our Community Guidelines. Every profile is reviewed, and we provide tools to report and block users who make you feel uncomfortable.</p>
             </div>
           </div>
@@ -134,8 +134,8 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
                     <div className="text-sm text-gray-600">{sub}</div>
                   </div>
                 </div>
-                <button onClick={toggle} className={`relative w-12 h-6 rounded-full transition-colors ${value ? 'bg-black' : 'bg-gray-300'}`}>
-                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${value ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                <button onClick={toggle} className={`relative w-12 h-6 rounded-full transition-colors ${value ? 'bg-parallel-void' : 'bg-gray-300'}`}>
+                  <div className={`absolute top-0.5 w-5 h-5 bg-parallel-cream rounded-full transition-transform ${value ? 'translate-x-6' : 'translate-x-0.5'}`} />
                 </button>
               </div>
             ))}
@@ -157,7 +157,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
                     ? "You haven't blocked anyone. To block someone, tap the three dots on their profile or in chat."
                     : <>
                         You've blocked {blockedCount} {blockedCount === 1 ? 'person' : 'people'}. To unblock someone,{' '}
-                        <a href="mailto:support@getparallel.vip?subject=Unblock%20request" className="text-black underline font-medium">
+                        <a href="mailto:support@getparallel.vip?subject=Unblock%20request" className="text-parallel-void underline font-medium">
                           email support
                         </a>
                         {' '}with their name.
@@ -180,7 +180,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
                     For urgent safety concerns that aren't tied to a specific user,{' '}
                     <a
                       href="mailto:legal@getparallel.vip?subject=Safety%20concern"
-                      className="text-black underline font-medium"
+                      className="text-parallel-void underline font-medium"
                     >
                       email legal@getparallel.vip
                     </a>.
@@ -201,7 +201,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
             If you or someone you know is in danger or needs support, these resources are here 24/7.
           </p>
           <div className="space-y-4">
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="bg-parallel-cream rounded-xl p-4 border border-gray-200">
               <p className="font-medium text-sm mb-0.5">National Domestic Violence Hotline</p>
               <p className="text-xs text-gray-500 mb-2">Call or text 24/7 — confidential support for abuse of any kind</p>
               <div className="flex gap-3 flex-wrap">
@@ -210,7 +210,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
                 <a href="sms:88788" className="text-sm font-medium underline">Text START to 88788</a>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="bg-parallel-cream rounded-xl p-4 border border-gray-200">
               <p className="font-medium text-sm mb-0.5">RAINN Sexual Assault Hotline</p>
               <p className="text-xs text-gray-500 mb-2">Confidential support from trained staff after sexual violence</p>
               <div className="flex gap-3 flex-wrap">
@@ -219,12 +219,12 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
                 <a href="https://hotline.rainn.org" target="_blank" rel="noopener noreferrer" className="text-sm font-medium underline">Online chat</a>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="bg-parallel-cream rounded-xl p-4 border border-gray-200">
               <p className="font-medium text-sm mb-0.5">Crisis Text Line</p>
               <p className="text-xs text-gray-500 mb-2">Free, 24/7 crisis counseling via text message</p>
               <a href="sms:741741" className="text-sm font-medium underline">Text HOME to 741741</a>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="bg-parallel-cream rounded-xl p-4 border border-gray-200">
               <p className="font-medium text-sm mb-0.5">988 Suicide &amp; Crisis Lifeline</p>
               <p className="text-xs text-gray-500 mb-2">Free, confidential emotional support 24/7</p>
               <div className="flex gap-3 flex-wrap">
@@ -233,7 +233,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
                 <a href="https://988lifeline.org/chat" target="_blank" rel="noopener noreferrer" className="text-sm font-medium underline">Chat online</a>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-200">
+            <div className="bg-parallel-cream rounded-xl p-4 border border-gray-200">
               <p className="font-medium text-sm mb-0.5">Stalking Prevention &amp; Awareness</p>
               <p className="text-xs text-gray-500 mb-2">Resources for stalking, harassment, and online safety</p>
               <a href="https://www.stalkingawareness.org" target="_blank" rel="noopener noreferrer" className="text-sm font-medium underline">stalkingawareness.org</a>
@@ -253,7 +253,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
             Download a copy of your data for your records.
           </p>
           <button
-            className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-black transition-colors flex items-center gap-3"
+            className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-parallel-void transition-colors flex items-center gap-3"
             onClick={handleDownloadData}
             disabled={isExporting}
           >

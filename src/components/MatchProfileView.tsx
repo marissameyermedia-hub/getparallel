@@ -210,7 +210,7 @@ export function MatchProfileView({
   ].filter(Boolean) as { icon: any; label: string; value: string }[];
 
   return (
-    <div className="min-h-screen bg-white pt-20 pb-40">
+    <div className="min-h-screen bg-parallel-cream pt-20 pb-40">
 
       {/* Preview-mode banner — sticky just under the header so it stays
           visible whether the user is on photos, breakdown, or basics.
@@ -245,14 +245,14 @@ export function MatchProfileView({
             aria-label="More options"
             aria-expanded={showSafetyMenu}
             aria-haspopup="menu"
-            className="p-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 text-gray-600 hover:text-parallel-void hover:bg-gray-100 rounded-full transition-colors"
           >
             <MoreVertical size={20} aria-hidden="true" />
           </button>
           {showSafetyMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowSafetyMenu(false)} aria-hidden="true" />
-              <div className="absolute right-0 top-12 w-52 bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden z-50" role="menu">
+              <div className="absolute right-0 top-12 w-52 bg-parallel-cream rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden z-50" role="menu">
                 <button
                   onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
                   role="menuitem"
@@ -287,18 +287,18 @@ export function MatchProfileView({
       {/* Unmatch Modal */}
       {showUnmatchModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          className="fixed inset-0 bg-parallel-void/50 z-[100] flex items-center justify-center p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby="unmatch-modal-title"
         >
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+          <div className="bg-parallel-cream rounded-3xl p-6 max-w-md w-full">
             <h2 id="unmatch-modal-title" className="mb-3">Unmatch {user.name}?</h2>
             <p className="text-gray-600 mb-6 text-sm leading-relaxed">
               They'll be removed from your matches and won't be able to contact you. You can unblock them anytime from Privacy & Safety in your account.
             </p>
             <div className="space-y-3">
-              <button onClick={handleUnmatch} className="w-full py-3 bg-black text-white rounded-full hover:bg-gray-800 transition-colors font-medium">Unmatch</button>
+              <button onClick={handleUnmatch} className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-full hover:bg-parallel-purple/90 transition-colors font-medium">Unmatch</button>
               <button onClick={() => setShowUnmatchModal(false)} className="w-full py-3 border-2 border-gray-200 rounded-full hover:border-gray-400 transition-colors">Cancel</button>
             </div>
           </div>
@@ -308,12 +308,12 @@ export function MatchProfileView({
       {/* Report Modal */}
       {showReportModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          className="fixed inset-0 bg-parallel-void/50 z-[100] flex items-center justify-center p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby="report-modal-title"
         >
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+          <div className="bg-parallel-cream rounded-3xl p-6 max-w-md w-full">
             <h2 id="report-modal-title" className="mb-4">Report {user.name}</h2>
             {!showReportSuccess ? (
               <>
@@ -321,7 +321,7 @@ export function MatchProfileView({
                 <div className="space-y-2 mb-4">
                   {['Inappropriate photos', 'Fake profile', 'Harassment or hateful language', 'Spam or scam', 'Other'].map(reason => (
                     <button key={reason}
-                      className="w-full p-3 text-left rounded-xl border-2 border-gray-200 hover:border-black transition-colors text-sm"
+                      className="w-full p-3 text-left rounded-xl border-2 border-gray-200 hover:border-parallel-void transition-colors text-sm"
                       onClick={async () => {
                         const token = await getAccessToken();
                         if (token) {
@@ -369,12 +369,12 @@ export function MatchProfileView({
       {/* Block Modal */}
       {showBlockModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          className="fixed inset-0 bg-parallel-void/50 z-[100] flex items-center justify-center p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby="block-modal-title"
         >
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full">
+          <div className="bg-parallel-cream rounded-3xl p-6 max-w-md w-full">
             <h2 id="block-modal-title" className="mb-4">Block {user.name}?</h2>
             <p className="text-gray-600 mb-6 text-sm leading-relaxed">They won't be able to see your profile or message you.</p>
             <div className="space-y-3">
@@ -384,7 +384,7 @@ export function MatchProfileView({
                   try { await fetch(`${MISC_FUNCTION_URL}/safety/block`, { method: 'POST', headers: getAuthHeaders(token), body: JSON.stringify({ blockedUserId: user.id }) }); } catch (e) {}
                 }
                 setShowBlockModal(false); onBack();
-              }} className="w-full py-3 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium">Block User</button>
+              }} className="w-full py-3 bg-red-600 text-parallel-cream rounded-full hover:bg-red-700 transition-colors font-medium">Block User</button>
               <button onClick={() => setShowBlockModal(false)} className="w-full py-3 border-2 border-gray-200 rounded-full hover:border-gray-400 transition-colors">Cancel</button>
             </div>
           </div>
@@ -419,17 +419,17 @@ export function MatchProfileView({
                 />
                 <div className="absolute top-3 left-0 right-0 flex justify-center gap-1 z-20" aria-hidden="true">
                   {photos.map((_, idx) => (
-                    <div key={idx} className={`h-1 rounded-full transition-all ${idx === photoIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`} />
+                    <div key={idx} className={`h-1 rounded-full transition-all ${idx === photoIndex ? 'w-5 bg-parallel-cream' : 'w-1.5 bg-parallel-cream/50'}`} />
                   ))}
                 </div>
               </>
             )}
             {user.isVerified && (
-              <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+              <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-parallel-cream px-3 py-1.5 rounded-full shadow-lg">
                 <ShieldCheck size={13} aria-hidden="true" /><span className="text-xs font-medium">Verified</span>
               </div>
             )}
-            <div className="absolute bottom-3 right-3 z-20 bg-white rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200">
+            <div className="absolute bottom-3 right-3 z-20 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200">
               <div className="text-center">
                 {isPreview ? (
                   <>
@@ -473,7 +473,7 @@ export function MatchProfileView({
         {/* Compatibility Breakdown — all 8 bars always rendered.
             Static for now. Categories with no score show "Not enough data yet". */}
         {showBreakdownSection && (
-          <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
+          <div className="p-4 bg-parallel-cream rounded-2xl border-2 border-gray-200">
             <h3 className="text-sm font-semibold mb-1">Compatibility Breakdown</h3>
             {isPreview && (
               <p className="text-xs italic text-gray-500 mb-4 leading-snug">
@@ -486,7 +486,7 @@ export function MatchProfileView({
                 const raw = breakdown[label];
                 const hasScore = typeof raw === 'number' && raw > 0;
                 const score = hasScore ? (raw as number) : 0;
-                const barColor = CATEGORY_COLORS[label] || 'bg-black';
+                const barColor = CATEGORY_COLORS[label] || 'bg-parallel-void';
 
                 return (
                   <div key={label}>
@@ -523,14 +523,14 @@ export function MatchProfileView({
         {/* Hobbies — shared first (black), others below (gray).
             Section is hidden only if they have zero hobbies at all. */}
         {hasAnyHobbies && (
-          <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
+          <div className="p-4 bg-parallel-cream rounded-2xl border-2 border-gray-200">
             <h3 className="text-sm font-semibold mb-3">Hobbies &amp; Interests</h3>
             {sharedHobbies.length > 0 && (
               <div className="mb-3">
                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-2">You both enjoy</p>
                 <div className="flex flex-wrap gap-2">
                   {sharedHobbies.map((hobby) => (
-                    <span key={hobby} className="text-xs px-3 py-1.5 bg-black text-white rounded-full font-medium">
+                    <span key={hobby} className="text-xs px-3 py-1.5 bg-parallel-purple text-parallel-cream rounded-full font-medium">
                       {hobby}
                     </span>
                   ))}
@@ -556,7 +556,7 @@ export function MatchProfileView({
 
         {/* Profile Basics */}
         {profileDetails.length > 0 && (
-          <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
+          <div className="p-4 bg-parallel-cream rounded-2xl border-2 border-gray-200">
             <h3 className="text-sm font-semibold mb-3">Profile Basics</h3>
             <div className="grid grid-cols-1 gap-3">
               {profileDetails.map(({ icon: Icon, label, value }) => (
@@ -627,12 +627,12 @@ export function MatchProfileView({
           - isMutual (just liked, became mutual): celebration banner.
           - default (browsing from home): Pass + Like buttons. */}
       {isPreview ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
+        <div className="fixed bottom-0 left-0 right-0 bg-parallel-cream border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
           <div className="max-w-2xl mx-auto">
             <button
               onClick={() => onEditProfile?.()}
               aria-label="Edit your profile"
-              className="w-full h-14 rounded-full bg-black text-white font-medium flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
+              className="w-full h-14 rounded-full bg-parallel-purple text-parallel-cream font-medium flex items-center justify-center gap-2 hover:bg-parallel-purple/90 transition-colors shadow-lg"
             >
               <Pencil size={18} aria-hidden="true" />
               <span>Edit Profile</span>
@@ -640,31 +640,31 @@ export function MatchProfileView({
           </div>
         </div>
       ) : alreadyMatched ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
+        <div className="fixed bottom-0 left-0 right-0 bg-parallel-cream border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
           <div className="max-w-2xl mx-auto">
             <button
               onClick={() => onOpenChat(user.id)}
               aria-label={`Message ${user.name}`}
-              className="w-full h-14 rounded-full bg-black text-white font-medium flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
+              className="w-full h-14 rounded-full bg-parallel-purple text-parallel-cream font-medium flex items-center justify-center gap-2 hover:bg-parallel-purple/90 transition-colors shadow-lg"
             >
               <span>Message {user.name}</span>
             </button>
           </div>
         </div>
       ) : isMutual ? (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 p-4 pb-8 z-[60]" role="status" aria-live="polite">
-          <div className="max-w-md mx-auto p-4 bg-black text-white rounded-2xl text-center">
+        <div className="fixed bottom-0 left-0 right-0 bg-parallel-cream border-t-2 border-gray-200 p-4 pb-8 z-[60]" role="status" aria-live="polite">
+          <div className="max-w-md mx-auto p-4 bg-parallel-purple text-parallel-cream rounded-2xl text-center">
             <p className="text-lg font-medium">🎉 It's a mutual match!</p>
             <p className="text-gray-300 text-sm mt-1">Taking you to messaging with {user.name}…</p>
           </div>
         </div>
       ) : (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
+        <div className="fixed bottom-0 left-0 right-0 bg-parallel-cream border-t-2 border-gray-200 px-4 pt-4 pb-10 z-[60]">
           <div className="max-w-2xl mx-auto flex items-center gap-4">
             <button
               onClick={handlePass}
               aria-label={`Pass on ${user.name}`}
-              className="w-14 h-14 border-2 border-gray-300 bg-white rounded-full hover:border-gray-400 transition-all flex flex-col items-center justify-center gap-0.5 shadow-sm flex-shrink-0"
+              className="w-14 h-14 border-2 border-gray-300 bg-parallel-cream rounded-full hover:border-gray-400 transition-all flex flex-col items-center justify-center gap-0.5 shadow-sm flex-shrink-0"
             >
               <X className="w-5 h-5 text-gray-500" aria-hidden="true" />
               <span className="text-[10px] text-gray-500">Pass</span>
@@ -674,9 +674,9 @@ export function MatchProfileView({
               disabled={isLiked || isLiking}
               aria-label={isLiked ? `Liked ${user.name}` : `Like ${user.name}`}
               className={`flex-1 h-14 rounded-full transition-all flex items-center justify-center gap-2 font-medium shadow-lg ${
-                isLiked ? 'bg-red-500 text-white cursor-default'
-                : isLiking ? 'bg-gray-400 text-white cursor-wait'
-                : 'bg-black text-white hover:bg-gray-800'
+                isLiked ? 'bg-red-500 text-parallel-cream cursor-default'
+                : isLiking ? 'bg-gray-400 text-parallel-cream cursor-wait'
+                : 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
               }`}
             >
               <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} aria-hidden="true" />

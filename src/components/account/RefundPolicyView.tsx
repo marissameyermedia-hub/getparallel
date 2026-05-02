@@ -6,7 +6,7 @@ interface RefundPolicyViewProps {
 
 export function RefundPolicyView({ onBack }: RefundPolicyViewProps) {
   return (
-    <div className="min-h-screen bg-white pt-6 pb-36 px-6">
+    <div className="min-h-screen bg-parallel-cream pt-6 pb-36 px-6">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={onBack}
@@ -160,7 +160,7 @@ export function RefundPolicyView({ onBack }: RefundPolicyViewProps) {
                 If you have questions about this Refund Policy or wish to request a refund for exceptional circumstances, please contact us at:
               </p>
               <p>
-                Email: <a href="mailto:support@getparallel.vip" className="text-black underline">support@getparallel.vip</a>
+                Email: <a href="mailto:support@getparallel.vip" className="text-parallel-void underline">support@getparallel.vip</a>
               </p>
             </section>
           </div>

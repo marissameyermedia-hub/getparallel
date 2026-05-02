@@ -230,7 +230,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-parallel-cream">
       <div className="max-w-md mx-auto px-6 pt-16 pb-12 relative">
         <button
           onClick={onBack}
@@ -242,8 +242,8 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck size={36} className="text-white" />
+          <div className="w-20 h-20 bg-parallel-void rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck size={36} className="text-parallel-cream" />
           </div>
           <h1 className="text-3xl mb-3">Get verified</h1>
           <p className="text-gray-600 leading-relaxed">
@@ -288,7 +288,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-3xl p-5 mb-4">
+            <div className="bg-parallel-cream border border-gray-200 rounded-3xl p-5 mb-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">How your data is handled</h3>
               <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
                 <div>
@@ -303,7 +303,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
                       href="https://withpersona.com/legal/privacy-policy"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline text-black"
+                      className="underline text-parallel-void"
                     >
                       privacy policy
                     </a>
@@ -336,7 +336,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
             {/* BIPA-compliant affirmative consent checkbox */}
             <label
-              className="flex items-start gap-3 mb-6 cursor-pointer select-none p-4 bg-white border-2 border-gray-300 rounded-2xl hover:border-black transition-colors"
+              className="flex items-start gap-3 mb-6 cursor-pointer select-none p-4 bg-parallel-cream border-2 border-gray-300 rounded-2xl hover:border-parallel-void transition-colors"
               htmlFor="biometric-consent"
             >
               <input
@@ -344,7 +344,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
                 type="checkbox"
                 checked={consentChecked}
                 onChange={(e) => setConsentChecked(e.target.checked)}
-                className="mt-1 w-5 h-5 flex-shrink-0 rounded border-2 border-gray-300 text-black focus:ring-black focus:ring-offset-0 cursor-pointer"
+                className="mt-1 w-5 h-5 flex-shrink-0 rounded border-2 border-gray-300 text-parallel-void focus:ring-black focus:ring-offset-0 cursor-pointer"
               />
               <span className="text-sm text-gray-800 leading-relaxed">
                 I have read the information above. I give my <strong>written informed consent</strong> for Parallel's verification partner
@@ -362,7 +362,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             <button
               onClick={handleConsentSubmit}
               disabled={!consentChecked || consentSubmitting}
-              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {consentSubmitting ? (
                 <>
@@ -409,7 +409,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             </div>
             <button
               onClick={handleOpenPersona}
-              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors flex items-center justify-center gap-2"
             >
               Start verification
               <ExternalLink size={18} aria-hidden="true" />
@@ -443,7 +443,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
             <button
               onClick={handleManualCheck}
-              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors flex items-center justify-center gap-2"
             >
               I've completed verification ✓
             </button>
@@ -479,7 +479,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             </div>
             <button
               onClick={onBack}
-              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors"
+              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors"
             >
               Back to account
             </button>
@@ -506,7 +506,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
                 setDeclineReason(null);
                 setStatus('idle');
               }}
-              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors mb-3"
+              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors mb-3"
             >
               Try again
             </button>
@@ -531,7 +531,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             </div>
             <button
               onClick={() => setStatus('idle')}
-              className="w-full bg-black text-white py-4 rounded-full font-medium hover:bg-gray-800 transition-colors mb-3"
+              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors mb-3"
             >
               Try again
             </button>

@@ -288,14 +288,14 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center" role="status" aria-label="Loading notification preferences">
+      <div className="min-h-screen bg-parallel-cream flex items-center justify-center" role="status" aria-label="Loading notification preferences">
         <Loader2 className="w-5 h-5 animate-spin text-gray-500" aria-hidden="true" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-parallel-cream">
       <div className="max-w-md mx-auto px-4 py-6">
         <button
           onClick={onBack}
@@ -443,7 +443,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             <button
               onClick={confirmSmsOptIn}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-parallel-purple text-parallel-cream rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <>
@@ -482,7 +482,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
             <button
               onClick={confirmSmsOptOut}
               disabled={isSaving}
-              className="flex-1 px-4 py-2 bg-black text-white rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
+              className="flex-1 px-4 py-2 bg-parallel-purple text-parallel-cream rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <>
@@ -557,11 +557,11 @@ function SwitchControl({
       onClick={() => !disabled && onChange(!checked)}
       disabled={disabled}
       className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors ${
-        checked ? 'bg-black' : 'bg-gray-200'
+        checked ? 'bg-parallel-void' : 'bg-gray-200'
       } ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform mt-0.5 ${
+        className={`inline-block h-5 w-5 transform rounded-full bg-parallel-cream transition-transform mt-0.5 ${
           checked ? 'translate-x-5' : 'translate-x-0.5'
         }`}
       />
@@ -584,7 +584,7 @@ function Modal({
       // caused the dialog's action buttons to sit behind the iOS home
       // indicator + bottom nav). Centering with px padding leaves room
       // even on the smallest iPhone heights.
-      className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4 py-4"
+      className="fixed inset-0 bg-parallel-void/40 flex items-center justify-center z-50 px-4 py-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
@@ -594,7 +594,7 @@ function Modal({
         // max-h + overflow-y-auto: if the consent text + buttons exceed the
         // viewport (small phones, large text), the modal scrolls internally
         // so the action buttons are always reachable.
-        className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl max-h-[85vh] overflow-y-auto"
+        className="bg-parallel-cream rounded-lg p-6 w-full max-w-sm shadow-xl max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {children}

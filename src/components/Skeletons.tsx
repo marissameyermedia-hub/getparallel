@@ -29,9 +29,9 @@ function InboxRowSkeleton() {
 /** Full inbox skeleton — header + 4 row placeholders. */
 export function InboxSkeleton() {
   return (
-    <div className="flex flex-col bg-white animate-pulse" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-parallel-cream animate-pulse" style={{ height: '100dvh' }}>
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-100 px-5 pt-5 pb-4">
+      <div className="flex-shrink-0 bg-parallel-cream border-b border-gray-100 px-5 pt-5 pb-4">
         <div className="h-7 bg-gray-200 rounded w-32" />
       </div>
 
@@ -68,9 +68,9 @@ function MessageBubbleSkeleton({ side, width }: { side: 'left' | 'right'; width:
  */
 export function MessagingSkeleton() {
   return (
-    <div className="flex flex-col bg-white" style={{ height: '100dvh' }}>
+    <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh' }}>
       {/* Header — match the real header dimensions exactly to avoid layout shift */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+      <div className="flex-shrink-0 bg-parallel-cream border-b border-gray-200 px-4 py-3 z-10">
         <div className="flex items-center gap-2.5 animate-pulse">
           <div className="w-7 h-7 rounded-full bg-gray-100" />
           <div className="w-10 h-10 rounded-full bg-gray-200" />

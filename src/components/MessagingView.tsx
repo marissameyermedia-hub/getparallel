@@ -478,7 +478,7 @@ export function MessagingView({
 
   return (
     <div
-      className="fixed left-0 right-0 top-0 flex flex-col bg-white overflow-hidden z-[60]"
+      className="fixed left-0 right-0 top-0 flex flex-col bg-parallel-cream overflow-hidden z-[60]"
       style={{
         // height = visual viewport height (shrinks when keyboard opens on iOS)
         // transform = shift down by offsetTop so we stay anchored to the
@@ -494,18 +494,18 @@ export function MessagingView({
       {/* Unmatch Modal */}
       {showUnmatchModal && (
         <div
-          className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6"
+          className="fixed inset-0 bg-parallel-void/50 z-[100] flex items-center justify-center p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby="messaging-unmatch-title"
         >
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full">
+          <div className="bg-parallel-cream rounded-3xl p-6 max-w-sm w-full">
             <h2 id="messaging-unmatch-title" className="text-lg font-semibold mb-2">Unmatch {matchName}?</h2>
             <p className="text-gray-500 mb-6 text-sm leading-relaxed">
               This conversation will end and they'll be removed from your matches. This can't be undone.
             </p>
             <div className="space-y-3">
-              <button onClick={handleUnmatch} className="w-full py-3 bg-black text-white rounded-full font-medium">Unmatch</button>
+              <button onClick={handleUnmatch} className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-full font-medium">Unmatch</button>
               <button onClick={() => setShowUnmatchModal(false)} className="w-full py-3 border border-gray-200 rounded-full text-gray-700">Cancel</button>
             </div>
           </div>
@@ -513,7 +513,7 @@ export function MessagingView({
       )}
 
       {/* Header - fixed at top */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3 z-10">
+      <div className="flex-shrink-0 bg-parallel-cream border-b border-gray-200 px-4 py-3 z-10">
         <div className="flex items-center gap-2.5">
           <button
             onClick={onBack}
@@ -536,7 +536,7 @@ export function MessagingView({
                   <img src={matchPhoto} alt={matchName} className="w-10 h-10 rounded-full object-cover" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
-                    <span className="text-white text-sm font-semibold">{getInitials(matchName)}</span>
+                    <span className="text-parallel-cream text-sm font-semibold">{getInitials(matchName)}</span>
                   </div>
                 )}
               </button>
@@ -557,7 +557,7 @@ export function MessagingView({
                   <img src={matchPhoto} alt={matchName} className="w-10 h-10 rounded-full object-cover" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center" aria-hidden="true">
-                    <span className="text-white text-sm font-semibold">{getInitials(matchName)}</span>
+                    <span className="text-parallel-cream text-sm font-semibold">{getInitials(matchName)}</span>
                   </div>
                 )}
               </div>
@@ -580,7 +580,7 @@ export function MessagingView({
               <MoreVertical size={20} aria-hidden="true" />
             </button>
             {showSafetyMenu && (
-              <div className="w-48 bg-white rounded-2xl shadow-xl border border-gray-200 absolute right-0 top-10 z-50 overflow-hidden" role="menu">
+              <div className="w-48 bg-parallel-cream rounded-2xl shadow-xl border border-gray-200 absolute right-0 top-10 z-50 overflow-hidden" role="menu">
                 <button
                   onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
                   role="menuitem"
@@ -641,7 +641,7 @@ export function MessagingView({
                 <button
                   key={i}
                   onClick={() => handleUseStarter(starter)}
-                  className="w-full text-left px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 hover:border-gray-900 hover:bg-white transition-all"
+                  className="w-full text-left px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 hover:border-gray-900 hover:bg-parallel-cream transition-all"
                 >
                   {starter}
                 </button>
@@ -677,7 +677,7 @@ export function MessagingView({
               <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showSenderChange && index > 0 ? 'mt-3' : 'mt-0.5'}`}>
                 <div className={`max-w-[80%] ${
                   isMe
-                    ? 'bg-black text-white rounded-[18px] rounded-br-[4px]'
+                    ? 'bg-parallel-purple text-parallel-cream rounded-[18px] rounded-br-[4px]'
                     : 'bg-gray-100 text-gray-900 rounded-[18px] rounded-bl-[4px]'
                 } px-3 py-2`}>
                   <p className="text-sm leading-snug whitespace-pre-line">{message.text}</p>
@@ -709,7 +709,7 @@ export function MessagingView({
 
       {/* Input bar - more compact */}
       <div
-        className="flex-shrink-0 bg-white border-t border-gray-200 px-3 py-2"
+        className="flex-shrink-0 bg-parallel-cream border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
         {/* ── "We Met in Person" banner ─────────────────────────────────
@@ -748,7 +748,7 @@ export function MessagingView({
           <div className="mb-2">
             <button
               onClick={() => onOpenDateReview(matchId)}
-              className="w-full flex items-center justify-center gap-2 bg-black text-white px-5 py-2.5 rounded-full text-sm font-medium"
+              className="w-full flex items-center justify-center gap-2 bg-parallel-purple text-parallel-cream px-5 py-2.5 rounded-full text-sm font-medium"
             >
               <Check size={14} aria-hidden="true" />
               Leave a Date Review
@@ -773,7 +773,7 @@ export function MessagingView({
           <div className={`flex-1 rounded-full border px-3.5 py-2 transition-colors ${
             messagingDisabled
               ? 'bg-gray-100 border-gray-200 opacity-60'
-              : 'bg-gray-50 border-gray-200 focus-within:bg-white focus-within:border-gray-300'
+              : 'bg-gray-50 border-gray-200 focus-within:bg-parallel-cream focus-within:border-gray-300'
           }`}>
             <label htmlFor="message-input" className="sr-only">Message {matchName}</label>
             <textarea
@@ -800,7 +800,7 @@ export function MessagingView({
             onClick={handleSend}
             disabled={!newMessage.trim() || messagingDisabled}
             aria-label="Send message"
-            className="bg-black text-white p-2.5 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 active:scale-95"
+            className="bg-parallel-purple text-parallel-cream p-2.5 rounded-full transition-all disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0 active:scale-95"
           >
             <Send size={16} aria-hidden="true" />
           </button>

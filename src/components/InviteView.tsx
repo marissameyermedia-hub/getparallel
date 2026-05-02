@@ -200,9 +200,9 @@ export function InviteView({ onBack }: InviteViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-white pb-24">
+    <div className="min-h-screen bg-parallel-cream pb-24">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white z-10 border-b border-gray-100">
+      <div className="fixed top-0 left-0 right-0 bg-parallel-cream z-10 border-b border-gray-100">
         <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">
           <button
             onClick={onBack}
@@ -354,7 +354,7 @@ export function InviteView({ onBack }: InviteViewProps) {
                 const currentOrder = statusOrder[friend.status];
 
                 return (
-                  <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-4">
+                  <div key={idx} className="bg-parallel-cream border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-3 mb-3">
                       <div
                         className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0"
@@ -418,14 +418,14 @@ export function InviteView({ onBack }: InviteViewProps) {
             <div className="flex gap-3">
               <button
                 onClick={handleCopy}
-                className="flex-1 border border-gray-200 bg-white text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
                 aria-label="Copy referral link"
               >
                 {copied ? <><Check size={16} aria-hidden="true" />Copied!</> : <><Copy size={16} aria-hidden="true" />Copy link</>}
               </button>
               <button
                 onClick={handleShare}
-                className="flex-1 text-white px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex-1 text-parallel-cream px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 style={{ background: btnColor }}
                 aria-label="Share referral link"
               >

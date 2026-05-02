@@ -62,14 +62,14 @@ export function PostDateSafetyCheck({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-parallel-void/60 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="post-date-safety-title"
     >
-      <div className="bg-white rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-parallel-cream rounded-lg w-full max-w-lg max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-parallel-cream border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 id="post-date-safety-title" className="text-xl font-semibold">Post-Date Safety Check</h2>
           <button
             onClick={onClose}
@@ -83,7 +83,7 @@ export function PostDateSafetyCheck({
         <div className="p-6 space-y-6">
           <div className="space-y-2">
             <p className="text-sm text-gray-600">
-              Your date with: <span className="font-medium text-black">{matchName}</span>
+              Your date with: <span className="font-medium text-parallel-void">{matchName}</span>
             </p>
             <p className="text-sm text-gray-600">
               This feedback is completely confidential and helps us maintain a safe community. Your answers will contribute to an internal safety score.
@@ -105,7 +105,7 @@ export function PostDateSafetyCheck({
                 }}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                   feltSafe === true
-                    ? 'border-black bg-gray-50'
+                    ? 'border-parallel-void bg-gray-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -118,7 +118,7 @@ export function PostDateSafetyCheck({
                 }}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                   feltSafe === false
-                    ? 'border-black bg-gray-50'
+                    ? 'border-parallel-void bg-gray-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -142,7 +142,7 @@ export function PostDateSafetyCheck({
                 }}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                   boundariesRespected === true
-                    ? 'border-black bg-gray-50'
+                    ? 'border-parallel-void bg-gray-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -155,7 +155,7 @@ export function PostDateSafetyCheck({
                 }}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                   boundariesRespected === false
-                    ? 'border-black bg-gray-50'
+                    ? 'border-parallel-void bg-gray-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -179,7 +179,7 @@ export function PostDateSafetyCheck({
                 }}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                   anythingMisleading === false
-                    ? 'border-black bg-gray-50'
+                    ? 'border-parallel-void bg-gray-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -192,7 +192,7 @@ export function PostDateSafetyCheck({
                 }}
                 className={`flex-1 px-4 py-3 rounded-lg border-2 text-sm font-medium transition-all ${
                   anythingMisleading === true
-                    ? 'border-black bg-gray-50'
+                    ? 'border-parallel-void bg-gray-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -212,7 +212,7 @@ export function PostDateSafetyCheck({
                 onChange={(e) => setConcernDetails(e.target.value)}
                 placeholder="Share any concerns or specific details that would help us understand what happened..."
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black resize-none text-sm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple resize-none text-sm"
               />
             </div>
           )}
@@ -232,7 +232,7 @@ export function PostDateSafetyCheck({
           <button
             onClick={handleSubmit}
             disabled={feltSafe === null || boundariesRespected === null || anythingMisleading === null}
-            className="w-full py-3 bg-black text-white rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-3 bg-parallel-purple text-parallel-cream rounded-lg font-medium hover:bg-parallel-purple/90 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
             Submit Feedback
           </button>

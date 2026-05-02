@@ -287,10 +287,10 @@ export function ProfileEditor({
   //   - Hobbies all rendered in gray (no "you both enjoy" comparison)
   if (showPreview) {
     return (
-      <div className="min-h-screen bg-white pb-20">
+      <div className="min-h-screen bg-parallel-cream pb-20">
         {/* Sticky header — kept from previous preview so the user has a
             "Back to editing" anchor while reviewing the card. */}
-        <div className="sticky top-0 bg-white z-10 border-b border-gray-100 flex items-center justify-between px-4 py-3">
+        <div className="sticky top-0 bg-parallel-cream z-10 border-b border-gray-100 flex items-center justify-between px-4 py-3">
           <button
             onClick={() => setShowPreview(false)}
             className="flex items-center gap-1 text-sm font-medium hover:text-gray-600"
@@ -336,7 +336,7 @@ export function ProfileEditor({
                       <div
                         key={idx}
                         className={`h-1 rounded-full transition-all ${
-                          idx === previewPhotoIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/50'
+                          idx === previewPhotoIndex ? 'w-5 bg-parallel-cream' : 'w-1.5 bg-parallel-cream/50'
                         }`}
                       />
                     ))}
@@ -344,7 +344,7 @@ export function ProfileEditor({
                 </>
               )}
               {isVerified && (
-                <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-white px-3 py-1.5 rounded-full shadow-lg">
+                <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-parallel-cream px-3 py-1.5 rounded-full shadow-lg">
                   <ShieldCheck size={13} aria-hidden="true" />
                   <span className="text-xs font-medium">Verified</span>
                 </div>
@@ -383,7 +383,7 @@ export function ProfileEditor({
           {/* Hobbies & Interests — self-preview shows all in gray since
               there's no "shared with you" comparison. */}
           {hobbies.length > 0 && (
-            <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
+            <div className="p-4 bg-parallel-cream rounded-2xl border-2 border-gray-200">
               <h3 className="text-sm font-semibold mb-3">Hobbies &amp; Interests</h3>
               <div className="flex flex-wrap gap-2">
                 {hobbies.map((hobby) => (
@@ -397,7 +397,7 @@ export function ProfileEditor({
 
           {/* Profile Basics */}
           {profileDetails.length > 0 && (
-            <div className="p-4 bg-white rounded-2xl border-2 border-gray-200">
+            <div className="p-4 bg-parallel-cream rounded-2xl border-2 border-gray-200">
               <h3 className="text-sm font-semibold mb-3">Profile Basics</h3>
               <div className="grid grid-cols-1 gap-3">
                 {profileDetails.map(({ icon: Icon, label, value }) => (
@@ -443,11 +443,11 @@ export function ProfileEditor({
   // Bottom padding ensures content is never hidden under the fixed save button.
   // No overflow-hidden on any parent div — keyboard pushes layout naturally.
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-[390px] mx-auto bg-white">
+    <div className="bg-parallel-cream min-h-screen">
+      <div className="max-w-[390px] mx-auto bg-parallel-cream">
 
         {/* Sticky header */}
-        <div className="sticky top-0 bg-white z-10 border-b border-gray-100">
+        <div className="sticky top-0 bg-parallel-cream z-10 border-b border-gray-100">
           <div className="flex items-center justify-between px-4 py-3">
             {onBack ? (
               <button onClick={onBack} aria-label="Back to account" className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-all">
@@ -457,7 +457,7 @@ export function ProfileEditor({
             <h1 className="text-base font-semibold flex-1 text-center">
               {isOnboarding ? `Create your profile, ${firstName}` : 'Edit Profile'}
             </h1>
-            <button onClick={() => setShowPreview(true)} className="text-sm text-gray-500 hover:text-black transition-colors">
+            <button onClick={() => setShowPreview(true)} className="text-sm text-gray-500 hover:text-parallel-void transition-colors">
               Preview
             </button>
           </div>
@@ -484,20 +484,20 @@ export function ProfileEditor({
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={e => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 cursor-move border-2 transition-all ${dragIndex === index ? 'border-black opacity-70 scale-95' : 'border-transparent'} ${index === 0 ? 'ring-2 ring-black ring-offset-1' : ''}`}
+                  className={`relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 cursor-move border-2 transition-all ${dragIndex === index ? 'border-parallel-void opacity-70 scale-95' : 'border-transparent'} ${index === 0 ? 'ring-2 ring-black ring-offset-1' : ''}`}
                 >
                   <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
                   {index === 0 && (
-                    <div className="absolute top-1.5 left-1.5 bg-black text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">Main</div>
+                    <div className="absolute top-1.5 left-1.5 bg-parallel-purple text-parallel-cream text-[10px] font-medium px-1.5 py-0.5 rounded-full">Main</div>
                   )}
                   <button onClick={() => handleRemovePhoto(index)}
                     aria-label={`Remove photo ${index + 1}`}
-                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-black/60 rounded-full flex items-center justify-center hover:bg-black transition-colors"
+                    className="absolute top-1.5 right-1.5 w-6 h-6 bg-parallel-void/60 rounded-full flex items-center justify-center hover:bg-parallel-void transition-colors"
                   >
-                    <X size={12} className="text-white" aria-hidden="true" />
+                    <X size={12} className="text-parallel-cream" aria-hidden="true" />
                   </button>
-                  <div className="absolute bottom-1.5 left-1.5 w-5 h-5 bg-black/40 rounded-full flex items-center justify-center" aria-hidden="true">
-                    <GripVertical size={10} className="text-white" />
+                  <div className="absolute bottom-1.5 left-1.5 w-5 h-5 bg-parallel-void/40 rounded-full flex items-center justify-center" aria-hidden="true">
+                    <GripVertical size={10} className="text-parallel-cream" />
                   </div>
                 </div>
               ))}
@@ -547,7 +547,7 @@ export function ProfileEditor({
               <input type="text" value={career}
                 onChange={e => { setCareer(e.target.value); setHasSaved(false); }}
                 placeholder="e.g. Product Manager, Teacher, Nurse..."
-                className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                 style={{ fontSize: '16px' }}
               />
             </div>
@@ -564,7 +564,7 @@ export function ProfileEditor({
               <input type="text" value={education}
                 onChange={e => { setEducation(e.target.value); setHasSaved(false); }}
                 placeholder="e.g. University of Washington, Trade School..."
-                className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+                className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
                 style={{ fontSize: '16px' }}
               />
             </div>
@@ -580,7 +580,7 @@ export function ProfileEditor({
               onChange={e => { setBio(e.target.value.slice(0, 300)); setHasSaved(false); }}
               placeholder="Write a short bio — who you are, what you care about, what you're looking for..."
               rows={4}
-              className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors resize-none"
+              className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors resize-none"
               style={{ fontSize: '16px' }}
             />
             <div className="flex justify-between mt-1">
@@ -597,7 +597,7 @@ export function ProfileEditor({
             <input type="text" value={pronouns}
               onChange={e => { setPronouns(e.target.value); setHasSaved(false); }}
               placeholder="e.g. she/her, he/him, they/them..."
-              className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-black focus:outline-none transition-colors"
+              className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
               style={{ fontSize: '16px' }}
             />
             {pronouns && <p className="text-xs text-amber-600 mt-1 ml-1">⚠ This will be shown on your public profile</p>}
@@ -608,7 +608,7 @@ export function ProfileEditor({
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Instagram <span className="text-gray-400 font-normal">— optional, shown after mutual match</span>
             </label>
-            <div className="flex items-center rounded-2xl border-2 border-gray-200 focus-within:border-black transition-colors overflow-hidden">
+            <div className="flex items-center rounded-2xl border-2 border-gray-200 focus-within:border-parallel-purple transition-colors overflow-hidden">
               <span className="pl-4 pr-1 text-gray-500 font-medium select-none" style={{fontSize:'16px'}}>@</span>
               <input 
                 type="text" 
@@ -668,11 +668,11 @@ export function ProfileEditor({
 
         {/* Fixed save button at bottom — constrained to match content max-width */}
         <div className="fixed bottom-0 left-0 right-0 z-20">
-          <div className="max-w-[390px] mx-auto bg-white border-t border-gray-100 px-6 py-4 space-y-2">
+          <div className="max-w-[390px] mx-auto bg-parallel-cream border-t border-gray-100 px-6 py-4 space-y-2">
             <button
               onClick={handleComplete}
               disabled={!canSave || isUploading || isSaving}
-              className="w-full py-4 px-6 rounded-full bg-black text-white font-medium text-base transition-all hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream font-medium text-base transition-all hover:bg-parallel-purple/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSaving ? (
                 <>

@@ -45,14 +45,14 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
     <>
       {/* Backdrop — z-[65] so it sits above bottom nav (z-[60]) but below sheet (z-[70]) */}
       <div
-        className="fixed inset-0 bg-black/40 z-[65]"
+        className="fixed inset-0 bg-parallel-void/40 z-[65]"
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Sheet — z-[70] so it's always above bottom nav */}
       <div
-        className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[70] max-h-[85vh] flex flex-col"
+        className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-[70] max-h-[85vh] flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="pass-feedback-title"
@@ -83,8 +83,8 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
                 aria-pressed={selectedReasons.includes(reason.id)}
                 className={`px-4 py-2 rounded-full border-2 transition-all text-sm ${
                   selectedReasons.includes(reason.id)
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
+                    ? 'bg-parallel-purple text-parallel-cream border-parallel-void'
+                    : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
                 }`}
               >
                 {reason.label}
@@ -94,7 +94,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
 
           {/* Questionnaire nudge */}
           {ageRangeSelected && onNavigateToQuestionnaire && (
-            <button onClick={onNavigateToQuestionnaire} className="mt-4 w-full text-left p-4 bg-black text-white rounded-2xl">
+            <button onClick={onNavigateToQuestionnaire} className="mt-4 w-full text-left p-4 bg-parallel-purple text-parallel-cream rounded-2xl">
               <p className="text-sm font-semibold">Update your age preferences</p>
               <p className="text-sm text-gray-300 mt-0.5">Adjust the age range in your questionnaire →</p>
             </button>
@@ -114,7 +114,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateT
             disabled={selectedReasons.length === 0}
             className={`w-full px-6 py-3 rounded-full transition-all font-medium mb-2 ${
               selectedReasons.length > 0
-                ? 'bg-black text-white hover:bg-gray-800'
+                ? 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
           >

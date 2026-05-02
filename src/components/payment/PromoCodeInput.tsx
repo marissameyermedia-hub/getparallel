@@ -123,7 +123,7 @@ export function PromoCodeInput({ onSuccess }: PromoCodeInputProps) {
         <button
           onClick={handleRedeem}
           disabled={loading || !code.trim() || !!success}
-          className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
+          className="px-4 py-2 bg-parallel-purple text-parallel-cream rounded-md hover:bg-parallel-purple/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
         >
           {loading ? "Redeeming..." : "Redeem"}
         </button>

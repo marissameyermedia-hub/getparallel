@@ -115,7 +115,7 @@ export function NavigationProgress() {
       style={{ opacity: visible ? 1 : 0 }}
     >
       <div
-        className="h-full bg-black"
+        className="h-full bg-parallel-void"
         style={{
           // Indeterminate loading animation — slides a bar from left to right repeatedly.
           // Pure CSS so it doesn't compete with React for the main thread.

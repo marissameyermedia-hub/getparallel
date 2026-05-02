@@ -13,7 +13,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
   const planPrice = plan === 'annual' ? '$79.00' : plan === 'monthly' ? '$24.99' : '—';
 
   return (
-    <div className="min-h-screen bg-white pt-6 pb-24 px-6">
+    <div className="min-h-screen bg-parallel-cream pt-6 pb-24 px-6">
       <div className="max-w-2xl mx-auto">
         <button
           onClick={onBack}
@@ -28,10 +28,10 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
         {hasActivated ? (
           <>
             {/* Active Membership Status */}
-            <div className="bg-black text-white rounded-3xl p-6 mb-6">
+            <div className="bg-parallel-purple text-parallel-cream rounded-3xl p-6 mb-6">
               <div className="flex items-center gap-3 mb-4">
-                <CheckCircle className="w-6 h-6 text-white" />
-                <h2 className="text-white">Parallel — active</h2>
+                <CheckCircle className="w-6 h-6 text-parallel-cream" />
+                <h2 className="text-parallel-cream">Parallel — active</h2>
               </div>
               <p className="text-gray-300">
                 Your plan is active. Manage billing and renewals from this page.
@@ -42,7 +42,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
             <div className="bg-gray-50 rounded-2xl p-6">
               <h3 className="mb-4">Payment History</h3>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-white rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-parallel-cream rounded-xl">
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-gray-600" />
                     <div>
@@ -68,7 +68,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
               </p>
               <button
                 onClick={onGoToPayment}
-                className="w-full py-4 px-6 bg-black text-white rounded-full hover:bg-gray-800 transition-colors font-medium"
+                className="w-full py-4 px-6 bg-parallel-purple text-parallel-cream rounded-full hover:bg-parallel-purple/90 transition-colors font-medium"
               >
                 See plans
               </button>
@@ -79,8 +79,8 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
               <h3 className="mb-4">What You'll Get</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle className="w-4 h-4 text-white" />
+                  <div className="w-6 h-6 bg-parallel-void rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle className="w-4 h-4 text-parallel-cream" />
                   </div>
                   <div>
                     <div className="font-medium">Unlock all your matches</div>
@@ -88,8 +88,8 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle className="w-4 h-4 text-white" />
+                  <div className="w-6 h-6 bg-parallel-void rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle className="w-4 h-4 text-parallel-cream" />
                   </div>
                   <div>
                     <div className="font-medium">Annual or monthly plans</div>
@@ -97,8 +97,8 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle className="w-4 h-4 text-white" />
+                  <div className="w-6 h-6 bg-parallel-void rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle className="w-4 h-4 text-parallel-cream" />
                   </div>
                   <div>
                     <div className="font-medium">Message your matches</div>

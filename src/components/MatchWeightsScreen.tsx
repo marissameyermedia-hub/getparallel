@@ -156,14 +156,14 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-parallel-cream flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-parallel-void border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-parallel-cream flex flex-col">
       {/* Header */}
       <div className="pt-4 px-6 pb-2 flex-shrink-0 flex items-center justify-between">
         {onBack ? (
@@ -191,7 +191,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
         </div>
 
         {/* Token counter */}
-        <div className={`mb-6 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl ${remaining === 0 ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'} transition-colors`}>
+        <div className={`mb-6 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl ${remaining === 0 ? 'bg-parallel-purple text-parallel-cream' : 'bg-gray-100 text-gray-600'} transition-colors`}>
           <span className="text-sm font-medium">
             {remaining === 0 ? `✓ All ${TOTAL_TOKENS} tokens allocated` : `${remaining} token${remaining !== 1 ? 's' : ''} remaining`}
           </span>
@@ -216,7 +216,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
                   <button
                     onClick={() => adjust(cat.key, -1)}
                     disabled={tokens[cat.key] <= 1}
-                    className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 font-medium hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 font-medium hover:border-parallel-void transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     −
                   </button>
@@ -224,7 +224,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
                   <button
                     onClick={() => adjust(cat.key, 1)}
                     disabled={remaining <= 0}
-                    className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 font-medium hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="w-8 h-8 rounded-full border-2 border-gray-200 flex items-center justify-center text-gray-600 font-medium hover:border-parallel-void transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     +
                   </button>
@@ -233,7 +233,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
               {/* Proportional token bar — fills relative to TOTAL_TOKENS */}
               <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-black rounded-full transition-all"
+                  className="h-full bg-parallel-void rounded-full transition-all"
                   style={{ width: `${(tokens[cat.key] / TOTAL_TOKENS) * 100}%` }}
                 />
               </div>
@@ -249,12 +249,12 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
       </div>
 
       {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-3 px-4 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-parallel-cream border-t border-gray-100 py-3 px-4 z-50">
         <div className="max-w-md mx-auto">
           <button
             onClick={handleSave}
             disabled={remaining !== 0 || isSaving}
-            className="w-full bg-black text-white py-4 rounded-full font-semibold text-base hover:bg-gray-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-semibold text-base hover:bg-parallel-purple/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {isSaving ? 'Saving...' : isOnboarding ? 'Set my preferences →' : 'Save preferences'}
           </button>
