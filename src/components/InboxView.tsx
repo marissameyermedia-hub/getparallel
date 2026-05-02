@@ -4,6 +4,7 @@ import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 import { InboxSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
+import { SetupChecklist } from './SetupChecklist';
 
 interface Message {
   matchId: string;
@@ -30,6 +31,14 @@ interface InboxViewProps {
   onViewProfile: (matchId: string) => void;
   hasActivated?: boolean;
   onNavigateToPayment?: () => void;
+  // Plumbing for the SetupChecklist card at the top of Inbox. Mirrors what
+  // MatchesView already passes — both views share state via localStorage +
+  // backend, so dismissing/completing on one auto-syncs to the other.
+  accessToken?: string | null;
+  emailVerified?: boolean;
+  isVerified?: boolean;
+  onOpenInstallPrompt?: () => void;
+  onOpenNotifications?: () => void;
 }
 
 export function InboxView({
@@ -38,6 +47,11 @@ export function InboxView({
   onViewProfile,
   hasActivated = false,
   onNavigateToPayment,
+  accessToken = null,
+  emailVerified = true,
+  isVerified = false,
+  onOpenInstallPrompt,
+  onOpenNotifications,
 }: InboxViewProps) {
   const [localMessages, setLocalMessages] = useState<Message[]>(propMessages);
   const [waiting, setWaiting] = useState<WaitingMutual[]>([]);
@@ -177,6 +191,20 @@ export function InboxView({
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
+
+        {/* Setup checklist — same card that lives on Home. Auto-hides when all
+            actionable items are done (email verified, SMS opted in, PWA done).
+            Collapsed/dismissed state is shared via localStorage so hiding it
+            on one screen hides it on the other. */}
+        <SetupChecklist
+          accessToken={accessToken}
+          emailVerified={emailVerified}
+          identityVerified={isVerified}
+          onOpenInstallPrompt={onOpenInstallPrompt || (() => {
+            try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
+          })}
+          onOpenNotifications={onOpenNotifications}
+        />
 
         {/* "Mutual matches waiting" horizontal row — only shows if there are waiting mutuals.
             Waiting circles split into two tap zones: tap photo → profile, tap name → chat. */}

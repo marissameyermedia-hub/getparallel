@@ -1561,6 +1561,10 @@ function App() {
             }}
             hasActivated={hasActivated}
             onNavigateToPayment={() => setCurrentView('pricing')}
+            accessToken={accessToken}
+            emailVerified={emailConfirmed}
+            isVerified={hasVerified}
+            onOpenNotifications={() => setCurrentView('notifications')}
           />
         )}
 
