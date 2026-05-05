@@ -1237,6 +1237,7 @@ function App() {
             phone={phoneToVerify}
             accessToken={accessToken || ''}
             onVerified={() => setCurrentView('onboarding')}
+            onSkip={() => setCurrentView('onboarding')}
           />
         )}
 
