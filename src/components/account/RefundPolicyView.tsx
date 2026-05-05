@@ -123,10 +123,10 @@ export function RefundPolicyView({ onBack }: RefundPolicyViewProps) {
             <section>
               <h2 className="mb-3 font-semibold">Payment Processing</h2>
               <p className="mb-3">
-                All payments are processed securely through Stripe. If you have questions about a charge or believe there is an error:
+                All payments are processed securely through PayPal. If you have questions about a charge or believe there is an error:
               </p>
               <ol className="list-decimal pl-6 space-y-2">
-                <li>Check your purchase history in Account Settings → Payment Details</li>
+                <li>Check your subscription details in Account Settings → Payment Details, or in your PayPal account at paypal.com</li>
                 <li>Review the charge details in your email receipt</li>
                 <li>Contact us at support@getparallel.vip with specific questions</li>
               </ol>
