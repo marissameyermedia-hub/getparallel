@@ -76,7 +76,6 @@ function App() {
   // from a chat they've already matched with).
   const [profileSource, setProfileSource] = useState<'home' | 'chat'>('home');
   const [phoneToVerify, setPhoneToVerify] = useState<string>('');
-  const [phoneVerificationSkipped, setPhoneVerificationSkipped] = useState(false);
   const [userProfile, setUserProfile] = useState<{
     photos: string[];
     bio: string;
@@ -681,15 +680,6 @@ function App() {
           // any way to reach OnboardingFlow without verifying their phone, the
           // backend will refuse and we route them back to PhoneVerificationPage.
           if (response.status === 403 && errorData.phoneVerificationRequired === true) {
-            // If the user explicitly skipped (e.g. SMS provider is down), let them
-            // through this session rather than hard-bouncing back to verification.
-            if (phoneVerificationSkipped) {
-              toast('Phone verification pending — verify in Account settings when SMS is available.', { duration: 5000 });
-              await fetchMatches(token);
-              setHasCompletedOnboarding(true);
-              setCurrentView('matches');
-              return { success: true };
-            }
             if (errorData.phone) setPhoneToVerify(errorData.phone);
             setCurrentView('phone-verification');
             toast('Please verify your phone number to continue.', { duration: 4000 });
@@ -1247,7 +1237,6 @@ function App() {
             phone={phoneToVerify}
             accessToken={accessToken || ''}
             onVerified={() => setCurrentView('onboarding')}
-            onSkip={() => { setPhoneVerificationSkipped(true); setCurrentView('onboarding'); }}
           />
         )}
 
