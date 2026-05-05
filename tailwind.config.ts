@@ -11,7 +11,7 @@ import type { Config } from "tailwindcss";
 // tokens when you specifically need a brand color by name.
 const parallelColors = {
   void:         "#0D0D0F",  // Near-black. Primary text, dark backgrounds.
-  cream:        "#F5F2EE",  // Off-white. Light backgrounds, text on dark.
+  cream:        "#FFFFFF",  // White. Light backgrounds, text on dark.
   purple:       "#7B5EA7",  // Brand accent. CTA buttons, the // in the logo.
   "soft-violet":"#A98FD0",  // Hover states, // on pure-black backgrounds.
   linen:        "#E8E4DE",  // Borders and dividers on light backgrounds.

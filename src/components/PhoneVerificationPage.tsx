@@ -22,7 +22,6 @@ interface PhoneVerificationPageProps {
   // on this page with it already entered.
   phone?: string;
   onVerified: (phone: string, smsConsent: boolean) => void;
-  onSkip?: () => void;
   onBack?: () => void;
 }
 
@@ -34,7 +33,7 @@ const SMS_CONSENT_TEXT =
 
 const SMS_CONSENT_VERSION = 'v1-2026-04';
 
-export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onSkip, onBack }: PhoneVerificationPageProps) {
+export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onBack }: PhoneVerificationPageProps) {
   const [step, setStep] = useState<'enter' | 'verify'>('enter');
   const [phone, setPhone] = useState(() => initialPhone ? formatInitialPhone(initialPhone) : '');
   const [code, setCode] = useState('');
@@ -367,17 +366,6 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
               className="w-full text-xs text-gray-500 hover:text-gray-800 mt-2"
             >
               ← Use a different number
-            </button>
-          </div>
-        )}
-
-        {onSkip && (
-          <div className="text-center mt-6">
-            <button
-              onClick={onSkip}
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              Skip for now
             </button>
           </div>
         )}
