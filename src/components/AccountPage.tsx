@@ -506,7 +506,7 @@ export function AccountPage({
             >
               <User size={20} className="text-parallel-cream mb-2" />
               <p className="text-sm font-medium text-parallel-cream">Edit Profile</p>
-              <p className="text-xs text-gray-500">Photos, bio, details</p>
+              <p className="text-xs text-parallel-cream/60">Photos, bio, details</p>
             </button>
 
             {/* Preview Profile — directly on account page */}

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ParallelIcon } from './ParallelIcon';
 import { ParallelWordmark } from './ParallelWordmark';
 import { Mail, Lock, ArrowRight, X, Check, ShieldCheck, MapPin, Heart } from 'lucide-react';
 import { AppFooter } from './AppFooter';
@@ -335,7 +334,9 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           >
             <div className="flex items-center justify-between px-6 pt-6 pb-2">
               <div className="w-10 h-10 rounded-full bg-parallel-void flex items-center justify-center" aria-hidden="true">
-                <ParallelIcon size={20} className="text-parallel-soft-violet" />
+                <span style={{ fontSize: '9px', fontWeight: 700, color: '#FFFFFF', letterSpacing: '.02em', userSelect: 'none' }}>
+                  P<span style={{ color: '#A98FD0' }}>//</span>
+                </span>
               </div>
               <button
                 onClick={closeSignInModal}
