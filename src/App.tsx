@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL } from './utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from './utils/supabase/client';
 import { publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
 import { SignInPage } from './components/SignInPage';
@@ -848,6 +848,14 @@ function App() {
           wouldAdjust,
         }),
       }).catch(err => console.error('Feedback API failed:', err));
+      // Recompute matching weights from accumulated feedback (fire-and-forget)
+      if (userId) {
+        fetch(`${FEEDBACK_PROCESSOR_URL}/process-user`, {
+          method: 'POST',
+          headers: getHeaders(token),
+          body: JSON.stringify({ userId }),
+        }).catch(() => {});
+      }
     }
   };
 
@@ -906,6 +914,14 @@ function App() {
             headers: getHeaders(token),
             body: JSON.stringify({ reportedUserId: dateReviewScreen.matchId, reason: 'safety_issue_from_date_review', details: review.couldImprove || '' })
           });
+        }
+        // Recompute matching weights from accumulated feedback (fire-and-forget)
+        if (userId) {
+          fetch(`${FEEDBACK_PROCESSOR_URL}/process-user`, {
+            method: 'POST',
+            headers: getHeaders(token),
+            body: JSON.stringify({ userId }),
+          }).catch(() => {});
         }
       } catch (err) { console.error('Failed to save date review:', err); }
     }
