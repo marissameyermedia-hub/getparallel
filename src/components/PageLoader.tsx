@@ -1,3 +1,4 @@
+import { ParallelWordmark } from './ParallelWordmark';
 import { LoadingDots } from './LoadingDots';
 
 interface PageLoaderProps {
@@ -6,7 +7,8 @@ interface PageLoaderProps {
 
 export function PageLoader({ message }: PageLoaderProps) {
   return (
-    <div className="min-h-screen bg-parallel-cream flex flex-col items-center justify-center gap-4">
+    <div className="min-h-screen bg-parallel-cream flex flex-col items-center justify-center gap-6">
+      <ParallelWordmark sizeClassName="text-2xl" />
       <LoadingDots />
       {message && (
         <p className="text-sm text-gray-400 font-medium">{message}</p>

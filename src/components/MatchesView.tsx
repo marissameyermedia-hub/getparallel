@@ -405,7 +405,7 @@ export function MatchesView({
                 <button
                   onClick={onNavigateToInvite || handleShareInvite}
                   className="w-full py-2.5 rounded-full text-sm font-medium transition-colors"
-                  style={{ background: '#7B5EA7', color: '#F5F2EE' }}
+                  style={{ background: '#7B5EA7', color: '#FFFFFF' }}
                 >
                   Invite a friend →
                 </button>
@@ -419,7 +419,10 @@ export function MatchesView({
               <SetupChecklist
                 accessToken={accessToken}
                 emailVerified={emailVerified}
-                isVerified={isVerified}
+                identityVerified={isVerified}
+                onOpenInstallPrompt={() => {
+                  try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
+                }}
               />
               <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
                 <div className="mb-6">
@@ -429,7 +432,7 @@ export function MatchesView({
                     style={{ background: '#0D0D0F' }}
                     aria-hidden="true"
                   >
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#F5F2EE', letterSpacing: '.02em' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#FFFFFF', letterSpacing: '.02em' }}>
                       P<span style={{ color: '#A98FD0' }}>//</span>
                     </span>
                   </div>
