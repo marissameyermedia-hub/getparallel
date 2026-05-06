@@ -119,18 +119,18 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
 
   // ── Total question count ──────────────────────────────────────
   const totalQuestions = parallelQuestionnaire.reduce((total, section) => {
-    return total + section.questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+    return total + section.questions.filter(q => isQuestionVisible(q, answers)).length;
   }, 0);
 
   const getCurrentQuestionNumber = () => {
     let questionNumber = 0;
     for (let i = 0; i < currentChapterIndex; i++) {
-      questionNumber += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+      questionNumber += parallelQuestionnaire[i].questions.filter(q => isQuestionVisible(q, answers)).length;
     }
     if (currentQuestionIndex >= 0) {
       const questionsUpToHere = currentChapter.questions
         .slice(0, currentQuestionIndex + 1)
-        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers));
+        .filter(q => isQuestionVisible(q, answers));
       questionNumber += questionsUpToHere.length;
     }
     return questionNumber;
@@ -404,7 +404,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   const getNextQuestionIndex = (fromIndex: number): number | null => {
     for (let i = fromIndex; i < currentChapter.questions.length; i++) {
       const q = currentChapter.questions[i];
-      if (q.type !== 'LOCATION' && isQuestionVisible(q)) return i;
+      if (isQuestionVisible(q)) return i;
     }
     return null;
   };
@@ -412,7 +412,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   const getPrevQuestionIndex = (fromIndex: number): number | null => {
     for (let i = fromIndex; i >= 0; i--) {
       const q = currentChapter.questions[i];
-      if (q.type !== 'LOCATION' && isQuestionVisible(q)) return i;
+      if (isQuestionVisible(q)) return i;
     }
     return null;
   };
@@ -420,12 +420,12 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   const getCompletedQuestions = () => {
     let completed = 0;
     for (let i = 0; i < currentChapterIndex; i++) {
-      completed += parallelQuestionnaire[i].questions.filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+      completed += parallelQuestionnaire[i].questions.filter(q => isQuestionVisible(q, answers)).length;
     }
     if (currentQuestionIndex >= 0) {
       completed += currentChapter.questions
         .slice(0, currentQuestionIndex + 1)
-        .filter(q => q.type !== 'LOCATION' && isQuestionVisible(q, answers)).length;
+        .filter(q => isQuestionVisible(q, answers)).length;
     }
     return completed;
   };
@@ -568,11 +568,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
       setCurrentChapterIndex(PART1_LAST_CHAPTER_INDEX);
       const lastPart1Chapter = parallelQuestionnaire[PART1_LAST_CHAPTER_INDEX];
       let lastQ = lastPart1Chapter.questions.length - 1;
-      while (
-        lastQ >= 0 &&
-        (lastPart1Chapter.questions[lastQ].type === 'LOCATION' ||
-          !isQuestionVisible(lastPart1Chapter.questions[lastQ]))
-      ) lastQ--;
+      while (lastQ >= 0 && !isQuestionVisible(lastPart1Chapter.questions[lastQ])) lastQ--;
       setCurrentQuestionIndex(lastQ >= 0 ? lastQ : lastPart1Chapter.questions.length - 1);
       window.scrollTo(0, 0);
       return;
@@ -598,11 +594,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
         const prevChapter = parallelQuestionnaire[currentChapterIndex - 1];
         setCurrentChapterIndex(currentChapterIndex - 1);
         let lastQ = prevChapter.questions.length - 1;
-        while (
-          lastQ >= 0 &&
-          (prevChapter.questions[lastQ].type === 'LOCATION' ||
-            !isQuestionVisible(prevChapter.questions[lastQ]))
-        ) lastQ--;
+        while (lastQ >= 0 && !isQuestionVisible(prevChapter.questions[lastQ])) lastQ--;
         setCurrentQuestionIndex(lastQ >= 0 ? lastQ : prevChapter.questions.length - 1);
         window.scrollTo(0, 0);
       } else {
@@ -830,7 +822,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
               canGoBack={true}
             />
           </div>
-        ) : currentQuestion && currentQuestion.type !== 'LOCATION' ? (
+        ) : currentQuestion ? (
           <div className="flex-1 min-h-0 flex flex-col">
             {/* Section title replaces "Section X of Y" — more meaningful to users */}
             <div className="px-6 pt-2 pb-0 flex items-center justify-between flex-shrink-0">
