@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { useState } from 'react';
-import { ParallelIcon } from './ParallelIcon';
+import { ParallelWordmark } from './ParallelWordmark';
 import { parallelQuestionnaire } from '../data/parallelQuestionnaire_updated';
 import { getAccessToken } from '../utils/auth';
 import { SetupChecklist } from './SetupChecklist';
@@ -134,7 +134,7 @@ export function MatchesView({
       <div className="bg-parallel-cream min-h-screen flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center">
           <div className="mb-8 flex justify-center">
-            <ParallelIcon size={64} className="text-parallel-purple" />
+            <ParallelWordmark sizeClassName="text-4xl" />
           </div>
           <h2 className="text-3xl font-bold mb-4">You're in the pool. Matching opens soon.</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-6">
@@ -165,7 +165,7 @@ export function MatchesView({
       <div className="bg-parallel-cream pt-20 min-h-screen flex items-center justify-center px-4">
         <div className="max-w-md text-center">
           <div className="mb-8 flex justify-center">
-            <ParallelIcon size={64} className="text-parallel-purple" />
+            <ParallelWordmark sizeClassName="text-4xl" />
           </div>
           <h2 className="text-3xl font-bold mb-3">Finish your questionnaire to unlock your matches</h2>
           <p className="text-gray-600 text-lg leading-relaxed mb-8">
@@ -405,7 +405,7 @@ export function MatchesView({
                 <button
                   onClick={onNavigateToInvite || handleShareInvite}
                   className="w-full py-2.5 rounded-full text-sm font-medium transition-colors"
-                  style={{ background: '#7B5EA7', color: '#F5F2EE' }}
+                  style={{ background: '#7B5EA7', color: '#FFFFFF' }}
                 >
                   Invite a friend →
                 </button>
@@ -419,7 +419,10 @@ export function MatchesView({
               <SetupChecklist
                 accessToken={accessToken}
                 emailVerified={emailVerified}
-                isVerified={isVerified}
+                identityVerified={isVerified}
+                onOpenInstallPrompt={() => {
+                  try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
+                }}
               />
               <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
                 <div className="mb-6">
@@ -429,7 +432,7 @@ export function MatchesView({
                     style={{ background: '#0D0D0F' }}
                     aria-hidden="true"
                   >
-                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#F5F2EE', letterSpacing: '.02em' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#FFFFFF', letterSpacing: '.02em' }}>
                       P<span style={{ color: '#A98FD0' }}>//</span>
                     </span>
                   </div>

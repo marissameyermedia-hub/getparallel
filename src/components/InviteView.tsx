@@ -56,10 +56,10 @@ const TIERS = [
   {
     name: 'Legend',
     min: 50, max: Infinity,
-    dotBg: '#0D0D0F', dotText: '#F5F2EE',
-    badgeBg: '#0D0D0F', badgeText: '#F5F2EE',
+    dotBg: '#0D0D0F', dotText: '#FFFFFF',
+    badgeBg: '#0D0D0F', badgeText: '#FFFFFF',
     bar: '#0D0D0F', btn: '#0D0D0F',
-    bannerBg: '#0D0D0F', bannerText: '#F5F2EE',
+    bannerBg: '#0D0D0F', bannerText: '#FFFFFF',
     unlockTitle: 'Parallel Legend.',
     unlockSub: "50 ripples. There's no tier above this. You're it.",
   },
@@ -297,6 +297,48 @@ export function InviteView({ onBack }: InviteViewProps) {
           </div>
         </div>
 
+        {/* ── Share CTA ── */}
+        <div className="mt-8">
+          {/* Nudge copy */}
+          <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
+            "{nudge}"
+          </div>
+
+          {/* Share buttons.
+              Skeleton stays up while either (a) the dashboard call is in
+              flight, or (b) it returned without a real ?ref= link. Prevents
+              the user from sharing a code-less URL that credits nobody. */}
+          {isLoading || !hasValidReferralLink ? (
+            <div className="h-12 bg-gray-100 rounded-full animate-pulse" aria-label="Loading share link" />
+          ) : (
+            <div className="flex gap-3">
+              <button
+                onClick={handleCopy}
+                className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                aria-label="Copy referral link"
+              >
+                {copied ? <><Check size={16} aria-hidden="true" />Copied!</> : <><Copy size={16} aria-hidden="true" />Copy link</>}
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex-1 text-parallel-cream px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                style={{ background: btnColor }}
+                aria-label="Share referral link"
+              >
+                <Share2 size={16} aria-hidden="true" />
+                Share
+              </button>
+            </div>
+          )}
+
+          {/* Link display */}
+          {!isLoading && (
+            <div className="mt-3 text-center text-xs text-gray-300 font-mono break-all">
+              {referralLink}
+            </div>
+          )}
+        </div>
+
         {/* ── Tier ladder ── */}
         <div className="mt-8">
           <div className="text-xs uppercase tracking-widest text-gray-400 mb-3">Ripple tiers</div>
@@ -400,48 +442,6 @@ export function InviteView({ onBack }: InviteViewProps) {
             </div>
           </div>
         )}
-
-        {/* ── Share CTA ── */}
-        <div className="mt-8">
-          {/* Nudge copy */}
-          <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
-            "{nudge}"
-          </div>
-
-          {/* Share buttons.
-              Skeleton stays up while either (a) the dashboard call is in
-              flight, or (b) it returned without a real ?ref= link. Prevents
-              the user from sharing a code-less URL that credits nobody. */}
-          {isLoading || !hasValidReferralLink ? (
-            <div className="h-12 bg-gray-100 rounded-full animate-pulse" aria-label="Loading share link" />
-          ) : (
-            <div className="flex gap-3">
-              <button
-                onClick={handleCopy}
-                className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                aria-label="Copy referral link"
-              >
-                {copied ? <><Check size={16} aria-hidden="true" />Copied!</> : <><Copy size={16} aria-hidden="true" />Copy link</>}
-              </button>
-              <button
-                onClick={handleShare}
-                className="flex-1 text-parallel-cream px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                style={{ background: btnColor }}
-                aria-label="Share referral link"
-              >
-                <Share2 size={16} aria-hidden="true" />
-                Share
-              </button>
-            </div>
-          )}
-
-          {/* Link display */}
-          {!isLoading && (
-            <div className="mt-3 text-center text-xs text-gray-300 font-mono break-all">
-              {referralLink}
-            </div>
-          )}
-        </div>
 
         {/* ── What is a ripple? ── */}
         <div className="mt-8 bg-gray-50 rounded-2xl p-5">

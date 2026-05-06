@@ -588,16 +588,20 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentView]);
 
-  // ── SetupChecklist deep-link to /account/notifications ────────
-  // The "Turn on SMS alerts" row in the SetupChecklist dispatches this
-  // event when no onOpenNotifications prop is passed. Listening here
-  // keeps the SetupChecklist self-contained (it doesn't need MatchesView
-  // to thread the prop through).
+  // ── SetupChecklist deep-links ─────────────────────────────────
+  // These events are dispatched by SetupChecklist rows when no explicit
+  // prop handler is provided. Listening here keeps the checklist
+  // self-contained (no need to thread props through MatchesView).
 
   useEffect(() => {
     const openNotifications = () => setCurrentView('notifications');
+    const openVerification = () => setCurrentView('verification');
     window.addEventListener('parallel:open-notifications', openNotifications);
-    return () => window.removeEventListener('parallel:open-notifications', openNotifications);
+    window.addEventListener('parallel:open-verification', openVerification);
+    return () => {
+      window.removeEventListener('parallel:open-notifications', openNotifications);
+      window.removeEventListener('parallel:open-verification', openVerification);
+    };
   }, []);
 
   // ── Persist last view so refresh restores correct screen ──────

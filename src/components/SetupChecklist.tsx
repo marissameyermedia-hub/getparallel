@@ -42,14 +42,16 @@ interface SetupChecklistProps {
   // Navigates to /account/notifications when SMS row is tapped.
   // Optional — falls back to a no-op if not provided (gracefully degrades).
   onOpenNotifications?: () => void;
+  onOpenVerification?: () => void;
 }
 
 export function SetupChecklist({
   accessToken,
   emailVerified,
-  identityVerified: _identityVerified, // currently unused (identity is coming-soon)
+  identityVerified,
   onOpenInstallPrompt,
   onOpenNotifications,
+  onOpenVerification,
 }: SetupChecklistProps) {
   // ── state ────────────────────────────────────────────────────────
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -153,11 +155,11 @@ export function SetupChecklist({
   // it for users who already opted in). Hides the row once enabled.
   const smsPending = smsLoaded && !smsEnabled;
   const pwaPending = hasLiked && !pwaDone;
+  const identityPending = !identityVerified;
   const actionableCount =
-    (emailPending ? 1 : 0) + (smsPending ? 1 : 0) + (pwaPending ? 1 : 0);
+    (emailPending ? 1 : 0) + (smsPending ? 1 : 0) + (pwaPending ? 1 : 0) + (identityPending ? 1 : 0);
 
   // Hide the card entirely when the user has nothing actionable left.
-  // Coming-soon rows don't count — they aren't tasks the user can do.
   if (actionableCount === 0 && !emailJustVerified) return null;
 
   // ── handlers ─────────────────────────────────────────────────────
@@ -291,12 +293,32 @@ export function SetupChecklist({
             </li>
           )}
 
-          {/* Identity — coming soon */}
-          <li className="flex items-center gap-3 px-4 py-3 opacity-60">
-            <CheckCircle />
-            <span className="flex-1 text-sm text-gray-700">Verify your identity</span>
-            <ComingSoonTag />
-          </li>
+          {/* Identity verification — tappable when pending */}
+          {identityPending && (
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenVerification) {
+                    onOpenVerification();
+                  } else {
+                    try { window.dispatchEvent(new CustomEvent('parallel:open-verification')); } catch { /* noop */ }
+                  }
+                }}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                aria-label="Verify your identity"
+              >
+                <CheckCircle />
+                <span className="flex-1 min-w-0">
+                  <span className="text-sm block text-gray-900">Verify your identity</span>
+                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
+                    Get a blue checkmark on your profile
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+              </button>
+            </li>
+          )}
 
           {/* SMS alerts — actionable, hides once sms_enabled=true */}
           {smsPending && (

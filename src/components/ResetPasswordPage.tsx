@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
-import { ParallelIcon } from './ParallelIcon';
+import { ParallelWordmark } from './ParallelWordmark';
 import { ParallelWordmark } from './ParallelWordmark';
 
 interface ResetPasswordPageProps {
@@ -68,7 +68,7 @@ export function ResetPasswordPage({ onComplete }: ResetPasswordPageProps) {
       <div className="min-h-screen bg-parallel-cream flex items-center justify-center">
         <div className="text-center">
           <div className="flex justify-center mb-3">
-            <ParallelIcon size={32} className="text-parallel-purple" />
+            <ParallelWordmark sizeClassName="text-xl" />
           </div>
           <p className="text-gray-500 text-sm mt-2">Verifying your reset link...</p>
         </div>

@@ -24,7 +24,7 @@ export function AppHeader({ onNavigate }: AppHeaderProps) {
               fontSize: '9px',
               fontWeight: 700,
               letterSpacing: '0.02em',
-              color: '#F5F2EE',
+              color: '#FFFFFF',
               lineHeight: 1,
               userSelect: 'none',
             }}

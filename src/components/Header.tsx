@@ -1,5 +1,4 @@
-import { MessageCircle } from 'lucide-react';
-import { ParallelIcon } from './ParallelIcon';
+import { ParallelWordmark } from './ParallelWordmark';
 
 interface HeaderProps {
   onNavigate: (view: 'matches' | 'pricing' | 'questionnaire' | 'account' | 'signin' | 'inbox' | 'my-profile') => void;
@@ -16,10 +15,9 @@ export function Header({ onNavigate, currentView, isSignedIn = true, unreadMessa
         {/* Logo - clickable to navigate to matches */}
         <button
           onClick={() => onNavigate('matches')}
-          className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+          className="hover:opacity-70 transition-opacity"
         >
-          <ParallelIcon size={24} className="text-parallel-purple" />
-          <span className="font-semibold">Parallel</span>
+          <ParallelWordmark sizeClassName="text-base" />
         </button>
       </div>
     </header>
