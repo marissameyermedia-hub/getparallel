@@ -188,6 +188,14 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
               setAnswers(progress.partial_answers);
               // Keep ref in sync — navigation uses ref directly (not state)
               latestAnswersRef.current = progress.partial_answers;
+              // Re-derive onboardingLocation from the saved answer for question 1.0.
+              // Without this, ProfileEditor receives initialLocation=undefined on
+              // resume even though the user already set their location, and the
+              // LocationPicker shows empty instead of pre-filled.
+              const savedLoc = progress.partial_answers['1.0'];
+              if (savedLoc?.latitude) {
+                setOnboardingLocation(savedLoc);
+              }
             }
             if (progress.partial_photos && progress.partial_photos.length > 0) {
               setPhotos(progress.partial_photos);
@@ -280,6 +288,15 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
     setPronouns(data.pronouns || '');
 
     try {
+      // Three-tier location fallback so it can never be dropped at submit:
+      // 1. data.location  — set in ProfileEditor (most recently edited value)
+      // 2. onboardingLocation — set when question 1.0 was answered this session
+      // 3. answers['1.0'] — last resort from saved questionnaire answers
+      const resolvedLocation =
+        data.location ||
+        onboardingLocation ||
+        (answers['1.0']?.latitude ? answers['1.0'] : undefined);
+
       const result = await onComplete({
         ...answers,
         photos: data.photos,
@@ -288,7 +305,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
         education: data.education,
         instagram: data.instagram,
         pronouns: data.pronouns || '',
-        location: data.location || onboardingLocation,
+        location: resolvedLocation,
       });
 
       if (!result.success) {
