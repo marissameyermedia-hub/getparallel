@@ -192,6 +192,17 @@ export const parallelQuestionnaire: Section[] = [
   // ─── SECTION 1: Basic Identity ───────────────────────────────
   { id: 1, title: "Basic Identity", part: 1, questions: [
     {
+      id: "1.0",
+      text: "Where are you based?",
+      subtitle: "We use your location to find compatible people near you.",
+      type: "LOCATION",
+      tags: ["Profile Information"],
+      weight: 0,
+      privacyNote: "Used for distance-based matching — not shown on your profile",
+      category: "Life Goals",
+      optional: true,
+    },
+    {
       id: "1.1",
       text: "What is your gender?",
       type: "MC",
