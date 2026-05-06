@@ -10,115 +10,114 @@ interface PassFeedbackBottomSheetProps {
 }
 
 const PASS_REASONS = [
-  { id: 'not_physical_type', label: 'Not my physical type' },
-  { id: 'too_far_away', label: 'Too far away' },
-  { id: 'different_life_stage', label: 'Different life stage' },
-  { id: 'career_lifestyle_mismatch', label: 'Career or lifestyle mismatch' },
-  { id: 'values_felt_off', label: 'Values felt off' },
-  { id: 'not_feeling_it', label: 'Just not feeling it' },
-  { id: 'age_range', label: 'Outside my age range' },
-  { id: 'different_goals', label: 'Not looking for the same thing' },
-  { id: 'location', label: "Location doesn't work for me" },
-  { id: 'religion_mismatch', label: 'Different religious beliefs' },
-  { id: 'politics_mismatch', label: 'Different political views' },
+  { id: 'values_felt_off',             label: "Values didn't align",          category: 'values_life_goals' },
+  { id: 'lifestyle_mismatch',          label: 'Lifestyle mismatch',           category: 'lifestyle_compatibility' },
+  { id: 'not_physical_type',           label: 'Not the right physical fit',   category: 'attraction_preferences' },
+  { id: 'too_far_away',                label: 'Too far away',                 category: 'life_logistics' },
+  { id: 'attachment_style_concern',    label: 'Different emotional style',    category: 'attachment_emotional_health' },
+  { id: 'communication_style_felt_off',label: 'Communication felt off',       category: 'communication_conflict' },
+  { id: 'life_stage_mismatch',         label: 'Different life stage',         category: 'life_logistics' },
+  { id: 'just_not_feeling_it',         label: 'Just not feeling it',          category: null },
 ];
 
-export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit, onNavigateToQuestionnaire }: PassFeedbackBottomSheetProps) {
+const WOULD_ADJUST = [
+  { id: 'more_similar_values',       label: 'More similar values' },
+  { id: 'closer_location',           label: 'Closer location' },
+  { id: 'different_lifestyle',       label: 'Different lifestyle' },
+  { id: 'stronger_physical',         label: 'Stronger physical attraction' },
+  { id: 'different_life_stage',      label: 'Different life stage' },
+];
+
+export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit }: PassFeedbackBottomSheetProps) {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [selectedAdjust, setSelectedAdjust] = useState<string[]>([]);
 
   useEffect(() => {
-    if (isOpen) setSelectedReasons([]);
+    if (isOpen) {
+      setSelectedReasons([]);
+      setSelectedAdjust([]);
+    }
   }, [isOpen]);
 
-  // Hook handles Escape-to-close, body-scroll-lock, focus restore.
   useModalA11y(isOpen, onClose);
 
   if (!isOpen) return null;
 
-  const toggleReason = (id: string) =>
-    setSelectedReasons(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]);
+  const toggle = (id: string, list: string[], setter: (v: string[]) => void) =>
+    setter(list.includes(id) ? list.filter(x => x !== id) : [...list, id]);
 
-  const handleSubmit = () => onSubmit(selectedReasons, []);
-  const ageRangeSelected = selectedReasons.includes('age_range');
+  const handleSubmit = () => onSubmit(selectedReasons, selectedAdjust);
+
+  const chipClass = (selected: boolean) =>
+    `px-4 py-2 rounded-full border-2 transition-all text-sm ${
+      selected
+        ? 'bg-parallel-void text-parallel-cream border-parallel-void'
+        : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
+    }`;
 
   return (
     <>
-      {/* Backdrop — z-[65] so it sits above bottom nav (z-[60]) but below sheet (z-[70]) */}
       <div
         className="fixed inset-0 bg-parallel-void/40 z-[65]"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Sheet — z-[70] so it's always above bottom nav */}
       <div
         className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-[70] max-h-[85vh] flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="pass-feedback-title"
       >
-
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex-1">
-            <h3 id="pass-feedback-title" className="text-lg font-semibold">Why did you pass?</h3>
+            <h3 id="pass-feedback-title" className="text-lg font-semibold">Why are you passing?</h3>
             <p className="text-sm text-gray-500 mt-0.5">Select all that apply</p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
+          <button onClick={onClose} aria-label="Close" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
-        {/* Scrollable reasons */}
-        <div className="flex-1 overflow-y-auto p-4 min-h-0">
+        <div className="flex-1 overflow-y-auto p-4 min-h-0 space-y-6">
+          {/* Pass reasons */}
           <div className="flex flex-wrap gap-2">
-            {PASS_REASONS.map(reason => (
+            {PASS_REASONS.map(r => (
               <button
-                key={reason.id}
-                onClick={() => toggleReason(reason.id)}
-                aria-pressed={selectedReasons.includes(reason.id)}
-                className={`px-4 py-2 rounded-full border-2 transition-all text-sm ${
-                  selectedReasons.includes(reason.id)
-                    ? 'bg-parallel-purple text-parallel-cream border-parallel-void'
-                    : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
-                }`}
+                key={r.id}
+                onClick={() => toggle(r.id, selectedReasons, setSelectedReasons)}
+                aria-pressed={selectedReasons.includes(r.id)}
+                className={chipClass(selectedReasons.includes(r.id))}
               >
-                {reason.label}
+                {r.label}
               </button>
             ))}
           </div>
 
-          {/* Questionnaire nudge */}
-          {ageRangeSelected && onNavigateToQuestionnaire && (
-            <button onClick={onNavigateToQuestionnaire} className="mt-4 w-full text-left p-4 bg-parallel-purple text-parallel-cream rounded-2xl">
-              <p className="text-sm font-semibold">Update your age preferences</p>
-              <p className="text-sm text-gray-300 mt-0.5">Adjust the age range in your questionnaire →</p>
-            </button>
-          )}
-          {!ageRangeSelected && onNavigateToQuestionnaire && (
-            <button onClick={onNavigateToQuestionnaire} className="mt-6 w-full text-left p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 hover:border-gray-300 transition-colors">
-              <p className="text-sm font-medium text-gray-900">Want to refine what you're looking for?</p>
-              <p className="text-sm text-gray-500 mt-0.5">Update your questionnaire →</p>
-            </button>
-          )}
+          {/* Would adjust */}
+          <div>
+            <p className="text-sm font-medium text-gray-700 mb-3">What would you change about future matches?</p>
+            <div className="flex flex-wrap gap-2">
+              {WOULD_ADJUST.map(a => (
+                <button
+                  key={a.id}
+                  onClick={() => toggle(a.id, selectedAdjust, setSelectedAdjust)}
+                  aria-pressed={selectedAdjust.includes(a.id)}
+                  className={chipClass(selectedAdjust.includes(a.id))}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Actions — fixed to bottom of sheet, above bottom nav */}
         <div className="p-4 border-t border-gray-200 flex-shrink-0 pb-8">
           <button
             onClick={handleSubmit}
-            disabled={selectedReasons.length === 0}
-            className={`w-full px-6 py-3 rounded-full transition-all font-medium mb-2 ${
-              selectedReasons.length > 0
-                ? 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
-                : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            }`}
+            className="w-full px-6 py-3 rounded-full bg-parallel-void text-parallel-cream font-medium hover:bg-parallel-void/90 transition-all mb-2"
           >
-            {selectedReasons.length > 0 ? `Submit (${selectedReasons.length} selected)` : 'Select a reason to submit'}
+            Pass on this match
           </button>
           <button onClick={onClose} className="w-full text-gray-500 px-6 py-3 rounded-full hover:bg-gray-100 transition-all text-sm">
             Skip

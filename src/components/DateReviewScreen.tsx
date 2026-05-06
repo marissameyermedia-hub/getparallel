@@ -17,23 +17,41 @@ export interface DateReview {
   conversationRating: number | null;
   respectfulnessRating: number | null;
   reasons: string[];
+  workedWell: string[];
+  wouldChangeFuture: string[];
   isSafetyIssue: boolean;
 }
 
 const NEGATIVE_REASONS = [
-  { id: 'no_chemistry', label: 'No chemistry', dimension: 'attraction_style' },
-  { id: 'conversation_didnt_flow', label: "Conversation didn't flow", dimension: 'communication_style' },
-  { id: 'communication_mismatch', label: 'Communication style mismatch', dimension: 'communication_style' },
-  { id: 'values_clear', label: 'Different values became clear', dimension: 'values_worldview' },
-  { id: 'lifestyle_clear', label: 'Lifestyle mismatch became clear', dimension: 'lifestyle_social' },
-  { id: 'timeline_mismatch', label: 'Timeline or intent mismatch', dimension: 'relationship_intent' },
-  { id: 'kids_mismatch', label: 'Kids or family mismatch', dimension: 'kids_family_plan' },
-  { id: 'distance_logistics', label: 'Distance or logistics too hard', dimension: 'distance_location' },
-  { id: 'career_ambition', label: 'Career ambition mismatch', dimension: 'career_ambition' },
-  { id: 'money_habits', label: 'Money habits mismatch', dimension: 'money_finance' },
-  { id: 'cleanliness_home', label: 'Cleanliness or home style mismatch', dimension: 'lifestyle_social' },
-  { id: 'misrepresented', label: 'Misrepresented photos or info', dimension: 'profile_quality' },
-  { id: 'felt_unsafe', label: 'Felt unsafe or inappropriate', dimension: 'safety', isSafety: true },
+  { id: 'no_chemistry',          label: 'No chemistry',                       dimension: 'attraction_style' },
+  { id: 'conversation_didnt_flow', label: "Conversation didn't flow",         dimension: 'communication_style' },
+  { id: 'communication_mismatch', label: 'Communication style mismatch',      dimension: 'communication_style' },
+  { id: 'values_clear',          label: 'Different values became clear',      dimension: 'values_worldview' },
+  { id: 'lifestyle_clear',       label: 'Lifestyle mismatch became clear',    dimension: 'lifestyle_social' },
+  { id: 'timeline_mismatch',     label: 'Timeline or intent mismatch',        dimension: 'relationship_intent' },
+  { id: 'kids_mismatch',         label: 'Kids or family mismatch',            dimension: 'kids_family_plan' },
+  { id: 'distance_logistics',    label: 'Distance or logistics too hard',     dimension: 'distance_location' },
+  { id: 'career_ambition',       label: 'Career ambition mismatch',           dimension: 'career_ambition' },
+  { id: 'money_habits',          label: 'Money habits mismatch',              dimension: 'money_finance' },
+  { id: 'cleanliness_home',      label: 'Cleanliness or home style mismatch', dimension: 'lifestyle_social' },
+  { id: 'misrepresented',        label: 'Misrepresented photos or info',      dimension: 'profile_quality' },
+  { id: 'felt_unsafe',           label: 'Felt unsafe or inappropriate',       dimension: 'safety', isSafety: true },
+];
+
+const POSITIVE_SIGNALS = [
+  { id: 'chemistry_strong',      label: 'Chemistry was strong' },
+  { id: 'conversation_natural',  label: 'Conversation flowed naturally' },
+  { id: 'values_aligned',        label: 'Values aligned in person' },
+  { id: 'lifestyle_matched',     label: 'Lifestyle felt compatible' },
+  { id: 'timing_right',          label: 'Timing felt right' },
+];
+
+const WOULD_CHANGE_FUTURE = [
+  { id: 'more_similar_values',   label: 'More similar values' },
+  { id: 'closer_location',       label: 'Closer location' },
+  { id: 'different_lifestyle',   label: 'Different lifestyle' },
+  { id: 'stronger_physical',     label: 'Stronger physical attraction' },
+  { id: 'different_life_stage',  label: 'Different life stage' },
 ];
 
 export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit }: DateReviewScreenProps) {
@@ -42,16 +60,16 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
   const [conversationRating, setConversationRating] = useState<number | null>(null);
   const [respectfulnessRating, setRespectfulnessRating] = useState<number | null>(null);
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [selectedWorkedWell, setSelectedWorkedWell] = useState<string[]>([]);
+  const [selectedWouldChange, setSelectedWouldChange] = useState<string[]>([]);
   const [showSafetyWarning, setShowSafetyWarning] = useState(false);
 
-  // Hook handles Escape-to-close, body-scroll-lock, focus restore.
   useModalA11y(isOpen, onClose);
 
   if (!isOpen) return null;
 
-  const toggleReason = (reasonId: string) => {
+  const toggleNegative = (reasonId: string) => {
     const reason = NEGATIVE_REASONS.find(r => r.id === reasonId);
-
     if (reason?.isSafety) {
       if (!selectedReasons.includes(reasonId)) {
         setShowSafetyWarning(true);
@@ -61,41 +79,55 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
         setShowSafetyWarning(false);
       }
     } else {
-      if (selectedReasons.includes(reasonId)) {
-        setSelectedReasons(selectedReasons.filter(id => id !== reasonId));
-      } else {
-        setSelectedReasons([...selectedReasons, reasonId]);
-      }
+      setSelectedReasons(prev =>
+        prev.includes(reasonId) ? prev.filter(id => id !== reasonId) : [...prev, reasonId]
+      );
     }
   };
 
+  const toggleWorkedWell = (id: string) =>
+    setSelectedWorkedWell(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const toggleWouldChange = (id: string) =>
+    setSelectedWouldChange(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
   const handleSubmit = () => {
-    const review: DateReview = {
+    onSubmit({
       matchId,
       wouldGoAgain,
       chemistryRating,
       conversationRating,
       respectfulnessRating,
       reasons: selectedReasons,
+      workedWell: selectedWorkedWell,
+      wouldChangeFuture: selectedWouldChange,
       isSafetyIssue: selectedReasons.includes('felt_unsafe'),
-    };
-
-    onSubmit(review);
-
-    // Reset form
+    });
     setWouldGoAgain(null);
     setChemistryRating(null);
     setConversationRating(null);
     setRespectfulnessRating(null);
     setSelectedReasons([]);
+    setSelectedWorkedWell([]);
+    setSelectedWouldChange([]);
     setShowSafetyWarning(false);
     onClose();
   };
 
-  const canSubmit = wouldGoAgain !== null &&
-                     chemistryRating !== null &&
-                     conversationRating !== null &&
-                     respectfulnessRating !== null;
+  const canSubmit =
+    wouldGoAgain !== null &&
+    chemistryRating !== null &&
+    conversationRating !== null &&
+    respectfulnessRating !== null;
+
+  const chipClass = (selected: boolean, safety = false) =>
+    `px-4 py-2 rounded-full border-2 transition-all text-sm ${
+      selected
+        ? safety
+          ? 'bg-red-600 text-parallel-cream border-red-600'
+          : 'bg-parallel-purple text-parallel-cream border-parallel-void'
+        : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
+    }`;
 
   const RatingStars = ({
     rating,
@@ -145,16 +177,12 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             <h2 id="date-review-title" className="text-xl font-medium">How was your date?</h2>
             <p className="text-sm text-gray-600 mt-1">with {matchName}</p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
+          <button onClick={onClose} aria-label="Close" className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
-        {/* Content - Scrollable */}
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Would you go out again? */}
           <div className="space-y-2">
@@ -187,72 +215,53 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             </div>
           </div>
 
-          {/* Ratings */}
-          <RatingStars
-            rating={chemistryRating}
-            onChange={setChemistryRating}
-            label="Chemistry rating"
-            idPrefix="chemistry"
-          />
+          <RatingStars rating={chemistryRating}      onChange={setChemistryRating}      label="Chemistry rating"      idPrefix="chemistry" />
+          <RatingStars rating={conversationRating}   onChange={setConversationRating}   label="Conversation rating"   idPrefix="conversation" />
+          <RatingStars rating={respectfulnessRating} onChange={setRespectfulnessRating} label="Respectfulness rating" idPrefix="respectfulness" />
 
-          <RatingStars
-            rating={conversationRating}
-            onChange={setConversationRating}
-            label="Conversation rating"
-            idPrefix="conversation"
-          />
+          {/* Positive signals — shown when going again */}
+          {wouldGoAgain === true && (
+            <div className="space-y-3 pt-4 border-t border-gray-200">
+              <span className="text-sm font-medium text-gray-900 block">What made this match work? <span className="text-gray-400 font-normal">(Optional)</span></span>
+              <div className="flex flex-wrap gap-2">
+                {POSITIVE_SIGNALS.map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => toggleWorkedWell(s.id)}
+                    aria-pressed={selectedWorkedWell.includes(s.id)}
+                    className={chipClass(selectedWorkedWell.includes(s.id))}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
-          <RatingStars
-            rating={respectfulnessRating}
-            onChange={setRespectfulnessRating}
-            label="Respectfulness rating"
-            idPrefix="respectfulness"
-          />
-
-          {/* Reasons (optional, shown if negative ratings) */}
+          {/* Negative reasons — shown when not going again */}
           {wouldGoAgain === false && (
             <div className="space-y-3 pt-4 border-t border-gray-200">
-              <span className="text-sm font-medium text-gray-900 block">
-                What went wrong? (Optional)
-              </span>
-              <p className="text-xs text-gray-600">
-                This helps us improve your future matches
-              </p>
+              <span className="text-sm font-medium text-gray-900 block">What went wrong? <span className="text-gray-400 font-normal">(Optional)</span></span>
               <div className="flex flex-wrap gap-2">
-                {NEGATIVE_REASONS.map((reason) => (
+                {NEGATIVE_REASONS.map(r => (
                   <button
-                    key={reason.id}
-                    onClick={() => toggleReason(reason.id)}
-                    aria-pressed={selectedReasons.includes(reason.id)}
-                    className={`px-4 py-2 rounded-full border-2 transition-all ${
-                      selectedReasons.includes(reason.id)
-                        ? reason.isSafety
-                          ? 'bg-red-600 text-parallel-cream border-red-600'
-                          : 'bg-parallel-purple text-parallel-cream border-parallel-void'
-                        : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
-                    }`}
+                    key={r.id}
+                    onClick={() => toggleNegative(r.id)}
+                    aria-pressed={selectedReasons.includes(r.id)}
+                    className={chipClass(selectedReasons.includes(r.id), r.isSafety)}
                   >
-                    {reason.label}
+                    {r.label}
                   </button>
                 ))}
               </div>
 
-              {/* Safety Warning */}
               {showSafetyWarning && (
-                <div
-                  className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mt-4"
-                  role="alert"
-                >
+                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mt-4" role="alert">
                   <div className="flex gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                     <div>
-                      <p className="text-sm font-medium text-red-900 mb-1">
-                        Safety Concern Reported
-                      </p>
-                      <p className="text-sm text-red-800">
-                        Your report will be immediately reviewed by our safety team.
-                        This user may be suspended pending investigation.
-                      </p>
+                      <p className="text-sm font-medium text-red-900 mb-1">Safety Concern Reported</p>
+                      <p className="text-sm text-red-800">Your report will be immediately reviewed by our safety team. This user may be suspended pending investigation.</p>
                     </div>
                   </div>
                 </div>
@@ -260,11 +269,29 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
             </div>
           )}
 
+          {/* Would change future — shown after an answer is given */}
+          {wouldGoAgain !== null && (
+            <div className="space-y-3 pt-4 border-t border-gray-200">
+              <span className="text-sm font-medium text-gray-900 block">What would you change about future matches? <span className="text-gray-400 font-normal">(Optional)</span></span>
+              <div className="flex flex-wrap gap-2">
+                {WOULD_CHANGE_FUTURE.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => toggleWouldChange(c.id)}
+                    aria-pressed={selectedWouldChange.includes(c.id)}
+                    className={chipClass(selectedWouldChange.includes(c.id))}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Privacy Notice */}
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
             <p className="text-xs text-gray-600 text-center">
-              🔒 Your feedback is completely private and will never be shown to {matchName}.
-              It only helps improve your future matches.
+              Your feedback is private and will never be shown to {matchName}. It only helps improve your future matches.
             </p>
           </div>
         </div>

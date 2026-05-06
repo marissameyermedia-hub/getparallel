@@ -1,12 +1,31 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@supabase/supabase-js';
-import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
+import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
+
+const FADE_REASONS = [
+  { id: 'values_felt_off',              label: "Values didn't align" },
+  { id: 'lifestyle_mismatch',           label: 'Lifestyle mismatch' },
+  { id: 'not_physical_type',            label: 'Not the right physical fit' },
+  { id: 'too_far_away',                 label: 'Too far away' },
+  { id: 'attachment_style_concern',     label: 'Different emotional style' },
+  { id: 'communication_style_felt_off', label: 'Communication felt off' },
+  { id: 'life_stage_mismatch',          label: 'Different life stage' },
+  { id: 'just_not_feeling_it',          label: 'Just not feeling it' },
+];
+
+const FADE_ADJUST = [
+  { id: 'more_similar_values',    label: 'More similar values' },
+  { id: 'closer_location',        label: 'Closer location' },
+  { id: 'different_lifestyle',    label: 'Different lifestyle' },
+  { id: 'stronger_physical',      label: 'Stronger physical attraction' },
+  { id: 'different_life_stage',   label: 'Different life stage' },
+];
 
 function getAuthHeaders(token: string) {
   return {
@@ -157,6 +176,11 @@ export function MessagingView({
   // Initial-load gate. Skeleton shows until the first load completes (success
   // or fail). Background polls don't toggle this — they update messages silently.
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [showFadeNudge, setShowFadeNudge] = useState(false);
+  // 0 = closed, 1 = "what felt off", 2 = "would you adjust"
+  const [fadeStep, setFadeStep] = useState<0 | 1 | 2>(0);
+  const [fadeSelectedReasons, setFadeSelectedReasons] = useState<string[]>([]);
+  const [fadeSelectedAdjust, setFadeSelectedAdjust] = useState<string[]>([]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -356,6 +380,18 @@ export function MessagingView({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSafetyMenu]);
 
+  // Detect conversation fade: last message > 72h ago and nudge not yet dismissed.
+  useEffect(() => {
+    if (!mutualMatch || messages.length === 0) return;
+    const dismissKey = `parallel_fade_nudge_${matchId}`;
+    if (localStorage.getItem(dismissKey)) return;
+    const lastMsg = messages[messages.length - 1];
+    const lastTime = new Date(lastMsg.timestamp as string).getTime();
+    if (isNaN(lastTime)) return;
+    const hoursAgo = (Date.now() - lastTime) / 3600000;
+    if (hoursAgo >= 72) setShowFadeNudge(true);
+  }, [messages, matchId, mutualMatch]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping, viewportHeight]);
@@ -462,6 +498,49 @@ export function MessagingView({
     onBack();
   };
 
+  const dismissFadeNudge = () => {
+    localStorage.setItem(`parallel_fade_nudge_${matchId}`, '1');
+    setShowFadeNudge(false);
+  };
+
+  const handleFadeSheetSubmit = async () => {
+    setFadeStep(0);
+    dismissFadeNudge();
+    const token = await getAccessToken();
+    if (!token) return;
+    fetch(`${MATCHES_FUNCTION_URL}/feedback/structured`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({
+        matchedUserId: matchId,
+        feedbackType: 'conversation_fade',
+        passReasons: fadeSelectedReasons,
+        wouldAdjust: fadeSelectedAdjust,
+      }),
+    }).catch(err => console.error('Fade feedback failed:', err));
+    // Fire-and-forget weight recompute
+    fetch(`${FEEDBACK_PROCESSOR_URL}/process-user`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ userId: currentUserId }),
+    }).catch(() => {});
+    setFadeSelectedReasons([]);
+    setFadeSelectedAdjust([]);
+  };
+
+  const toggleFadeReason = (id: string) =>
+    setFadeSelectedReasons(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const toggleFadeAdjust = (id: string) =>
+    setFadeSelectedAdjust(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  const fadeChipClass = (selected: boolean) =>
+    `px-3 py-1.5 rounded-full border transition-all text-sm ${
+      selected
+        ? 'bg-parallel-void text-parallel-cream border-parallel-void'
+        : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
+    }`;
+
   const isLocked = conversationId === null;
   // Email verification gate: read existing messages freely, but disable sending
   // until the user verifies their email. We need a verified email to send them
@@ -490,6 +569,91 @@ export function MessagingView({
         paddingTop: viewportOffsetTop ? 0 : 'env(safe-area-inset-top)',
       }}
     >
+
+      {/* Conversation fade follow-up sheet — 2-step */}
+      {fadeStep > 0 && (
+        <>
+          <div
+            className="fixed inset-0 bg-parallel-void/40 z-[75]"
+            onClick={() => setFadeStep(0)}
+            aria-hidden="true"
+          />
+          <div
+            className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-[80] max-h-[80vh] flex flex-col"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fade-sheet-title"
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
+              <h3 id="fade-sheet-title" className="text-base font-semibold">
+                {fadeStep === 1 ? 'What felt off?' : 'What would you change?'}
+              </h3>
+              <button onClick={() => setFadeStep(0)} aria-label="Close" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
+              {fadeStep === 1 && (
+                <div className="flex flex-wrap gap-2">
+                  {FADE_REASONS.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => toggleFadeReason(r.id)}
+                      aria-pressed={fadeSelectedReasons.includes(r.id)}
+                      className={fadeChipClass(fadeSelectedReasons.includes(r.id))}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {fadeStep === 2 && (
+                <div className="flex flex-wrap gap-2">
+                  {FADE_ADJUST.map(a => (
+                    <button
+                      key={a.id}
+                      onClick={() => toggleFadeAdjust(a.id)}
+                      aria-pressed={fadeSelectedAdjust.includes(a.id)}
+                      className={fadeChipClass(fadeSelectedAdjust.includes(a.id))}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-200 flex-shrink-0 pb-8 flex gap-2">
+              {fadeStep === 1 ? (
+                <>
+                  <button
+                    onClick={() => setFadeStep(2)}
+                    className="flex-1 px-4 py-3 rounded-full bg-parallel-void text-parallel-cream font-medium hover:bg-parallel-void/90 transition-all text-sm"
+                  >
+                    Next
+                  </button>
+                  <button onClick={() => setFadeStep(0)} className="px-4 py-3 rounded-full text-gray-500 hover:bg-gray-100 transition-all text-sm">
+                    Skip
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleFadeSheetSubmit}
+                    className="flex-1 px-4 py-3 rounded-full bg-parallel-void text-parallel-cream font-medium hover:bg-parallel-void/90 transition-all text-sm"
+                  >
+                    Done
+                  </button>
+                  <button onClick={() => setFadeStep(1)} className="px-4 py-3 rounded-full text-gray-500 hover:bg-gray-100 transition-all text-sm">
+                    Back
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Unmatch Modal */}
       {showUnmatchModal && (
@@ -712,6 +876,27 @@ export function MessagingView({
         className="flex-shrink-0 bg-parallel-cream border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
+        {/* 72h conversation fade nudge */}
+        {showFadeNudge && (
+          <div className="mb-2 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-gray-50 border border-gray-200">
+            <p className="text-xs text-gray-700 flex-1">
+              <span className="font-medium">This conversation went quiet.</span>{' '}
+              <span className="text-gray-500">How did it go?</span>
+            </p>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => setFadeStep(1)}
+                className="rounded-full px-3 py-1.5 text-xs font-medium bg-parallel-void text-parallel-cream hover:opacity-80 transition-opacity"
+              >
+                Tell us
+              </button>
+              <button onClick={dismissFadeNudge} aria-label="Dismiss" className="p-1 hover:bg-gray-200 rounded-full transition-colors">
+                <X className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── "We Met in Person" banner ─────────────────────────────────
             Surfaces after 3+ messages when neither person has confirmed yet.
             Previously buried in the overflow ⋯ menu — nobody found it.
