@@ -7,7 +7,6 @@ import { QuestionScreen } from './onboarding/QuestionScreen';
 import { ProfileEditor } from './ProfileEditor';
 import { WelcomeScreen } from './onboarding/WelcomeScreen';
 import { SimpleHeader } from './SimpleHeader';
-import { LocationPicker } from './LocationPicker';
 import { MatchWeightsScreen } from './MatchWeightsScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -42,7 +41,6 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   })();
 
   const [showWelcome, setShowWelcome] = useState(false);
-  const [showLocationStep, setShowLocationStep] = useState(false);
   const showTimeEstimate = false; // removed — info now lives in WelcomeScreen (May 2026)
   const [showPart2Transition, setShowPart2Transition] = useState(false);
   const [currentChapterIndex, setCurrentChapterIndex] = useState(0);
@@ -201,7 +199,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
               // both map to the Create Profile screen
               setShowCreateProfileTitle(true);
             } else if (step === 'location') {
-              setShowLocationStep(true);
+              // location step is now question 1.0 inside the questionnaire
               setShowResumeMessage(true);
               setTimeout(() => setShowResumeMessage(false), 3000);
             } else if (step === 'part2_transition') {
@@ -504,6 +502,23 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           partial_photos: photos,
         }),
       }).catch(err => console.error('Failed to save answer:', err));
+
+      // LOCATION questions also persist to /user/location so the
+      // matching algorithm can read lat/lng directly from the profile.
+      const allQuestions = parallelQuestionnaire.flatMap(s => s.questions);
+      const answeredQuestion = allQuestions.find(q => q.id === questionId);
+      if (answeredQuestion?.type === 'LOCATION' && answer?.latitude) {
+        setOnboardingLocation(answer);
+        fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': publicAnonKey,
+          },
+          body: JSON.stringify(answer),
+        }).catch(err => console.error('Failed to save location:', err));
+      }
     })();
   };
 
@@ -689,98 +704,12 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           <div className="max-w-md mx-auto">
             <button
               onClick={() => {
-                setShowLocationStep(true);
-                saveStep('location');
+                saveStep('chapter_0_question_0');
               }}
               className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream text-lg font-medium transition-all hover:bg-parallel-purple/90"
             >
               Let's go →
             </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Location picker step ─────────────────────────────────────
-  if (showLocationStep) {
-    const handleLocationChange = async (loc: {
-      latitude: number;
-      longitude: number;
-      city: string;
-      state: string;
-      country: string;
-      locationDisplay: string;
-    }) => {
-      setOnboardingLocation(loc);
-      const token = await getAccessToken();
-      if (token) {
-        try {
-          await fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-              'apikey': publicAnonKey,
-            },
-            body: JSON.stringify({
-              latitude: loc.latitude,
-              longitude: loc.longitude,
-              city: loc.city,
-              state: loc.state,
-              country: loc.country,
-              locationDisplay: loc.locationDisplay,
-            }),
-          });
-        } catch (err) {
-          console.error('Failed to save location:', err);
-        }
-      }
-    };
-
-    return (
-      <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh', overflow: 'hidden' }}>
-        {showResumeMessage && (
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-2 border-blue-200 px-6 py-3 flex-shrink-0">
-            <p className="text-center text-blue-900 font-medium text-sm">
-              Welcome back — pick up where you left off ✓
-            </p>
-          </div>
-        )}
-        <div
-          className="flex-1 min-h-0 overflow-y-auto px-6 pt-10 pb-4"
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          <div className="max-w-md mx-auto">
-            <h1 className="text-2xl font-medium mb-3">Where are you based?</h1>
-            <p className="text-gray-600 mb-6 leading-relaxed">
-              We use your location to show you compatible people nearby and calculate distance.
-            </p>
-            <LocationPicker
-              value={onboardingLocation}
-              onChange={handleLocationChange}
-            />
-          </div>
-        </div>
-        <div
-          className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 px-6 pt-3"
-          style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}
-        >
-          <div className="max-w-md mx-auto">
-            <button
-              onClick={() => {
-                setShowLocationStep(false);
-                saveStep('chapter_0_intro');
-              }}
-              className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream text-lg font-medium transition-all hover:bg-parallel-purple/90"
-            >
-              {onboardingLocation ? 'Continue →' : 'Skip for now →'}
-            </button>
-            {!onboardingLocation && (
-              <p className="text-xs text-gray-400 text-center mt-3">
-                You'll need to add your location before finishing your profile.
-              </p>
-            )}
           </div>
         </div>
       </div>
