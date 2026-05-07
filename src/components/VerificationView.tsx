@@ -24,6 +24,11 @@ const DEFAULT_TEMPLATE_ID = 'itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG';
 const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 90_000; // 90 seconds total
 
+// Background polling interval used while the Persona popup is open ("opened" state).
+// Slower than active polling because we expect the user to still be in Persona —
+// this just catches the case where postMessage never fires (iOS Safari opener loss).
+const BACKGROUND_POLL_INTERVAL_MS = 4000;
+
 export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified = false }: VerificationViewProps) {
   // State machine. Statuses:
   //   - consent: BIPA / WA MHMDA consent gate. User must agree before we open Persona.
@@ -51,12 +56,22 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
   // Cleanup polling timers on unmount.
   const pollTimerRef = useRef<number | null>(null);
   const pollDeadlineRef = useRef<number>(0);
+  // Background poll timer used while popup is open.
+  const bgPollTimerRef = useRef<number | null>(null);
+  // Track current status in a ref so async handlers see the latest value
+  // without needing to re-bind the visibility listener every render.
+  const statusRef = useRef<typeof status>(status);
+  useEffect(() => { statusRef.current = status; }, [status]);
 
   useEffect(() => {
     return () => {
       if (pollTimerRef.current !== null) {
         window.clearTimeout(pollTimerRef.current);
         pollTimerRef.current = null;
+      }
+      if (bgPollTimerRef.current !== null) {
+        window.clearTimeout(bgPollTimerRef.current);
+        bgPollTimerRef.current = null;
       }
     };
   }, []);
@@ -86,9 +101,15 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
   }, []);
 
   // Build the Persona hosted-flow URL using config we just loaded.
+  // We append a redirect-uri so Persona's "complete" page bounces the user back to
+  // our app with ?verified=1 — this is the iOS-Safari-friendly path. On desktop the
+  // postMessage handler still works as a faster path; this is a fallback.
+  const redirectUri = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?verified=1`
+    : '';
   const personaUrl = `https://withpersona.com/verify?inquiry-template-id=${encodeURIComponent(
     personaTemplateId,
-  )}&reference-id=${encodeURIComponent(userId)}&environment=${personaEnv}`;
+  )}&reference-id=${encodeURIComponent(userId)}&environment=${personaEnv}&redirect-uri=${encodeURIComponent(redirectUri)}`;
 
   // ── Backend status check ──
   // Polls /verification/status. Returns the row written by the webhook.
@@ -153,6 +174,79 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     pollOnce();
   };
 
+  // Background poll: fires while popup is open ('opened' state) at a slower
+  // cadence. Catches the case where postMessage never arrives (iOS Safari
+  // popup loses opener relationship; cross-origin tab handoff is unreliable).
+  // If the webhook has already landed, we transition straight to 'completed'
+  // without ever showing the "Confirming…" UI — silent success.
+  const backgroundPoll = async () => {
+    if (statusRef.current !== 'opened') return;
+    const result = await checkVerificationStatus();
+    if (result.state === 'verified') {
+      setStatus('completed');
+      onVerified();
+      return;
+    }
+    if (result.state === 'declined') {
+      setDeclineReason(result.reason);
+      setStatus('declined');
+      return;
+    }
+    if (result.state === 'expired') {
+      setStatus('failed');
+      return;
+    }
+    bgPollTimerRef.current = window.setTimeout(backgroundPoll, BACKGROUND_POLL_INTERVAL_MS);
+  };
+
+  // Whenever we enter 'opened' state, kick off background polling.
+  useEffect(() => {
+    if (status !== 'opened') {
+      if (bgPollTimerRef.current !== null) {
+        window.clearTimeout(bgPollTimerRef.current);
+        bgPollTimerRef.current = null;
+      }
+      return;
+    }
+    bgPollTimerRef.current = window.setTimeout(backgroundPoll, BACKGROUND_POLL_INTERVAL_MS);
+    return () => {
+      if (bgPollTimerRef.current !== null) {
+        window.clearTimeout(bgPollTimerRef.current);
+        bgPollTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  // Visibility change: when iOS Safari brings the Parallel tab back to focus
+  // (e.g. user swiped from Persona's "complete" page back to ours), check the
+  // backend immediately. This is the most reliable signal we'll get on mobile
+  // because postMessage from a separate-tab popup is not delivered.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      const s = statusRef.current;
+      if (s === 'opened' || s === 'polling') {
+        // Force an immediate check; if not verified yet, the regular polling
+        // continues at its normal cadence.
+        checkVerificationStatus().then((result) => {
+          if (result.state === 'verified') {
+            setStatus('completed');
+            onVerified();
+          } else if (result.state === 'declined') {
+            setDeclineReason(result.reason);
+            setStatus('declined');
+          } else if (result.state === 'expired') {
+            setStatus('failed');
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // postMessage from Persona: when it says "complete," start polling our backend.
   // We never accept Persona's claim alone — we wait for the webhook (which is
   // signed) to write the verified status to our DB, then read from there.
@@ -170,6 +264,24 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ?verified=1 query param: Persona's redirect-uri lands the user here after the
+  // hosted flow completes. Immediately check status and (if confirmed) skip
+  // straight to the success screen. Also strips the param from the URL so a
+  // refresh doesn't re-trigger.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('verified') !== '1') return;
+    // Strip the param immediately to avoid loops on re-render.
+    params.delete('verified');
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
+    window.history.replaceState({}, '', newUrl);
+    // Kick off polling — webhook may have arrived ahead of us.
+    startPolling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
