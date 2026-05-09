@@ -206,9 +206,9 @@ def parse_question_block(block, qid):
             options_block = block[bracket_start:bracket_end + 1]
             q["options"] = re.findall(r'"((?:[^"\\]|\\.)*)"', options_block)
         else:
-            q["options"] = None
+            q["options"] = []
     else:
-        q["options"] = None
+        q["options"] = []
 
     return q
 

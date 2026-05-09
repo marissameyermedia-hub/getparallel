@@ -13,7 +13,7 @@
       ],
       "has_dealbreaker": null,
       "optional": true,
-      "options": null
+      "options": []
     },
     {
       "id": "1.1",
@@ -50,7 +50,7 @@
       ],
       "has_dealbreaker": null,
       "optional": null,
-      "options": null
+      "options": []
     },
     {
       "id": "1.7",
@@ -256,7 +256,7 @@
       ],
       "has_dealbreaker": null,
       "optional": null,
-      "options": null
+      "options": []
     },
     {
       "id": "3.9a",
@@ -920,7 +920,7 @@
       ],
       "has_dealbreaker": null,
       "optional": null,
-      "options": null
+      "options": []
     },
     {
       "id": "9.3",
@@ -933,7 +933,7 @@
       ],
       "has_dealbreaker": null,
       "optional": null,
-      "options": null
+      "options": []
     },
     {
       "id": "9.4",
@@ -1297,5 +1297,5 @@
       ]
     }
   ],
-  "content_hash": "1ad3cbde7cb21e74"
+  "content_hash": "ed2866a06f909cc6"
 }
