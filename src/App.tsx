@@ -1075,6 +1075,12 @@ function App() {
 
   // ── Render ───────────────────────────────────────────────────
 
+  // True once the backend has returned at least one match for this user
+  // (current unreviewed matches OR any previously accepted/declined match).
+  // Used to gate subscribe and identity-verify CTAs — no point showing them
+  // before there's anything to unlock.
+  const hasMatches = matches.length > 0 || acceptedMatchIds.length > 0 || declinedMatchIds.length > 0;
+
   const isFullscreenView = [
     'onboarding', 'signin', 'account-creation', 'phone-verification',
     'payment-confirmation', 'reset-password', 'messaging',
@@ -1326,6 +1332,7 @@ function App() {
             onNavigate={(view) => setCurrentView(view as any)}
             onLogOut={handleLogOut}
             hasActivated={hasActivated}
+            hasMatches={hasMatches}
             userName={userName}
             userEmail={localStorage.getItem('parallel_user_email') || ''}
             hasVerified={hasVerified}
@@ -1581,6 +1588,7 @@ function App() {
               setCurrentView('profile');
             }}
             hasActivated={hasActivated}
+            hasMatches={hasMatches}
             onNavigateToPayment={() => setCurrentView('pricing')}
             accessToken={accessToken}
             emailVerified={emailConfirmed}

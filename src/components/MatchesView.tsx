@@ -99,6 +99,11 @@ export function MatchesView({
   // and state transitions are always consistent with what the backend returned.
   const sortedMatches = [...matches].sort((a, b) => b.compatibilityScore - a.compatibilityScore);
 
+  // True once the backend has returned at least one match (current or reviewed).
+  // Passed to SetupChecklist to gate subscribe/verify rows — no point showing
+  // those CTAs before there's anything to unlock.
+  const hasMatches = matches.length > 0 || hasReceivedMatches;
+
   const handleShareInvite = async () => {
     const token = await getAccessToken();
     if (!token) return;
@@ -255,6 +260,7 @@ export function MatchesView({
         emailVerified={emailVerified}
         identityVerified={isVerified}
         hasActivated={hasActivated}
+        hasMatches={hasMatches}
         onOpenSubscribe={onNavigateToPayment}
         onOpenInstallPrompt={() => {
           try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
@@ -354,135 +360,59 @@ export function MatchesView({
         /* ── No matches — waiting (never had any) ─────────────── */
         ) : !hasReceivedMatches ? (
 
-          !hasActivated ? (
-            // Unsubscribed + no matches yet → blurred mock card stack with subscribe CTA.
-            // Stock photos are royalty-free Unsplash portraits, blurred heavily so no
-            // individual is identifiable. Never seed-user photos.
-            <div className="max-w-md mx-auto px-4 pt-4 pb-8">
-              <div className="relative mb-4" style={{ minHeight: '60vh' }}>
-                <div
-                  className="absolute inset-x-6 top-4 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200"
-                  style={{ zIndex: 0 }}
-                  aria-hidden="true"
-                />
-                <div
-                  className="absolute inset-x-3 top-2 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200 overflow-hidden"
-                  style={{ zIndex: 1 }}
-                  aria-hidden="true"
-                >
-                  <img
-                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80"
-                    alt=""
-                    className="w-full h-full object-cover blur-2xl scale-110 opacity-80"
-                  />
-                </div>
-                <div
-                  className="relative rounded-3xl border-2 border-gray-200 overflow-hidden bg-gray-100"
-                  style={{ zIndex: 2, aspectRatio: '3/4' }}
-                  aria-hidden="true"
-                >
-                  <img
-                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80"
-                    alt=""
-                    className="w-full h-full object-cover blur-2xl scale-110"
-                  />
-                  <div className="absolute inset-0 bg-parallel-void/40 flex flex-col items-center justify-center px-6">
-                    <div className="bg-parallel-cream rounded-2xl px-6 py-6 max-w-xs w-full text-center shadow-2xl">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 font-medium mb-2">
-                        Matching in progress
-                      </p>
-                      <h3 className="text-2xl font-bold mb-2 leading-tight">
-                        Your matches are coming soon
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-                        The more people in the pool, the better your matches will be.
-                      </p>
-                      <button
-                        onClick={onNavigateToPayment}
-                        className="w-full bg-parallel-purple text-parallel-cream py-3 rounded-full font-semibold hover:bg-parallel-purple/90 transition-colors text-sm"
-                      >
-                        Get notified when ready →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+          // Single "waiting" state regardless of subscription. We don't nudge to
+          // subscribe here because there's nothing to unlock yet — the CTA appears
+          // on the blurred paywall only once real matches exist (matches.length > 0).
+          <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+            <div className="mb-6">
               <div
-                className="rounded-2xl p-5 text-center mt-4"
-                style={{ background: 'linear-gradient(135deg, #EEEDFE 0%, #F5F2EE 100%)' }}
+                className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
+                style={{ background: '#0D0D0F' }}
+                aria-hidden="true"
               >
-                <p className="font-semibold mb-1 text-sm" style={{ color: '#534AB7' }}>
-                  // Speed up your matches
-                </p>
-                <p className="text-sm mb-4 leading-relaxed" style={{ color: '#3C3489' }}>
-                  Every person you invite grows the pool. The bigger the pool, the faster your matches appear — and the better they get.
-                </p>
-                <button
-                  onClick={onNavigateToInvite || handleShareInvite}
-                  className="w-full py-2.5 rounded-full text-sm font-medium transition-colors"
-                  style={{ background: '#7B5EA7', color: '#FFFFFF' }}
-                >
-                  Invite a friend →
-                </button>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#FFFFFF', letterSpacing: '.02em' }}>
+                  P<span style={{ color: '#A98FD0' }}>//</span>
+                </span>
               </div>
             </div>
-
-          ) : (
-            // Subscribed + no matches yet → "on their way" with animated progress bar.
-            // SetupChecklist at the top already handles any pending onboarding tasks;
-            // this state is purely a waiting room.
-            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
-              <div className="mb-6">
+            <h2 className="text-3xl font-bold mb-4">Your matches are on their way.</h2>
+            <div className="w-full max-w-xs mb-6">
+              <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
-                  style={{ background: '#0D0D0F' }}
-                  aria-hidden="true"
-                >
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#FFFFFF', letterSpacing: '.02em' }}>
-                    P<span style={{ color: '#A98FD0' }}>//</span>
-                  </span>
-                </div>
+                  className="h-full bg-parallel-void rounded-full"
+                  style={{ animation: 'matchingProgress 2.4s ease-in-out infinite' }}
+                />
               </div>
-              <h2 className="text-3xl font-bold mb-4">Your matches are on their way.</h2>
-              <div className="w-full max-w-xs mb-6">
-                <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-parallel-void rounded-full"
-                    style={{ animation: 'matchingProgress 2.4s ease-in-out infinite' }}
-                  />
-                </div>
-                <style>{`
-                  @keyframes matchingProgress {
-                    0%   { width: 0%;  margin-left: 0%; }
-                    50%  { width: 60%; margin-left: 20%; }
-                    100% { width: 0%;  margin-left: 100%; }
-                  }
-                `}</style>
-              </div>
-              <p className="text-gray-600 text-lg leading-relaxed mb-4 max-w-md">
-                We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
-              </p>
-              <p className="text-sm text-gray-400 mb-8">
-                Taking longer than expected?{' '}
-                <a
-                  href="mailto:support@getparallel.vip"
-                  className="underline text-gray-500 hover:text-parallel-void transition-colors"
-                >
-                  Contact support →
-                </a>
-              </p>
-              <button
-                onClick={onNavigateToInvite || handleShareInvite}
-                className="bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium mb-3"
-              >
-                Invite a friend →
-              </button>
-              <p className="text-sm text-gray-500">
-                The more people you invite, the more people they invite, the better everyone's matches get.
-              </p>
+              <style>{`
+                @keyframes matchingProgress {
+                  0%   { width: 0%;  margin-left: 0%; }
+                  50%  { width: 60%; margin-left: 20%; }
+                  100% { width: 0%;  margin-left: 100%; }
+                }
+              `}</style>
             </div>
-          )
+            <p className="text-gray-600 text-lg leading-relaxed mb-4 max-w-md">
+              We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
+            </p>
+            <p className="text-sm text-gray-400 mb-8">
+              Taking longer than expected?{' '}
+              <a
+                href="mailto:support@getparallel.vip"
+                className="underline text-gray-500 hover:text-parallel-void transition-colors"
+              >
+                Contact support →
+              </a>
+            </p>
+            <button
+              onClick={onNavigateToInvite || handleShareInvite}
+              className="bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium mb-3"
+            >
+              Invite a friend →
+            </button>
+            <p className="text-sm text-gray-500">
+              The more people you invite, the more people they invite, the better everyone's matches get.
+            </p>
+          </div>
 
         /* ── No matches — all caught up ───────────────────────── */
         ) : (

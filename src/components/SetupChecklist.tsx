@@ -43,10 +43,14 @@ interface SetupChecklistProps {
   onOpenInstallPrompt: () => void;
   // Whether the user has an active subscription.
   // false  → show "Subscribe" row, hide identity-verification row.
-  // true   → hide "Subscribe" row, show identity-verification row.
-  // undefined → unknown (checklist was rendered before profile loaded);
-  //             subscribe row is hidden, identity row shows as before.
+  // true   → hide "Subscribe" row, show identity-verification row (if hasMatches).
+  // undefined → unknown (checklist rendered before profile loaded); both rows hidden.
   hasActivated?: boolean;
+  // Whether the backend has ever returned at least one match for this user
+  // (matches.length > 0 || hasReceivedMatches). Subscribe and identity-verify
+  // rows are suppressed until this is true — there's nothing to unlock yet.
+  // undefined → not provided by caller; both rows hidden (safe default).
+  hasMatches?: boolean;
   // Navigates to the pricing / subscribe page when the Subscribe row is tapped.
   // Optional — falls back to dispatching the parallel:open-subscribe custom event.
   onOpenSubscribe?: () => void;
@@ -64,6 +68,7 @@ export function SetupChecklist({
   identityVerified,
   onOpenInstallPrompt,
   hasActivated,
+  hasMatches,
   onOpenSubscribe,
   onOpenNotifications,
   onOpenVerification,
@@ -167,15 +172,15 @@ export function SetupChecklist({
   // ── derived: which actionable rows are still pending? ────────────
   const emailPending = !emailVerified && !emailJustVerified;
 
-  // Subscribe row: only shown when we KNOW the user is not subscribed.
-  // undefined means "not yet loaded" — we hide the row to avoid flicker.
-  const subscribePending = hasActivated === false;
+  // Subscribe row: only when we KNOW the user is unsubscribed AND has matches
+  // to unlock. No matches yet → nothing to subscribe for; hide the row.
+  const subscribePending = hasActivated === false && hasMatches === true;
 
-  // Identity row: only shown when the user IS subscribed (hasActivated===true)
-  // and hasn't verified yet. When hasActivated is undefined (loading), we
-  // preserve the old behavior and show the row if identityVerified is false.
+  // Identity row: only when the user IS subscribed AND has matches AND hasn't
+  // verified yet. Requires hasMatches===true for the same reason as subscribe:
+  // there's no point prompting for ID verification before any matches exist.
   const identityPending = !identityVerified;
-  const showIdentityRow = hasActivated !== false && identityPending;
+  const showIdentityRow = hasActivated === true && identityPending && hasMatches === true;
 
   // Only show the SMS row once we've loaded prefs (avoids briefly showing
   // it for users who already opted in). Hides the row once enabled.

@@ -41,6 +41,9 @@ interface AccountPageProps {
   onNavigate?: (page: string) => void;
   onLogOut: () => void;
   hasActivated: boolean;
+  // True once the backend has returned at least one match (current or reviewed).
+  // The subscribe nudge is suppressed until there's something to subscribe for.
+  hasMatches?: boolean;
   userName?: string;
   userEmail?: string;
   hasVerified?: boolean;
@@ -210,6 +213,7 @@ export function AccountPage({
   onNavigate,
   onLogOut,
   hasActivated,
+  hasMatches,
   userName,
   userEmail: initialUserEmail,
   hasVerified,
@@ -432,8 +436,9 @@ export function AccountPage({
             </p>
           </div>
 
-          {/* Upgrade nudge for free users */}
-          {!hasActivated && (
+          {/* Upgrade nudge — only when the user has matches to unlock.
+              No matches yet → nothing to subscribe for, so stay quiet. */}
+          {!hasActivated && hasMatches === true && (
             <div className="bg-parallel-purple text-parallel-cream rounded-3xl p-6 mb-6">
               <div className="flex items-start gap-4">
                 <span className="text-2xl">🔓</span>
