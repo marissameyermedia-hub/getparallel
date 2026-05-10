@@ -254,7 +254,6 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     const handleMessage = (event: MessageEvent) => {
       if (!event.origin.includes('withpersona.com')) return;
       const { name } = event.data || {};
-      console.log('Persona message:', name, event.data);
       if (name === 'complete' || name === 'inquiry.completed' || name === 'inquiry.approved') {
         startPolling();
       }

@@ -10,24 +10,26 @@ import { publicAnonKey } from '../utils/supabase/info';
 // black identity bar, separate PWA prompt). Replaces all three with
 // one consolidated, dismissible card.
 //
-// Active rows:
+// Active rows (in priority order):
 //   - Profile complete (always checked, decorative)
 //   - Verify your email (clickable; resends verification email; on
 //     success animates to green ✓ and disappears from the list)
+//   - Subscribe to Parallel (clickable; shown when hasActivated===false;
+//     navigates to the pricing page via onOpenSubscribe or dispatches
+//     the parallel:open-subscribe custom event as a fallback)
+//   - Verify your identity (clickable; only shown once subscribed;
+//     navigates to the verification flow. Requires an active subscription
+//     so we deliberately gate it behind the Subscribe row.)
 //   - Turn on SMS alerts (clickable; routes to /account/notifications
 //     where the user can opt in. Hides once sms_enabled=true.)
 //   - Add to home screen (only appears once user has liked at least
 //     one match; tapping it opens the existing PWA install modal)
 //
-// Coming-soon rows (greyed, non-clickable, shown for transparency):
-//   - Verify your identity   [Coming soon]
-//
 // Behavior:
 //   - Card is collapsible. "Hide" collapses to a small pill at the top
 //     of Home that says "Setup (N left)". Tap pill to re-expand.
-//   - Card hides entirely once email is verified, SMS opted in, and PWA
-//     is dismissed or installed. Card never appears if user has nothing
-//     to do.
+//   - Card hides entirely once all actionable rows are complete.
+//     Card never appears if user has nothing left to do.
 
 const COLLAPSED_KEY = 'parallel_setup_collapsed_v1';
 const FIRST_LIKE_KEY = 'parallel_first_like_at';
@@ -39,9 +41,20 @@ interface SetupChecklistProps {
   emailVerified: boolean;
   identityVerified: boolean;
   onOpenInstallPrompt: () => void;
+  // Whether the user has an active subscription.
+  // false  → show "Subscribe" row, hide identity-verification row.
+  // true   → hide "Subscribe" row, show identity-verification row.
+  // undefined → unknown (checklist was rendered before profile loaded);
+  //             subscribe row is hidden, identity row shows as before.
+  hasActivated?: boolean;
+  // Navigates to the pricing / subscribe page when the Subscribe row is tapped.
+  // Optional — falls back to dispatching the parallel:open-subscribe custom event.
+  onOpenSubscribe?: () => void;
   // Navigates to /account/notifications when SMS row is tapped.
   // Optional — falls back to a no-op if not provided (gracefully degrades).
   onOpenNotifications?: () => void;
+  // Navigates to the identity verification flow when that row is tapped.
+  // Optional — falls back to dispatching parallel:open-verification.
   onOpenVerification?: () => void;
 }
 
@@ -50,6 +63,8 @@ export function SetupChecklist({
   emailVerified,
   identityVerified,
   onOpenInstallPrompt,
+  hasActivated,
+  onOpenSubscribe,
   onOpenNotifications,
   onOpenVerification,
 }: SetupChecklistProps) {
@@ -151,13 +166,28 @@ export function SetupChecklist({
 
   // ── derived: which actionable rows are still pending? ────────────
   const emailPending = !emailVerified && !emailJustVerified;
+
+  // Subscribe row: only shown when we KNOW the user is not subscribed.
+  // undefined means "not yet loaded" — we hide the row to avoid flicker.
+  const subscribePending = hasActivated === false;
+
+  // Identity row: only shown when the user IS subscribed (hasActivated===true)
+  // and hasn't verified yet. When hasActivated is undefined (loading), we
+  // preserve the old behavior and show the row if identityVerified is false.
+  const identityPending = !identityVerified;
+  const showIdentityRow = hasActivated !== false && identityPending;
+
   // Only show the SMS row once we've loaded prefs (avoids briefly showing
   // it for users who already opted in). Hides the row once enabled.
   const smsPending = smsLoaded && !smsEnabled;
   const pwaPending = hasLiked && !pwaDone;
-  const identityPending = !identityVerified;
+
   const actionableCount =
-    (emailPending ? 1 : 0) + (smsPending ? 1 : 0) + (pwaPending ? 1 : 0) + (identityPending ? 1 : 0);
+    (emailPending ? 1 : 0) +
+    (subscribePending ? 1 : 0) +
+    (showIdentityRow ? 1 : 0) +
+    (smsPending ? 1 : 0) +
+    (pwaPending ? 1 : 0);
 
   // Hide the card entirely when the user has nothing actionable left.
   if (actionableCount === 0 && !emailJustVerified) return null;
@@ -200,6 +230,22 @@ export function SetupChecklist({
       setEmailError('Network error. Try again.');
     } finally {
       setEmailSending(false);
+    }
+  };
+
+  const handleSubscribeTap = () => {
+    if (onOpenSubscribe) {
+      onOpenSubscribe();
+    } else {
+      try { window.dispatchEvent(new CustomEvent('parallel:open-subscribe')); } catch { /* noop */ }
+    }
+  };
+
+  const handleVerificationTap = () => {
+    if (onOpenVerification) {
+      onOpenVerification();
+    } else {
+      try { window.dispatchEvent(new CustomEvent('parallel:open-verification')); } catch { /* noop */ }
     }
   };
 
@@ -293,18 +339,37 @@ export function SetupChecklist({
             </li>
           )}
 
-          {/* Identity verification — tappable when pending */}
-          {identityPending && (
+          {/* Subscribe — shown when hasActivated is explicitly false.
+              Must come before identity verification in the list because
+              Persona ID verification requires an active subscription. */}
+          {subscribePending && (
             <li>
               <button
                 type="button"
-                onClick={() => {
-                  if (onOpenVerification) {
-                    onOpenVerification();
-                  } else {
-                    try { window.dispatchEvent(new CustomEvent('parallel:open-verification')); } catch { /* noop */ }
-                  }
-                }}
+                onClick={handleSubscribeTap}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                aria-label="Subscribe to Parallel"
+              >
+                <CheckCircle />
+                <span className="flex-1 min-w-0">
+                  <span className="text-sm block text-gray-900">Subscribe to Parallel</span>
+                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
+                    Unlock your matches and start messaging
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+              </button>
+            </li>
+          )}
+
+          {/* Identity verification — only shown once subscribed.
+              ID verification via Persona requires an active subscription,
+              so we gate this row on hasActivated===true. */}
+          {showIdentityRow && (
+            <li>
+              <button
+                type="button"
+                onClick={handleVerificationTap}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
                 aria-label="Verify your identity"
               >
@@ -385,14 +450,6 @@ function CheckCircle({ done = false }: { done?: boolean }) {
       className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"
       aria-hidden="true"
     />
-  );
-}
-
-function ComingSoonTag() {
-  return (
-    <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">
-      Coming soon
-    </span>
   );
 }
 
