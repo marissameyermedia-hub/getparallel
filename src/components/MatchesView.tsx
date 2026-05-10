@@ -258,6 +258,8 @@ export function MatchesView({
         accessToken={accessToken}
         emailVerified={emailVerified}
         identityVerified={isVerified}
+        hasActivated={hasActivated}
+        onOpenSubscribe={onNavigateToPayment}
         onOpenInstallPrompt={() => {
           try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
         }}
@@ -420,6 +422,8 @@ export function MatchesView({
                 accessToken={accessToken}
                 emailVerified={emailVerified}
                 identityVerified={isVerified}
+                hasActivated={hasActivated}
+                onOpenSubscribe={onNavigateToPayment}
                 onOpenInstallPrompt={() => {
                   try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
                 }}
