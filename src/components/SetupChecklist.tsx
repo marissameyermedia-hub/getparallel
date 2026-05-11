@@ -1,64 +1,42 @@
 import { useState, useEffect } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
-import { EMAIL_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
+import { EMAIL_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 
 // SetupChecklist
 // ------------------------------------------------------------------
-// A single "Your matchmaking checklist" card that sits at the top of
-// Home and replaces the old stack of nag banners (yellow email banner,
-// black identity bar, separate PWA prompt). Replaces all three with
-// one consolidated, dismissible card.
+// Five-item progress checklist rendered at the top of Home and Inbox.
 //
-// Active rows (in priority order):
-//   - Profile complete (always checked, decorative)
-//   - Verify your email (clickable; resends verification email; on
-//     success animates to green ✓ and disappears from the list)
-//   - Subscribe to Parallel (clickable; shown when hasActivated===false;
-//     navigates to the pricing page via onOpenSubscribe or dispatches
-//     the parallel:open-subscribe custom event as a fallback)
-//   - Verify your identity (clickable; only shown once subscribed;
-//     navigates to the verification flow. Requires an active subscription
-//     so we deliberately gate it behind the Subscribe row.)
-//   - Turn on SMS alerts (clickable; routes to /account/notifications
-//     where the user can opt in. Hides once sms_enabled=true.)
-//   - Add to home screen (only appears once user has liked at least
-//     one match; tapping it opens the existing PWA install modal)
+// Always visible:
+//   1. Profile complete       — always ✓
+//   2. Verify your email      — ✓ when emailVerified
+//   3. Set notifications      — ✓ when user taps Save on the notifications
+//                               page (localStorage 'parallel_prefs_saved')
 //
-// Behavior:
-//   - Card is collapsible. "Hide" collapses to a small pill at the top
-//     of Home that says "Setup (N left)". Tap pill to re-expand.
-//   - Card hides entirely once all actionable rows are complete.
-//     Card never appears if user has nothing left to do.
+// Visible only when hasMatches === true:
+//   4. Subscribe              — ✓ when hasActivated === true
+//
+// Visible only when hasMatches === true AND hasActivated === true:
+//   5. Verify your identity   — ✓ when identityVerified
+//
+// Once checked, rows stay visible with the ✓ — they don't disappear.
+// The card hides entirely when every visible item is checked.
+// No collapse-to-pill behavior. No SMS or PWA install rows.
 
-const COLLAPSED_KEY = 'parallel_setup_collapsed_v1';
-const FIRST_LIKE_KEY = 'parallel_first_like_at';
-const PWA_DISMISSED_KEY = 'parallel_install_prompt_dismissed_at';
-const EMAIL_JUST_VERIFIED_MS = 3000; // how long to show the green ✓ before the row disappears
+const PREFS_SAVED_KEY = 'parallel_prefs_saved';
+const EMAIL_JUST_VERIFIED_MS = 3000;
 
 interface SetupChecklistProps {
   accessToken: string | null;
   emailVerified: boolean;
   identityVerified: boolean;
-  onOpenInstallPrompt: () => void;
-  // Whether the user has an active subscription.
-  // false  → show "Subscribe" row, hide identity-verification row.
-  // true   → hide "Subscribe" row, show identity-verification row (if hasMatches).
-  // undefined → unknown (checklist rendered before profile loaded); both rows hidden.
+  // undefined = still loading — hide gated rows until known.
   hasActivated?: boolean;
-  // Whether the backend has ever returned at least one match for this user
-  // (matches.length > 0 || hasReceivedMatches). Subscribe and identity-verify
-  // rows are suppressed until this is true — there's nothing to unlock yet.
-  // undefined → not provided by caller; both rows hidden (safe default).
   hasMatches?: boolean;
-  // Navigates to the pricing / subscribe page when the Subscribe row is tapped.
-  // Optional — falls back to dispatching the parallel:open-subscribe custom event.
-  onOpenSubscribe?: () => void;
-  // Navigates to /account/notifications when SMS row is tapped.
-  // Optional — falls back to a no-op if not provided (gracefully degrades).
+  // Navigation callbacks. Each falls back to a custom event so the component
+  // works even when the parent doesn't wire the prop.
   onOpenNotifications?: () => void;
-  // Navigates to the identity verification flow when that row is tapped.
-  // Optional — falls back to dispatching parallel:open-verification.
+  onOpenSubscribe?: () => void;
   onOpenVerification?: () => void;
 }
 
@@ -66,144 +44,56 @@ export function SetupChecklist({
   accessToken,
   emailVerified,
   identityVerified,
-  onOpenInstallPrompt,
   hasActivated,
   hasMatches,
-  onOpenSubscribe,
   onOpenNotifications,
+  onOpenSubscribe,
   onOpenVerification,
 }: SetupChecklistProps) {
-  // ── state ────────────────────────────────────────────────────────
-  const [collapsed, setCollapsed] = useState<boolean>(() => {
-    try { return localStorage.getItem(COLLAPSED_KEY) === '1'; } catch { return false; }
-  });
-
-  // Email-verify row interaction
+  // ── Email resend state ────────────────────────────────────────────
   const [emailSending, setEmailSending] = useState(false);
   const [emailJustVerified, setEmailJustVerified] = useState(false);
-  const [emailError, setEmailError] = useState<string>('');
+  const [emailError, setEmailError] = useState('');
 
-  // SMS opt-in status. Fetched from /notifications/preferences on mount
-  // and re-fetched on focus so this row clears as soon as the user opts
-  // in from the Notifications page and comes back.
-  const [smsEnabled, setSmsEnabled] = useState<boolean>(false);
-  const [smsLoaded, setSmsLoaded] = useState<boolean>(false);
-
-  const fetchSmsStatus = async () => {
-    if (!accessToken) return;
-    try {
-      const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': publicAnonKey,
-        },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSmsEnabled(Boolean(data?.sms_enabled));
-      }
-    } catch { /* noop — leave smsEnabled at last known value */ }
-    finally {
-      setSmsLoaded(true);
-    }
-  };
-
-  useEffect(() => {
-    fetchSmsStatus();
-    const onFocus = () => fetchSmsStatus();
-    window.addEventListener('focus', onFocus);
-    // Optional broadcast hook for NotificationsView to fire after a
-    // successful opt-in, so the checklist updates without a tab switch.
-    window.addEventListener('parallel:sms-status', onFocus);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      window.removeEventListener('parallel:sms-status', onFocus);
-    };
-    // accessToken never changes mid-session in practice; gating on it here
-    // ensures we don't fire before sign-in.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
-
-  // Has the user liked at least one match? Drives whether we show PWA row.
-  // We re-read from localStorage on mount and on focus, since likes happen
-  // after the checklist mounts.
-  const [hasLiked, setHasLiked] = useState<boolean>(() => {
-    try { return !!localStorage.getItem(FIRST_LIKE_KEY); } catch { return false; }
+  // ── Notification prefs saved ──────────────────────────────────────
+  // Written by NotificationsView when the user taps "Save preferences".
+  // Re-read on focus and on the parallel:prefs-saved broadcast so the
+  // checklist updates immediately after returning from that screen.
+  const [prefsSaved, setPrefsSaved] = useState<boolean>(() => {
+    try { return !!localStorage.getItem(PREFS_SAVED_KEY); } catch { return false; }
   });
   useEffect(() => {
     const recheck = () => {
-      try { setHasLiked(!!localStorage.getItem(FIRST_LIKE_KEY)); } catch { /* noop */ }
+      try { setPrefsSaved(!!localStorage.getItem(PREFS_SAVED_KEY)); } catch { /* noop */ }
     };
     window.addEventListener('focus', recheck);
-    window.addEventListener('parallel:first-like', recheck);
+    window.addEventListener('parallel:prefs-saved', recheck);
     return () => {
       window.removeEventListener('focus', recheck);
-      window.removeEventListener('parallel:first-like', recheck);
+      window.removeEventListener('parallel:prefs-saved', recheck);
     };
   }, []);
 
-  // Has the PWA been installed (or its prompt explicitly dismissed for this snooze)?
-  const [pwaDone, setPwaDone] = useState<boolean>(() => {
-    try {
-      const installed = window.matchMedia('(display-mode: standalone)').matches
-        || (window.navigator as any).standalone === true;
-      const dismissedAt = localStorage.getItem(PWA_DISMISSED_KEY);
-      return installed || !!dismissedAt;
-    } catch { return false; }
-  });
-  useEffect(() => {
-    const recheck = () => {
-      try {
-        const installed = window.matchMedia('(display-mode: standalone)').matches
-          || (window.navigator as any).standalone === true;
-        const dismissedAt = localStorage.getItem(PWA_DISMISSED_KEY);
-        setPwaDone(installed || !!dismissedAt);
-      } catch { /* noop */ }
-    };
-    window.addEventListener('focus', recheck);
-    window.addEventListener('parallel:pwa-status', recheck);
-    return () => {
-      window.removeEventListener('focus', recheck);
-      window.removeEventListener('parallel:pwa-status', recheck);
-    };
-  }, []);
+  // ── Derived visibility and completion ─────────────────────────────
+  const item2Done = emailVerified || emailJustVerified;
+  const item3Done = prefsSaved;
+  const item4Visible = hasMatches === true;
+  const item4Done = hasActivated === true;
+  const item5Visible = hasMatches === true && hasActivated === true;
+  const item5Done = identityVerified;
 
-  // ── derived: which actionable rows are still pending? ────────────
-  const emailPending = !emailVerified && !emailJustVerified;
+  const pendingCount =
+    (item2Done ? 0 : 1) +
+    (item3Done ? 0 : 1) +
+    (item4Visible && !item4Done ? 1 : 0) +
+    (item5Visible && !item5Done ? 1 : 0);
 
-  // Subscribe row: only when we KNOW the user is unsubscribed AND has matches
-  // to unlock. No matches yet → nothing to subscribe for; hide the row.
-  const subscribePending = hasActivated === false && hasMatches === true;
+  // Card hides when everything visible is done. The emailJustVerified guard
+  // keeps the card open for 3s after a resend returns alreadyVerified=true
+  // so the user sees the green ✓ before it disappears.
+  if (pendingCount === 0 && !emailJustVerified) return null;
 
-  // Identity row: only when the user IS subscribed AND has matches AND hasn't
-  // verified yet. Requires hasMatches===true for the same reason as subscribe:
-  // there's no point prompting for ID verification before any matches exist.
-  const identityPending = !identityVerified;
-  const showIdentityRow = hasActivated === true && identityPending && hasMatches === true;
-
-  // Only show the SMS row once we've loaded prefs (avoids briefly showing
-  // it for users who already opted in). Hides the row once enabled.
-  const smsPending = smsLoaded && !smsEnabled;
-  const pwaPending = hasLiked && !pwaDone;
-
-  const actionableCount =
-    (emailPending ? 1 : 0) +
-    (subscribePending ? 1 : 0) +
-    (showIdentityRow ? 1 : 0) +
-    (smsPending ? 1 : 0) +
-    (pwaPending ? 1 : 0);
-
-  // Hide the card entirely when the user has nothing actionable left.
-  if (actionableCount === 0 && !emailJustVerified) return null;
-
-  // ── handlers ─────────────────────────────────────────────────────
-  const handleToggleCollapse = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    try { localStorage.setItem(COLLAPSED_KEY, next ? '1' : '0'); } catch { /* noop */ }
-  };
-
+  // ── Handlers ─────────────────────────────────────────────────────
   const handleResendEmail = async () => {
     if (emailSending || !accessToken) return;
     setEmailError('');
@@ -221,20 +111,23 @@ export function SetupChecklist({
       if (!res.ok) {
         setEmailError(data?.error || 'Could not send. Try again in a minute.');
       } else if (data.alreadyVerified) {
-        // Edge case: backend says we're verified. Trigger the success
-        // animation; App will catch up on its next status fetch.
         setEmailJustVerified(true);
         setTimeout(() => setEmailJustVerified(false), EMAIL_JUST_VERIFIED_MS);
-      } else {
-        // We sent the email but haven't actually verified yet. Show a
-        // brief "Sent ✓" pill on the row instead of marking it done —
-        // the row only goes green once they actually click the link.
-        setEmailError(''); // clear any prior error
       }
+      // On plain success (email was re-sent): no state change — the row stays
+      // as "Tap to resend" until the user actually clicks the link.
     } catch {
       setEmailError('Network error. Try again.');
     } finally {
       setEmailSending(false);
+    }
+  };
+
+  const handleNotificationsTap = () => {
+    if (onOpenNotifications) {
+      onOpenNotifications();
+    } else {
+      try { window.dispatchEvent(new CustomEvent('parallel:open-notifications')); } catch { /* noop */ }
     }
   };
 
@@ -254,192 +147,156 @@ export function SetupChecklist({
     }
   };
 
-  const handleSmsTap = () => {
-    if (onOpenNotifications) {
-      onOpenNotifications();
-    } else {
-      // Fallback — broadcast an event the parent can listen for if it
-      // hasn't wired the prop. Prevents a dead row.
-      try { window.dispatchEvent(new CustomEvent('parallel:open-notifications')); } catch { /* noop */ }
-    }
-  };
-
-  const handleInstallTap = () => {
-    onOpenInstallPrompt();
-  };
-
-  // ── collapsed pill ───────────────────────────────────────────────
-  if (collapsed) {
-    return (
-      <div className="max-w-md mx-auto px-4 pt-3">
-        <button
-          type="button"
-          onClick={handleToggleCollapse}
-          className="inline-flex items-center gap-2 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors rounded-full px-3 py-1.5"
-          aria-expanded="false"
-          aria-controls="setup-checklist-card"
-        >
-          <span aria-hidden="true">☐</span>
-          Setup ({actionableCount} left)
-        </button>
-      </div>
-    );
-  }
-
-  // ── expanded card ────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="max-w-md mx-auto px-4 pt-3" id="setup-checklist-card">
       <div className="bg-parallel-cream border border-gray-200 rounded-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-900 text-[15px]">Your matchmaking checklist</h2>
-          <button
-            type="button"
-            onClick={handleToggleCollapse}
-            className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors px-2 py-1 -mr-1"
-            aria-label="Hide checklist"
-          >
-            Hide
-          </button>
+        <div className="px-4 py-3 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900 text-[15px]">Your setup checklist</h2>
         </div>
 
-        {/* Rows */}
         <ul className="divide-y divide-gray-100" role="list">
-          {/* Profile complete — always done */}
+
+          {/* 1. Profile complete — always ✓, decorative */}
           <li className="flex items-center gap-3 px-4 py-3">
-            <CheckCircle done />
-            <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">Profile complete</span>
+            <Dot done />
+            <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+              Profile complete
+            </span>
           </li>
 
-          {/* Email verification — actionable */}
-          {(emailPending || emailJustVerified) && (
+          {/* 2. Verify email */}
+          {item2Done ? (
+            <li className="flex items-center gap-3 px-4 py-3">
+              <Dot done />
+              <span className={`flex-1 text-sm ${emailJustVerified ? 'text-green-700 font-medium' : 'text-gray-400 line-through decoration-gray-300'}`}>
+                {emailJustVerified ? 'Email verified' : 'Verify your email'}
+              </span>
+            </li>
+          ) : (
             <li>
               <button
                 type="button"
                 onClick={handleResendEmail}
-                disabled={emailSending || emailJustVerified}
+                disabled={emailSending}
                 className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors disabled:hover:bg-transparent disabled:cursor-default"
                 aria-label="Verify your email"
               >
-                <CheckCircle done={emailJustVerified} />
+                <Dot />
                 <span className="flex-1 min-w-0">
-                  <span className={`text-sm block ${emailJustVerified ? 'text-green-700 font-medium' : 'text-gray-900'}`}>
-                    {emailJustVerified ? 'Email verified' : 'Verify your email'}
+                  <span className="text-sm block text-gray-900">Verify your email</span>
+                  <span className="text-xs block mt-0.5 leading-snug">
+                    {emailSending
+                      ? <span className="text-gray-500">Sending verification email…</span>
+                      : emailError
+                        ? <span className="text-red-700">{emailError}</span>
+                        : <span className="text-gray-500">Tap to resend the verification link</span>}
                   </span>
-                  {!emailJustVerified && (
+                </span>
+                {!emailSending
+                  ? <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                  : <Spinner />}
+              </button>
+            </li>
+          )}
+
+          {/* 3. Set notification preferences */}
+          {item3Done ? (
+            <li className="flex items-center gap-3 px-4 py-3">
+              <Dot done />
+              <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+                Set notification preferences
+              </span>
+            </li>
+          ) : (
+            <li>
+              <button
+                type="button"
+                onClick={handleNotificationsTap}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                aria-label="Set notification preferences"
+              >
+                <Dot />
+                <span className="flex-1 min-w-0">
+                  <span className="text-sm block text-gray-900">Set notification preferences</span>
+                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
+                    Choose how to hear about new matches
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+              </button>
+            </li>
+          )}
+
+          {/* 4. Subscribe — only visible when there are matches */}
+          {item4Visible && (
+            item4Done ? (
+              <li className="flex items-center gap-3 px-4 py-3">
+                <Dot done />
+                <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+                  Subscribe to see your matches
+                </span>
+              </li>
+            ) : (
+              <li>
+                <button
+                  type="button"
+                  onClick={handleSubscribeTap}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                  aria-label="Subscribe to Parallel"
+                >
+                  <Dot />
+                  <span className="flex-1 min-w-0">
+                    <span className="text-sm block text-gray-900">Subscribe to see your matches</span>
                     <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                      {emailSending
-                        ? 'Sending verification email…'
-                        : emailError
-                          ? <span className="text-red-700">{emailError}</span>
-                          : 'Tap to resend the verification link'}
+                      Unlock your matches and start messaging
                     </span>
-                  )}
-                </span>
-                {!emailJustVerified && !emailSending && (
+                  </span>
                   <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
-                )}
-                {emailSending && <Spinner />}
-              </button>
-            </li>
+                </button>
+              </li>
+            )
           )}
 
-          {/* Subscribe — shown when hasActivated is explicitly false.
-              Must come before identity verification in the list because
-              Persona ID verification requires an active subscription. */}
-          {subscribePending && (
-            <li>
-              <button
-                type="button"
-                onClick={handleSubscribeTap}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                aria-label="Subscribe to Parallel"
-              >
-                <CheckCircle />
-                <span className="flex-1 min-w-0">
-                  <span className="text-sm block text-gray-900">Subscribe to Parallel</span>
-                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                    Unlock your matches and start messaging
-                  </span>
+          {/* 5. Verify identity — only visible when subscribed + has matches */}
+          {item5Visible && (
+            item5Done ? (
+              <li className="flex items-center gap-3 px-4 py-3">
+                <Dot done />
+                <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+                  Verify your identity
                 </span>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
-              </button>
-            </li>
+              </li>
+            ) : (
+              <li>
+                <button
+                  type="button"
+                  onClick={handleVerificationTap}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                  aria-label="Verify your identity"
+                >
+                  <Dot />
+                  <span className="flex-1 min-w-0">
+                    <span className="text-sm block text-gray-900">Verify your identity</span>
+                    <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
+                      Get a blue checkmark on your profile
+                    </span>
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                </button>
+              </li>
+            )
           )}
 
-          {/* Identity verification — only shown once subscribed.
-              ID verification via Persona requires an active subscription,
-              so we gate this row on hasActivated===true. */}
-          {showIdentityRow && (
-            <li>
-              <button
-                type="button"
-                onClick={handleVerificationTap}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                aria-label="Verify your identity"
-              >
-                <CheckCircle />
-                <span className="flex-1 min-w-0">
-                  <span className="text-sm block text-gray-900">Verify your identity</span>
-                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                    Get a blue checkmark on your profile
-                  </span>
-                </span>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
-              </button>
-            </li>
-          )}
-
-          {/* SMS alerts — actionable, hides once sms_enabled=true */}
-          {smsPending && (
-            <li>
-              <button
-                type="button"
-                onClick={handleSmsTap}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                aria-label="Turn on SMS alerts"
-              >
-                <CheckCircle />
-                <span className="flex-1 min-w-0">
-                  <span className="text-sm block text-gray-900">Turn on SMS alerts</span>
-                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                    Get a text when you match or get a message
-                  </span>
-                </span>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
-              </button>
-            </li>
-          )}
-
-          {/* PWA install — only after first like */}
-          {pwaPending && (
-            <li>
-              <button
-                type="button"
-                onClick={handleInstallTap}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                aria-label="Add Parallel to your home screen"
-              >
-                <CheckCircle />
-                <span className="flex-1 min-w-0">
-                  <span className="text-sm block text-gray-900">Add to home screen</span>
-                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                    Get push notifications when you match
-                  </span>
-                </span>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
-              </button>
-            </li>
-          )}
         </ul>
       </div>
     </div>
   );
 }
 
-// ── small subcomponents ────────────────────────────────────────────
+// ── Small subcomponents ────────────────────────────────────────────
 
-function CheckCircle({ done = false }: { done?: boolean }) {
+function Dot({ done = false }: { done?: boolean }) {
   if (done) {
     return (
       <span
@@ -468,7 +325,11 @@ function Spinner() {
       aria-hidden="true"
     >
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
     </svg>
   );
 }

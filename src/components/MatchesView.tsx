@@ -263,10 +263,8 @@ export function MatchesView({
         identityVerified={isVerified}
         hasActivated={hasActivated}
         hasMatches={hasMatches}
+        onOpenNotifications={onOpenNotifications}
         onOpenSubscribe={onNavigateToPayment}
-        onOpenInstallPrompt={() => {
-          try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
-        }}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-8">

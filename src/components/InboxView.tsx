@@ -40,8 +40,8 @@ interface InboxViewProps {
   accessToken?: string | null;
   emailVerified?: boolean;
   isVerified?: boolean;
-  onOpenInstallPrompt?: () => void;
   onOpenNotifications?: () => void;
+  onOpenSubscribe?: () => void;
 }
 
 export function InboxView({
@@ -54,8 +54,8 @@ export function InboxView({
   accessToken = null,
   emailVerified = true,
   isVerified = false,
-  onOpenInstallPrompt,
   onOpenNotifications,
+  onOpenSubscribe,
 }: InboxViewProps) {
   const [localMessages, setLocalMessages] = useState<Message[]>(propMessages);
   const [waiting, setWaiting] = useState<WaitingMutual[]>([]);
@@ -206,10 +206,8 @@ export function InboxView({
           identityVerified={isVerified}
           hasActivated={hasActivated}
           hasMatches={hasMatches}
-          onOpenInstallPrompt={onOpenInstallPrompt || (() => {
-            try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
-          })}
           onOpenNotifications={onOpenNotifications}
+          onOpenSubscribe={onOpenSubscribe}
         />
 
         {/* "Mutual matches waiting" horizontal row — only shows if there are waiting mutuals.

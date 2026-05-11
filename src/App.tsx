@@ -37,7 +37,6 @@ import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
-import { InstallPromptBanner } from './components/InstallPromptBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
 import { EnablePushBanner } from './components/EnablePushBanner';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
@@ -1136,14 +1135,6 @@ function App() {
         />
       )}
 
-      {/* PWA install prompt modal. No longer auto-fires on onboarding;
-          fires only after the user's first like (set via
-          localStorage.parallel_first_like_at) OR when explicitly opened
-          from the SetupChecklist row via the parallel:open-install-prompt
-          event. Mounted here so the event listener is always live. */}
-      {hasCompletedOnboarding && currentView === 'matches' && (
-        <InstallPromptBanner hasCompletedOnboarding={hasCompletedOnboarding} />
-      )}
 
       <PushSubscriptionSync accessToken={accessToken} />
 
@@ -1595,6 +1586,7 @@ function App() {
             emailVerified={emailConfirmed}
             isVerified={hasVerified}
             onOpenNotifications={() => setCurrentView('notifications')}
+            onOpenSubscribe={() => setCurrentView('pricing')}
           />
         )}
 

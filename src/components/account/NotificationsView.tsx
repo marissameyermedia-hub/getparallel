@@ -214,6 +214,10 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
       if (!res.ok) throw new Error('Could not save preferences');
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
+      try {
+        localStorage.setItem('parallel_prefs_saved', '1');
+        window.dispatchEvent(new CustomEvent('parallel:prefs-saved'));
+      } catch { /* noop */ }
     } catch (err: any) {
       setError(err.message || 'Could not save preferences');
     } finally {
