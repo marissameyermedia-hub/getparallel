@@ -114,7 +114,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
   return (
     <div className="min-h-screen bg-parallel-cream flex flex-col">
       {/* ── Top nav ───────────────────────────────────────────────── */}
-      <nav className="w-full border-b border-gray-100 bg-parallel-cream sticky top-0 z-30">
+      <nav className="w-full border-b border-gray-100 bg-parallel-cream sticky top-0 z-30" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           {/* Pre-app brand mark — full PARA//EL. wordmark per brand book. */}
           <ParallelWordmark variant="light" sizeClassName="text-base" />
