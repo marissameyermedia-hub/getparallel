@@ -39,6 +39,7 @@ interface MatchesViewProps {
   // Used by the SetupChecklist card at the top of Home.
   accessToken?: string | null;
   emailVerified?: boolean;
+  onOpenNotifications?: () => void;
 }
 
 export function MatchesView({
@@ -59,6 +60,7 @@ export function MatchesView({
   likedMatchIds,
   accessToken = null,
   emailVerified = true,
+  onOpenNotifications,
 }: MatchesViewProps) {
   const [lastPassedMatchId, setLastPassedMatchId] = useState<string | null>(null);
 
@@ -98,6 +100,11 @@ export function MatchesView({
   // matches.length (not a filtered subset) so that "N matches waiting" counts
   // and state transitions are always consistent with what the backend returned.
   const sortedMatches = [...matches].sort((a, b) => b.compatibilityScore - a.compatibilityScore);
+
+  // True once the backend has returned at least one match (current or reviewed).
+  // Passed to SetupChecklist to gate subscribe/verify rows — no point showing
+  // those CTAs before there's anything to unlock.
+  const hasMatches = matches.length > 0 || hasReceivedMatches;
 
   const handleShareInvite = async () => {
     const token = await getAccessToken();
@@ -255,10 +262,9 @@ export function MatchesView({
         emailVerified={emailVerified}
         identityVerified={isVerified}
         hasActivated={hasActivated}
+        hasMatches={hasMatches}
+        onOpenNotifications={onOpenNotifications}
         onOpenSubscribe={onNavigateToPayment}
-        onOpenInstallPrompt={() => {
-          try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
-        }}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
@@ -319,120 +325,60 @@ export function MatchesView({
                 </div>
               </div>
 
-              <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-5 text-center">
-                <p className="font-semibold mb-1">Help us find better matches for you.</p>
-                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                  Parallel is a new community. Every person you invite makes the pool better for everyone — including you.
+              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                  Parallel works better when more thoughtful people join. Invite someone you trust.
                 </p>
                 <button
                   onClick={onNavigateToInvite || handleShareInvite}
-                  className="w-full border-2 border-parallel-void text-parallel-void py-3 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-full text-sm font-medium hover:border-gray-400 transition-colors"
                 >
-                  Invite a friend →
+                  Send invite
                 </button>
               </div>
             </div>
 
           ) : (
-            // Subscribed + has matches → real swipe cards.
-            <SwipeableMatchView
-              matches={sortedMatches}
-              onMatchInteraction={onMatchInteraction}
-              hasActivated={hasActivated}
-              onUnlock={onNavigateToPayment}
-              onPass={handlePass}
-              onLike={handleLike}
-              onViewProfile={handleViewProfile}
-              isVerified={isVerified}
-              onVerify={onVerify}
-              likedMatchIds={likedMatchIds}
-              canUndo={!!lastPassedMatchId}
-              onUndo={handleUndo}
-            />
+            // Subscribed + has matches → real swipe cards + small invite footer.
+            <>
+              <SwipeableMatchView
+                matches={sortedMatches}
+                onMatchInteraction={onMatchInteraction}
+                hasActivated={hasActivated}
+                onUnlock={onNavigateToPayment}
+                onPass={handlePass}
+                onLike={handleLike}
+                onViewProfile={handleViewProfile}
+                isVerified={isVerified}
+                onVerify={onVerify}
+                likedMatchIds={likedMatchIds}
+                canUndo={!!lastPassedMatchId}
+                onUndo={handleUndo}
+              />
+              <div className="max-w-md mx-auto px-4 pb-6">
+                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                    Parallel works better when more thoughtful people join. Invite someone you trust.
+                  </p>
+                  <button
+                    onClick={onNavigateToInvite || handleShareInvite}
+                    className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-full text-sm font-medium hover:border-gray-400 transition-colors"
+                  >
+                    Send invite
+                  </button>
+                </div>
+              </div>
+            </>
           )
 
         /* ── No matches — waiting (never had any) ─────────────── */
         ) : !hasReceivedMatches ? (
 
-          !hasActivated ? (
-            // Unsubscribed + no matches yet → blurred mock card stack with subscribe CTA.
-            // Stock photos are royalty-free Unsplash portraits, blurred heavily so no
-            // individual is identifiable. Never seed-user photos.
-            <div className="max-w-md mx-auto px-4 pt-4 pb-8">
-              <div className="relative mb-4" style={{ minHeight: '60vh' }}>
-                <div
-                  className="absolute inset-x-6 top-4 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200"
-                  style={{ zIndex: 0 }}
-                  aria-hidden="true"
-                />
-                <div
-                  className="absolute inset-x-3 top-2 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200 overflow-hidden"
-                  style={{ zIndex: 1 }}
-                  aria-hidden="true"
-                >
-                  <img
-                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&q=80"
-                    alt=""
-                    className="w-full h-full object-cover blur-2xl scale-110 opacity-80"
-                  />
-                </div>
-                <div
-                  className="relative rounded-3xl border-2 border-gray-200 overflow-hidden bg-gray-100"
-                  style={{ zIndex: 2, aspectRatio: '3/4' }}
-                  aria-hidden="true"
-                >
-                  <img
-                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&q=80"
-                    alt=""
-                    className="w-full h-full object-cover blur-2xl scale-110"
-                  />
-                  <div className="absolute inset-0 bg-parallel-void/40 flex flex-col items-center justify-center px-6">
-                    <div className="bg-parallel-cream rounded-2xl px-6 py-6 max-w-xs w-full text-center shadow-2xl">
-                      <p className="text-xs uppercase tracking-wide text-gray-500 font-medium mb-2">
-                        Matching in progress
-                      </p>
-                      <h3 className="text-2xl font-bold mb-2 leading-tight">
-                        Your matches are coming soon
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-                        The more people in the pool, the better your matches will be.
-                      </p>
-                      <button
-                        onClick={onNavigateToPayment}
-                        className="w-full bg-parallel-purple text-parallel-cream py-3 rounded-full font-semibold hover:bg-parallel-purple/90 transition-colors text-sm"
-                      >
-                        Get notified when ready →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                className="rounded-2xl p-5 text-center mt-4"
-                style={{ background: 'linear-gradient(135deg, #EEEDFE 0%, #F5F2EE 100%)' }}
-              >
-                <p className="font-semibold mb-1 text-sm" style={{ color: '#534AB7' }}>
-                  // Speed up your matches
-                </p>
-                <p className="text-sm mb-4 leading-relaxed" style={{ color: '#3C3489' }}>
-                  Every person you invite grows the pool. The bigger the pool, the faster your matches appear — and the better they get.
-                </p>
-                <button
-                  onClick={onNavigateToInvite || handleShareInvite}
-                  className="w-full py-2.5 rounded-full text-sm font-medium transition-colors"
-                  style={{ background: '#7B5EA7', color: '#FFFFFF' }}
-                >
-                  Invite a friend →
-                </button>
-              </div>
-            </div>
-
-          ) : (
-            // Subscribed + no matches yet → "on their way" with animated progress bar.
-            // SetupChecklist at the top already handles any pending onboarding tasks;
-            // this state is purely a waiting room.
-            <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+          // Single "waiting" state regardless of subscription. We don't nudge to
+          // subscribe here because there's nothing to unlock yet — the CTA appears
+          // on the blurred paywall only once real matches exist (matches.length > 0).
+          <div className="max-w-md mx-auto px-4 pt-4 pb-8">
+            <div className="flex flex-col items-center text-center mb-8">
               <div className="mb-6">
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
@@ -460,10 +406,10 @@ export function MatchesView({
                   }
                 `}</style>
               </div>
-              <p className="text-gray-600 text-lg leading-relaxed mb-4 max-w-md">
-                We're finding your most compatible people. Turn on SMS notifications in Account and we'll text you when they're ready.
+              <p className="text-gray-600 text-lg leading-relaxed mb-2 max-w-md">
+                We're finding your most compatible people. We'll text you as soon as they're ready.
               </p>
-              <p className="text-sm text-gray-400 mb-8">
+              <p className="text-sm text-gray-400 mb-6">
                 Taking longer than expected?{' '}
                 <a
                   href="mailto:support@getparallel.vip"
@@ -473,54 +419,58 @@ export function MatchesView({
                 </a>
               </p>
               <button
-                onClick={onNavigateToInvite || handleShareInvite}
-                className="bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium mb-3"
+                onClick={onOpenNotifications}
+                className="w-full bg-parallel-void text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-void/90 transition-colors text-base font-medium"
               >
-                Invite a friend →
+                Turn on SMS notifications
               </button>
-              <p className="text-sm text-gray-500">
-                The more people you invite, the more people they invite, the better everyone's matches get.
-              </p>
             </div>
-          )
+
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
+              <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+                Parallel works better when more thoughtful people join. Invite someone you trust.
+              </p>
+              <button
+                onClick={onNavigateToInvite || handleShareInvite}
+                className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-full text-sm font-medium hover:border-gray-400 transition-colors"
+              >
+                Send invite
+              </button>
+            </div>
+          </div>
 
         /* ── No matches — all caught up ───────────────────────── */
         ) : (
           // matches.length === 0 && hasReceivedMatches — the user has reviewed all
           // their current matches (liked or passed every one). New matches arrive as
           // new users join and the matching algorithm runs.
-          <div className="py-12 max-w-md mx-auto text-center px-4">
+          <div className="max-w-md mx-auto px-4 pt-12 pb-8 flex flex-col items-center text-center">
             <div className="text-3xl mb-4" aria-hidden="true">✓</div>
             <h2 className="text-2xl font-bold mb-3">You're all caught up</h2>
-            <p className="text-gray-600 mb-4 text-base leading-relaxed">
+            <p className="text-gray-600 mb-8 text-base leading-relaxed">
               You've reviewed all your current matches. New people join regularly — check back soon.
             </p>
-            <div className="bg-gray-50 border border-gray-200 rounded-2xl px-5 py-4 mb-8 text-sm text-gray-600 leading-relaxed text-left">
-              Some matches may not have appeared because their compatibility score was below
-              the current threshold for your pool size. Adjusting your preferences can help
-              surface more people.
+
+            {/* Invite — primary CTA in this state */}
+            <div className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-4 text-center">
+              <p className="font-semibold mb-1">Grow the pool</p>
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                Parallel works better when more thoughtful people join. Invite someone you trust.
+              </p>
+              <button
+                onClick={onNavigateToInvite || handleShareInvite}
+                className="w-full bg-parallel-void text-parallel-cream py-3.5 rounded-full font-medium hover:bg-parallel-void/90 transition-colors"
+              >
+                Send invite
+              </button>
             </div>
-            <button
-              onClick={onNavigateToInvite || handleShareInvite}
-              className="w-full bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-colors text-base font-medium mb-3"
-            >
-              Wait for new matches
-            </button>
+
             <button
               onClick={onRetakeQuestionnaire}
-              className="w-full border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-full hover:border-gray-400 transition-colors text-base mb-3"
+              className="w-full border border-gray-200 text-gray-700 px-8 py-3 rounded-full hover:border-gray-400 transition-colors text-sm"
             >
               Adjust preferences →
             </button>
-            <button
-              onClick={onNavigateToInvite || handleShareInvite}
-              className="w-full border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-full hover:border-gray-400 transition-colors text-base"
-            >
-              Invite a friend →
-            </button>
-            <p className="text-sm text-gray-500 mt-4">
-              The more people you invite, the more people they invite, the better everyone's matches get.
-            </p>
           </div>
         )}
 

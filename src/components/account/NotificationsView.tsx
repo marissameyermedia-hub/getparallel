@@ -1,241 +1,153 @@
 import { useState, useEffect } from 'react';
-import { Loader2, ChevronLeft, Info } from 'lucide-react';
-import { projectId, publicAnonKey } from '../../utils/supabase/info';
+import { ChevronLeft, Loader2, X } from 'lucide-react';
 import { supabase, MISC_FUNCTION_URL } from '../../utils/supabase/client';
+import { publicAnonKey } from '../../utils/supabase/info';
 import { useModalA11y } from '../../utils/useModalA11y';
-import {
-  requestPushPermission,
-  optOutOfPush,
-  getPushPermissionState,
-  getPlayerId,
-} from '../../utils/onesignal';
+import { requestPushPermission, optOutOfPush } from '../../utils/onesignal';
+import { detectDevice, InstallInstructions, DeviceType } from '../InstallInstructions';
+
+const SMS_CONSENT_TEXT =
+  "By tapping 'Enable SMS', you agree to receive SMS account notifications, verification codes, and match alerts from Parallel at the phone number provided. Consent is not a condition of purchase. Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. We will not share mobile information with third parties for promotional or marketing purposes. View our Privacy Policy and Terms of Service.";
+const SMS_CONSENT_VERSION = 'v1-2026-04';
 
 interface NotificationsViewProps {
   userId: string;
   onBack: () => void;
 }
 
-interface NotificationPrefs {
-  email_enabled: boolean;
-  sms_enabled: boolean;
-  push_enabled: boolean;
-  match_alerts: boolean;
-  message_alerts: boolean;
-  date_reminders: boolean;
-}
-
-const SMS_CONSENT_TEXT =
-  "By tapping 'Enable SMS', you agree to receive SMS account notifications, verification codes, and match alerts from Parallel at the phone number provided. Consent is not a condition of purchase. Message frequency may vary. Standard message and data rates may apply. Reply STOP to opt out. Reply HELP for help. We will not share mobile information with third parties for promotional or marketing purposes. View our Privacy Policy and Terms of Service.";
-
-const SMS_CONSENT_VERSION = 'v1-2026-04';
-
 export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
-  const [prefs, setPrefs] = useState<NotificationPrefs>({
-    email_enabled: true,
-    sms_enabled: false,
-    push_enabled: true,
-    match_alerts: true,
-    message_alerts: true,
-    date_reminders: true,
-  });
+  // email + push are staged and committed together on Save.
+  // SMS is immediate because consent must be explicit and atomic (TCPA).
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [smsEnabled, setSmsEnabled] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isPushSaving, setIsPushSaving] = useState(false);
-  const [showSmsConsentModal, setShowSmsConsentModal] = useState(false);
-  const [showSmsOffConfirm, setShowSmsOffConfirm] = useState(false);
+  const [isSmsLoading, setIsSmsLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [pushDeniedMessage, setPushDeniedMessage] = useState('');
+  const [pushRegistering, setPushRegistering] = useState(false);
+  const [device, setDevice] = useState<DeviceType>('ios-safari');
 
-  // Wire Escape-to-close + body-scroll-lock + focus restore for both modals.
-  // The "isSaving" guard prevents accidental closes while the network request
-  // is in flight — same as the existing onClose handlers below.
-  useModalA11y(showSmsConsentModal, () => { if (!isSaving) setShowSmsConsentModal(false); });
-  useModalA11y(showSmsOffConfirm, () => { if (!isSaving) setShowSmsOffConfirm(false); });
+  const [showSmsConsent, setShowSmsConsent] = useState(false);
+  const [showSmsOff, setShowSmsOff] = useState(false);
+  const [showEmailOff, setShowEmailOff] = useState(false);
+  const [showInstallSheet, setShowInstallSheet] = useState(false);
 
-  // Get auth token for edge function calls
-  const getAuthToken = async (): Promise<string> => {
+  // Each modal guards its own body-scroll-lock + Escape handler.
+  // InstallSheet is a sub-component that manages its own useModalA11y internally.
+  useModalA11y(showSmsConsent, () => { if (!isSmsLoading) setShowSmsConsent(false); });
+  useModalA11y(showSmsOff, () => { if (!isSmsLoading) setShowSmsOff(false); });
+  useModalA11y(showEmailOff, () => setShowEmailOff(false));
+
+  const getToken = async (): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw new Error('Not signed in');
     return session.access_token;
   };
 
   useEffect(() => {
+    setDevice(detectDevice());
     const load = async () => {
       try {
-        const token = await getAuthToken();
+        const token = await getToken();
         const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'apikey': publicAnonKey,
-          },
+          headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
         });
-        const data = await res.json();
         if (res.ok) {
-          setPrefs({
-            email_enabled: data.email_enabled ?? true,
-            push_enabled: data.push_enabled ?? true,
-            sms_enabled: data.sms_enabled ?? false,
-            match_alerts: data.new_matches ?? true,
-            message_alerts: data.messages ?? true,
-            date_reminders: data.date_reminders ?? true,
-          });
+          const data = await res.json();
+          setEmailEnabled(data.email_enabled ?? true);
+          setPushEnabled(data.push_enabled ?? false);
+          setSmsEnabled(data.sms_enabled ?? false);
           setPhoneNumber(data.phone_number || null);
         }
-      } catch (err) {
-        console.error('Could not load notification prefs:', err);
-      } finally {
-        setIsLoading(false);
-      }
+      } catch { /* noop */ }
+      finally { setIsLoading(false); }
     };
     load();
   }, [userId]);
 
-  // Save non-SMS preference changes (email, push, match alerts, etc)
-  const savePref = async (newPrefs: NotificationPrefs) => {
-    setIsSaving(true);
-    setError('');
-    try {
-      const token = await getAuthToken();
-      const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': publicAnonKey,
-        },
-        body: JSON.stringify({
-          email_enabled: newPrefs.email_enabled,
-          push_enabled: newPrefs.push_enabled,
-          // Don't send sms_enabled=true here — must go through /sms/log-consent for audit
-          // Allow sms_enabled=false to flow through (for non-confirmation opt-out paths)
-          sms_enabled: newPrefs.sms_enabled === false ? false : undefined,
-          match_alerts: newPrefs.match_alerts,
-          message_alerts: newPrefs.message_alerts,
-          date_reminders: newPrefs.date_reminders,
-        }),
-      });
-      if (!res.ok) throw new Error('Could not save preferences');
-      setPrefs(newPrefs);
-    } catch (err: any) {
-      setError(err.message || 'Could not save preferences');
-    } finally {
-      setIsSaving(false);
+  // ── Push ──────────────────────────────────────────────────────────
+
+  const handlePushToggle = async (on: boolean) => {
+    setPushDeniedMessage('');
+    if (!on) {
+      setPushEnabled(false);
+      return;
     }
-  };
-
-  // On mount: if push shows as enabled but this device has no player ID,
-  // silently try to register it. Handles the common case where push_enabled
-  // defaults to true but the user never went through the permission flow.
-  useEffect(() => {
-    if (isLoading) return;
-    if (!prefs.push_enabled) return;
-    const registerIfNeeded = async () => {
-      try {
-        const permState = await getPushPermissionState();
-        if (permState !== 'granted') return; // Don't prompt automatically
-        const existingId = await getPlayerId();
-        if (!existingId) return; // No subscription yet — wait for user to toggle
-        // We have permission + a player ID — save it to backend silently
-        const token = await getAuthToken();
-        if (!token) return;
-        await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-          body: JSON.stringify({ push_enabled: true, onesignal_player_id: existingId }),
-        });
-      } catch { /* silent — non-critical */ }
-    };
-    registerIfNeeded();
-  }, [isLoading, prefs.push_enabled]);
-
-  // Push toggle handler — calls OneSignal to request/revoke permission,
-  // saves the player ID to profiles so the backend can send notifications.
-  const handlePushToggle = async (newValue: boolean) => {
-    setIsPushSaving(true);
-    setError('');
-
-    try {
-      if (newValue) {
-        // Check if browser has blocked notifications entirely
-        const permState = await getPushPermissionState();
-        if (permState === 'denied') {
-          setError('Notifications are blocked in your browser settings. To enable, open Settings and allow notifications for this site.');
-          return;
-        }
-
-        // 1. Immediately flip the toggle and save push_enabled=true to backend.
-        //    The user gets instant feedback — no waiting for OneSignal.
-        const token = await getAuthToken();
-        const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-          body: JSON.stringify({ push_enabled: true }),
-        });
-        if (!res.ok) throw new Error('Could not save preference');
-        setPrefs({ ...prefs, push_enabled: true });
-
-        // 2. Register the device with OneSignal in the background.
-        //    This may show a permission prompt or silently re-subscribe.
-        //    When done, save the player ID so the server can target this device.
-        requestPushPermission().then(async (playerId) => {
+    // Require installation first — push on iOS PWA won't work from a browser tab.
+    const installed =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    if (!installed) {
+      setShowInstallSheet(true);
+      return; // toggle stays OFF until they install + come back
+    }
+    if (typeof Notification === 'undefined') {
+      setPushDeniedMessage('Push notifications are not supported in this browser.');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      setPushEnabled(true);
+      // Register with OneSignal in the background to get a player ID for targeting.
+      // Non-blocking — the staged push_enabled preference is committed on Save.
+      setPushRegistering(true);
+      requestPushPermission()
+        .then(async (playerId) => {
           if (!playerId) return;
-          try {
-            const t = await getAuthToken();
-            await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${t}`, 'apikey': publicAnonKey },
-              body: JSON.stringify({ push_enabled: true, onesignal_player_id: playerId }),
-            });
-          } catch { /* non-critical — preference already saved above */ }
-        }).catch(() => {});
+          const token = await getToken().catch(() => null);
+          if (!token) return;
+          await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+            body: JSON.stringify({ onesignal_player_id: playerId }),
+          });
+        })
+        .catch(() => {})
+        .finally(() => setPushRegistering(false));
+    } else if (permission === 'denied') {
+      setPushDeniedMessage('Notifications are blocked at the browser level. Update your device settings to enable.');
+    }
+    // 'default' means the user dismissed without deciding — toggle stays OFF, no message.
+  };
 
-      } else {
-        // Immediately flip toggle and save push_enabled=false to backend
-        const token = await getAuthToken();
-        const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-          body: JSON.stringify({ push_enabled: false }),
-        });
-        if (!res.ok) throw new Error('Could not save preference');
-        setPrefs({ ...prefs, push_enabled: false });
-        // Fire-and-forget opt-out — non-blocking
-        optOutOfPush().catch(() => {});
-      }
-    } catch (err: any) {
-      setError(err.message || 'Could not update push notifications');
-    } finally {
-      setIsPushSaving(false);
+  // ── Email ─────────────────────────────────────────────────────────
+
+  const handleEmailToggle = (on: boolean) => {
+    if (!on) {
+      setShowEmailOff(true); // confirmation before turning off
+    } else {
+      setEmailEnabled(true);
     }
   };
 
-  // SMS toggle handler — opens consent modal on ON, confirm on OFF
-  const handleSmsToggle = (newValue: boolean) => {
-    if (newValue) {
-      setShowSmsConsentModal(true);
+  // ── SMS ───────────────────────────────────────────────────────────
+
+  const handleSmsToggle = (on: boolean) => {
+    if (on) {
+      setShowSmsConsent(true);
     } else {
-      setShowSmsOffConfirm(true);
+      setShowSmsOff(true);
     }
   };
 
   const confirmSmsOptIn = async () => {
     if (!phoneNumber) {
       setError('No phone number on file. Add one in account settings first.');
-      setShowSmsConsentModal(false);
+      setShowSmsConsent(false);
       return;
     }
-    setIsSaving(true);
+    setIsSmsLoading(true);
     setError('');
     try {
-      const token = await getAuthToken();
-      // Log consent to consent_log AND flip sms_enabled on (edge function does both atomically)
+      const token = await getToken();
       const res = await fetch(`${MISC_FUNCTION_URL}/sms/log-consent`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': publicAnonKey,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
         body: JSON.stringify({
           consentType: 'sms_consent',
           phoneNumber,
@@ -247,28 +159,24 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Could not enable SMS');
       }
-      setPrefs({ ...prefs, sms_enabled: true });
-      setShowSmsConsentModal(false);
+      setSmsEnabled(true);
+      setShowSmsConsent(false);
+      try { window.dispatchEvent(new CustomEvent('parallel:sms-status')); } catch { /* noop */ }
     } catch (err: any) {
-      setError(err.message || 'Could not enable SMS notifications');
+      setError(err.message || 'Could not enable SMS');
     } finally {
-      setIsSaving(false);
+      setIsSmsLoading(false);
     }
   };
 
   const confirmSmsOptOut = async () => {
-    setIsSaving(true);
+    setIsSmsLoading(true);
     setError('');
     try {
-      const token = await getAuthToken();
-      // Log opt-out event to consent_log AND flip sms_enabled off
+      const token = await getToken();
       const res = await fetch(`${MISC_FUNCTION_URL}/sms/log-consent`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'apikey': publicAnonKey,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
         body: JSON.stringify({
           consentType: 'sms_opt_out',
           phoneNumber,
@@ -277,18 +185,51 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
         }),
       });
       if (!res.ok) throw new Error('Could not disable SMS');
-      setPrefs({ ...prefs, sms_enabled: false });
-      setShowSmsOffConfirm(false);
+      setSmsEnabled(false);
+      setShowSmsOff(false);
+      try { window.dispatchEvent(new CustomEvent('parallel:sms-status')); } catch { /* noop */ }
     } catch (err: any) {
-      setError(err.message || 'Could not disable SMS notifications');
+      setError(err.message || 'Could not disable SMS');
+    } finally {
+      setIsSmsLoading(false);
+    }
+  };
+
+  // ── Save (email + push staged together) ───────────────────────────
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setError('');
+    setSaveSuccess(false);
+    try {
+      const token = await getToken();
+      if (!pushEnabled) {
+        optOutOfPush().catch(() => {}); // fire-and-forget
+      }
+      const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+        body: JSON.stringify({ email_enabled: emailEnabled, push_enabled: pushEnabled }),
+      });
+      if (!res.ok) throw new Error('Could not save preferences');
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+      try {
+        localStorage.setItem('parallel_prefs_saved', '1');
+        window.dispatchEvent(new CustomEvent('parallel:prefs-saved'));
+      } catch { /* noop */ }
+    } catch (err: any) {
+      setError(err.message || 'Could not save preferences');
     } finally {
       setIsSaving(false);
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-parallel-cream flex items-center justify-center" role="status" aria-label="Loading notification preferences">
+      <div className="min-h-screen bg-parallel-cream flex items-center justify-center" role="status" aria-label="Loading">
         <Loader2 className="w-5 h-5 animate-spin text-gray-500" aria-hidden="true" />
       </div>
     );
@@ -307,101 +248,102 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
         </button>
 
         <h1 className="text-2xl font-medium tracking-tight mb-1">Notifications</h1>
-        <p className="text-sm text-gray-500 mb-8">
-          Choose how you'd like to hear from Parallel.
-        </p>
+        <p className="text-sm text-gray-500 mb-8">Choose how you'd like to hear from Parallel.</p>
 
         {error && (
-          <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-4" role="alert">
+          <div role="alert" className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-4">
             {error}
           </div>
         )}
 
-        <div className="mb-8">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-            Channels
-          </div>
+        {/* Three channel rows */}
+        <div className="border border-gray-200 rounded-2xl divide-y divide-gray-100 overflow-hidden mb-6">
 
-          <Toggle
-            label="Email"
-            sublabel="New matches, messages, and account updates"
-            value={prefs.email_enabled}
-            onChange={(v) => savePref({ ...prefs, email_enabled: v })}
-            disabled={isSaving}
-          />
-
-          <Toggle
-            label="Push notifications"
-            sublabel="In-app and device notifications"
-            value={prefs.push_enabled}
-            onChange={handlePushToggle}
-            disabled={isPushSaving}
-          />
-
-          {/* SMS Toggle — Telnyx 10DLC compliant */}
-          <div className="border-t border-gray-100">
-            <div className="flex items-start justify-between py-4">
-              <div className="flex-1 pr-4">
-                <div className="text-sm text-gray-900" id="sms-toggle-label">SMS / text messages</div>
-                <div className="text-xs text-gray-500 mt-0.5" id="sms-toggle-sublabel">
-                  {phoneNumber
-                    ? `Sent to ${formatPhoneDisplay(phoneNumber)}`
-                    : 'Add a verified phone number in account settings to enable'}
-                </div>
-                {prefs.sms_enabled && (
-                  <div className="text-xs text-gray-500 mt-1.5 flex items-start gap-1">
-                    <Info className="w-3 h-3 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                    <span>You can also reply STOP to any message to opt out instantly.</span>
-                  </div>
-                )}
+          {/* SMS */}
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex-1 pr-4">
+              <div className="text-sm font-medium text-gray-900" id="sms-label">SMS</div>
+              <div className="text-xs text-gray-500 mt-0.5" id="sms-sublabel">
+                {!phoneNumber
+                  ? 'Add a verified phone number in account settings'
+                  : smsEnabled
+                    ? `Texts sent to ${formatPhone(phoneNumber)}`
+                    : `Will text ${formatPhone(phoneNumber)}`}
               </div>
-              <SwitchControl
-                checked={prefs.sms_enabled}
-                onChange={handleSmsToggle}
-                disabled={isSaving || !phoneNumber}
-                ariaLabelledBy="sms-toggle-label"
-                ariaDescribedBy="sms-toggle-sublabel"
-              />
             </div>
+            <Switch
+              checked={smsEnabled}
+              onChange={handleSmsToggle}
+              disabled={isSmsLoading || !phoneNumber}
+              ariaLabelledBy="sms-label"
+              ariaDescribedBy="sms-sublabel"
+            />
+          </div>
+
+          {/* Push */}
+          <div className="flex items-start justify-between px-4 py-4">
+            <div className="flex-1 pr-4">
+              <div className="text-sm font-medium text-gray-900" id="push-label">Push notifications</div>
+              <div className="text-xs mt-0.5 leading-snug" id="push-sublabel">
+                {pushDeniedMessage
+                  ? <span className="text-amber-700">{pushDeniedMessage}</span>
+                  : <span className="text-gray-500">{pushEnabled ? 'Enabled' : 'Requires the app to be installed'}</span>}
+              </div>
+            </div>
+            <Switch
+              checked={pushEnabled}
+              onChange={handlePushToggle}
+              disabled={pushRegistering}
+              ariaLabelledBy="push-label"
+              ariaDescribedBy="push-sublabel"
+            />
+          </div>
+
+          {/* Email */}
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex-1 pr-4">
+              <div className="text-sm font-medium text-gray-900" id="email-label">Email</div>
+              <div className="text-xs text-gray-500 mt-0.5" id="email-sublabel">
+                Match alerts and account updates
+              </div>
+            </div>
+            <Switch
+              checked={emailEnabled}
+              onChange={handleEmailToggle}
+              ariaLabelledBy="email-label"
+              ariaDescribedBy="email-sublabel"
+            />
           </div>
         </div>
 
-        <div>
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-            Notify me about
-          </div>
-          <Toggle
-            label="New matches"
-            value={prefs.match_alerts}
-            onChange={(v) => savePref({ ...prefs, match_alerts: v })}
-            disabled={isSaving}
-          />
-          <Toggle
-            label="New messages"
-            value={prefs.message_alerts}
-            onChange={(v) => savePref({ ...prefs, message_alerts: v })}
-            disabled={isSaving}
-          />
-          <Toggle
-            label="Date reminders"
-            value={prefs.date_reminders}
-            onChange={(v) => savePref({ ...prefs, date_reminders: v })}
-            disabled={isSaving}
-          />
-        </div>
+        {/* Save button — commits email + push together */}
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="w-full bg-parallel-void text-parallel-cream py-3.5 rounded-full font-medium hover:bg-parallel-void/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+        >
+          {isSaving ? (
+            <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Saving…</>
+          ) : saveSuccess ? (
+            'Saved ✓'
+          ) : (
+            'Save preferences'
+          )}
+        </button>
       </div>
 
-      {/* SMS CONSENT MODAL */}
-      {showSmsConsentModal && (
-        <Modal
-          onClose={() => !isSaving && setShowSmsConsentModal(false)}
-          labelledBy="sms-consent-title"
-        >
+      {/* Install instructions sheet — shown when push is toggled ON but app is not installed */}
+      {showInstallSheet && (
+        <InstallSheet device={device} onClose={() => setShowInstallSheet(false)} />
+      )}
+
+      {/* SMS consent modal */}
+      {showSmsConsent && (
+        <Modal onClose={() => !isSmsLoading && setShowSmsConsent(false)} labelledBy="sms-consent-title">
           <h2 id="sms-consent-title" className="text-lg font-medium mb-2">Enable SMS notifications</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Texts will be sent to {phoneNumber && formatPhoneDisplay(phoneNumber)}.
+            Texts will be sent to {phoneNumber ? formatPhone(phoneNumber) : 'your phone number'}.
           </p>
-
           <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mb-4">
             <p className="text-xs text-gray-600 leading-relaxed">
               By tapping "Enable SMS" below, you agree to receive SMS account
@@ -411,87 +353,75 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
               Reply STOP to opt out. Reply HELP for help. We will not share mobile
               information with third parties for promotional or marketing purposes.
               View our{' '}
-              <a
-                href="/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-gray-800"
-              >
-                Privacy Policy
-              </a>{' '}
-              and{' '}
-              <a
-                href="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-gray-800"
-              >
-                Terms of Service
-              </a>
-              .
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline text-gray-800">Privacy Policy</a>
+              {' '}and{' '}
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-gray-800">Terms of Service</a>.
             </p>
           </div>
-
           <div className="flex gap-2">
             <button
-              onClick={() => setShowSmsConsentModal(false)}
-              disabled={isSaving}
+              onClick={() => setShowSmsConsent(false)}
+              disabled={isSmsLoading}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-40"
             >
               Cancel
             </button>
             <button
               onClick={confirmSmsOptIn}
-              disabled={isSaving}
+              disabled={isSmsLoading}
               className="flex-1 px-4 py-2 bg-parallel-purple text-parallel-cream rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                  Saving…
-                </>
-              ) : (
-                'Enable SMS'
-              )}
+              {isSmsLoading ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Saving…</> : 'Enable SMS'}
             </button>
           </div>
         </Modal>
       )}
 
-      {/* SMS OPT-OUT CONFIRMATION MODAL */}
-      {showSmsOffConfirm && (
-        <Modal
-          onClose={() => !isSaving && setShowSmsOffConfirm(false)}
-          labelledBy="sms-off-title"
-        >
-          <h2 id="sms-off-title" className="text-lg font-medium mb-2">Turn off SMS notifications?</h2>
+      {/* SMS opt-out confirmation */}
+      {showSmsOff && (
+        <Modal onClose={() => !isSmsLoading && setShowSmsOff(false)} labelledBy="sms-off-title">
+          <h2 id="sms-off-title" className="text-lg font-medium mb-2">Turn off SMS?</h2>
           <p className="text-sm text-gray-600 mb-4">
-            You won't receive text messages from Parallel. You can turn this back
-            on anytime, or you can keep it off and we'll only contact you by email
-            and push notifications.
+            You won't receive text messages from Parallel. You can turn this back on anytime.
           </p>
-
           <div className="flex gap-2">
             <button
-              onClick={() => setShowSmsOffConfirm(false)}
-              disabled={isSaving}
+              onClick={() => setShowSmsOff(false)}
+              disabled={isSmsLoading}
               className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50 disabled:opacity-40"
             >
               Keep on
             </button>
             <button
               onClick={confirmSmsOptOut}
-              disabled={isSaving}
+              disabled={isSmsLoading}
               className="flex-1 px-4 py-2 bg-parallel-purple text-parallel-cream rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2"
             >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                  Saving…
-                </>
-              ) : (
-                'Turn off SMS'
-              )}
+              {isSmsLoading ? <><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Saving…</> : 'Turn off SMS'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Email turn-off confirmation */}
+      {showEmailOff && (
+        <Modal onClose={() => setShowEmailOff(false)} labelledBy="email-off-title">
+          <h2 id="email-off-title" className="text-lg font-medium mb-2">Turn off email?</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            You won't hear from us about new matches unless you have SMS or push enabled. Continue?
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowEmailOff(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => { setEmailEnabled(false); setShowEmailOff(false); }}
+              className="flex-1 px-4 py-2 bg-parallel-purple text-parallel-cream rounded-md text-sm font-medium hover:opacity-90"
+            >
+              Turn off email
             </button>
           </div>
         </Modal>
@@ -500,42 +430,51 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
   );
 }
 
-function Toggle({
-  label,
-  sublabel,
-  value,
-  onChange,
-  disabled,
-}: {
-  label: string;
-  sublabel?: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-  disabled?: boolean;
-}) {
-  // Generate stable ids for the label/sublabel so SwitchControl can reference them.
-  const safeId = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const labelId = `toggle-${safeId}-label`;
-  const sublabelId = sublabel ? `toggle-${safeId}-sublabel` : undefined;
+// ── Sub-components ────────────────────────────────────────────────────
 
+function InstallSheet({ device, onClose }: { device: DeviceType; onClose: () => void }) {
+  // useModalA11y here (always true when mounted) so the parent doesn't need to track it.
+  useModalA11y(true, onClose);
   return (
-    <div className="flex items-center justify-between py-4 border-t border-gray-100 first:border-t-0">
-      <div className="flex-1 pr-4">
-        <div id={labelId} className="text-sm text-gray-900">{label}</div>
-        {sublabel && <div id={sublabelId} className="text-xs text-gray-500 mt-0.5">{sublabel}</div>}
+    <>
+      <div className="fixed inset-0 bg-parallel-void/40 z-40" onClick={onClose} aria-hidden="true" />
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-50 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="install-sheet-title"
+      >
+        <div className="relative max-w-md mx-auto px-6 pt-6 pb-10">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" aria-hidden="true" />
+          </button>
+          <div className="inline-block bg-parallel-purple text-parallel-cream text-xs font-semibold px-3 py-1 rounded-full mb-4">
+            STEP 1 OF 2
+          </div>
+          <h2 id="install-sheet-title" className="text-xl font-semibold mb-2">
+            Add Parallel to your home screen first
+          </h2>
+          <p className="text-sm text-gray-600 leading-relaxed mb-6">
+            Push notifications require the app to be installed. Once added, come back here and turn on Push.
+          </p>
+          <InstallInstructions device={device} />
+          <button
+            onClick={onClose}
+            className="w-full text-gray-500 text-sm hover:text-gray-700 py-2 transition-colors"
+          >
+            I'll do this later
+          </button>
+        </div>
       </div>
-      <SwitchControl
-        checked={value}
-        onChange={onChange}
-        disabled={disabled}
-        ariaLabelledBy={labelId}
-        ariaDescribedBy={sublabelId}
-      />
-    </div>
+    </>
   );
 }
 
-function SwitchControl({
+function Switch({
   checked,
   onChange,
   disabled,
@@ -580,10 +519,6 @@ function Modal({
 }) {
   return (
     <div
-      // Center on all screen sizes (was bottom-anchoring on mobile, which
-      // caused the dialog's action buttons to sit behind the iOS home
-      // indicator + bottom nav). Centering with px padding leaves room
-      // even on the smallest iPhone heights.
       className="fixed inset-0 bg-parallel-void/40 flex items-center justify-center z-50 px-4 py-4"
       onClick={onClose}
       role="dialog"
@@ -591,9 +526,6 @@ function Modal({
       aria-labelledby={labelledBy}
     >
       <div
-        // max-h + overflow-y-auto: if the consent text + buttons exceed the
-        // viewport (small phones, large text), the modal scrolls internally
-        // so the action buttons are always reachable.
         className="bg-parallel-cream rounded-lg p-6 w-full max-w-sm shadow-xl max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -603,7 +535,7 @@ function Modal({
   );
 }
 
-function formatPhoneDisplay(e164: string): string {
+function formatPhone(e164: string): string {
   const digits = e164.replace(/\D/g, '');
   if (digits.length !== 11) return e164;
   return `+${digits[0]} (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;

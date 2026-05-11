@@ -30,6 +30,9 @@ interface InboxViewProps {
   onOpenChat: (matchId: string) => void;
   onViewProfile: (matchId: string) => void;
   hasActivated?: boolean;
+  // Whether the backend has returned at least one match. Forwarded to
+  // SetupChecklist to gate subscribe/verify rows consistently with Home.
+  hasMatches?: boolean;
   onNavigateToPayment?: () => void;
   // Plumbing for the SetupChecklist card at the top of Inbox. Mirrors what
   // MatchesView already passes — both views share state via localStorage +
@@ -37,8 +40,8 @@ interface InboxViewProps {
   accessToken?: string | null;
   emailVerified?: boolean;
   isVerified?: boolean;
-  onOpenInstallPrompt?: () => void;
   onOpenNotifications?: () => void;
+  onOpenSubscribe?: () => void;
 }
 
 export function InboxView({
@@ -46,12 +49,13 @@ export function InboxView({
   onOpenChat,
   onViewProfile,
   hasActivated = false,
+  hasMatches,
   onNavigateToPayment,
   accessToken = null,
   emailVerified = true,
   isVerified = false,
-  onOpenInstallPrompt,
   onOpenNotifications,
+  onOpenSubscribe,
 }: InboxViewProps) {
   const [localMessages, setLocalMessages] = useState<Message[]>(propMessages);
   const [waiting, setWaiting] = useState<WaitingMutual[]>([]);
@@ -200,10 +204,10 @@ export function InboxView({
           accessToken={accessToken}
           emailVerified={emailVerified}
           identityVerified={isVerified}
-          onOpenInstallPrompt={onOpenInstallPrompt || (() => {
-            try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
-          })}
+          hasActivated={hasActivated}
+          hasMatches={hasMatches}
           onOpenNotifications={onOpenNotifications}
+          onOpenSubscribe={onOpenSubscribe}
         />
 
         {/* "Mutual matches waiting" horizontal row — only shows if there are waiting mutuals.

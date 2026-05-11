@@ -37,7 +37,6 @@ import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
-import { InstallPromptBanner } from './components/InstallPromptBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
 import { EnablePushBanner } from './components/EnablePushBanner';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
@@ -45,6 +44,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
 import { NavigationProgress } from './components/NavigationProgress';
 import { ChevronLeft } from 'lucide-react';
+import { PageLoader } from './components/PageLoader';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/json',
@@ -1033,17 +1033,7 @@ function App() {
   // ── Loading screen ────────────────────────────────────────────
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="flex gap-1 justify-center mb-3">
-            <div className="w-1.5 h-8 bg-black rounded-full"></div>
-            <div className="w-1.5 h-8 bg-black rounded-full"></div>
-          </div>
-          <p className="font-semibold text-black">Parallel</p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (isSuspended) {
@@ -1074,6 +1064,12 @@ function App() {
   }
 
   // ── Render ───────────────────────────────────────────────────
+
+  // True once the backend has returned at least one match for this user
+  // (current unreviewed matches OR any previously accepted/declined match).
+  // Used to gate subscribe and identity-verify CTAs — no point showing them
+  // before there's anything to unlock.
+  const hasMatches = matches.length > 0 || acceptedMatchIds.length > 0 || declinedMatchIds.length > 0;
 
   const isFullscreenView = [
     'onboarding', 'signin', 'account-creation', 'phone-verification',
@@ -1130,14 +1126,6 @@ function App() {
         />
       )}
 
-      {/* PWA install prompt modal. No longer auto-fires on onboarding;
-          fires only after the user's first like (set via
-          localStorage.parallel_first_like_at) OR when explicitly opened
-          from the SetupChecklist row via the parallel:open-install-prompt
-          event. Mounted here so the event listener is always live. */}
-      {hasCompletedOnboarding && currentView === 'matches' && (
-        <InstallPromptBanner hasCompletedOnboarding={hasCompletedOnboarding} />
-      )}
 
       <PushSubscriptionSync accessToken={accessToken} />
 
@@ -1308,6 +1296,7 @@ function App() {
             likedMatchIds={new Set(acceptedMatchIds)}
             accessToken={accessToken}
             emailVerified={emailConfirmed}
+            onOpenNotifications={() => setCurrentView('notifications')}
           />
         )}
 
@@ -1326,6 +1315,7 @@ function App() {
             onNavigate={(view) => setCurrentView(view as any)}
             onLogOut={handleLogOut}
             hasActivated={hasActivated}
+            hasMatches={hasMatches}
             userName={userName}
             userEmail={localStorage.getItem('parallel_user_email') || ''}
             hasVerified={hasVerified}
@@ -1581,11 +1571,13 @@ function App() {
               setCurrentView('profile');
             }}
             hasActivated={hasActivated}
+            hasMatches={hasMatches}
             onNavigateToPayment={() => setCurrentView('pricing')}
             accessToken={accessToken}
             emailVerified={emailConfirmed}
             isVerified={hasVerified}
             onOpenNotifications={() => setCurrentView('notifications')}
+            onOpenSubscribe={() => setCurrentView('pricing')}
           />
         )}
 

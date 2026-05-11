@@ -39,7 +39,7 @@ export function PushSubscriptionSync({ accessToken }: Props) {
     const timer = setTimeout(() => {
       syncPushSubscription(accessToken).then((result) => {
         if (result.status === 'updated') {
-          console.log('[push-sync] auto-healed subscription:', result.details);
+          console.log('[push-sync] auto-healed subscription:', String(result.details).slice(0, 8) + '...');
         }
       }).catch((err) => {
         console.error('[push-sync] unexpected error:', err);
