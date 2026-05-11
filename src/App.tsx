@@ -1314,6 +1314,7 @@ function App() {
             likedMatchIds={new Set(acceptedMatchIds)}
             accessToken={accessToken}
             emailVerified={emailConfirmed}
+            onOpenNotifications={() => setCurrentView('notifications')}
           />
         )}
 
