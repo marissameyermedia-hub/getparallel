@@ -50,7 +50,7 @@ interface MessagingViewProps {
   onBack: () => void;
   compatibilityScore?: number;
   mutualMatch?: boolean;
-  onConfirmMet?: (matchId: string) => void;
+  onConfirmMet?: (matchId: string, source?: 'banner' | 'kebab') => void;
   hasConfirmedMet?: boolean;
   bothConfirmedMet?: boolean;
   onOpenDateReview?: (matchId: string) => void;
@@ -182,6 +182,15 @@ export function MessagingView({
   const [fadeSelectedReasons, setFadeSelectedReasons] = useState<string[]>([]);
   const [fadeSelectedAdjust, setFadeSelectedAdjust] = useState<string[]>([]);
 
+  // ── Met-banner state ──────────────────────────────────────────────
+  // Fetched once on mount. null = loading/unknown (banner hidden).
+  const [metBannerEligibility, setMetBannerEligibility] = useState<{
+    eligible: boolean;
+    reason: string | null;
+    snoozeUntil: string | null;
+  } | null>(null);
+  const [metBannerHidden, setMetBannerHidden] = useState(false);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const safetyMenuRef = useRef<HTMLDivElement>(null);
@@ -306,9 +315,10 @@ export function MessagingView({
         return;
       }
 
-      // Three independent calls — run them in parallel.
+      // Four independent calls — run them in parallel.
       // mark-read is fire-and-forget (we don't care about its response).
       // realtime-config sets up the live message subscription.
+      // met-banner-eligibility gates the "Did you meet up?" banner.
       const fetchMessagesPromise = fetchMessages(token);
       const markReadPromise = fetch(`${MESSAGES_FUNCTION_URL}/mark-read`, {
         method: 'POST',
@@ -318,14 +328,19 @@ export function MessagingView({
       const realtimeConfigPromise = fetch(`${MESSAGES_FUNCTION_URL}/realtime-config?matchId=${matchId}`, {
         headers: getAuthHeaders(token),
       }).catch(() => null);
+      const eligibilityPromise = fetch(
+        `${MESSAGES_FUNCTION_URL}/met-banner-eligibility?matchId=${matchId}`,
+        { headers: getAuthHeaders(token) }
+      ).then(r => r.ok ? r.json() : null).catch(() => null);
 
-      // Wait for all three. We only really BLOCK on fetchMessages — that's the
-      // one that determines whether the user sees content. mark-read and
-      // realtime-config can resolve in their own time without holding up render.
-      const [_, __, realtimeRes] = await Promise.all([
+      // Wait for all four. We only really BLOCK on fetchMessages — that's the
+      // one that determines whether the user sees content. The others can
+      // resolve in their own time without holding up render.
+      const [_, __, realtimeRes, eligData] = await Promise.all([
         fetchMessagesPromise,
         markReadPromise,
         realtimeConfigPromise,
+        eligibilityPromise,
       ]);
 
       if (cancelled) return;
@@ -353,6 +368,7 @@ export function MessagingView({
         }
       }
 
+      if (eligData) setMetBannerEligibility(eligData);
       setIsInitialLoading(false);
       progress.done();
     })();
@@ -501,6 +517,19 @@ export function MessagingView({
   const dismissFadeNudge = () => {
     localStorage.setItem(`parallel_fade_nudge_${matchId}`, '1');
     setShowFadeNudge(false);
+  };
+
+  // Fire-and-forget banner action for non-confirmed responses.
+  // 'not-yet' snoozes 7 days; 'dismissed' snoozes 3 days.
+  const handleMetBannerAction = async (action: 'not-yet' | 'dismissed') => {
+    setMetBannerHidden(true);
+    const token = await getAccessToken();
+    if (!token) return;
+    fetch(`${MESSAGES_FUNCTION_URL}/met-banner-action`, {
+      method: 'POST',
+      headers: getAuthHeaders(token),
+      body: JSON.stringify({ matchId, action }),
+    }).catch(err => console.error('Met banner action failed:', err));
   };
 
   const handleFadeSheetSubmit = async () => {
@@ -754,7 +783,7 @@ export function MessagingView({
                 </button>
                 {onConfirmMet && !bothConfirmedMet && (
                   <button
-                    onClick={() => { setShowSafetyMenu(false); onConfirmMet(matchId); }}
+                    onClick={() => { setShowSafetyMenu(false); onConfirmMet(matchId, 'kebab'); }}
                     disabled={hasConfirmedMet}
                     role="menuitem"
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-gray-50 transition-colors border-t border-gray-100 disabled:opacity-50 text-left"
@@ -897,25 +926,48 @@ export function MessagingView({
           </div>
         )}
 
-        {/* ── "We Met in Person" banner ─────────────────────────────────
-            Surfaces after 3+ messages when neither person has confirmed yet.
-            Previously buried in the overflow ⋯ menu — nobody found it.
-            Shows as a soft nudge, not a forced prompt. Disappears once
-            one person confirms (hasConfirmedMet) or both confirm (bothConfirmedMet). */}
-        {onConfirmMet && !bothConfirmedMet && !hasConfirmedMet && messages.length >= 3 && (
-          <div className="mb-2 rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
+        {/* ── "Did you meet up?" banner ─────────────────────────────────
+            Only rendered when the backend signals eligibility — gated on
+            real conversation signals (contact-share, quiet after engagement,
+            sustained chemistry, etc.). Never fires on message count alone.
+            Both the banner and the kebab "We Met in Person" route through
+            /messages/met-banner-action so they share one source of truth. */}
+        {metBannerEligibility?.eligible && !metBannerHidden && !hasConfirmedMet && !bothConfirmedMet && (
+          <div className="mb-2 rounded-2xl px-4 py-3"
             style={{ background: '#EEEDFE', border: '0.5px solid #A98FD0' }}>
-            <p className="text-xs leading-snug flex-1" style={{ color: '#3C3489' }}>
-              <span className="font-medium">Did you meet up?</span>{' '}
-              <span style={{ color: '#534AB7' }}>Let us know — it helps us improve your matches.</span>
-            </p>
-            <button
-              onClick={() => onConfirmMet(matchId)}
-              className="flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
-              style={{ background: '#7B5EA7', color: '#F5F2EE' }}
-            >
-              We met ✓
-            </button>
+            <div className="flex items-start justify-between gap-2 mb-2.5">
+              <p className="text-xs leading-snug flex-1" style={{ color: '#3C3489' }}>
+                <span className="font-medium">
+                  {metBannerEligibility.reason === 'moved-offline-detected'
+                    ? "Looks like you two might be chatting elsewhere — did you meet up?"
+                    : "Did you meet up?"}
+                </span>{' '}
+                <span style={{ color: '#534AB7' }}>Let us know how it went — it helps us improve your matches.</span>
+              </p>
+              <button
+                onClick={() => handleMetBannerAction('dismissed')}
+                aria-label="Dismiss"
+                className="p-0.5 hover:bg-white/50 rounded-full transition-colors flex-shrink-0 mt-0.5"
+              >
+                <X className="w-3.5 h-3.5" style={{ color: '#534AB7' }} aria-hidden="true" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { onConfirmMet?.(matchId, 'banner'); setMetBannerHidden(true); }}
+                className="rounded-full px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-80"
+                style={{ background: '#7B5EA7', color: '#F5F2EE' }}
+              >
+                We met ✓
+              </button>
+              <button
+                onClick={() => handleMetBannerAction('not-yet')}
+                className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors border hover:bg-white/40"
+                style={{ color: '#3C3489', borderColor: '#A98FD0', background: 'transparent' }}
+              >
+                Not yet
+              </button>
+            </div>
           </div>
         )}
 

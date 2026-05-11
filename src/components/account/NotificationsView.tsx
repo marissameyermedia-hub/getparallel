@@ -3,7 +3,7 @@ import { ChevronLeft, Loader2, X } from 'lucide-react';
 import { supabase, MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { useModalA11y } from '../../utils/useModalA11y';
-import { requestPushPermission, optOutOfPush } from '../../utils/onesignal';
+import { requestPushPermission, optOutOfPush, getPlayerId } from '../../utils/onesignal';
 import { detectDevice, InstallInstructions, DeviceType } from '../InstallInstructions';
 
 const SMS_CONSENT_TEXT =
@@ -84,35 +84,43 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
       (window.navigator as any).standalone === true;
     if (!installed) {
       setShowInstallSheet(true);
-      return; // toggle stays OFF until they install + come back
+      return;
     }
     if (typeof Notification === 'undefined') {
       setPushDeniedMessage('Push notifications are not supported in this browser.');
       return;
     }
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      setPushEnabled(true);
-      // Register with OneSignal in the background to get a player ID for targeting.
-      // Non-blocking — the staged push_enabled preference is committed on Save.
-      setPushRegistering(true);
-      requestPushPermission()
-        .then(async (playerId) => {
-          if (!playerId) return;
-          const token = await getToken().catch(() => null);
-          if (!token) return;
-          await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+    // Let requestPushPermission own the full flow — calling Notification.requestPermission()
+    // here first causes it to see alreadyGranted=true and skip OneSignal's subscription
+    // registration, which means getPlayerId() returns null and push never gets wired up.
+    setPushRegistering(true);
+    try {
+      const playerId = await requestPushPermission();
+      if (Notification.permission === 'denied') {
+        setPushDeniedMessage('Notifications are blocked at the browser level. Update your device settings to enable.');
+        return;
+      }
+      if (playerId) {
+        setPushEnabled(true);
+        // Persist the player ID immediately so the backend can target this device
+        // without waiting for the user to hit Save.
+        const token = await getToken().catch(() => null);
+        if (token) {
+          fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
             body: JSON.stringify({ onesignal_player_id: playerId }),
-          });
-        })
-        .catch(() => {})
-        .finally(() => setPushRegistering(false));
-    } else if (permission === 'denied') {
-      setPushDeniedMessage('Notifications are blocked at the browser level. Update your device settings to enable.');
+          }).catch(() => {});
+        }
+      } else if (Notification.permission === 'granted') {
+        // Permission granted but no subscription ID yet — enable the toggle anyway.
+        // syncPushSubscription will re-register on next authenticated load.
+        setPushEnabled(true);
+      }
+      // 'default' = user dismissed without deciding — toggle stays OFF, no message.
+    } finally {
+      setPushRegistering(false);
     }
-    // 'default' means the user dismissed without deciding — toggle stays OFF, no message.
   };
 
   // ── Email ─────────────────────────────────────────────────────────
@@ -206,10 +214,17 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
       if (!pushEnabled) {
         optOutOfPush().catch(() => {}); // fire-and-forget
       }
+      const body: Record<string, unknown> = { email_enabled: emailEnabled, push_enabled: pushEnabled };
+      // Belt-and-suspenders: if push is on, include any available player ID so the
+      // backend has it even if the toggle-time registration didn't persist it.
+      if (pushEnabled) {
+        const playerId = await getPlayerId().catch(() => null);
+        if (playerId) body.onesignal_player_id = playerId;
+      }
       const res = await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-        body: JSON.stringify({ email_enabled: emailEnabled, push_enabled: pushEnabled }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error('Could not save preferences');
       setSaveSuccess(true);
