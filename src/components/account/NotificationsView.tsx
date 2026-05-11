@@ -60,9 +60,14 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
         if (res.ok) {
           const data = await res.json();
           setEmailEnabled(data.email_enabled ?? true);
-          setPushEnabled(data.push_enabled ?? false);
           setSmsEnabled(data.sms_enabled ?? false);
           setPhoneNumber(data.phone_number || null);
+          // Only reflect push as ON if OS permission is actually granted. If the user
+          // reinstalled the PWA or revoked permission, DB can say true but the toggle
+          // must show OFF so one tap triggers the full registration flow.
+          const hasPermission =
+            typeof Notification !== 'undefined' && Notification.permission === 'granted';
+          setPushEnabled((data.push_enabled ?? false) && hasPermission);
         }
       } catch { /* noop */ }
       finally { setIsLoading(false); }

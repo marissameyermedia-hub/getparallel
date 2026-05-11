@@ -289,7 +289,7 @@ export function MatchesView({
           !hasActivated ? (
             // Unsubscribed + has matches → blurred paywall preview.
             // Shows real match count and top compatibility score.
-            <div className="max-w-md mx-auto px-4 pt-2 pb-8">
+            <div className="max-w-md mx-auto px-4 pt-2 pb-nav">
               <div className="relative mb-6">
                 <div
                   className="absolute inset-x-3 top-2 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200"
@@ -355,7 +355,7 @@ export function MatchesView({
                 canUndo={!!lastPassedMatchId}
                 onUndo={handleUndo}
               />
-              <div className="max-w-md mx-auto px-4 pb-6">
+              <div className="max-w-md mx-auto px-4 pb-nav">
                 <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
                   <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                     Parallel works better when more thoughtful people join. Invite someone you trust.
@@ -377,7 +377,7 @@ export function MatchesView({
           // Single "waiting" state regardless of subscription. We don't nudge to
           // subscribe here because there's nothing to unlock yet — the CTA appears
           // on the blurred paywall only once real matches exist (matches.length > 0).
-          <div className="max-w-md mx-auto px-4 pt-4 pb-8">
+          <div className="max-w-md mx-auto px-4 pt-4 pb-nav">
             <div className="flex flex-col items-center text-center mb-8">
               <div className="mb-6">
                 <div
@@ -444,7 +444,7 @@ export function MatchesView({
           // matches.length === 0 && hasReceivedMatches — the user has reviewed all
           // their current matches (liked or passed every one). New matches arrive as
           // new users join and the matching algorithm runs.
-          <div className="max-w-md mx-auto px-4 pt-12 pb-8 flex flex-col items-center text-center">
+          <div className="max-w-md mx-auto px-4 pt-12 pb-nav flex flex-col items-center text-center">
             <div className="text-3xl mb-4" aria-hidden="true">✓</div>
             <h2 className="text-2xl font-bold mb-3">You're all caught up</h2>
             <p className="text-gray-600 mb-8 text-base leading-relaxed">

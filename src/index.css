@@ -251,6 +251,22 @@
   border: 0;
 }
 
+/* ── PWA safe-area utilities ─────────────────────────────────────────────────
+   pt-header: top padding that clears the fixed global header + status bar notch.
+   pb-nav:    bottom padding that clears the fixed BottomNav + home indicator.
+   These use env(safe-area-inset-*) which is non-zero only when viewport-fit=cover
+   is set (see index.html). On devices with no notch/indicator the env() is 0 and
+   the fixed pixel values alone provide the clearance.
+──────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .pt-header {
+    padding-top: calc(64px + env(safe-area-inset-top, 0px));
+  }
+  .pb-nav {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

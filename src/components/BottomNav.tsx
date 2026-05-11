@@ -22,6 +22,7 @@ export function BottomNav({ onNavigate, currentView, unreadMessageCount = 0 }: B
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 bg-parallel-cream border-t-2 border-gray-200 z-50"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-label="Primary"
     >
       <div className="max-w-lg mx-auto flex items-center justify-around px-[24px] py-[9px] mx-[0px] my-[1px]">

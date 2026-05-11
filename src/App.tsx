@@ -253,6 +253,18 @@ function App() {
     const checkSession = async () => {
       // Declare params at function scope so it's available throughout
       const params = new URLSearchParams(window.location.search);
+
+      // Capture push notification deep-link before any URL cleanup.
+      // The messages edge function embeds ?notify=message&from=<senderId>
+      // in the OneSignal notification URL so tapping it opens the right thread.
+      const notifyType = params.get('notify');
+      const notifyFrom = params.get('from');
+      if (notifyFrom) {
+        params.delete('notify');
+        params.delete('from');
+        const newSearch = params.toString();
+        window.history.replaceState({}, '', window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash);
+      }
       
       try {
         // ── Handle email verification token ──
@@ -451,9 +463,15 @@ function App() {
             setCurrentView('phone-verification');
           } else if (onboardingComplete) {
             await fetchMatches(session.access_token);
-            const lastView = localStorage.getItem('parallel_last_view') as any;
-            const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
-            setCurrentView(safeView);
+            if (notifyType === 'message' && notifyFrom) {
+              // Notification deep-link: open directly to the conversation.
+              setSelectedMatchId(notifyFrom);
+              setCurrentView('messaging');
+            } else {
+              const lastView = localStorage.getItem('parallel_last_view') as any;
+              const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
+              setCurrentView(safeView);
+            }
             if (params.get('email_confirmed') === 'true' || isEmailConfirmationLink) {
               toast.success('Email confirmed! Welcome to Parallel 🎉', { duration: 4000 });
             }
@@ -503,9 +521,14 @@ function App() {
                 setCurrentView('phone-verification');
               } else if (onboardingComplete) {
                 await fetchMatches(storedToken);
-                const lastView = localStorage.getItem('parallel_last_view') as any;
-                const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
-                setCurrentView(safeView);
+                if (notifyType === 'message' && notifyFrom) {
+                  setSelectedMatchId(notifyFrom);
+                  setCurrentView('messaging');
+                } else {
+                  const lastView = localStorage.getItem('parallel_last_view') as any;
+                  const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
+                  setCurrentView(safeView);
+                }
               } else {
                 setCurrentView('onboarding');
               }
@@ -1134,7 +1157,7 @@ function App() {
       )}
 
       {/* Main content wrapper. 64px top padding clears the fixed Header. */}
-      <div id="main-content" className={!isFullscreenView ? 'pt-16' : ''}>
+      <div id="main-content" className={!isFullscreenView ? 'pt-header' : ''}>
         {/* ── Reset Password ── */}
         {currentView === 'reset-password' && (
           <ResetPasswordPage
