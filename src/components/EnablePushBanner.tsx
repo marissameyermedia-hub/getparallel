@@ -22,7 +22,7 @@ import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
-import { requestPushPermission, getPushPermissionState } from '../utils/onesignal';
+import { requestPushPermission, getPushPermissionState, getPlayerId } from '../utils/onesignal';
 
 interface EnablePushBannerProps {
   accessToken: string | null;
@@ -87,31 +87,52 @@ export function EnablePushBanner({ accessToken }: EnablePushBannerProps) {
     checkShouldShow();
   }, [accessToken]);
 
+  const savePrefs = (token: string, body: Record<string, unknown>) =>
+    fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'apikey': publicAnonKey,
+      },
+      body: JSON.stringify(body),
+    }).catch(err => console.error('[EnablePushBanner] prefs save error:', err));
+
   const handleEnable = async () => {
     if (isEnabling) return;
     setIsEnabling(true);
 
     try {
-      // This call triggers the iOS "Would Like to Send You Notifications" dialog.
-      // On Allow, we get back the OneSignal player ID. On Deny, we get null.
+      // Triggers the iOS "Would Like to Send You Notifications" dialog.
+      // Returns the OneSignal player ID on Allow, null on Deny or if registration
+      // hasn't finished yet (iOS can take several seconds to complete APNS registration).
       const playerId = await requestPushPermission();
+      const permissionGranted = typeof Notification !== 'undefined' && Notification.permission === 'granted';
 
       if (playerId && accessToken) {
-        // Save the player ID + flip push_enabled=true in case it was set to false somewhere.
-        await fetch(`${MISC_FUNCTION_URL}/notifications/preferences`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': publicAnonKey,
-          },
-          body: JSON.stringify({ push_enabled: true, onesignal_player_id: playerId }),
-        });
+        // Happy path — player ID ready immediately.
+        await savePrefs(accessToken, { push_enabled: true, onesignal_player_id: playerId });
+      } else if (permissionGranted && accessToken) {
+        // Permission granted but OneSignal hasn't finished APNS registration yet.
+        // Save push_enabled immediately so the prefs row exists, then poll in the
+        // background until the player ID is available (up to ~20s).
+        savePrefs(accessToken, { push_enabled: true });
+        const token = accessToken; // capture before async closure
+        (async () => {
+          for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const retryId = await getPlayerId();
+            if (retryId) {
+              await savePrefs(token, { push_enabled: true, onesignal_player_id: retryId });
+              break;
+            }
+          }
+        })();
       }
 
-      // Whether they tapped Allow or Deny, hide the banner — we asked, we move on.
-      // If they denied, snooze for 7 days before asking again.
-      if (!playerId) {
+      // Whether they tapped Allow or Deny, hide the banner.
+      // If they denied (or permission never came through), snooze for 7 days.
+      if (!permissionGranted) {
         localStorage.setItem(SNOOZE_KEY, String(Date.now()));
       }
       setIsVisible(false);
