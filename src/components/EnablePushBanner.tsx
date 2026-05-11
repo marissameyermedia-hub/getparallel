@@ -153,7 +153,8 @@ export function EnablePushBanner({ accessToken }: EnablePushBannerProps) {
 
   return (
     <div
-      className="fixed top-16 left-3 right-3 z-30 bg-parallel-purple text-parallel-cream rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3"
+      className="fixed left-3 right-3 z-30 bg-parallel-purple text-parallel-cream rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3"
+      style={{ top: 'calc(64px + env(safe-area-inset-top, 0px) + 8px)' }}
       role="region"
       aria-label="Notification setup"
     >

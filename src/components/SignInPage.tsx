@@ -114,7 +114,9 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
   return (
     <div className="min-h-screen bg-parallel-cream flex flex-col">
       {/* ── Top nav ───────────────────────────────────────────────── */}
-      <nav className="w-full border-b border-gray-100 bg-parallel-cream sticky top-0 z-30">
+      {/* fixed + paddingTop safe-area mirrors Header.tsx — sticky doesn't
+          honour env() correctly on iOS PWA, fixed does. */}
+      <nav className="fixed top-0 left-0 right-0 w-full border-b border-gray-100 bg-parallel-cream z-30" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           {/* Pre-app brand mark — full PARA//EL. wordmark per brand book. */}
           <ParallelWordmark variant="light" sizeClassName="text-base" />
@@ -126,6 +128,9 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           </button>
         </div>
       </nav>
+
+      {/* Spacer so fixed nav doesn't overlap content — nav is py-4 (~56px) + safe area */}
+      <div style={{ height: 'calc(env(safe-area-inset-top, 0px) + 56px)', flexShrink: 0 }} />
 
       {/* ── HERO ──────────────────────────────────────────────────── */}
       <section className="w-full">
