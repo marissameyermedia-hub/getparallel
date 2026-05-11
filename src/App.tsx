@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from './utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from './utils/supabase/client';
 import { publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
 import { SignInPage } from './components/SignInPage';
@@ -877,14 +877,14 @@ function App() {
     saveAnswersToSupabase(updatedAnswers);
   };
 
-  const handleConfirmMet = async (matchId: string) => {
+  const handleConfirmMet = async (matchId: string, source: 'banner' | 'kebab' = 'kebab') => {
     const token = await getAccessToken();
     if (token) {
       try {
-        const res = await fetch(`${MATCHES_FUNCTION_URL}/feedback/confirm-met`, {
+        const res = await fetch(`${MESSAGES_FUNCTION_URL}/met-banner-action`, {
           method: 'POST',
           headers: getHeaders(token),
-          body: JSON.stringify({ matchUserId: matchId })
+          body: JSON.stringify({ matchId, action: 'confirmed', source }),
         });
         const data = await res.json();
         setMetConfirmations(prev => ({ ...prev, [matchId]: { confirmed: true, bothConfirmed: data.bothConfirmed || false } }));
