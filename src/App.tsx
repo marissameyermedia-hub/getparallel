@@ -44,6 +44,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
 import { NavigationProgress } from './components/NavigationProgress';
 import { ChevronLeft } from 'lucide-react';
+import { PageLoader } from './components/PageLoader';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/json',
@@ -1032,17 +1033,7 @@ function App() {
   // ── Loading screen ────────────────────────────────────────────
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="flex gap-1 justify-center mb-3">
-            <div className="w-1.5 h-8 bg-black rounded-full"></div>
-            <div className="w-1.5 h-8 bg-black rounded-full"></div>
-          </div>
-          <p className="font-semibold text-black">Parallel</p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (isSuspended) {
