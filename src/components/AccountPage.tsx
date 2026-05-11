@@ -425,7 +425,7 @@ export function AccountPage({
         />
       )}
 
-      <div className="flex-1 px-6 py-8 pb-8">
+      <div className="flex-1 px-6 py-8 pb-nav">
         <div className="max-w-2xl mx-auto">
 
           {/* Header */}

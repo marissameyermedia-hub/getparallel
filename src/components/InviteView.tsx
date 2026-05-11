@@ -200,7 +200,7 @@ export function InviteView({ onBack }: InviteViewProps) {
   };
 
   return (
-    <div className="min-h-screen bg-parallel-cream pb-24">
+    <div className="min-h-screen bg-parallel-cream pb-nav">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 bg-parallel-cream z-10 border-b border-gray-100">
         <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">

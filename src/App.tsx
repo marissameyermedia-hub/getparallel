@@ -1134,7 +1134,7 @@ function App() {
       )}
 
       {/* Main content wrapper. 64px top padding clears the fixed Header. */}
-      <div id="main-content" className={!isFullscreenView ? 'pt-16' : ''}>
+      <div id="main-content" className={!isFullscreenView ? 'pt-header' : ''}>
         {/* ── Reset Password ── */}
         {currentView === 'reset-password' && (
           <ResetPasswordPage

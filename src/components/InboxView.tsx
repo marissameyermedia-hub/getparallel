@@ -194,7 +194,7 @@ export function InboxView({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-nav">
 
         {/* Setup checklist — same card that lives on Home. Auto-hides when all
             actionable items are done (email verified, SMS opted in, PWA done).
