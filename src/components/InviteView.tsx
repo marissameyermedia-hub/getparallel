@@ -77,7 +77,7 @@ const CHALLENGES = [
 ];
 
 const SHARE_NUDGES = [
-  "Know someone who's done with apps?",
+  "Know someone who's a catch?",
   "Who in your life actually wants a real relationship?",
   "The pool gets better with every real person.",
   "Someone in your contacts deserves a real match.",
