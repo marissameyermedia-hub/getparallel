@@ -1259,15 +1259,23 @@ function App() {
         )}
 
         {/* ── Phone Verification ── */}
-        {/* Telnyx 10DLC live as of April 2026 — phone verification is now
-            required for new signups. The previous beta-only skip is gone.
-            Existing users (who skipped before SMS was live) opt in later
-            via the "Turn on SMS alerts" row in the SetupChecklist on Home. */}
         {currentView === 'phone-verification' && (
           <PhoneVerificationPage
             phone={phoneToVerify}
             accessToken={accessToken || ''}
             onVerified={() => setCurrentView('onboarding')}
+            onSkip={async () => {
+              // Clear the phone from the profile so the verification gate
+              // won't re-trigger on subsequent loads.
+              const token = await getAccessToken();
+              if (token) {
+                fetch(`${MISC_FUNCTION_URL}/auth/skip-phone-verification`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+                }).catch(() => {});
+              }
+              setCurrentView('onboarding');
+            }}
           />
         )}
 
@@ -1564,8 +1572,8 @@ function App() {
         {currentView === 'messaging' && selectedMatchId && (
           <MessagingView
             matchId={selectedMatchId}
-            matchName={matches.find(m => m.user.id === selectedMatchId)?.user.name || ''}
-            matchPhoto={matches.find(m => m.user.id === selectedMatchId)?.user.photoUrl || ''}
+            matchName={matches.find(m => m.user.id === selectedMatchId)?.user.name || inboxMessages.find(m => m.matchId === selectedMatchId)?.matchName || ''}
+            matchPhoto={matches.find(m => m.user.id === selectedMatchId)?.user.photoUrl || inboxMessages.find(m => m.matchId === selectedMatchId)?.matchPhoto || ''}
             compatibilityScore={matches.find(m => m.user.id === selectedMatchId)?.compatibilityScore || 85}
             mutualMatch={!!(mutualMatchIds.includes(selectedMatchId) || inboxMessages.some(m => m.matchId === selectedMatchId) || matches.some(m => m.user.id === selectedMatchId))}
             onBack={() => setCurrentView('inbox')}

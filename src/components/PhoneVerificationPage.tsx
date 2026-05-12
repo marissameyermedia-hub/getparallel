@@ -23,6 +23,8 @@ interface PhoneVerificationPageProps {
   phone?: string;
   onVerified: (phone: string, smsConsent: boolean) => void;
   onBack?: () => void;
+  // When provided, a "Skip for now" button is shown on the entry step.
+  onSkip?: () => void;
 }
 
 const EDGE_FUNCTION_URL = MISC_FUNCTION_URL;
@@ -33,7 +35,7 @@ const SMS_CONSENT_TEXT =
 
 const SMS_CONSENT_VERSION = 'v1-2026-04';
 
-export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onBack }: PhoneVerificationPageProps) {
+export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onBack, onSkip }: PhoneVerificationPageProps) {
   const [step, setStep] = useState<'enter' | 'verify'>('enter');
   const [phone, setPhone] = useState(() => initialPhone ? formatInitialPhone(initialPhone) : '');
   const [code, setCode] = useState('');
@@ -266,6 +268,16 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
                 'Send verification code'
               )}
             </button>
+
+            {onSkip && (
+              <button
+                onClick={onSkip}
+                disabled={isSending}
+                className="w-full text-xs text-gray-500 hover:text-gray-800 mt-2"
+              >
+                Skip for now
+              </button>
+            )}
 
             {onBack && (
               <button
