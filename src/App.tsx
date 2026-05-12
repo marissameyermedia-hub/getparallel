@@ -1685,9 +1685,13 @@ function App() {
         {currentView === 'inbox' && (
           <InboxView
             messages={inboxMessages}
-            onOpenChat={(matchId) => {
+            onOpenChat={(matchId, matchName, matchPhoto) => {
               setSelectedMatchId(matchId);
-              setInboxMessages(prev => prev.map(msg => msg.matchId === matchId ? { ...msg, unread: false } : msg));
+              setInboxMessages(prev => {
+                const exists = prev.find(m => m.matchId === matchId);
+                if (exists) return prev.map(m => m.matchId === matchId ? { ...m, unread: false, matchName: matchName || m.matchName, matchPhoto: matchPhoto || m.matchPhoto } : m);
+                return [{ matchId, matchName, matchPhoto, lastMessage: '', timestamp: new Date().toISOString(), unread: false, compatibilityScore: 0, mutualMatch: true }, ...prev];
+              });
               setCurrentView('messaging');
             }}
             onViewProfile={(matchId) => {

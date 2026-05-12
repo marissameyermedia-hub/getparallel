@@ -27,7 +27,7 @@ interface WaitingMutual {
 
 interface InboxViewProps {
   messages: Message[];
-  onOpenChat: (matchId: string) => void;
+  onOpenChat: (matchId: string, matchName: string, matchPhoto: string) => void;
   onViewProfile: (matchId: string) => void;
   hasActivated?: boolean;
   // Whether the backend has returned at least one match. Forwarded to
@@ -255,7 +255,7 @@ export function InboxView({
                     </button>
                     {/* Name button → opens chat */}
                     <button
-                      onClick={() => onOpenChat(w.id)}
+                      onClick={() => onOpenChat(w.id, w.name || '', w.photoUrl || '')}
                       aria-label={`Open chat with ${w.name || 'match'}`}
                       className="text-xs text-gray-700 truncate w-full text-center active:opacity-60 transition-opacity"
                     >
@@ -301,7 +301,7 @@ export function InboxView({
 
                   {/* Rest of row → opens chat */}
                   <button
-                    onClick={() => onOpenChat(message.matchId)}
+                    onClick={() => onOpenChat(message.matchId, message.matchName || '', message.matchPhoto || '')}
                     aria-label={`Open chat with ${message.matchName || 'match'}`}
                     className="flex-1 min-w-0 text-left"
                   >

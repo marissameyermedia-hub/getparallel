@@ -421,21 +421,6 @@ export function MatchesView({
               <p className="text-gray-600 text-lg leading-relaxed mb-2 max-w-md">
                 We're finding your most compatible people. We'll text you as soon as they're ready.
               </p>
-              <p className="text-sm text-gray-400 mb-6">
-                Taking longer than expected?{' '}
-                <a
-                  href="mailto:support@getparallel.vip"
-                  className="underline text-gray-500 hover:text-parallel-void transition-colors"
-                >
-                  Contact support →
-                </a>
-              </p>
-              <button
-                onClick={onOpenNotifications}
-                className="w-full bg-parallel-void text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-void/90 transition-colors text-base font-medium"
-              >
-                Turn on SMS notifications
-              </button>
             </div>
 
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
