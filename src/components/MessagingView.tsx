@@ -65,6 +65,8 @@ interface MessagingViewProps {
   featureDateAgent?: boolean;
   /** When true, shows the recovery signal sheet after unmatch or 14-day silence. */
   featureRecoverySignal?: boolean;
+  /** When true, shows the chat outcome chip after 5-day silence with 5+ messages. */
+  featureFeedbackLoop?: boolean;
   /**
    * Whether the current user has verified their email. When false, the send
    * input is disabled and an inline banner explains why. The user can still
@@ -174,6 +176,7 @@ export function MessagingView({
   featureUnsticker = false,
   featureDateAgent = false,
   featureRecoverySignal = false,
+  featureFeedbackLoop = false,
 }: MessagingViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -194,6 +197,7 @@ export function MessagingView({
   const [fadeSelectedAdjust, setFadeSelectedAdjust] = useState<string[]>([]);
   const [showRecoverySheet, setShowRecoverySheet] = useState(false);
   const [recoveryTrigger, setRecoveryTrigger] = useState<'unmatch' | 'conversation_death_14d'>('unmatch');
+  const [showChatOutcomeChip, setShowChatOutcomeChip] = useState(false);
 
   // ── Met-banner state ──────────────────────────────────────────────
   // Fetched once on mount. null = loading/unknown (banner hidden).
@@ -438,6 +442,20 @@ export function MessagingView({
     }
   }, [messages, matchId, mutualMatch, isInitialLoading, featureRecoverySignal]);
 
+  // 5–14-day silence + 5+ messages → chat outcome chip. Fires once per conversation.
+  useEffect(() => {
+    if (!featureFeedbackLoop || !mutualMatch || isInitialLoading || messages.length < 5) return;
+    const seenKey = `parallel_chat_outcome_${matchId}`;
+    if (localStorage.getItem(seenKey)) return;
+    const lastMsg = messages[messages.length - 1];
+    const lastTime = new Date(lastMsg.timestamp as string).getTime();
+    if (isNaN(lastTime)) return;
+    const daysAgo = (Date.now() - lastTime) / 86400000;
+    if (daysAgo >= 5 && daysAgo < 14) {
+      setShowChatOutcomeChip(true);
+    }
+  }, [messages, matchId, mutualMatch, isInitialLoading, featureFeedbackLoop]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping, viewportHeight]);
@@ -554,6 +572,27 @@ export function MessagingView({
   const dismissFadeNudge = () => {
     localStorage.setItem(`parallel_fade_nudge_${matchId}`, '1');
     setShowFadeNudge(false);
+  };
+
+  const handleChatOutcomeStillInTouch = () => {
+    localStorage.setItem(`parallel_chat_outcome_${matchId}`, '1');
+    setShowChatOutcomeChip(false);
+  };
+
+  const handleChatOutcomeRanCourse = async () => {
+    localStorage.setItem(`parallel_chat_outcome_${matchId}`, '1');
+    setShowChatOutcomeChip(false);
+    const token = await getAccessToken();
+    if (!token) return;
+    const currentUserId = localStorage.getItem('parallel_user_id') || '';
+    fetch(`${MATCHES_FUNCTION_URL}/feedback/structured`, {
+      method: 'POST', headers: getAuthHeaders(token),
+      body: JSON.stringify({ matchedUserId: matchId, feedbackType: 'after_chat' }),
+    }).catch(() => {});
+    fetch(`${FEEDBACK_PROCESSOR_URL}/process-user`, {
+      method: 'POST', headers: getAuthHeaders(token),
+      body: JSON.stringify({ userId: currentUserId }),
+    }).catch(() => {});
   };
 
   // Fire-and-forget banner action for non-confirmed responses.
@@ -969,6 +1008,27 @@ export function MessagingView({
           flagEnabled={featureUnsticker}
           onUseStarter={(text) => setNewMessage(text)}
         />
+
+        {/* 5–14-day chat outcome chip */}
+        {showChatOutcomeChip && (
+          <div className="mb-2 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-[#F5F2EE] border border-[#E8E4DE]">
+            <p className="text-xs text-[#1E1C22] flex-1 leading-snug">How did this conversation go?</p>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleChatOutcomeStillInTouch}
+                className="rounded-full px-3 py-1.5 text-xs font-medium bg-white border border-[#E8E4DE] text-[#0D0D0F] hover:bg-gray-50 transition-colors"
+              >
+                Still in touch
+              </button>
+              <button
+                onClick={handleChatOutcomeRanCourse}
+                className="rounded-full px-3 py-1.5 text-xs font-medium bg-[#0D0D0F] text-[#F5F2EE] hover:opacity-80 transition-opacity"
+              >
+                It ran its course
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 72h conversation fade nudge */}
         {showFadeNudge && (

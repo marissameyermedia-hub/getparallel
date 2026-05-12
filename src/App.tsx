@@ -36,6 +36,7 @@ import { Toaster, toast } from 'sonner';
 import { InboxView } from './components/InboxView';
 import { DateReviewScreen } from './components/DateReviewScreen';
 import { PassFeedbackBottomSheet } from './components/PassFeedbackBottomSheet';
+import { GoAgainPrompt } from './components/GoAgainPrompt';
 import { AppFeedbackBottomSheet } from './components/AppFeedbackBottomSheet';
 import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
@@ -123,6 +124,7 @@ function App() {
     bothConfirmed: boolean;
   }>>({});
   const [passSheet, setPassSheet] = useState<{ matchId: string } | null>(null);
+  const [goAgainPrompt, setGoAgainPrompt] = useState<{ matchId: string; matchName: string } | null>(null);
   const [appFeedbackSheet, setAppFeedbackSheet] = useState(false);
   const [npsSheet, setNpsSheet] = useState(false);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({});
@@ -1035,12 +1037,29 @@ function App() {
         }
       } catch (err) { console.error('Failed to save date review:', err); }
     }
+    const reviewedMatchId = dateReviewScreen.matchId;
+    const reviewedMatchName = dateReviewScreen.matchName;
     setDateReviewScreen(null);
     if (review.isSafetyIssue) {
       toast.success('Thank you for reporting. Our safety team has been notified.');
     } else {
       toast.success('Your preferences have been updated to improve future matches.');
+      if (featureFlags['feature_feedback_loop_enabled'] === true) {
+        setGoAgainPrompt({ matchId: reviewedMatchId, matchName: reviewedMatchName });
+      }
     }
+  };
+
+  const handleGoAgainSubmit = async (outcome: 'yes' | 'maybe' | 'no') => {
+    const prompt = goAgainPrompt;
+    setGoAgainPrompt(null);
+    const token = await getAccessToken();
+    if (!token || !prompt) return;
+    fetch(`${MATCHES_FUNCTION_URL}/date-outcome`, {
+      method: 'POST',
+      headers: getHeaders(token),
+      body: JSON.stringify({ matchedUserId: prompt.matchId, outcome }),
+    }).catch(() => {});
   };
 
   const resetAppState = () => {
@@ -1658,6 +1677,7 @@ function App() {
             featureUnsticker={featureFlags['feature_unsticker_enabled'] === true}
             featureDateAgent={featureFlags['feature_date_agent_enabled'] === true}
             featureRecoverySignal={featureFlags['feature_recovery_signal_enabled'] === true}
+            featureFeedbackLoop={featureFlags['feature_feedback_loop_enabled'] === true}
           />
         )}
 
@@ -1744,6 +1764,13 @@ function App() {
           matchName={dateReviewScreen.matchName}
           matchId={dateReviewScreen.matchId}
           onSubmit={handleSubmitDateReview}
+        />
+      )}
+      {goAgainPrompt && (
+        <GoAgainPrompt
+          matchName={goAgainPrompt.matchName}
+          onSubmit={handleGoAgainSubmit}
+          onSkip={() => setGoAgainPrompt(null)}
         />
       )}
       {passSheet && (
