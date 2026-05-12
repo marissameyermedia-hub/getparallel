@@ -8,6 +8,7 @@ import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
 import { DateSuggestionCards } from './messaging/DateSuggestionCards';
+import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
 
 const FADE_REASONS = [
   { id: 'values_felt_off',              label: "Values didn't align" },
@@ -62,6 +63,8 @@ interface MessagingViewProps {
   featureUnsticker?: boolean;
   /** When true, shows the AI date suggestion button after 5+ messages. */
   featureDateAgent?: boolean;
+  /** When true, shows the recovery signal sheet after unmatch or 14-day silence. */
+  featureRecoverySignal?: boolean;
   /**
    * Whether the current user has verified their email. When false, the send
    * input is disabled and an inline banner explains why. The user can still
@@ -170,6 +173,7 @@ export function MessagingView({
   onViewProfile,
   featureUnsticker = false,
   featureDateAgent = false,
+  featureRecoverySignal = false,
 }: MessagingViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -188,6 +192,8 @@ export function MessagingView({
   const [fadeStep, setFadeStep] = useState<0 | 1 | 2>(0);
   const [fadeSelectedReasons, setFadeSelectedReasons] = useState<string[]>([]);
   const [fadeSelectedAdjust, setFadeSelectedAdjust] = useState<string[]>([]);
+  const [showRecoverySheet, setShowRecoverySheet] = useState(false);
+  const [recoveryTrigger, setRecoveryTrigger] = useState<'unmatch' | 'conversation_death_14d'>('unmatch');
 
   // ── Met-banner state ──────────────────────────────────────────────
   // Fetched once on mount. null = loading/unknown (banner hidden).
@@ -416,6 +422,22 @@ export function MessagingView({
     if (hoursAgo >= 72) setShowFadeNudge(true);
   }, [messages, matchId, mutualMatch]);
 
+  // 14-day silence → recovery signal sheet. Fires once per conversation per device.
+  useEffect(() => {
+    if (!featureRecoverySignal || !mutualMatch || isInitialLoading || messages.length === 0) return;
+    const seenKey = `parallel_14d_${matchId}`;
+    if (localStorage.getItem(seenKey)) return;
+    const lastMsg = messages[messages.length - 1];
+    const lastTime = new Date(lastMsg.timestamp as string).getTime();
+    if (isNaN(lastTime)) return;
+    const daysAgo = (Date.now() - lastTime) / 86400000;
+    if (daysAgo >= 14) {
+      localStorage.setItem(seenKey, '1');
+      setRecoveryTrigger('conversation_death_14d');
+      setShowRecoverySheet(true);
+    }
+  }, [messages, matchId, mutualMatch, isInitialLoading, featureRecoverySignal]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping, viewportHeight]);
@@ -521,7 +543,12 @@ export function MessagingView({
       } catch (err) {}
     }
     setShowUnmatchModal(false);
-    onBack();
+    if (featureRecoverySignal) {
+      setRecoveryTrigger('unmatch');
+      setShowRecoverySheet(true);
+    } else {
+      onBack();
+    }
   };
 
   const dismissFadeNudge = () => {
@@ -692,6 +719,18 @@ export function MessagingView({
             </div>
           </div>
         </>
+      )}
+
+      {/* Recovery signal sheet — shown after unmatch or 14-day silence */}
+      {showRecoverySheet && (
+        <RecoverySignalSheet
+          matchId={matchId}
+          triggerType={recoveryTrigger}
+          onClose={() => {
+            setShowRecoverySheet(false);
+            if (recoveryTrigger === 'unmatch') onBack();
+          }}
+        />
       )}
 
       {/* Unmatch Modal */}
