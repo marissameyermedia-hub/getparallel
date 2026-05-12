@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 import { ParallelWordmark } from './ParallelWordmark';
-import { ParallelWordmark } from './ParallelWordmark';
 
 interface ResetPasswordPageProps {
   onComplete: () => void;
