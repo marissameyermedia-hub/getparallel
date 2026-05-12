@@ -3,6 +3,43 @@ import { projectId, publicAnonKey } from './info';
 
 const supabaseUrl = `https://${projectId}.supabase.co`;
 
+// ── PWA session bridge ────────────────────────────────────────────────────────
+// On iOS, adding to home screen creates a sandboxed context with its own
+// localStorage that doesn't share with Safari — so Supabase sessions are lost.
+// Cookies ARE shared between Safari and the PWA standalone context, so we
+// mirror the session there. getItem falls back to the cookie when localStorage
+// is empty (PWA first-launch), restoring the session transparently.
+function _setCookie(name: string, value: string) {
+  const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
+  const secure = location.protocol === 'https:' ? ';Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/;SameSite=Lax${secure}`;
+}
+function _getCookie(name: string): string | null {
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function _deleteCookie(name: string) {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+}
+
+const cookieBridgeStorage = {
+  getItem(key: string): string | null {
+    try {
+      return localStorage.getItem(key) ?? _getCookie(key);
+    } catch {
+      return _getCookie(key);
+    }
+  },
+  setItem(key: string, value: string): void {
+    try { localStorage.setItem(key, value); } catch { /* quota */ }
+    try { _setCookie(key, value); } catch { /* size */ }
+  },
+  removeItem(key: string): void {
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+    _deleteCookie(key);
+  },
+};
+
 // Detect dev gallery mode so we can short-circuit auth. The dev gallery needs
 // supabase.auth.getSession() to return a fake session (otherwise components
 // like NotificationsView that guard on `if (!session) throw` will bail out
@@ -17,6 +54,7 @@ const realClient = createClient(supabaseUrl, publicAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    storage: cookieBridgeStorage,
   },
 });
 

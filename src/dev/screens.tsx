@@ -79,7 +79,7 @@ export const SCREENS: ScreenEntry[] = [
     label: "Phone Verification",
     group: "Auth",
     render: () => (
-      <PhoneVerificationPage accessToken="dev-token" phone="" onVerified={noop} onSkip={noop} onBack={noop} />
+      <PhoneVerificationPage accessToken="dev-token" phone="" onVerified={noop} onBack={noop} />
     ),
   },
   {

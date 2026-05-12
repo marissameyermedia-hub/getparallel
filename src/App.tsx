@@ -83,12 +83,14 @@ function App() {
     education: string;
     instagram: string;
     pronouns: string;
+    location?: { latitude: number; longitude: number; city: string; state: string; country: string; locationDisplay: string; };
   }>({ photos: [], bio: '', career: '', education: '', instagram: '', pronouns: '' });
 
   const [acceptedMatchIds, setAcceptedMatchIds] = useState<string[]>([]);
   const [declinedMatchIds, setDeclinedMatchIds] = useState<string[]>([]);
   const [mutualMatchIds, setMutualMatchIds] = useState<string[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [profileFetching, setProfileFetching] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const [hasActivated, setHasActivated] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
@@ -182,7 +184,17 @@ function App() {
           career: data.career || '',
           education: data.education || '',
           instagram: data.instagram || '',
-          pronouns: data.pronouns || ''
+          pronouns: data.pronouns || '',
+          ...(data.latitude && data.longitude ? {
+            location: {
+              latitude: data.latitude,
+              longitude: data.longitude,
+              city: data.city || '',
+              state: data.state || '',
+              country: data.country || '',
+              locationDisplay: data.location_display || '',
+            }
+          } : {}),
         });
         setHasCompletedOnboarding(!!data.has_completed_onboarding);
         setHasActivated(data.hasActivated || false);
@@ -660,6 +672,15 @@ function App() {
     const timer = setTimeout(() => { setNpsSheet(true); }, 3000);
     return () => clearTimeout(timer);
   }, [hasCompletedOnboarding, accessToken, acceptedMatchIds.length]);
+
+  // Navigate back if a profile opened from inbox isn't found after the fetch completes
+  useEffect(() => {
+    if (currentView === 'profile' && selectedMatchId && !profileFetching) {
+      if (!matches.find(m => m.user.id === selectedMatchId)) {
+        setCurrentView(profileSource === 'chat' ? 'inbox' : 'matches');
+      }
+    }
+  }, [profileFetching, currentView, selectedMatchId, matches, profileSource]);
 
   // ── Handlers ──────────────────────────────────────────────────
 
@@ -1259,10 +1280,6 @@ function App() {
         )}
 
         {/* ── Phone Verification ── */}
-        {/* Telnyx 10DLC live as of April 2026 — phone verification is now
-            required for new signups. The previous beta-only skip is gone.
-            Existing users (who skipped before SMS was live) opt in later
-            via the "Turn on SMS alerts" row in the SetupChecklist on Home. */}
         {currentView === 'phone-verification' && (
           <PhoneVerificationPage
             phone={phoneToVerify}
@@ -1383,6 +1400,7 @@ function App() {
             initialEducation={userProfile.education}
             initialInstagram={userProfile.instagram}
             initialPronouns={userProfile.pronouns}
+            initialLocation={userProfile.location}
             initialName={userName}
             userAnswers={userAnswers}
             userDateOfBirth={userDateOfBirth}
@@ -1544,11 +1562,13 @@ function App() {
         {/* ── Match Profile View ── */}
         {currentView === 'profile' && selectedMatchId && (() => {
           const selectedMatch = matches.find(m => m.user.id === selectedMatchId);
-          if (!selectedMatch) return null;
+          if (!selectedMatch) {
+            return <PageLoader />;
+          }
           return (
             <MatchProfileView
               match={selectedMatch}
-              onBack={() => setCurrentView('matches')}
+              onBack={() => setCurrentView(profileSource === 'chat' ? 'inbox' : 'matches')}
               onOpenChat={(matchId) => { setSelectedMatchId(matchId); setCurrentView('messaging'); }}
               onMatch={handleMatchAction}
               onPass={handlePassAction}
@@ -1564,8 +1584,8 @@ function App() {
         {currentView === 'messaging' && selectedMatchId && (
           <MessagingView
             matchId={selectedMatchId}
-            matchName={matches.find(m => m.user.id === selectedMatchId)?.user.name || ''}
-            matchPhoto={matches.find(m => m.user.id === selectedMatchId)?.user.photoUrl || ''}
+            matchName={matches.find(m => m.user.id === selectedMatchId)?.user.name || inboxMessages.find(m => m.matchId === selectedMatchId)?.matchName || ''}
+            matchPhoto={matches.find(m => m.user.id === selectedMatchId)?.user.photoUrl || inboxMessages.find(m => m.matchId === selectedMatchId)?.matchPhoto || ''}
             compatibilityScore={matches.find(m => m.user.id === selectedMatchId)?.compatibilityScore || 85}
             mutualMatch={!!(mutualMatchIds.includes(selectedMatchId) || inboxMessages.some(m => m.matchId === selectedMatchId) || matches.some(m => m.user.id === selectedMatchId))}
             onBack={() => setCurrentView('inbox')}
@@ -1592,6 +1612,12 @@ function App() {
               setSelectedMatchId(matchId);
               setProfileSource('chat');
               setCurrentView('profile');
+              if (!matches.find(m => m.user.id === matchId)) {
+                setProfileFetching(true);
+                getAccessToken().then(token => {
+                  if (token) fetchMatches(token).finally(() => setProfileFetching(false));
+                });
+              }
             }}
             hasActivated={hasActivated}
             hasMatches={hasMatches}

@@ -622,47 +622,45 @@ export function ProfileEditor({
             <p className="text-xs text-gray-500 mt-1 ml-1">Only visible to mutual matches — not shown on your public profile.</p>
           </div>
 
-          {/* Location — only during onboarding */}
-          {isOnboarding && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location <span className="text-gray-400 font-normal">— used to calculate distance</span>
-              </label>
-              {/* LocationPicker is NOT inside a scroll container — no double scroll bar */}
-              <LocationPicker
-                value={location}
-                onChange={async (loc) => {
-                  setLocation(loc);
-                  setHasSaved(false);
-                  
-                  // Call POST /user/location
-                  const token = await getAccessToken();
-                  if (token) {
-                    try {
-                      await fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${token}`,
-                          'apikey': publicAnonKey,
-                        },
-                        body: JSON.stringify({
-                          latitude: loc.latitude,
-                          longitude: loc.longitude,
-                          city: loc.city,
-                          state: loc.state,
-                          country: loc.country,
-                          locationDisplay: loc.locationDisplay,
-                        }),
-                      });
-                    } catch (err) {
-                      console.error('Failed to save location:', err);
-                    }
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Location <span className="text-gray-400 font-normal">— used to calculate distance</span>
+            </label>
+            {/* LocationPicker is NOT inside a scroll container — no double scroll bar */}
+            <LocationPicker
+              value={location}
+              onChange={async (loc) => {
+                setLocation(loc);
+                setHasSaved(false);
+
+                // Call POST /user/location
+                const token = await getAccessToken();
+                if (token) {
+                  try {
+                    await fetch(`${ONBOARDING_FUNCTION_URL}/user/location`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'apikey': publicAnonKey,
+                      },
+                      body: JSON.stringify({
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                        city: loc.city,
+                        state: loc.state,
+                        country: loc.country,
+                        locationDisplay: loc.locationDisplay,
+                      }),
+                    });
+                  } catch (err) {
+                    console.error('Failed to save location:', err);
                   }
-                }}
-              />
-            </div>
-          )}
+                }
+              }}
+            />
+          </div>
 
         </div>
 
