@@ -1655,6 +1655,7 @@ function App() {
             onViewProfile={(matchId) => { setSelectedMatchId(matchId); setProfileSource('chat'); setCurrentView('profile'); }}
             sharedHobbies={matches.find(m => m.user.id === selectedMatchId)?.matchDetails?.sharedHobbies}
             featureUnsticker={featureFlags['feature_unsticker_enabled'] === true}
+            featureDateAgent={featureFlags['feature_date_agent_enabled'] === true}
           />
         )}
 

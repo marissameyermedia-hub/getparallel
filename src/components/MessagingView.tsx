@@ -7,6 +7,7 @@ import { getAccessToken } from '../utils/auth';
 import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
+import { DateSuggestionCards } from './messaging/DateSuggestionCards';
 
 const FADE_REASONS = [
   { id: 'values_felt_off',              label: "Values didn't align" },
@@ -59,6 +60,8 @@ interface MessagingViewProps {
   lastActiveAt?: string | null;
   /** When true, shows the AI conversation un-sticker after 48h silence. */
   featureUnsticker?: boolean;
+  /** When true, shows the AI date suggestion button after 5+ messages. */
+  featureDateAgent?: boolean;
   /**
    * Whether the current user has verified their email. When false, the send
    * input is disabled and an inline banner explains why. The user can still
@@ -166,6 +169,7 @@ export function MessagingView({
   emailVerified = true,
   onViewProfile,
   featureUnsticker = false,
+  featureDateAgent = false,
 }: MessagingViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -911,6 +915,14 @@ export function MessagingView({
         className="flex-shrink-0 bg-parallel-cream border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
+        {/* AI date suggestions — shown after 5+ messages, flag-gated */}
+        <DateSuggestionCards
+          matchId={matchId}
+          messageCount={messages.length}
+          mutualMatch={mutualMatch}
+          flagEnabled={featureDateAgent}
+        />
+
         {/* AI conversation un-sticker — shown after 48h silence, flag-gated */}
         <ConversationUnsticker
           matchId={matchId}
