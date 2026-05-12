@@ -17,6 +17,7 @@ interface SwipeableMatchViewProps {
   likedMatchIds?: Set<string>;
   canUndo?: boolean;
   onUndo?: () => void;
+  onOpenExplainer?: (match: Match) => void;
 }
 
 export function SwipeableMatchView({
@@ -32,6 +33,7 @@ export function SwipeableMatchView({
   likedMatchIds,
   canUndo = false,
   onUndo,
+  onOpenExplainer,
 }: SwipeableMatchViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const safeIndex = Math.min(currentIndex, Math.max(0, matches.length - 1));
@@ -133,6 +135,7 @@ export function SwipeableMatchView({
                 else if (!isVerified) onVerify?.();
               }}
               isLiked={likedMatchIds?.has(currentMatch.user.id)}
+              onOpenExplainer={onOpenExplainer}
             />
           </div>
         </div>
