@@ -1,0 +1,10 @@
+{
+  "configurations": [
+    {
+      "name": "Parallel Dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 8080
+    }
+  ]
+}
