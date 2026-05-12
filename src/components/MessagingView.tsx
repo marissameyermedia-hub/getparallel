@@ -1004,6 +1004,7 @@ export function MessagingView({
           messageCount={messages.length}
           mutualMatch={mutualMatch}
           flagEnabled={featureDateAgent}
+          onSelectVenue={(msg) => setNewMessage(msg)}
         />
 
         {/* AI conversation un-sticker — shown after 48h silence, flag-gated */}

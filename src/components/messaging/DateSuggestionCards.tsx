@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, Loader, X, Star, MapPin, ExternalLink, Navigation } from 'lucide-react';
+import { CalendarDays, Loader, X, Star, MapPin, ExternalLink } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -12,6 +12,7 @@ interface DateCard {
   address: string;
   mapsUrl: string;
   whyItFits: string;
+  suggestionMessage?: string;
 }
 
 interface Props {
@@ -22,15 +23,16 @@ interface Props {
   mutualMatch: boolean;
   /** Whether feature_date_agent_enabled flag is on. */
   flagEnabled: boolean;
+  /** Called when the user taps a venue card — receives a ready-to-send message draft. */
+  onSelectVenue?: (message: string) => void;
 }
 
 type Panel = 'trigger' | 'loading' | 'cards' | 'dismissed';
 
-export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled }: Props) {
+export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled, onSelectVenue }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [cards, setCards] = useState<DateCard[]>([]);
 
-  // Conditions: flag on, mutual match, at least 5 messages
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
   const handleGenerate = async () => {
@@ -59,6 +61,13 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       // fall through — reset to trigger so the user can retry
     }
     setPanel('trigger');
+  };
+
+  const handleSelectCard = (card: DateCard) => {
+    const msg = card.suggestionMessage ||
+      `${card.name} looks like a good spot for us${card.address ? ' on ' + card.address.split(',')[0] : ''}. Worth checking out?`;
+    onSelectVenue?.(msg);
+    setPanel('dismissed');
   };
 
   if (panel === 'trigger') {
@@ -91,7 +100,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   return (
     <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+      <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <div className="flex items-center gap-1.5">
           <CalendarDays size={13} className="text-[#7B5EA7]" aria-hidden="true" />
           <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Date ideas</span>
@@ -104,14 +113,20 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
           <X size={13} className="text-[#8A8690]" aria-hidden="true" />
         </button>
       </div>
+      <p className="px-4 pb-2 text-[10px] text-[#8A8690]">Tap a spot to draft a message</p>
 
       {/* Cards */}
       <div className="px-3 pb-3 space-y-2">
-        {cards.map((card, i) => {
-          const cardContent = (
-            <>
-              {/* Venue name + meta */}
-              <div className="min-w-0 mb-1.5">
+        {cards.map((card, i) => (
+          <button
+            key={i}
+            onClick={() => handleSelectCard(card)}
+            className="w-full text-left bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE] active:bg-gray-50 transition-colors"
+            aria-label={`Draft a message about ${card.name}`}
+          >
+            {/* Venue name + meta + Maps link */}
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#1E1C22] leading-tight">{card.name}</p>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <span className="text-[11px] text-[#8A8690]">{card.category}</span>
@@ -128,48 +143,36 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
                   )}
                 </div>
               </div>
-
-              {/* Address */}
-              {card.address && (
-                <div className="flex items-start gap-1 mb-1.5">
-                  <MapPin size={10} className="text-[#8A8690] mt-0.5 flex-shrink-0" aria-hidden="true" />
-                  <p className="text-[11px] text-[#8A8690] leading-snug line-clamp-1">{card.address}</p>
-                </div>
-              )}
-
-              {/* Why it fits */}
-              {card.whyItFits && (
-                <p className="text-xs text-[#2E2A36] leading-relaxed mb-2">{card.whyItFits}</p>
-              )}
-
-              {/* Maps CTA — only on real venues */}
+              {/* Maps link — stops propagation so it doesn't trigger card select */}
               {card.mapsUrl && (
-                <div className="flex items-center gap-1 text-[11px] font-medium text-[#7B5EA7]">
-                  <Navigation size={10} aria-hidden="true" />
-                  Open in Google Maps
-                  <ExternalLink size={9} aria-hidden="true" />
-                </div>
+                <a
+                  href={card.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-shrink-0 flex items-center gap-1 text-[11px] font-medium text-[#7B5EA7] hover:opacity-70 transition-opacity mt-0.5"
+                  aria-label={`Open ${card.name} in Maps`}
+                >
+                  <ExternalLink size={11} aria-hidden="true" />
+                  Maps
+                </a>
               )}
-            </>
-          );
-
-          return card.mapsUrl ? (
-            <a
-              key={i}
-              href={card.mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Open ${card.name} in Google Maps`}
-              className="bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE] block active:opacity-60 transition-opacity"
-            >
-              {cardContent}
-            </a>
-          ) : (
-            <div key={i} className="bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE]">
-              {cardContent}
             </div>
-          );
-        })}
+
+            {/* Address */}
+            {card.address && (
+              <div className="flex items-start gap-1 mb-1.5">
+                <MapPin size={10} className="text-[#8A8690] mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <p className="text-[11px] text-[#8A8690] leading-snug line-clamp-1">{card.address}</p>
+              </div>
+            )}
+
+            {/* Why it fits */}
+            {card.whyItFits && (
+              <p className="text-xs text-[#2E2A36] leading-relaxed">{card.whyItFits}</p>
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );
