@@ -415,6 +415,9 @@ export function MessagingView({
   }, [showSafetyMenu]);
 
   // Detect conversation fade: last message > 72h ago and nudge not yet dismissed.
+  // Suppressed when a more targeted prompt will handle the same window:
+  //   - featureFeedbackLoop active + 5+ days → chat outcome chip handles it
+  //   - featureRecoverySignal active + 14+ days → recovery sheet handles it
   useEffect(() => {
     if (!mutualMatch || messages.length === 0) return;
     const dismissKey = `parallel_fade_nudge_${matchId}`;
@@ -423,8 +426,11 @@ export function MessagingView({
     const lastTime = new Date(lastMsg.timestamp as string).getTime();
     if (isNaN(lastTime)) return;
     const hoursAgo = (Date.now() - lastTime) / 3600000;
+    const daysAgo = hoursAgo / 24;
+    if (featureRecoverySignal && daysAgo >= 14) return;
+    if (featureFeedbackLoop && daysAgo >= 5) return;
     if (hoursAgo >= 72) setShowFadeNudge(true);
-  }, [messages, matchId, mutualMatch]);
+  }, [messages, matchId, mutualMatch, featureRecoverySignal, featureFeedbackLoop]);
 
   // 14-day silence → recovery signal sheet. Fires once per conversation per device.
   useEffect(() => {
@@ -584,7 +590,6 @@ export function MessagingView({
     setShowChatOutcomeChip(false);
     const token = await getAccessToken();
     if (!token) return;
-    const currentUserId = localStorage.getItem('parallel_user_id') || '';
     fetch(`${MATCHES_FUNCTION_URL}/feedback/structured`, {
       method: 'POST', headers: getAuthHeaders(token),
       body: JSON.stringify({ matchedUserId: matchId, feedbackType: 'after_chat' }),
@@ -1030,8 +1035,8 @@ export function MessagingView({
           </div>
         )}
 
-        {/* 72h conversation fade nudge */}
-        {showFadeNudge && (
+        {/* 72h conversation fade nudge — hidden if a higher-priority prompt is active */}
+        {showFadeNudge && !showChatOutcomeChip && !showRecoverySheet && (
           <div className="mb-2 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-gray-50 border border-gray-200">
             <p className="text-xs text-gray-700 flex-1">
               <span className="font-medium">This conversation went quiet.</span>{' '}

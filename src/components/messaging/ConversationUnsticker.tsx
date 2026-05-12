@@ -32,6 +32,7 @@ export function ConversationUnsticker({ matchId, lastMessageAt, flagEnabled, onU
   if (!flagEnabled || !isSilent(lastMessageAt) || state === 'dismissed') return null;
 
   const handleShowMe = async () => {
+    if (state !== 'idle') return;
     setState('loading');
     try {
       const token = await getAccessToken();

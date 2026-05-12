@@ -1766,7 +1766,7 @@ function App() {
           onSubmit={handleSubmitDateReview}
         />
       )}
-      {goAgainPrompt && (
+      {goAgainPrompt && featureFlags['feature_feedback_loop_enabled'] === true && (
         <GoAgainPrompt
           matchName={goAgainPrompt.matchName}
           onSubmit={handleGoAgainSubmit}

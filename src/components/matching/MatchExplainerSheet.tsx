@@ -48,22 +48,26 @@ export function MatchExplainerSheet({ match, onClose }: Props) {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
         const token = await getAccessToken();
         if (!token || cancelled) { setHeadlineLoading(false); return; }
         const res = await fetch(
           `${MATCHES_FUNCTION_URL}/explainer?matchId=${encodeURIComponent(user.id)}`,
-          { headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey } }
+          { headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey }, signal: controller.signal }
         );
         if (res.ok && !cancelled) {
           const data = await res.json();
           if (data.headline) setHeadline(data.headline);
         }
-      } catch { /* degrade silently */ }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        /* other failures degrade silently */
+      }
       if (!cancelled) setHeadlineLoading(false);
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
   }, [user.id]);
 
   return (
