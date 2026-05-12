@@ -43,6 +43,7 @@ import { InviteView } from './components/InviteView';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
 import { EnablePushBanner } from './components/EnablePushBanner';
+import { AddToHomeScreenBanner } from './components/AddToHomeScreenBanner';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
@@ -418,6 +419,36 @@ function App() {
               }).catch(() => {});
             }
           }
+        }
+
+        // ── PWA install token exchange ────────────────────────────────────────
+        // iOS 17+ completely isolates PWA standalone storage from Safari
+        // (cookies, localStorage, everything). When a user adds the app to home
+        // screen via our in-app banner, we embed a one-time token in the URL.
+        // Here we exchange that token for a real Supabase session before calling
+        // getSession(), so the normal session-found path handles everything.
+        const pwaToken = params.get('pwa_token');
+        if (pwaToken) {
+          try {
+            const pwaRes = await fetch(`${MISC_FUNCTION_URL}/auth/pwa-token/exchange`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', apikey: publicAnonKey },
+              body: JSON.stringify({ token: pwaToken }),
+            });
+            if (pwaRes.ok) {
+              const pwaData = await pwaRes.json();
+              if (pwaData.access_token && pwaData.refresh_token) {
+                await supabase.auth.setSession({
+                  access_token: pwaData.access_token,
+                  refresh_token: pwaData.refresh_token,
+                });
+              }
+            }
+          } catch (pwaErr) {
+            console.warn('[pwa-install] token exchange failed:', pwaErr);
+          }
+          // Always clean the token from the URL regardless of outcome
+          window.history.replaceState({}, '', window.location.pathname);
         }
 
         const { data: { session } } = await supabase.auth.getSession();
@@ -1201,6 +1232,10 @@ function App() {
 
       {hasCompletedOnboarding && currentView === 'matches' && (
         <EnablePushBanner accessToken={accessToken} />
+      )}
+
+      {accessToken && hasCompletedOnboarding && (
+        <AddToHomeScreenBanner accessToken={accessToken} />
       )}
 
       {/* Main content wrapper. 64px top padding clears the fixed Header. */}
