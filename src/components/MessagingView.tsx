@@ -6,6 +6,7 @@ import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
+import { ConversationUnsticker } from './messaging/ConversationUnsticker';
 
 const FADE_REASONS = [
   { id: 'values_felt_off',              label: "Values didn't align" },
@@ -56,6 +57,8 @@ interface MessagingViewProps {
   sharedHobbies?: string[];
   sharedValues?: string[];
   lastActiveAt?: string | null;
+  /** When true, shows the AI conversation un-sticker after 48h silence. */
+  featureUnsticker?: boolean;
   /**
    * Whether the current user has verified their email. When false, the send
    * input is disabled and an inline banner explains why. The user can still
@@ -162,6 +165,7 @@ export function MessagingView({
   lastActiveAt,
   emailVerified = true,
   onViewProfile,
+  featureUnsticker = false,
 }: MessagingViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -907,6 +911,14 @@ export function MessagingView({
         className="flex-shrink-0 bg-parallel-cream border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
+        {/* AI conversation un-sticker — shown after 48h silence, flag-gated */}
+        <ConversationUnsticker
+          matchId={matchId}
+          lastMessageAt={messages.length > 0 ? messages[messages.length - 1].timestamp : null}
+          flagEnabled={featureUnsticker}
+          onUseStarter={(text) => setNewMessage(text)}
+        />
+
         {/* 72h conversation fade nudge */}
         {showFadeNudge && (
           <div className="mb-2 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 bg-gray-50 border border-gray-200">

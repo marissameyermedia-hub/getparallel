@@ -50,6 +50,7 @@ import { AppFooter } from './components/AppFooter';
 import { NavigationProgress } from './components/NavigationProgress';
 import { ChevronLeft } from 'lucide-react';
 import { PageLoader } from './components/PageLoader';
+import { loadFlags, FeatureFlags } from './hooks/useFeatureFlags';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/json',
@@ -124,6 +125,7 @@ function App() {
   const [passSheet, setPassSheet] = useState<{ matchId: string } | null>(null);
   const [appFeedbackSheet, setAppFeedbackSheet] = useState(false);
   const [npsSheet, setNpsSheet] = useState(false);
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({});
 
   // Captured from ?ref=CODE on first load. Persists in localStorage so it
   // survives the trip through SignIn → AccountCreation. Cleared after the
@@ -644,6 +646,15 @@ function App() {
       subscription?.unsubscribe();
     };
   }, []);
+
+  // ── Feature flags ────────────────────────────────────────────
+  // Load once per session after the user authenticates. The loadFlags helper
+  // deduplicates in-flight requests and caches the result at module level so
+  // subsequent component mounts don't re-fetch.
+  useEffect(() => {
+    if (!accessToken) return;
+    loadFlags().then(setFeatureFlags);
+  }, [accessToken]);
 
   // ── Re-validate session on app foreground ────────────────────
   // Supabase's autoRefreshToken timer is paused while the app is minimized
@@ -1643,6 +1654,7 @@ function App() {
             emailVerified={emailConfirmed}
             onViewProfile={(matchId) => { setSelectedMatchId(matchId); setProfileSource('chat'); setCurrentView('profile'); }}
             sharedHobbies={matches.find(m => m.user.id === selectedMatchId)?.matchDetails?.sharedHobbies}
+            featureUnsticker={featureFlags['feature_unsticker_enabled'] === true}
           />
         )}
 
