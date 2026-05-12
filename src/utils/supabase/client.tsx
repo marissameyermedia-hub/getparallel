@@ -148,6 +148,9 @@ export const MESSAGES_FUNCTION_URL = `${supabaseUrl}/functions/v1/messages`;
 // matching weights from accumulated structured_feedback and date_reviews.
 export const FEEDBACK_PROCESSOR_URL = `${supabaseUrl}/functions/v1/feedback-processor`;
 
+// Dedicated date-agent function. Handles: /generate.
+export const DATE_AGENT_FUNCTION_URL = `${supabaseUrl}/functions/v1/date-agent`;
+
 // Dedicated misc function — final chunk of the make-server rebuild.
 // Handles: /auth/email-confirmed, /auth/resend-verification, /auth/validate-token,
 // /auth/send-phone-otp, /auth/verify-phone-otp, /sms/log-consent,

@@ -36,6 +36,7 @@ import { Toaster, toast } from 'sonner';
 import { InboxView } from './components/InboxView';
 import { DateReviewScreen } from './components/DateReviewScreen';
 import { PassFeedbackBottomSheet } from './components/PassFeedbackBottomSheet';
+import { GoAgainPrompt } from './components/GoAgainPrompt';
 import { AppFeedbackBottomSheet } from './components/AppFeedbackBottomSheet';
 import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
@@ -43,12 +44,14 @@ import { InviteView } from './components/InviteView';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
 import { EnablePushBanner } from './components/EnablePushBanner';
+import { AddToHomeScreenBanner } from './components/AddToHomeScreenBanner';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppFooter } from './components/AppFooter';
 import { NavigationProgress } from './components/NavigationProgress';
 import { ChevronLeft } from 'lucide-react';
 import { PageLoader } from './components/PageLoader';
+import { loadFlags, FeatureFlags } from './hooks/useFeatureFlags';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/json',
@@ -121,8 +124,10 @@ function App() {
     bothConfirmed: boolean;
   }>>({});
   const [passSheet, setPassSheet] = useState<{ matchId: string } | null>(null);
+  const [goAgainPrompt, setGoAgainPrompt] = useState<{ matchId: string; matchName: string } | null>(null);
   const [appFeedbackSheet, setAppFeedbackSheet] = useState(false);
   const [npsSheet, setNpsSheet] = useState(false);
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({});
 
   // Captured from ?ref=CODE on first load. Persists in localStorage so it
   // survives the trip through SignIn → AccountCreation. Cleared after the
@@ -420,6 +425,36 @@ function App() {
           }
         }
 
+        // ── PWA install token exchange ────────────────────────────────────────
+        // iOS 17+ completely isolates PWA standalone storage from Safari
+        // (cookies, localStorage, everything). When a user adds the app to home
+        // screen via our in-app banner, we embed a one-time token in the URL.
+        // Here we exchange that token for a real Supabase session before calling
+        // getSession(), so the normal session-found path handles everything.
+        const pwaToken = params.get('pwa_token');
+        if (pwaToken) {
+          try {
+            const pwaRes = await fetch(`${MISC_FUNCTION_URL}/auth/pwa-token/exchange`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', apikey: publicAnonKey },
+              body: JSON.stringify({ token: pwaToken }),
+            });
+            if (pwaRes.ok) {
+              const pwaData = await pwaRes.json();
+              if (pwaData.access_token && pwaData.refresh_token) {
+                await supabase.auth.setSession({
+                  access_token: pwaData.access_token,
+                  refresh_token: pwaData.refresh_token,
+                });
+              }
+            }
+          } catch (pwaErr) {
+            console.warn('[pwa-install] token exchange failed:', pwaErr);
+          }
+          // Always clean the token from the URL regardless of outcome
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           // Check if session came from a recovery flow
@@ -612,6 +647,31 @@ function App() {
     return () => {
       subscription?.unsubscribe();
     };
+  }, []);
+
+  // ── Feature flags ────────────────────────────────────────────
+  // Load once per session after the user authenticates. The loadFlags helper
+  // deduplicates in-flight requests and caches the result at module level so
+  // subsequent component mounts don't re-fetch.
+  useEffect(() => {
+    if (!accessToken) return;
+    loadFlags().then(setFeatureFlags);
+  }, [accessToken]);
+
+  // ── Re-validate session on app foreground ────────────────────
+  // Supabase's autoRefreshToken timer is paused while the app is minimized
+  // or the device is asleep. If the access token (1 hour TTL) expired during
+  // that gap, the next API call would 401. Calling getSession() on visibility
+  // change triggers a proactive refresh — the new token lands via the
+  // TOKEN_REFRESHED handler above, so no extra state update is needed here.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   // ── Scroll to top on view change ─────────────────────────────
@@ -977,12 +1037,29 @@ function App() {
         }
       } catch (err) { console.error('Failed to save date review:', err); }
     }
+    const reviewedMatchId = dateReviewScreen.matchId;
+    const reviewedMatchName = dateReviewScreen.matchName;
     setDateReviewScreen(null);
     if (review.isSafetyIssue) {
       toast.success('Thank you for reporting. Our safety team has been notified.');
     } else {
       toast.success('Your preferences have been updated to improve future matches.');
+      if (featureFlags['feature_feedback_loop_enabled'] === true) {
+        setGoAgainPrompt({ matchId: reviewedMatchId, matchName: reviewedMatchName });
+      }
     }
+  };
+
+  const handleGoAgainSubmit = async (outcome: 'yes' | 'maybe' | 'no') => {
+    const prompt = goAgainPrompt;
+    setGoAgainPrompt(null);
+    const token = await getAccessToken();
+    if (!token || !prompt) return;
+    fetch(`${MATCHES_FUNCTION_URL}/date-outcome`, {
+      method: 'POST',
+      headers: getHeaders(token),
+      body: JSON.stringify({ matchedUserId: prompt.matchId, outcome }),
+    }).catch(() => {});
   };
 
   const resetAppState = () => {
@@ -1187,6 +1264,10 @@ function App() {
         <EnablePushBanner accessToken={accessToken} />
       )}
 
+      {accessToken && hasCompletedOnboarding && (
+        <AddToHomeScreenBanner accessToken={accessToken} />
+      )}
+
       {/* Main content wrapper. 64px top padding clears the fixed Header. */}
       <div id="main-content" className={!isFullscreenView ? 'pt-header' : ''}>
         {/* ── Reset Password ── */}
@@ -1348,6 +1429,7 @@ function App() {
             accessToken={accessToken}
             emailVerified={emailConfirmed}
             onOpenNotifications={() => setCurrentView('notifications')}
+            featureMatchExplainer={featureFlags['feature_match_explainer_enabled'] === true}
           />
         )}
 
@@ -1592,6 +1674,10 @@ function App() {
             emailVerified={emailConfirmed}
             onViewProfile={(matchId) => { setSelectedMatchId(matchId); setProfileSource('chat'); setCurrentView('profile'); }}
             sharedHobbies={matches.find(m => m.user.id === selectedMatchId)?.matchDetails?.sharedHobbies}
+            featureUnsticker={featureFlags['feature_unsticker_enabled'] === true}
+            featureDateAgent={featureFlags['feature_date_agent_enabled'] === true}
+            featureRecoverySignal={featureFlags['feature_recovery_signal_enabled'] === true}
+            featureFeedbackLoop={featureFlags['feature_feedback_loop_enabled'] === true}
           />
         )}
 
@@ -1678,6 +1764,13 @@ function App() {
           matchName={dateReviewScreen.matchName}
           matchId={dateReviewScreen.matchId}
           onSubmit={handleSubmitDateReview}
+        />
+      )}
+      {goAgainPrompt && featureFlags['feature_feedback_loop_enabled'] === true && (
+        <GoAgainPrompt
+          matchName={goAgainPrompt.matchName}
+          onSubmit={handleGoAgainSubmit}
+          onSkip={() => setGoAgainPrompt(null)}
         />
       )}
       {passSheet && (

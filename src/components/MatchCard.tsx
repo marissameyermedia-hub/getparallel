@@ -10,6 +10,7 @@ interface MatchCardProps {
   onUnlock?: () => void;
   isLiked?: boolean;
   hasLikedMe?: boolean;
+  onOpenExplainer?: (match: Match) => void;
 }
 
 // 8-category display order + bar colors. Must match MatchProfileView.
@@ -44,6 +45,7 @@ export function MatchCard({
   onUnlock,
   isLiked = false,
   hasLikedMe = false,
+  onOpenExplainer,
 }: MatchCardProps) {
   const { user, compatibilityScore, matchDetails, distanceMiles } = match;
 
@@ -183,13 +185,26 @@ export function MatchCard({
           </>
         )}
 
-        {/* Compatibility badge — top right */}
-        <div className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200 z-20">
-          <div className="text-center">
-            <div className="text-base font-bold leading-none">{compatibilityScore}%</div>
-            <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">{getMatchLabel(compatibilityScore)}</div>
+        {/* Compatibility badge — top right. Tappable when explainer is available. */}
+        {onOpenExplainer && hasActivated ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenExplainer(match); }}
+            aria-label={`View why you matched — ${compatibilityScore}%`}
+            className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-[#7B5EA7] z-20 active:opacity-70 transition-opacity"
+          >
+            <div className="text-center">
+              <div className="text-base font-bold leading-none text-[#7B5EA7]">{compatibilityScore}%</div>
+              <div className="text-xs text-[#7B5EA7] whitespace-nowrap mt-0.5">{getMatchLabel(compatibilityScore)} ›</div>
+            </div>
+          </button>
+        ) : (
+          <div className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200 z-20">
+            <div className="text-center">
+              <div className="text-base font-bold leading-none">{compatibilityScore}%</div>
+              <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">{getMatchLabel(compatibilityScore)}</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Card body */}
