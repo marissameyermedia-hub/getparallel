@@ -32,8 +32,6 @@ type Panel = 'trigger' | 'loading' | 'cards' | 'dismissed';
 export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled, onSelectVenue }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [cards, setCards] = useState<DateCard[]>([]);
-  const [showAll, setShowAll] = useState(false);
-
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
   const handleGenerate = async () => {
@@ -118,7 +116,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
       {/* Cards */}
       <div className="px-3 pb-3 space-y-2">
-        {(showAll ? cards : cards.slice(0, 3)).map((card, i) => (
+        {cards.map((card, i) => (
           <button
             key={i}
             onClick={() => handleSelectCard(card)}
@@ -174,14 +172,6 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
             )}
           </button>
         ))}
-        {!showAll && cards.length > 3 && (
-          <button
-            onClick={() => setShowAll(true)}
-            className="w-full text-center text-[11px] font-medium text-[#7B5EA7] py-1.5 hover:opacity-70 transition-opacity"
-          >
-            See {cards.length - 3} more idea{cards.length - 3 !== 1 ? 's' : ''} →
-          </button>
-        )}
       </div>
     </div>
   );
