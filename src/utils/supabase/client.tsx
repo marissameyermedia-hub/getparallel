@@ -7,15 +7,22 @@ const supabaseUrl = `https://${projectId}.supabase.co`;
 // On iOS, adding to home screen creates a sandboxed context with its own
 // localStorage that doesn't share with Safari — so Supabase sessions are lost.
 // Cookies ARE shared between Safari and the PWA standalone context, so we
-// mirror the session there. getItem falls back to the cookie when localStorage
-// is empty (PWA first-launch), restoring the session transparently.
+// store only the refresh_token there (the access_token JWT can exceed the
+// 4096-byte cookie limit). On PWA first-launch, getItem reconstructs a minimal
+// session blob from the stored refresh token so Supabase can call refreshSession
+// and restore the full session without the user re-logging-in.
+const COOKIE_RT_KEY = 'pwa_sb_rt'; // refresh-token cookie name
+
+function _escapeForRegex(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 function _setCookie(name: string, value: string) {
   const expires = new Date(Date.now() + 365 * 864e5).toUTCString();
   const secure = location.protocol === 'https:' ? ';Secure' : '';
   document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/;SameSite=Lax${secure}`;
 }
 function _getCookie(name: string): string | null {
-  const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  const m = document.cookie.match(new RegExp('(?:^|; )' + _escapeForRegex(name) + '=([^;]*)'));
   return m ? decodeURIComponent(m[1]) : null;
 }
 function _deleteCookie(name: string) {
@@ -25,18 +32,30 @@ function _deleteCookie(name: string) {
 const cookieBridgeStorage = {
   getItem(key: string): string | null {
     try {
-      return localStorage.getItem(key) ?? _getCookie(key);
-    } catch {
-      return _getCookie(key);
+      const fromLocal = localStorage.getItem(key);
+      if (fromLocal) return fromLocal;
+    } catch { /* localStorage unavailable */ }
+    // PWA first-launch: localStorage is empty. Reconstruct a minimal session
+    // blob containing just the refresh_token so Supabase can call refreshSession.
+    const rt = _getCookie(COOKIE_RT_KEY);
+    if (rt && key.endsWith('-auth-token')) {
+      return JSON.stringify({ access_token: '', refresh_token: rt, token_type: 'bearer', expires_in: 0, expires_at: 0, user: { id: '' } });
     }
+    return null;
   },
   setItem(key: string, value: string): void {
     try { localStorage.setItem(key, value); } catch { /* quota */ }
-    try { _setCookie(key, value); } catch { /* size */ }
+    // Extract and persist only the refresh_token to the cookie.
+    if (key.endsWith('-auth-token')) {
+      try {
+        const session = JSON.parse(value);
+        if (session?.refresh_token) _setCookie(COOKIE_RT_KEY, session.refresh_token);
+      } catch { /* malformed — skip */ }
+    }
   },
   removeItem(key: string): void {
     try { localStorage.removeItem(key); } catch { /* ignore */ }
-    _deleteCookie(key);
+    if (key.endsWith('-auth-token')) _deleteCookie(COOKIE_RT_KEY);
   },
 };
 

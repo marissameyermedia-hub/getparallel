@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { createClient } from '@supabase/supabase-js';
-import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from '../utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 import { MessagingSkeleton } from './Skeletons';
@@ -315,16 +314,18 @@ export function MessagingView({
         return;
       }
 
-      // Four independent calls — run them in parallel.
-      // mark-read is fire-and-forget (we don't care about its response).
-      // realtime-config sets up the live message subscription.
-      // met-banner-eligibility gates the "Did you meet up?" banner.
+      // Fetch messages first, then mark read after they're displayed.
+      // realtime-config and met-banner-eligibility can run in parallel with the fetch.
       const fetchMessagesPromise = fetchMessages(token);
-      const markReadPromise = fetch(`${MESSAGES_FUNCTION_URL}/mark-read`, {
-        method: 'POST',
-        headers: getAuthHeaders(token),
-        body: JSON.stringify({ matchId }),
-      }).catch(() => {});
+      // mark-read fires after messages load so we don't mark unread before the user sees them
+      fetchMessagesPromise.then(() => {
+        fetch(`${MESSAGES_FUNCTION_URL}/mark-read`, {
+          method: 'POST',
+          headers: getAuthHeaders(token),
+          body: JSON.stringify({ matchId }),
+        }).catch(() => {});
+      });
+      const markReadPromise = Promise.resolve();
       const realtimeConfigPromise = fetch(`${MESSAGES_FUNCTION_URL}/realtime-config?matchId=${matchId}`, {
         headers: getAuthHeaders(token),
       }).catch(() => null);
@@ -349,10 +350,9 @@ export function MessagingView({
       if (realtimeRes && realtimeRes.ok) {
         try {
           const config = await realtimeRes.json();
-          const { supabaseUrl, supabaseAnonKey, conversationId: convId, filter } = config;
+          const { conversationId: convId, filter } = config;
           if (convId && !cancelled) {
             setConversationId(convId);
-            const supabase = createClient(supabaseUrl, supabaseAnonKey);
             realtimeChannel = supabase
               .channel('messages-' + convId)
               .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter }, (payload) => {
@@ -449,14 +449,16 @@ export function MessagingView({
     setNewMessage('');
     setShowStarters(false);
     try {
-      await fetch(`${MESSAGES_FUNCTION_URL}/send`, {
+      const res = await fetch(`${MESSAGES_FUNCTION_URL}/send`, {
         method: 'POST',
         headers: getAuthHeaders(token),
         body: JSON.stringify({ matchId, text: optimisticMsg.text }),
       });
+      if (!res.ok) throw new Error('send failed');
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
+      setNewMessage(optimisticMsg.text);
       toast.error('Failed to send. Please try again.');
     }
   };
