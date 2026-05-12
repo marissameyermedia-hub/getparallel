@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ShieldCheck, ArrowLeft, CheckCircle, XCircle, ExternalLink, Loader, ScanFace } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, CheckCircle, XCircle, Loader } from 'lucide-react';
 import { MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
@@ -24,23 +24,23 @@ const DEFAULT_TEMPLATE_ID = 'itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG';
 const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 90_000; // 90 seconds total
 
-// Background polling interval used while the Persona popup is open ("opened" state).
-// Slower than active polling because we expect the user to still be in Persona —
-// this just catches the case where postMessage never fires (iOS Safari opener loss).
-const BACKGROUND_POLL_INTERVAL_MS = 4000;
 
 export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified = false }: VerificationViewProps) {
   // State machine. Statuses:
-  //   - consent: BIPA / WA MHMDA consent gate. User must agree before we open Persona.
-  //   - idle: ready to launch Persona popup
-  //   - opened: popup is open, user is doing the flow
-  //   - polling: popup said "complete" — we're waiting for the webhook to land
-  //   - completed: webhook confirmed verified=true
+  //   - consent: BIPA / WA MHMDA consent gate. User must agree before we navigate to Persona.
+  //   - polling: returned from Persona redirect — waiting for webhook to land in DB
+  //   - completed: webhook confirmed verified=true (auto-navigates via onVerified)
   //   - declined: webhook confirmed verified=false (with optional reason)
-  //   - failed: user cancelled in popup, or polling timed out
+  //   - failed: polling timed out
+  //
+  // Detect if we're returning from a Persona redirect (?verified=1 in URL).
+  // If so, start in 'polling' immediately so the consent form never flashes.
+  const isPersonaReturn = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('verified') === '1';
+
   const [status, setStatus] = useState<
-    'consent' | 'idle' | 'opened' | 'polling' | 'completed' | 'declined' | 'failed'
-  >(isAlreadyVerified ? 'completed' : 'consent');
+    'consent' | 'polling' | 'completed' | 'declined' | 'failed'
+  >(isAlreadyVerified ? 'completed' : isPersonaReturn ? 'polling' : 'consent');
 
   const [consentChecked, setConsentChecked] = useState(false);
   const [consentSubmitting, setConsentSubmitting] = useState(false);
@@ -53,25 +53,14 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
   const [personaEnv, setPersonaEnv] = useState<'sandbox' | 'production'>('sandbox');
   const [personaTemplateId, setPersonaTemplateId] = useState<string>(DEFAULT_TEMPLATE_ID);
 
-  // Cleanup polling timers on unmount.
   const pollTimerRef = useRef<number | null>(null);
   const pollDeadlineRef = useRef<number>(0);
-  // Background poll timer used while popup is open.
-  const bgPollTimerRef = useRef<number | null>(null);
-  // Track current status in a ref so async handlers see the latest value
-  // without needing to re-bind the visibility listener every render.
-  const statusRef = useRef<typeof status>(status);
-  useEffect(() => { statusRef.current = status; }, [status]);
 
   useEffect(() => {
     return () => {
       if (pollTimerRef.current !== null) {
         window.clearTimeout(pollTimerRef.current);
         pollTimerRef.current = null;
-      }
-      if (bgPollTimerRef.current !== null) {
-        window.clearTimeout(bgPollTimerRef.current);
-        bgPollTimerRef.current = null;
       }
     };
   }, []);
@@ -100,10 +89,8 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     };
   }, []);
 
-  // Build the Persona hosted-flow URL using config we just loaded.
-  // We append a redirect-uri so Persona's "complete" page bounces the user back to
-  // our app with ?verified=1 — this is the iOS-Safari-friendly path. On desktop the
-  // postMessage handler still works as a faster path; this is a fallback.
+  // Build the Persona hosted-flow URL. We append a redirect-uri so Persona's
+  // "complete" page bounces the user back with ?verified=1 and we auto-confirm.
   const redirectUri = typeof window !== 'undefined'
     ? `${window.location.origin}${window.location.pathname}?verified=1`
     : '';
@@ -174,122 +161,18 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
     pollOnce();
   };
 
-  // Background poll: fires while popup is open ('opened' state) at a slower
-  // cadence. Catches the case where postMessage never arrives (iOS Safari
-  // popup loses opener relationship; cross-origin tab handoff is unreliable).
-  // If the webhook has already landed, we transition straight to 'completed'
-  // without ever showing the "Confirming…" UI — silent success.
-  const backgroundPoll = async () => {
-    if (statusRef.current !== 'opened') return;
-    const result = await checkVerificationStatus();
-    if (result.state === 'verified') {
-      setStatus('completed');
-      onVerified();
-      return;
-    }
-    if (result.state === 'declined') {
-      setDeclineReason(result.reason);
-      setStatus('declined');
-      return;
-    }
-    if (result.state === 'expired') {
-      setStatus('failed');
-      return;
-    }
-    bgPollTimerRef.current = window.setTimeout(backgroundPoll, BACKGROUND_POLL_INTERVAL_MS);
-  };
-
-  // Whenever we enter 'opened' state, kick off background polling.
+  // On return from Persona redirect (?verified=1), strip the param and kick off
+  // polling immediately. The component already starts in 'polling' state when
+  // isPersonaReturn is true, so the consent form never flashes.
   useEffect(() => {
-    if (status !== 'opened') {
-      if (bgPollTimerRef.current !== null) {
-        window.clearTimeout(bgPollTimerRef.current);
-        bgPollTimerRef.current = null;
-      }
-      return;
-    }
-    bgPollTimerRef.current = window.setTimeout(backgroundPoll, BACKGROUND_POLL_INTERVAL_MS);
-    return () => {
-      if (bgPollTimerRef.current !== null) {
-        window.clearTimeout(bgPollTimerRef.current);
-        bgPollTimerRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
-
-  // Visibility change: when iOS Safari brings the Parallel tab back to focus
-  // (e.g. user swiped from Persona's "complete" page back to ours), check the
-  // backend immediately. This is the most reliable signal we'll get on mobile
-  // because postMessage from a separate-tab popup is not delivered.
-  useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState !== 'visible') return;
-      const s = statusRef.current;
-      if (s === 'opened' || s === 'polling') {
-        // Force an immediate check; if not verified yet, the regular polling
-        // continues at its normal cadence.
-        checkVerificationStatus().then((result) => {
-          if (result.state === 'verified') {
-            setStatus('completed');
-            onVerified();
-          } else if (result.state === 'declined') {
-            setDeclineReason(result.reason);
-            setStatus('declined');
-          } else if (result.state === 'expired') {
-            setStatus('failed');
-          }
-        });
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // postMessage from Persona: when it says "complete," start polling our backend.
-  // We never accept Persona's claim alone — we wait for the webhook (which is
-  // signed) to write the verified status to our DB, then read from there.
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (!event.origin.includes('withpersona.com')) return;
-      const { name } = event.data || {};
-      if (name === 'complete' || name === 'inquiry.completed' || name === 'inquiry.approved') {
-        startPolling();
-      }
-      if (name === 'fail' || name === 'cancel') {
-        setStatus('failed');
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ?verified=1 query param: Persona's redirect-uri lands the user here after the
-  // hosted flow completes. Immediately check status and (if confirmed) skip
-  // straight to the success screen. Also strips the param from the URL so a
-  // refresh doesn't re-trigger.
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (!isPersonaReturn) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('verified') !== '1') return;
-    // Strip the param immediately to avoid loops on re-render.
     params.delete('verified');
     const newSearch = params.toString();
-    const newUrl = window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash;
-    window.history.replaceState({}, '', newUrl);
-    // Kick off polling — webhook may have arrived ahead of us.
+    window.history.replaceState({}, '', window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash);
     startPolling();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Manual "I've completed verification" button (in case postMessage didn't fire,
-  // e.g. user closed the popup before the message landed).
-  const handleManualCheck = () => {
-    if (status === 'polling') return;
-    startPolling();
-  };
 
   // When the user taps "I consent and continue," we POST to the backend to log the consent event
   // (user ID, timestamp, consent version). This creates an evidence trail required
@@ -327,20 +210,13 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
         throw new Error('Failed to record consent');
       }
 
-      // Open Persona immediately after logging consent — no intermediate screen.
-      setStatus('opened');
-      window.open(personaUrl, '_blank', 'width=500,height=700,scrollbars=yes');
+      // Navigate directly to Persona — they redirect back with ?verified=1 when done.
+      window.location.href = personaUrl;
     } catch (err: any) {
       console.error('Consent submit error:', err);
       setConsentError('Something went wrong saving your consent. Please try again.');
+      setConsentSubmitting(false);
     }
-
-    setConsentSubmitting(false);
-  };
-
-  const handleOpenPersona = () => {
-    setStatus('opened');
-    window.open(personaUrl, '_blank', 'width=500,height=700,scrollbars=yes');
   };
 
   return (
@@ -367,10 +243,10 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
         {/* ───── CONSENT + LAUNCH STEP ─────
             Single page: shows what's needed, legal disclosure, consent checkbox,
-            and launches Persona directly on submit.
+            and navigates directly to Persona on submit.
             Satisfies BIPA §15(b) and WA MHMDA opt-in requirements.
         */}
-        {(status === 'consent' || status === 'idle') && (
+        {status === 'consent' && (
           <>
             {/* What you'll need */}
             <div className="space-y-3 mb-6">
@@ -426,19 +302,16 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             )}
 
             <button
-              onClick={status === 'idle' ? handleOpenPersona : handleConsentSubmit}
-              disabled={status === 'consent' && (!consentChecked || consentSubmitting)}
+              onClick={handleConsentSubmit}
+              disabled={!consentChecked || consentSubmitting}
               className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {consentSubmitting ? (
                 <>
-                  <Loader size={18} className="animate-spin" aria-hidden="true" /> Opening verification…
+                  <Loader size={18} className="animate-spin" aria-hidden="true" /> Starting verification…
                 </>
               ) : (
-                <>
-                  Start verification
-                  <ExternalLink size={18} aria-hidden="true" />
-                </>
+                'Start verification'
               )}
             </button>
 
@@ -455,53 +328,13 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
           </>
         )}
 
-        {/* Opened — waiting for user to complete in new tab. */}
-        {status === 'opened' && (
-          <>
-            <div className="bg-blue-50 border border-blue-200 rounded-3xl p-6 text-center mb-6">
-              <div className="text-4xl mb-3" aria-hidden="true">
-                🪪
-              </div>
-              <h2 className="text-lg font-semibold text-blue-800 mb-2">Verification window opened</h2>
-              <p className="text-blue-700 text-sm leading-relaxed">
-                Complete the steps in the new tab that just opened. Come back here when you're done.
-              </p>
-            </div>
-
-            <button
-              onClick={handleOpenPersona}
-              className="w-full border-2 border-gray-200 text-gray-700 py-3 rounded-full font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 mb-3"
-            >
-              <ExternalLink size={16} aria-hidden="true" />
-              Reopen verification window
-            </button>
-
-            <button
-              onClick={handleManualCheck}
-              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors flex items-center justify-center gap-2"
-            >
-              I've completed verification ✓
-            </button>
-          </>
-        )}
-
-        {/* Polling — waiting for the webhook from Persona to land in our DB.
-            Persona's webhooks are usually instant (< 2s) but we allow up to 90s
-            for slow networks. Shows a friendly indicator the whole time. */}
+        {/* Polling — returned from Persona redirect, waiting for webhook to land.
+            Auto-resolves in < 5s for most users; navigates away without user action. */}
         {status === 'polling' && (
-          <>
-            <div
-              className="bg-blue-50 border border-blue-200 rounded-3xl p-6 text-center mb-6"
-              role="status"
-              aria-live="polite"
-            >
-              <Loader size={36} className="text-blue-500 animate-spin mx-auto mb-3" aria-hidden="true" />
-              <h2 className="text-lg font-semibold text-blue-800 mb-2">Confirming your verification…</h2>
-              <p className="text-blue-700 text-sm leading-relaxed">
-                Just a moment — we're confirming the result with our verification partner.
-              </p>
-            </div>
-          </>
+          <div className="flex flex-col items-center justify-center py-20" role="status" aria-live="polite">
+            <Loader size={40} className="text-parallel-purple animate-spin mb-4" aria-hidden="true" />
+            <p className="text-gray-500 text-sm">Finishing up…</p>
+          </div>
         )}
 
         {/* Completed */}
@@ -539,7 +372,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             <button
               onClick={() => {
                 setDeclineReason(null);
-                setStatus('idle');
+                setStatus('consent');
               }}
               className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors mb-3"
             >
@@ -565,7 +398,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
               </p>
             </div>
             <button
-              onClick={() => setStatus('idle')}
+              onClick={() => setStatus('consent')}
               className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors mb-3"
             >
               Try again

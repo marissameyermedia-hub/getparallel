@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+
+// Guard so the email-confirmed welcome endpoint fires at most once per page load
+// even if both the pre-session and in-session code paths both trigger.
+let emailConfirmedNotified = false;
 import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from './utils/supabase/client';
 import { publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
@@ -405,13 +409,14 @@ function App() {
           const storedToken = await getAccessToken();
           if (storedToken) {
             setEmailConfirmed(true);
-            // Clean the URL
             window.history.replaceState({}, '', window.location.pathname);
-            // Notify backend to send welcome email (fire and forget)
-            fetch(`${MISC_FUNCTION_URL}/auth/email-confirmed`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
-            }).catch(() => {});
+            if (!emailConfirmedNotified) {
+              emailConfirmedNotified = true;
+              fetch(`${MISC_FUNCTION_URL}/auth/email-confirmed`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
+              }).catch(() => {});
+            }
           }
         }
 
@@ -452,13 +457,14 @@ function App() {
           // Handle ?email_confirmed=true redirect from Supabase email link
           if (params.get('email_confirmed') === 'true' || isEmailConfirmationLink) {
             setEmailConfirmed(true);
-            // Clean the URL
             window.history.replaceState({}, '', window.location.pathname);
-            // Notify backend to send welcome email (fire and forget)
-            fetch(`${MISC_FUNCTION_URL}/auth/email-confirmed`, {
-              method: 'POST',
-              headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
-            }).catch(() => {});
+            if (!emailConfirmedNotified) {
+              emailConfirmedNotified = true;
+              fetch(`${MISC_FUNCTION_URL}/auth/email-confirmed`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
+              }).catch(() => {});
+            }
           }
 
           const onboardingComplete = !!userData?.has_completed_onboarding;
@@ -593,16 +599,7 @@ function App() {
           /* localStorage may be disabled — ignore */
         }
       } else if (event === 'SIGNED_OUT') {
-        setAccessToken(null);
-        setUserId(null);
-        try {
-          localStorage.removeItem('parallel_access_token');
-          localStorage.removeItem('parallel_user_id');
-          localStorage.removeItem('parallel_user_email');
-        } catch {
-          /* ignore */
-        }
-        setCurrentView('signin');
+        resetAppState();
       } else if (event === 'SIGNED_IN' && session?.access_token) {
         // Belt-and-suspenders: ensure cached token is fresh on sign-in too
         try {
@@ -650,6 +647,12 @@ function App() {
     // — store 'matches' so refresh lands on the safe view
     if (currentView === 'my-profile' || currentView === 'profile') {
       localStorage.setItem('parallel_last_view', 'matches');
+    }
+    // Flush any pending questionnaire save when navigating away from the
+    // questionnaire view so answers aren't lost mid-debounce.
+    if (currentView !== 'questionnaire' && answerSaveTimer.current) {
+      clearTimeout(answerSaveTimer.current);
+      answerSaveTimer.current = null;
     }
   }, [currentView]);
 
@@ -802,7 +805,7 @@ function App() {
     }
   };
 
-  const handleMatchAction = async (matchUserId: string) => {
+  const handleMatchAction = async (matchUserId: string): Promise<{ isMutual: boolean }> => {
     const likedUserId = matchUserId;
 
     setAcceptedMatchIds(prev => {
@@ -862,6 +865,7 @@ function App() {
       });
       toast.success(`You matched with ${match.user.name.split(' ')[0]}! Check your inbox to say hi.`, { duration: 4000 });
     }
+    return { isMutual };
   };
 
   const handlePassAction = (matchUserId: string) => {
@@ -981,10 +985,8 @@ function App() {
     }
   };
 
-  const handleLogOut = async () => {
-    if (answerSaveTimer.current) clearTimeout(answerSaveTimer.current);
-    await supabase.auth.signOut();
-    localStorage.clear();
+  const resetAppState = () => {
+    try { localStorage.clear(); } catch { /* ignore */ }
     setCurrentView('signin');
     setHasActivated(false);
     setHasCompletedOnboarding(false);
@@ -999,6 +1001,15 @@ function App() {
     setUserName('');
     setAccessToken(null);
     setUserId(null);
+    setEmailConfirmed(true);
+    setHasVerified(false);
+    setHasActivated(false);
+  };
+
+  const handleLogOut = async () => {
+    if (answerSaveTimer.current) clearTimeout(answerSaveTimer.current);
+    await supabase.auth.signOut();
+    resetAppState();
   };
 
   const handleAppFeedbackSubmit = async (feedbackType: string, rating: number | null, message: string) => {
@@ -1013,7 +1024,7 @@ function App() {
         toast.success('Thank you for your feedback!', { duration: 3000 });
       } catch (err) {
         console.error('Failed to save app feedback:', err);
-        toast.success('Thank you for your feedback!', { duration: 3000 });
+        toast.error('Couldn\'t save feedback — please try again.');
       }
     }
     setAppFeedbackSheet(false);
@@ -1118,12 +1129,11 @@ function App() {
   const isFullscreenView = [
     'onboarding', 'signin', 'account-creation', 'phone-verification',
     'payment-confirmation', 'reset-password', 'messaging',
-    // my-profile: editor has its own sticky header + fixed save bar; the
-    // BottomNav (z-50) was rendering on top of the save bar (z-20) on every
-    // small viewport, hiding the Save Profile button entirely.
-    // preview-profile: full-screen photo carousel layout — bottom nav
-    // shouldn't compete with it.
-    'my-profile', 'preview-profile',
+    // my-profile: editor has its own sticky header + fixed save bar
+    // preview-profile: full-screen photo carousel
+    // profile: match profile view has its own fixed action bar (z-60);
+    //   BottomNav (z-50) was competing with it at the bottom
+    'my-profile', 'preview-profile', 'profile',
   ].includes(currentView);
 
   return (
@@ -1285,6 +1295,7 @@ function App() {
             phone={phoneToVerify}
             accessToken={accessToken || ''}
             onVerified={() => setCurrentView('onboarding')}
+            onBack={async () => { await supabase.auth.signOut(); resetAppState(); }}
           />
         )}
 
@@ -1540,22 +1551,7 @@ function App() {
         {currentView === 'delete-account' && (
           <DeleteAccountView
             onBack={() => setCurrentView('account')}
-            onDeleteComplete={() => {
-              setCurrentView('signin');
-              setHasActivated(false);
-              setHasCompletedOnboarding(false);
-              setUserAnswers({});
-              setUserProfile({ photos: [], bio: '', career: '', education: '', instagram: '', pronouns: '' });
-              setAcceptedMatchIds([]);
-              setDeclinedMatchIds([]);
-              setMutualMatchIds([]);
-              setMatches([]);
-              setInboxMessages([]);
-              setSelectedMatchId(null);
-              setUserName('');
-              setAccessToken(null);
-              setUserId(null);
-            }}
+            onDeleteComplete={resetAppState}
           />
         )}
 

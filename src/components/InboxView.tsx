@@ -63,6 +63,10 @@ export function InboxView({
   // skeleton — they just update silently in the background.
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Ref so fetchAll always reads the latest propMessages without needing to
+  // be re-created (and restart the poll interval) on every incoming message.
+  const propMessagesRef = useRef(propMessages);
+  useEffect(() => { propMessagesRef.current = propMessages; }, [propMessages]);
 
   const fetchAll = useCallback(async (isInitial: boolean) => {
     const token = await getAccessToken();
@@ -90,11 +94,12 @@ export function InboxView({
       const mutualIds = new Set<string>(mutualData.mutualMatches || mutualData.mutualMatchIds || []);
       const userId = localStorage.getItem('parallel_user_id') || '';
       const conversations = convoData.conversations || [];
+      const currentPropMessages = propMessagesRef.current;
 
       const built: Message[] = conversations.map((convo: any) => {
         const otherUser = convo.user_id_1 === userId ? convo.user2 : convo.user1;
         const otherId = convo.user_id_1 === userId ? convo.user_id_2 : convo.user_id_1;
-        const existing = propMessages.find(m => m.matchId === otherId);
+        const existing = currentPropMessages.find(m => m.matchId === otherId);
         const hasMessages = !!convo.last_message_at;
         return {
           matchId: otherId,
@@ -119,7 +124,7 @@ export function InboxView({
         progress.done();
       }
     }
-  }, [propMessages]);
+  }, []); // stable — reads propMessages via ref
 
   useEffect(() => {
     fetchAll(true);

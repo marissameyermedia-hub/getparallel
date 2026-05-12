@@ -32,9 +32,15 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="font-bold text-red-600 mb-1">Location:</p>
               <p className="text-gray-600 whitespace-pre-wrap">{this.state.error?.stack?.slice(0, 400)}</p>
             </div>
-            <p className="text-xs text-gray-400 mb-6">Screenshot this and send to Marissa</p>
+            <p className="text-xs text-gray-400 mb-6">If this keeps happening, contact us at support@getparallel.vip</p>
             <button
-              onClick={() => { localStorage.clear(); window.location.href = '/'; }}
+              onClick={() => {
+                // Clear only auth keys — preserve questionnaire progress and match state
+                try {
+                  ['parallel_access_token', 'parallel_user_id', 'parallel_user_email'].forEach(k => localStorage.removeItem(k));
+                } catch { /* ignore */ }
+                window.location.href = '/';
+              }}
               className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-semibold"
             >
               Restart app

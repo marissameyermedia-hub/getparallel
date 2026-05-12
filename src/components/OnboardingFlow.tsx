@@ -316,6 +316,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
+        setIsSaving(false);
         localStorage.removeItem(STORAGE_KEY);
       }
     } catch (err) {

@@ -45,6 +45,15 @@ export function InAppNotificationBanner({
   const [visible, setVisible] = useState(false);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Refs so the realtime callback always reads current values without
+  // needing to re-subscribe on every render.
+  const activeMatchIdRef = useRef(activeMatchId);
+  const currentViewRef = useRef(currentView);
+  const matchesRef = useRef(matches);
+  useEffect(() => { activeMatchIdRef.current = activeMatchId; }, [activeMatchId]);
+  useEffect(() => { currentViewRef.current = currentView; }, [currentView]);
+  useEffect(() => { matchesRef.current = matches; }, [matches]);
+
   // --- helpers ---
 
   const clearTimer = () => {
@@ -97,8 +106,8 @@ export function InAppNotificationBanner({
           // Ignore messages the current user sent themselves
           if (row.sender_id === userId) return;
 
-          // Resolve sender from matches (sender_id = match's user.id)
-          const match = matches.find((m) => m.user.id === row.sender_id);
+          // Resolve sender from matches via ref (always current, no re-subscribe needed)
+          const match = matchesRef.current.find((m) => m.user.id === row.sender_id);
           if (!match) return; // sender not in match list — ignore
 
           const matchId = row.sender_id;
@@ -110,9 +119,9 @@ export function InAppNotificationBanner({
           onNewMessage(matchId, match.user.name, senderPhoto, row.text, compatibilityScore);
 
           // Suppress the visual banner if the user is already in that chat
-          // or on a fullscreen / auth view
-          if (activeMatchId === matchId) return;
-          if (SUPPRESSED_VIEWS.has(currentView)) return;
+          // or on a fullscreen / auth view — read from refs so this is always current
+          if (activeMatchIdRef.current === matchId) return;
+          if (SUPPRESSED_VIEWS.has(currentViewRef.current)) return;
 
           showBanner({ matchId, senderName, senderPhoto, text: row.text });
         }
@@ -122,10 +131,7 @@ export function InAppNotificationBanner({
     return () => {
       supabase.removeChannel(channel);
     };
-    // Re-subscribe only when userId changes (login/logout).
-    // matches, activeMatchId, currentView are read at event time via closures
-    // — we intentionally don't re-subscribe on every render.
-  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, showBanner, onNewMessage]);
 
   // Clean up auto-dismiss timer on unmount
   useEffect(() => () => clearTimer(), []);
