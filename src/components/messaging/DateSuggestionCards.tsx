@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, Loader, X, Star, MapPin, ExternalLink } from 'lucide-react';
+import { CalendarDays, Loader, X, Star, MapPin, ExternalLink, Navigation } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -107,15 +107,12 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
       {/* Cards */}
       <div className="px-3 pb-3 space-y-2">
-        {cards.map((card, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE]"
-          >
-            {/* Venue name + meta row */}
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#1E1C22] leading-tight truncate">{card.name}</p>
+        {cards.map((card, i) => {
+          const cardContent = (
+            <>
+              {/* Venue name + meta */}
+              <div className="min-w-0 mb-1.5">
+                <p className="text-sm font-semibold text-[#1E1C22] leading-tight">{card.name}</p>
                 <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <span className="text-[11px] text-[#8A8690]">{card.category}</span>
                   <span className="text-[#E8E4DE]">·</span>
@@ -131,34 +128,48 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
                   )}
                 </div>
               </div>
-              {card.mapsUrl && (
-                <a
-                  href={card.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-shrink-0 flex items-center gap-1 text-[11px] font-medium text-[#7B5EA7] hover:opacity-70 transition-opacity mt-0.5"
-                  aria-label={`Open ${card.name} in Maps`}
-                >
-                  <ExternalLink size={11} aria-hidden="true" />
-                  Maps
-                </a>
+
+              {/* Address */}
+              {card.address && (
+                <div className="flex items-start gap-1 mb-1.5">
+                  <MapPin size={10} className="text-[#8A8690] mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  <p className="text-[11px] text-[#8A8690] leading-snug line-clamp-1">{card.address}</p>
+                </div>
               )}
+
+              {/* Why it fits */}
+              {card.whyItFits && (
+                <p className="text-xs text-[#2E2A36] leading-relaxed mb-2">{card.whyItFits}</p>
+              )}
+
+              {/* Maps CTA — only on real venues */}
+              {card.mapsUrl && (
+                <div className="flex items-center gap-1 text-[11px] font-medium text-[#7B5EA7]">
+                  <Navigation size={10} aria-hidden="true" />
+                  Open in Google Maps
+                  <ExternalLink size={9} aria-hidden="true" />
+                </div>
+              )}
+            </>
+          );
+
+          return card.mapsUrl ? (
+            <a
+              key={i}
+              href={card.mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${card.name} in Google Maps`}
+              className="bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE] block active:opacity-60 transition-opacity"
+            >
+              {cardContent}
+            </a>
+          ) : (
+            <div key={i} className="bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE]">
+              {cardContent}
             </div>
-
-            {/* Address */}
-            {card.address && card.address !== 'Near you both' && (
-              <div className="flex items-start gap-1 mb-1.5">
-                <MapPin size={10} className="text-[#8A8690] mt-0.5 flex-shrink-0" aria-hidden="true" />
-                <p className="text-[11px] text-[#8A8690] leading-snug line-clamp-1">{card.address}</p>
-              </div>
-            )}
-
-            {/* Why it fits */}
-            {card.whyItFits && (
-              <p className="text-xs text-[#2E2A36] leading-relaxed">{card.whyItFits}</p>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
