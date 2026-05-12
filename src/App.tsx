@@ -614,6 +614,22 @@ function App() {
     };
   }, []);
 
+  // ── Re-validate session on app foreground ────────────────────
+  // Supabase's autoRefreshToken timer is paused while the app is minimized
+  // or the device is asleep. If the access token (1 hour TTL) expired during
+  // that gap, the next API call would 401. Calling getSession() on visibility
+  // change triggers a proactive refresh — the new token lands via the
+  // TOKEN_REFRESHED handler above, so no extra state update is needed here.
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   // ── Scroll to top on view change ─────────────────────────────
 
   useEffect(() => {
