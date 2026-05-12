@@ -1264,18 +1264,6 @@ function App() {
             phone={phoneToVerify}
             accessToken={accessToken || ''}
             onVerified={() => setCurrentView('onboarding')}
-            onSkip={async () => {
-              // Clear the phone from the profile so the verification gate
-              // won't re-trigger on subsequent loads.
-              const token = await getAccessToken();
-              if (token) {
-                fetch(`${MISC_FUNCTION_URL}/auth/skip-phone-verification`, {
-                  method: 'POST',
-                  headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-                }).catch(() => {});
-              }
-              setCurrentView('onboarding');
-            }}
           />
         )}
 
