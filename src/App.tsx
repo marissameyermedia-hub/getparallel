@@ -90,6 +90,7 @@ function App() {
   const [declinedMatchIds, setDeclinedMatchIds] = useState<string[]>([]);
   const [mutualMatchIds, setMutualMatchIds] = useState<string[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
+  const [profileFetching, setProfileFetching] = useState(false);
   const [userAnswers, setUserAnswers] = useState<Record<string, any>>({});
   const [hasActivated, setHasActivated] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
@@ -671,6 +672,15 @@ function App() {
     const timer = setTimeout(() => { setNpsSheet(true); }, 3000);
     return () => clearTimeout(timer);
   }, [hasCompletedOnboarding, accessToken, acceptedMatchIds.length]);
+
+  // Navigate back if a profile opened from inbox isn't found after the fetch completes
+  useEffect(() => {
+    if (currentView === 'profile' && selectedMatchId && !profileFetching) {
+      if (!matches.find(m => m.user.id === selectedMatchId)) {
+        setCurrentView(profileSource === 'chat' ? 'inbox' : 'matches');
+      }
+    }
+  }, [profileFetching, currentView, selectedMatchId, matches, profileSource]);
 
   // ── Handlers ──────────────────────────────────────────────────
 
@@ -1552,11 +1562,13 @@ function App() {
         {/* ── Match Profile View ── */}
         {currentView === 'profile' && selectedMatchId && (() => {
           const selectedMatch = matches.find(m => m.user.id === selectedMatchId);
-          if (!selectedMatch) return null;
+          if (!selectedMatch) {
+            return <PageLoader />;
+          }
           return (
             <MatchProfileView
               match={selectedMatch}
-              onBack={() => setCurrentView('matches')}
+              onBack={() => setCurrentView(profileSource === 'chat' ? 'inbox' : 'matches')}
               onOpenChat={(matchId) => { setSelectedMatchId(matchId); setCurrentView('messaging'); }}
               onMatch={handleMatchAction}
               onPass={handlePassAction}
@@ -1600,6 +1612,12 @@ function App() {
               setSelectedMatchId(matchId);
               setProfileSource('chat');
               setCurrentView('profile');
+              if (!matches.find(m => m.user.id === matchId)) {
+                setProfileFetching(true);
+                getAccessToken().then(token => {
+                  if (token) fetchMatches(token).finally(() => setProfileFetching(false));
+                });
+              }
             }}
             hasActivated={hasActivated}
             hasMatches={hasMatches}
