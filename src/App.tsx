@@ -83,6 +83,7 @@ function App() {
     education: string;
     instagram: string;
     pronouns: string;
+    location?: { latitude: number; longitude: number; city: string; state: string; country: string; locationDisplay: string; };
   }>({ photos: [], bio: '', career: '', education: '', instagram: '', pronouns: '' });
 
   const [acceptedMatchIds, setAcceptedMatchIds] = useState<string[]>([]);
@@ -182,7 +183,17 @@ function App() {
           career: data.career || '',
           education: data.education || '',
           instagram: data.instagram || '',
-          pronouns: data.pronouns || ''
+          pronouns: data.pronouns || '',
+          ...(data.latitude && data.longitude ? {
+            location: {
+              latitude: data.latitude,
+              longitude: data.longitude,
+              city: data.city || '',
+              state: data.state || '',
+              country: data.country || '',
+              locationDisplay: data.location_display || '',
+            }
+          } : {}),
         });
         setHasCompletedOnboarding(!!data.has_completed_onboarding);
         setHasActivated(data.hasActivated || false);
@@ -1379,6 +1390,7 @@ function App() {
             initialEducation={userProfile.education}
             initialInstagram={userProfile.instagram}
             initialPronouns={userProfile.pronouns}
+            initialLocation={userProfile.location}
             initialName={userName}
             userAnswers={userAnswers}
             userDateOfBirth={userDateOfBirth}
