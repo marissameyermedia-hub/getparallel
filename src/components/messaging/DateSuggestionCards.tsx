@@ -32,7 +32,6 @@ type Panel = 'trigger' | 'loading' | 'cards' | 'dismissed';
 export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled, onSelectVenue }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [cards, setCards] = useState<DateCard[]>([]);
-
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
   const handleGenerate = async () => {
