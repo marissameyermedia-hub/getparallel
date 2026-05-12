@@ -295,6 +295,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
   // (user ID, timestamp, consent version). This creates an evidence trail required
   // by BIPA Section 15(b). If the backend call fails, we surface the error and do NOT
   // advance the user — no consent record, no biometric collection.
+  // Log consent and open Persona in one action — no intermediate "idle" screen.
   const handleConsentSubmit = async () => {
     if (!consentChecked) return;
     setConsentSubmitting(true);
@@ -326,7 +327,9 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
         throw new Error('Failed to record consent');
       }
 
-      setStatus('idle');
+      // Open Persona immediately after logging consent — no intermediate screen.
+      setStatus('opened');
+      window.open(personaUrl, '_blank', 'width=500,height=700,scrollbars=yes');
     } catch (err: any) {
       console.error('Consent submit error:', err);
       setConsentError('Something went wrong saving your consent. Please try again.');
@@ -362,92 +365,46 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
           </p>
         </div>
 
-        {/* ───── CONSENT STEP ─────
-            Required gate before any biometric collection. Satisfies:
-            - Illinois BIPA Section 15(b) — written informed consent before biometric collection,
-              with disclosure of (a) what is collected, (b) purpose, (c) retention period
-            - WA My Health MY Data Act — opt-in consent for consumer health data (biometric)
-            - Generally: good practice that creates a provable audit trail
+        {/* ───── CONSENT + LAUNCH STEP ─────
+            Single page: shows what's needed, legal disclosure, consent checkbox,
+            and launches Persona directly on submit.
+            Satisfies BIPA §15(b) and WA MHMDA opt-in requirements.
         */}
-        {status === 'consent' && (
+        {(status === 'consent' || status === 'idle') && (
           <>
-            <div className="bg-gray-50 border-2 border-gray-200 rounded-3xl p-6 mb-6">
-              <div className="flex items-start gap-3 mb-4">
-                <ScanFace size={22} className="text-gray-700 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <h2 className="text-lg font-semibold">About biometric verification</h2>
-              </div>
-
-              <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-                <p>
-                  To verify your identity, we work with <strong>Persona Technologies, Inc.</strong>, a third-party identity
-                  verification service. When you tap "I consent and continue" below, Persona will:
-                </p>
-
-                <ul className="list-disc pl-5 space-y-1.5">
-                  <li>Capture a photo of your government-issued ID (passport, driver's license, or national ID)</li>
-                  <li>
-                    Capture a selfie and extract <strong>facial geometry</strong> (a mathematical representation of your facial features) to
-                    confirm the selfie matches your ID photo
-                  </li>
-                </ul>
-
-                <p>
-                  <strong>Why this matters under the law:</strong> Facial geometry is{' '}
-                  <em>biometric data</em> under the Illinois Biometric Information Privacy Act (BIPA) and consumer health data under the
-                  Washington My Health MY Data Act (MHMDA). We cannot legally collect it without your written informed consent.
-                </p>
-              </div>
+            {/* What you'll need */}
+            <div className="space-y-3 mb-6">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest">What you'll need</p>
+              {[
+                { icon: '🪪', title: 'Government-issued ID', desc: "Passport, driver's license, or national ID" },
+                { icon: '🤳', title: 'A selfie', desc: "We'll match it to your ID photo" },
+                { icon: '⏱️', title: 'About 2 minutes', desc: 'The process is quick and secure' },
+              ].map((item) => (
+                <div key={item.title} className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl">
+                  <span className="text-2xl" aria-hidden="true">{item.icon}</span>
+                  <div>
+                    <p className="font-medium text-sm">{item.title}</p>
+                    <p className="text-gray-500 text-sm">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <div className="bg-parallel-cream border border-gray-200 rounded-3xl p-5 mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">How your data is handled</h3>
-              <div className="space-y-3 text-sm text-gray-700 leading-relaxed">
-                <div>
-                  <p className="font-medium text-gray-900">Purpose</p>
-                  <p className="text-gray-600">To confirm you are a real, unique person matching your ID. Nothing else.</p>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Who holds your biometric data</p>
-                  <p className="text-gray-600">
-                    Persona processes and stores your biometric data on its own systems, governed by its{' '}
-                    <a
-                      href="https://withpersona.com/legal/privacy-policy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline text-parallel-void"
-                    >
-                      privacy policy
-                    </a>
-                    . Parallel receives only a pass/fail verification result — we never receive or store your facial geometry ourselves.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Retention</p>
-                  <p className="text-gray-600">
-                    Persona retains biometric data per its retention schedule. Parallel retains only your verification status for as long as your
-                    account is active. When you delete your account, we notify Persona to delete associated records.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">What we will NOT do</p>
-                  <p className="text-gray-600">
-                    We will never sell, lease, trade, or profit from your biometric data. We will never use it for any purpose other than identity
-                    verification.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Withdrawing consent</p>
-                  <p className="text-gray-600">
-                    You can withdraw consent at any time by deleting your account (Account → Delete Account), which triggers deletion of your
-                    verification record and a passthrough deletion request to Persona.
-                  </p>
-                </div>
-              </div>
+            {/* Condensed legal disclosure — required by BIPA §15(b) and WA MHMDA */}
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-4 text-xs text-gray-600 leading-relaxed">
+              <p className="mb-2">
+                We use <strong>Persona Technologies, Inc.</strong> for identity verification. They will capture your government-issued ID and a selfie to extract <strong>facial geometry</strong> — biometric data under the Illinois BIPA and the Washington My Health MY Data Act, which require your written consent before collection.
+              </p>
+              <p>
+                Parallel receives only a pass/fail result and never stores your biometric data. Persona processes it under their{' '}
+                <a href="https://withpersona.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline text-parallel-void">privacy policy</a>.
+                You can withdraw consent by deleting your account.
+              </p>
             </div>
 
             {/* BIPA-compliant affirmative consent checkbox */}
             <label
-              className="flex items-start gap-3 mb-6 cursor-pointer select-none p-4 bg-parallel-cream border-2 border-gray-300 rounded-2xl hover:border-parallel-void transition-colors"
+              className="flex items-start gap-3 mb-5 cursor-pointer select-none p-4 bg-parallel-cream border-2 border-gray-300 rounded-2xl hover:border-parallel-void transition-colors"
               htmlFor="biometric-consent"
             >
               <input
@@ -458,9 +415,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
                 className="mt-1 w-5 h-5 flex-shrink-0 rounded border-2 border-gray-300 text-parallel-void focus:ring-black focus:ring-offset-0 cursor-pointer"
               />
               <span className="text-sm text-gray-800 leading-relaxed">
-                I have read the information above. I give my <strong>written informed consent</strong> for Parallel's verification partner
-                (Persona) to collect, capture, and process my facial geometry and government ID for the sole purpose of identity verification, on
-                the terms described.
+                I give my <strong>written informed consent</strong> for Parallel's verification partner (Persona) to collect and process my facial geometry and government ID solely for identity verification.
               </span>
             </label>
 
@@ -471,16 +426,19 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             )}
 
             <button
-              onClick={handleConsentSubmit}
-              disabled={!consentChecked || consentSubmitting}
+              onClick={status === 'idle' ? handleOpenPersona : handleConsentSubmit}
+              disabled={status === 'consent' && (!consentChecked || consentSubmitting)}
               className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {consentSubmitting ? (
                 <>
-                  <Loader size={18} className="animate-spin" aria-hidden="true" /> Saving consent...
+                  <Loader size={18} className="animate-spin" aria-hidden="true" /> Opening verification…
                 </>
               ) : (
-                'I consent and continue'
+                <>
+                  Start verification
+                  <ExternalLink size={18} aria-hidden="true" />
+                </>
               )}
             </button>
 
@@ -492,41 +450,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             </button>
 
             <p className="text-center text-xs text-gray-400 mt-4 leading-relaxed">
-              Verification is optional. You can use Parallel without verifying. Verified profiles display a blue checkmark to matches.
-            </p>
-          </>
-        )}
-
-        {/* Idle — consent already given, ready to launch */}
-        {status === 'idle' && (
-          <>
-            <div className="space-y-4 mb-8">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-widest">What you'll need</p>
-              {[
-                { icon: '🪪', title: 'Government-issued ID', desc: "Passport, driver's license, or national ID" },
-                { icon: '🤳', title: 'A selfie', desc: "We'll match it to your ID photo" },
-                { icon: '⏱️', title: 'About 2 minutes', desc: 'The process is quick and secure' },
-              ].map((item) => (
-                <div key={item.title} className="flex items-start gap-4 p-4 bg-gray-50 rounded-2xl">
-                  <span className="text-2xl" aria-hidden="true">
-                    {item.icon}
-                  </span>
-                  <div>
-                    <p className="font-medium text-sm">{item.title}</p>
-                    <p className="text-gray-500 text-sm">{item.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={handleOpenPersona}
-              className="w-full bg-parallel-purple text-parallel-cream py-4 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors flex items-center justify-center gap-2"
-            >
-              Start verification
-              <ExternalLink size={18} aria-hidden="true" />
-            </button>
-            <p className="text-center text-xs text-gray-400 mt-4">
-              Your ID and facial geometry are processed by Persona under their privacy policy and are never stored or shared by Parallel.
+              Verification is optional. Verified profiles display a checkmark to matches.
             </p>
           </>
         )}
