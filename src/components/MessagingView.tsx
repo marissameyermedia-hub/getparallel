@@ -157,6 +157,24 @@ function getInitials(name: string | null | undefined) {
   return name.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2) || '?';
 }
 
+function renderWithLinks(text: string, isMe: boolean) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g);
+  return parts.map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`underline break-all ${isMe ? 'text-parallel-cream/80' : 'text-blue-600'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {part}
+      </a>
+    ) : part
+  );
+}
+
 export function MessagingView({
   matchName,
   matchPhoto,
@@ -966,7 +984,7 @@ export function MessagingView({
                     ? 'bg-parallel-purple text-parallel-cream rounded-[18px] rounded-br-[4px]'
                     : 'bg-gray-100 text-gray-900 rounded-[18px] rounded-bl-[4px]'
                 } px-3 py-2`}>
-                  <p className="text-sm leading-snug whitespace-pre-line">{message.text}</p>
+                  <p className="text-sm leading-snug whitespace-pre-line">{renderWithLinks(message.text, isMe)}</p>
                   {isLast && (
                     <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
                       <p className={`text-[10px] ${isMe ? 'text-gray-400' : 'text-gray-500'}`}>{formatTime(message.timestamp)}</p>
