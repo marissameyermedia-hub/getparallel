@@ -190,7 +190,7 @@ export function InviteView({ onBack }: InviteViewProps) {
   const handleShare = async () => {
     const shareData = {
       title: "You've been referred to Parallel",
-      text: `${nudge} You've been referred to Parallel — a matchmaking app that actually matches you based on what matters most. ${referralLink}`,
+      text: "You've been referred to Parallel — Real compatibility. Real matches.",
       url: referralLink,
     };
     try {
