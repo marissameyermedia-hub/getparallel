@@ -31,7 +31,7 @@ interface Props {
   onSelectVenue?: (message: string) => void;
 }
 
-type Panel = 'trigger' | 'loading' | 'cards' | 'dismissed';
+type Panel = 'trigger' | 'loading' | 'cards' | 'confirm' | 'dismissed';
 type Budget = 'any' | '$' | '$$' | '$$$';
 
 const AREA_LABELS: Record<string, string> = {
@@ -48,6 +48,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   const [selectedArea, setSelectedArea] = useState<'you' | 'them' | 'middle'>('you');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [refreshCount, setRefreshCount] = useState(0);
+  const [pendingCard, setPendingCard] = useState<DateCard | null>(null);
 
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
@@ -95,8 +96,14 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   };
 
   const handleSelectCard = (card: DateCard) => {
-    const msg = card.suggestionMessage ||
-      `${card.name} looks like a good spot for us. Worth checking out?`;
+    setPendingCard(card);
+    setPanel('confirm');
+  };
+
+  const handleConfirmSend = () => {
+    if (!pendingCard) return;
+    const msg = pendingCard.suggestionMessage ||
+      `${pendingCard.name} looks like a good spot for us. Worth checking out?`;
     onSelectVenue?.(msg);
     setPanel('dismissed');
   };
@@ -140,6 +147,45 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       <div className="mb-2 flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE]">
         <Loader size={13} className="text-[#7B5EA7] animate-spin flex-shrink-0" aria-hidden="true" />
         <span className="text-xs text-[#8A8690]">Finding spots near you both…</span>
+      </div>
+    );
+  }
+
+  if (panel === 'confirm' && pendingCard) {
+    const msg = pendingCard.suggestionMessage ||
+      `${pendingCard.name} looks like a good spot for us. Worth checking out?`;
+    return (
+      <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] px-4 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <CalendarDays size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Send this?</span>
+          </div>
+          <button
+            onClick={() => setPanel('cards')}
+            className="p-0.5 hover:bg-black/5 rounded-full transition-colors"
+            aria-label="Go back to date ideas"
+          >
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="bg-white rounded-xl px-3.5 py-3 mb-3 border border-[#E8E4DE]">
+          <p className="text-xs text-[#2E2A36] leading-relaxed">{msg}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPanel('cards')}
+            className="flex-1 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors"
+          >
+            ← Back
+          </button>
+          <button
+            onClick={handleConfirmSend}
+            className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity"
+          >
+            Send
+          </button>
+        </div>
       </div>
     );
   }
