@@ -13,37 +13,37 @@ interface DateCard {
   mapsUrl: string;
   whyItFits: string;
   suggestionMessage?: string;
-  areaKey?: 'you' | 'them' | 'midpoint';
+  areaKey?: 'you' | 'them' | 'middle';
+}
+
+interface AreaInfo {
+  key: 'you' | 'them' | 'middle';
+  tagline: string;
 }
 
 interface Props {
   matchId: string;
-  /** Total messages in the conversation — button only appears when ≥5. */
   messageCount: number;
-  /** Whether the conversation is a confirmed mutual match. */
   mutualMatch: boolean;
-  /** Whether feature_date_agent_enabled flag is on. */
   flagEnabled: boolean;
-  /** Called when the user taps a venue card — receives a ready-to-send message draft. */
   onSelectVenue?: (message: string) => void;
 }
 
 type Panel = 'trigger' | 'loading' | 'cards' | 'dismissed';
 type Budget = 'any' | '$' | '$$' | '$$$';
 
-const BUDGET_LABELS: Record<Budget, string> = {
-  any: 'Any',
-  '$': '$',
-  '$$': '$$',
-  '$$$': '$$$',
+const AREA_LABELS: Record<string, string> = {
+  you: 'Near you',
+  them: 'Near them',
+  middle: 'Meet in the middle',
 };
 
 export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled, onSelectVenue }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [cards, setCards] = useState<DateCard[]>([]);
-  const [hasLocationToggle, setHasLocationToggle] = useState(false);
+  const [areas, setAreas] = useState<AreaInfo[]>([]);
   const [budget, setBudget] = useState<Budget>('any');
-  const [selectedArea, setSelectedArea] = useState<'you' | 'them'>('you');
+  const [selectedArea, setSelectedArea] = useState<'you' | 'them' | 'middle'>('you');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
@@ -69,9 +69,9 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
         const data = await res.json();
         if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
           setCards(data.suggestions);
-          const toggle = data.hasLocationToggle ?? data.suggestions.some((s: DateCard) => s.areaKey === 'them');
-          setHasLocationToggle(toggle);
-          setSelectedArea('you');
+          const loadedAreas: AreaInfo[] = data.areas ?? [];
+          setAreas(loadedAreas);
+          setSelectedArea(loadedAreas[0]?.key ?? 'you');
           setSelectedCategory('All');
           setPanel('cards');
           return;
@@ -109,7 +109,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
                     : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
                 }`}
               >
-                {BUDGET_LABELS[level]}
+                {level === 'any' ? 'Any' : level}
               </button>
             ))}
           </div>
@@ -134,7 +134,8 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   }
 
   // panel === 'cards'
-  const areaCards = hasLocationToggle
+  const showLocationSection = areas.length > 1;
+  const areaCards = showLocationSection
     ? cards.filter(c => (c.areaKey ?? 'you') === selectedArea)
     : cards;
 
@@ -181,26 +182,39 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       </div>
       <p className="px-4 pb-2 text-[10px] text-[#8A8690]">Tap a spot to draft a message</p>
 
-      {/* Location toggle — only shown when users are in different cities */}
-      {hasLocationToggle && (
-        <div className="flex items-center gap-1.5 px-4 pb-2">
-          {(['you', 'them'] as const).map(area => (
-            <button
-              key={area}
-              onClick={() => { setSelectedArea(area); setSelectedCategory('All'); }}
-              className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${
-                selectedArea === area
-                  ? 'bg-[#0D0D0F] text-[#F5F2EE] border-[#0D0D0F]'
-                  : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#0D0D0F]'
-              }`}
-            >
-              {area === 'you' ? 'Near you' : 'Near them'}
-            </button>
-          ))}
+      {/* Location radio list — only when users are in different cities */}
+      {showLocationSection && (
+        <div className="px-4 pb-3 space-y-1.5">
+          {areas.map(area => {
+            const isSelected = selectedArea === area.key;
+            return (
+              <button
+                key={area.key}
+                onClick={() => { setSelectedArea(area.key); setSelectedCategory('All'); }}
+                className={`w-full text-left flex items-start gap-2.5 px-3 py-2.5 rounded-xl border transition-colors ${
+                  isSelected
+                    ? 'border-[#7B5EA7] bg-[#7B5EA7]/[0.06]'
+                    : 'border-[#E8E4DE] bg-white hover:border-[#7B5EA7]/40'
+                }`}
+              >
+                <div className={`mt-0.5 w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  isSelected ? 'border-[#7B5EA7]' : 'border-[#C0BAC8]'
+                }`}>
+                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#7B5EA7]" />}
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-xs font-semibold leading-tight ${isSelected ? 'text-[#1E1C22]' : 'text-[#8A8690]'}`}>
+                    {AREA_LABELS[area.key]}
+                  </p>
+                  <p className="text-[10px] text-[#8A8690] leading-snug mt-0.5">{area.tagline}</p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       )}
 
-      {/* Category chips — only shown when there are multiple categories */}
+      {/* Category chips */}
       {uniqueCategories.length > 1 && (
         <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
           <button
@@ -238,7 +252,6 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
             className="w-full text-left bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE] active:bg-gray-50 transition-colors"
             aria-label={`Draft a message about ${card.name}`}
           >
-            {/* Venue name + meta + Maps link */}
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[#1E1C22] leading-tight">{card.name}</p>
@@ -272,7 +285,6 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
               )}
             </div>
 
-            {/* Address */}
             {card.address && (
               <div className="flex items-start gap-1 mb-1.5">
                 <MapPin size={10} className="text-[#8A8690] mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -280,7 +292,6 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
               </div>
             )}
 
-            {/* Why it fits */}
             {card.whyItFits && (
               <p className="text-xs text-[#2E2A36] leading-relaxed">{card.whyItFits}</p>
             )}
