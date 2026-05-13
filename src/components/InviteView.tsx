@@ -190,7 +190,7 @@ export function InviteView({ onBack }: InviteViewProps) {
   const handleShare = async () => {
     const shareData = {
       title: "You've been referred to Parallel",
-      text: "You've been referred to Parallel — Real compatibility. Real matches.",
+      text: "You've been referred to Parallel — Real compatibility. Real matches. Click here to join the match pool.",
       url: referralLink,
     };
     try {
