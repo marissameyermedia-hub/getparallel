@@ -1029,6 +1029,7 @@ export function MessagingView({
         {/* Date planner — pick times + venue + calendar in one flow, flag-gated */}
         <DatePlannerCard
           matchId={matchId}
+          matchName={matchName}
           messageCount={messages.length}
           mutualMatch={!!mutualMatch}
           flagEnabled={!!featureDateAgent}

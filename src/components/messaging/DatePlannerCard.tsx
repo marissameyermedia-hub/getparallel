@@ -26,16 +26,12 @@ interface VenueCard {
   photoUrl?: string;
 }
 
-interface AreaInfo {
-  key: 'you' | 'them' | 'middle';
-  tagline: string;
-}
-
-type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'calendar' | 'dismissed';
+type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'dismissed';
 type Budget = 'any' | '$' | '$$' | '$$$';
 
 interface Props {
   matchId: string;
+  matchName: string;
   messageCount: number;
   mutualMatch: boolean;
   flagEnabled: boolean;
@@ -49,6 +45,11 @@ const PERIOD_LABELS: Record<typeof PERIODS[number], string> = {
   morning: 'Morning',
   afternoon: 'Afternoon',
   evening: 'Evening',
+};
+const PERIOD_SHORT: Record<typeof PERIODS[number], string> = {
+  morning: 'Morn',
+  afternoon: 'Aft',
+  evening: 'Eve',
 };
 const AREA_LABELS: Record<string, string> = {
   you: 'Near you',
@@ -70,8 +71,8 @@ function getUpcomingDays(count = 7) {
   });
 }
 
-function slotKey(dayLabel: string, period: string) {
-  return `${dayLabel}::${period}`;
+function getInitials(name: string): string {
+  return name.trim().split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('').slice(0, 2);
 }
 
 function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
@@ -101,8 +102,9 @@ function toGcalDate(d: Date) {
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
-function openCalendar(venue: VenueCard, slot: TimeSlot) {
+function openCalendar(venue: VenueCard, slot: TimeSlot, initials: string) {
   const { start, end } = slotToRange(slot);
+  const title = initials ? `Date with ${initials} at ${venue.name}` : `Date at ${venue.name}`;
   const isApple = /iphone|ipad|macintosh/i.test(navigator.userAgent);
   if (isApple) {
     const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
@@ -110,7 +112,7 @@ function openCalendar(venue: VenueCard, slot: TimeSlot) {
       'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Parallel//EN',
       'BEGIN:VEVENT',
       `DTSTART:${fmt(start)}`, `DTEND:${fmt(end)}`,
-      `SUMMARY:Date at ${venue.name}`,
+      `SUMMARY:${title}`,
       `LOCATION:${venue.address || venue.name}`,
       venue.mapsUrl ? `DESCRIPTION:${venue.mapsUrl}` : '',
       'END:VEVENT', 'END:VCALENDAR',
@@ -123,7 +125,7 @@ function openCalendar(venue: VenueCard, slot: TimeSlot) {
   } else {
     const p = new URLSearchParams({
       action: 'TEMPLATE',
-      text: `Date at ${venue.name}`,
+      text: title,
       dates: `${toGcalDate(start)}/${toGcalDate(end)}`,
       location: venue.address || venue.name,
       details: venue.mapsUrl || '',
@@ -134,41 +136,62 @@ function openCalendar(venue: VenueCard, slot: TimeSlot) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DatePlannerCard({ matchId, messageCount, mutualMatch, flagEnabled, onSelectMessage }: Props) {
+export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, onSelectMessage }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [budget, setBudget] = useState<Budget>('any');
-  const [activeDay, setActiveDay] = useState<ReturnType<typeof getUpcomingDays>[0] | null>(null);
+  const [focusedDayLabel, setFocusedDayLabel] = useState<string | null>(null);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [venues, setVenues] = useState<VenueCard[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<VenueCard | null>(null);
   const [message, setMessage] = useState('');
-  const [calendarSlot, setCalendarSlot] = useState<TimeSlot | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
   if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
 
   const days = getUpcomingDays(7);
+  const initials = getInitials(matchName);
+  const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
 
-  // ── Slot helpers ─────────────────────────────────────────────────────────────
+  // ── Day / period selection ────────────────────────────────────────────────────
 
-  const hasSlot = (dayLabel: string, period: string) =>
-    slots.some(s => slotKey(s.label.split(' ')[0] === 'Today' ? 'Today'
-      : s.label.split(' ')[0] === 'Tomorrow' ? 'Tomorrow'
-      : s.label.split(' ')[0], s.period) === slotKey(dayLabel, period));
-
-  const toggleSlot = (day: ReturnType<typeof getUpcomingDays>[0], period: typeof PERIODS[number]) => {
-    const lbl = `${day.label} ${period}`;
-    const shortLbl = `${day.shortLabel} ${PERIOD_LABELS[period].toLowerCase()}`;
-    const exists = slots.some(s => s.label === lbl);
-    if (exists) {
-      setSlots(prev => prev.filter(s => s.label !== lbl));
-    } else if (slots.length < 2) {
-      setSlots(prev => [...prev, { date: day.date, period, label: lbl, shortLabel: shortLbl }]);
+  const handleDayTap = (day: ReturnType<typeof getUpcomingDays>[0]) => {
+    const alreadySelected = slots.some(s => s.date.toDateString() === day.date.toDateString());
+    if (alreadySelected) {
+      // Already selected: focus it so the period row appears for editing
+      setFocusedDayLabel(day.label);
+    } else {
+      const newSlot: TimeSlot = {
+        date: day.date,
+        period: 'evening',
+        label: `${day.label} evening`,
+        shortLabel: `${day.shortLabel} evening`,
+      };
+      setSlots(prev => {
+        // Auto-replace oldest when 2 are already selected
+        if (prev.length >= 2) return [prev[1], newSlot];
+        return [...prev, newSlot];
+      });
+      setFocusedDayLabel(day.label);
     }
   };
 
-  const isSlotSelected = (day: ReturnType<typeof getUpcomingDays>[0], period: typeof PERIODS[number]) =>
-    slots.some(s => s.label === `${day.label} ${period}`);
+  const handlePeriodChange = (period: typeof PERIODS[number]) => {
+    if (!focusedDayLabel) return;
+    const focusedDay = days.find(d => d.label === focusedDayLabel);
+    if (!focusedDay) return;
+    setSlots(prev => prev.map(s =>
+      s.date.toDateString() === focusedDay.date.toDateString()
+        ? { ...s, period, label: `${focusedDay.label} ${period}`, shortLabel: `${focusedDay.shortLabel} ${period}` }
+        : s
+    ));
+  };
+
+  const focusedSlot = focusedDayLabel
+    ? slots.find(s => {
+        const fd = days.find(d => d.label === focusedDayLabel);
+        return fd && s.date.toDateString() === fd.date.toDateString();
+      })
+    : null;
 
   // ── Fetch venues ─────────────────────────────────────────────────────────────
 
@@ -192,7 +215,6 @@ export function DatePlannerCard({ matchId, messageCount, mutualMatch, flagEnable
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
-          // Show top 3 across all areas (deduplicated)
           const seen = new Set<string>();
           const top: VenueCard[] = [];
           for (const v of data.suggestions) {
@@ -220,8 +242,7 @@ export function DatePlannerCard({ matchId, messageCount, mutualMatch, flagEnable
   const handleSend = () => {
     if (!message.trim() || !selectedVenue) return;
     onSelectMessage(message);
-    setCalendarSlot(slots[0] ?? null);
-    setPanel('calendar');
+    setPanel('waiting');
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -271,75 +292,62 @@ export function DatePlannerCard({ matchId, messageCount, mutualMatch, flagEnable
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <CalendarClock size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">When are you free? <span className="text-[#C0BAC8] font-normal">pick up to 2</span></span>
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">
+              When are you free? <span className="text-[#C0BAC8] font-normal">pick up to 2</span>
+            </span>
           </div>
-          <button onClick={() => { setSlots([]); setActiveDay(null); setPanel('trigger'); }} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
+          <button
+            onClick={() => { setSlots([]); setFocusedDayLabel(null); setPanel('trigger'); }}
+            className="p-0.5 hover:bg-black/5 rounded-full transition-colors"
+            aria-label="Back"
+          >
             <X size={13} className="text-[#8A8690]" aria-hidden="true" />
           </button>
         </div>
 
-        {/* Day chips */}
+        {/* Day chips — tap to select (Evening default); tap selected to edit period */}
         <div className="flex gap-1.5 flex-wrap mb-3">
           {days.map(day => {
-            const hasSel = slots.some(s => s.date.toDateString() === day.date.toDateString());
-            const isActive = activeDay?.label === day.label;
+            const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
+            const isSelected = !!slot;
             return (
               <button
                 key={day.label}
-                onClick={() => setActiveDay(isActive ? null : day)}
+                onClick={() => handleDayTap(day)}
                 className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
-                  isActive ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
-                  : hasSel ? 'border-[#7B5EA7] text-[#7B5EA7]'
-                  : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
+                  isSelected
+                    ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
+                    : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
                 }`}
               >
-                {day.shortLabel}
+                {isSelected ? `${day.shortLabel} · ${PERIOD_SHORT[slot.period]}` : day.shortLabel}
               </button>
             );
           })}
         </div>
 
-        {/* Period buttons */}
-        {activeDay && (
+        {/* Period row — appears when a selected day chip is tapped */}
+        {focusedSlot && (
           <div className="flex gap-1.5 mb-3">
-            {PERIODS.map(period => {
-              const sel = isSlotSelected(activeDay, period);
-              const disabled = !sel && slots.length >= 2;
-              return (
-                <button
-                  key={period}
-                  onClick={() => toggleSlot(activeDay, period)}
-                  disabled={disabled}
-                  className={`flex-1 text-[11px] font-medium py-1.5 rounded-full border transition-colors ${
-                    sel ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
-                    : disabled ? 'text-[#C0BAC8] border-[#E8E4DE] cursor-not-allowed'
+            {PERIODS.map(period => (
+              <button
+                key={period}
+                onClick={() => handlePeriodChange(period)}
+                className={`flex-1 text-[11px] font-medium py-1.5 rounded-full border transition-colors ${
+                  focusedSlot.period === period
+                    ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
                     : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
-                  }`}
-                >
-                  {PERIOD_LABELS[period]}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Selected slot chips */}
-        {slots.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {slots.map(slot => (
-              <span key={slot.label} className="flex items-center gap-1 text-[11px] bg-[#7B5EA7]/[0.08] text-[#7B5EA7] px-2 py-0.5 rounded-full">
-                {slot.shortLabel}
-                <button onClick={() => setSlots(prev => prev.filter(s => s.label !== slot.label))} aria-label={`Remove ${slot.label}`}>
-                  <X size={9} aria-hidden="true" />
-                </button>
-              </span>
+                }`}
+              >
+                {PERIOD_LABELS[period]}
+              </button>
             ))}
           </div>
         )}
 
         <div className="flex gap-2">
           <button
-            onClick={() => { setSlots([]); setActiveDay(null); setPanel('trigger'); }}
+            onClick={() => { setSlots([]); setFocusedDayLabel(null); setPanel('trigger'); }}
             className="flex-1 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors"
           >
             ← Back
@@ -390,7 +398,6 @@ export function DatePlannerCard({ matchId, messageCount, mutualMatch, flagEnable
               className="w-full text-left flex bg-white rounded-xl border border-[#E8E4DE] overflow-hidden active:bg-gray-50 transition-colors"
               aria-label={`Select ${venue.name}`}
             >
-              {/* Square photo thumbnail */}
               {venue.photoUrl && (
                 <div className="w-16 flex-shrink-0 bg-gray-100 self-stretch">
                   <img
@@ -482,41 +489,31 @@ export function DatePlannerCard({ matchId, messageCount, mutualMatch, flagEnable
     );
   }
 
-  if (panel === 'calendar' && selectedVenue) {
+  if (panel === 'waiting' && selectedVenue) {
     return (
       <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Add to calendar</span>
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Proposal sent ✓</span>
           </div>
           <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Dismiss">
             <X size={13} className="text-[#8A8690]" aria-hidden="true" />
           </button>
         </div>
         <p className="text-[11px] text-[#8A8690] mb-2.5">
-          {slots.length > 1 ? 'Tap whichever time you agreed on.' : selectedVenue.name}
+          Once {matchFirstName} agrees on a time, tap it to add to your calendar.
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {slots.length > 1
-            ? slots.map(slot => (
-                <button
-                  key={slot.label}
-                  onClick={() => { openCalendar(selectedVenue, slot); setPanel('dismissed'); }}
-                  className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#E8E4DE] text-[#1E1C22] bg-white hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
-                >
-                  {slot.shortLabel}
-                </button>
-              ))
-            : calendarSlot && (
-                <button
-                  onClick={() => { openCalendar(selectedVenue, calendarSlot); setPanel('dismissed'); }}
-                  className="text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity"
-                >
-                  Add event
-                </button>
-              )
-          }
+          {slots.map(slot => (
+            <button
+              key={slot.label}
+              onClick={() => { openCalendar(selectedVenue, slot, initials); setPanel('dismissed'); }}
+              className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#E8E4DE] text-[#1E1C22] bg-white hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
+            >
+              {slot.shortLabel}
+            </button>
+          ))}
         </div>
       </div>
     );
