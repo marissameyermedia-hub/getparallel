@@ -159,20 +159,22 @@ function getInitials(name: string | null | undefined) {
 
 function renderWithLinks(text: string, isMe: boolean) {
   const parts = text.split(/(https?:\/\/[^\s]+)/g);
-  return parts.map((part, i) =>
-    /^https?:\/\//.test(part) ? (
+  return parts.map((part, i) => {
+    if (!/^https?:\/\//.test(part)) return part;
+    const isMaps = part.includes('maps.google.com') || part.includes('goo.gl/maps');
+    return (
       <a
         key={i}
         href={part}
         target="_blank"
         rel="noopener noreferrer"
-        className={`underline break-all ${isMe ? 'text-parallel-cream/80' : 'text-blue-600'}`}
+        className={`underline font-medium ${isMe ? 'text-parallel-cream/90' : 'text-blue-600'}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {part}
+        {isMaps ? 'View on Maps →' : part}
       </a>
-    ) : part
-  );
+    );
+  });
 }
 
 export function MessagingView({

@@ -13,6 +13,7 @@ interface DateCard {
   mapsUrl: string;
   whyItFits: string;
   suggestionMessage?: string;
+  areaKey?: 'you' | 'them' | 'midpoint';
 }
 
 interface Props {
@@ -28,10 +29,23 @@ interface Props {
 }
 
 type Panel = 'trigger' | 'loading' | 'cards' | 'dismissed';
+type Budget = 'any' | '$' | '$$' | '$$$';
+
+const BUDGET_LABELS: Record<Budget, string> = {
+  any: 'Any',
+  '$': '$',
+  '$$': '$$',
+  '$$$': '$$$',
+};
 
 export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled, onSelectVenue }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [cards, setCards] = useState<DateCard[]>([]);
+  const [hasLocationToggle, setHasLocationToggle] = useState(false);
+  const [budget, setBudget] = useState<Budget>('any');
+  const [selectedArea, setSelectedArea] = useState<'you' | 'them'>('you');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
   const handleGenerate = async () => {
@@ -40,8 +54,11 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       const token = await getAccessToken();
       if (!token) { setPanel('trigger'); return; }
 
+      const params = new URLSearchParams({ matchId });
+      if (budget !== 'any') params.set('maxPrice', budget);
+
       const res = await fetch(
-        `${DATE_AGENT_FUNCTION_URL}/generate?matchId=${encodeURIComponent(matchId)}`,
+        `${DATE_AGENT_FUNCTION_URL}/generate?${params}`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey },
@@ -52,6 +69,10 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
         const data = await res.json();
         if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
           setCards(data.suggestions);
+          const toggle = data.hasLocationToggle ?? data.suggestions.some((s: DateCard) => s.areaKey === 'them');
+          setHasLocationToggle(toggle);
+          setSelectedArea('you');
+          setSelectedCategory('All');
           setPanel('cards');
           return;
         }
@@ -64,24 +85,41 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
   const handleSelectCard = (card: DateCard) => {
     const msg = card.suggestionMessage ||
-      `${card.name} looks like a good spot for us${card.address ? ' on ' + card.address.split(',')[0] : ''}. Worth checking out?`;
+      `${card.name} looks like a good spot for us. Worth checking out?`;
     onSelectVenue?.(msg);
     setPanel('dismissed');
   };
 
   if (panel === 'trigger') {
     return (
-      <div className="mb-2 flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE]">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] px-4 py-3">
+        <div className="flex items-center gap-2 mb-2.5">
           <CalendarDays size={14} className="text-[#7B5EA7] flex-shrink-0" aria-hidden="true" />
           <p className="text-xs text-[#1E1C22] leading-snug">Want date ideas near you both?</p>
         </div>
-        <button
-          onClick={handleGenerate}
-          className="flex-shrink-0 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity"
-        >
-          Get ideas
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5">
+            {(['any', '$', '$$', '$$$'] as Budget[]).map(level => (
+              <button
+                key={level}
+                onClick={() => setBudget(level)}
+                className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                  budget === level
+                    ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
+                    : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
+                }`}
+              >
+                {BUDGET_LABELS[level]}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={handleGenerate}
+            className="flex-shrink-0 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity"
+          >
+            Get ideas
+          </button>
+        </div>
       </div>
     );
   }
@@ -96,6 +134,35 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   }
 
   // panel === 'cards'
+  const areaCards = hasLocationToggle
+    ? cards.filter(c => (c.areaKey ?? 'you') === selectedArea)
+    : cards;
+
+  const uniqueCategories = [...new Set(areaCards.map(c => c.category))];
+
+  const getDisplayCards = (): DateCard[] => {
+    const pool = selectedCategory === 'All'
+      ? areaCards
+      : areaCards.filter(c => c.category === selectedCategory);
+
+    if (selectedCategory === 'All') {
+      // Best one per category, up to 3
+      const seen = new Set<string>();
+      const result: DateCard[] = [];
+      for (const card of pool) {
+        if (result.length >= 3) break;
+        if (!seen.has(card.category)) {
+          seen.add(card.category);
+          result.push(card);
+        }
+      }
+      return result;
+    }
+    return pool.slice(0, 3);
+  };
+
+  const displayCards = getDisplayCards();
+
   return (
     <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] overflow-hidden">
       {/* Header */}
@@ -114,9 +181,57 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       </div>
       <p className="px-4 pb-2 text-[10px] text-[#8A8690]">Tap a spot to draft a message</p>
 
+      {/* Location toggle — only shown when users are in different cities */}
+      {hasLocationToggle && (
+        <div className="flex items-center gap-1.5 px-4 pb-2">
+          {(['you', 'them'] as const).map(area => (
+            <button
+              key={area}
+              onClick={() => { setSelectedArea(area); setSelectedCategory('All'); }}
+              className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${
+                selectedArea === area
+                  ? 'bg-[#0D0D0F] text-[#F5F2EE] border-[#0D0D0F]'
+                  : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#0D0D0F]'
+              }`}
+            >
+              {area === 'you' ? 'Near you' : 'Near them'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Category chips — only shown when there are multiple categories */}
+      {uniqueCategories.length > 1 && (
+        <div className="flex items-center gap-1.5 px-4 pb-2 flex-wrap">
+          <button
+            onClick={() => setSelectedCategory('All')}
+            className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${
+              selectedCategory === 'All'
+                ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
+                : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
+            }`}
+          >
+            All
+          </button>
+          {uniqueCategories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${
+                selectedCategory === cat
+                  ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
+                  : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Cards */}
       <div className="px-3 pb-3 space-y-2">
-        {cards.map((card, i) => (
+        {displayCards.map((card, i) => (
           <button
             key={i}
             onClick={() => handleSelectCard(card)}
@@ -142,7 +257,6 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
                   )}
                 </div>
               </div>
-              {/* Maps link — stops propagation so it doesn't trigger card select */}
               {card.mapsUrl && (
                 <a
                   href={card.mapsUrl}
