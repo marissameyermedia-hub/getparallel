@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, Loader, X, Star, MapPin, ExternalLink } from 'lucide-react';
+import { CalendarDays, Loader, X, Star, MapPin, ExternalLink, RefreshCw } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -14,6 +14,8 @@ interface DateCard {
   whyItFits: string;
   suggestionMessage?: string;
   areaKey?: 'you' | 'them' | 'middle';
+  photoUrl?: string;
+  atmosphereTags?: string[];
 }
 
 interface AreaInfo {
@@ -48,7 +50,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (force = false) => {
     setPanel('loading');
     try {
       const token = await getAccessToken();
@@ -56,6 +58,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
       const params = new URLSearchParams({ matchId });
       if (budget !== 'any') params.set('maxPrice', budget);
+      if (force) params.set('force', 'true');
 
       const res = await fetch(
         `${DATE_AGENT_FUNCTION_URL}/generate?${params}`,
@@ -114,7 +117,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
             ))}
           </div>
           <button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate()}
             className="flex-shrink-0 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity"
           >
             Get ideas
@@ -244,59 +247,101 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       )}
 
       {/* Cards */}
-      <div className="px-3 pb-3 space-y-2">
+      <div className="px-3 pb-2 space-y-2">
         {displayCards.map((card, i) => (
           <button
             key={i}
             onClick={() => handleSelectCard(card)}
-            className="w-full text-left bg-white rounded-xl px-3.5 py-3 border border-[#E8E4DE] active:bg-gray-50 transition-colors"
+            className="w-full text-left bg-white rounded-xl overflow-hidden border border-[#E8E4DE] active:bg-gray-50 transition-colors"
             aria-label={`Draft a message about ${card.name}`}
           >
-            <div className="flex items-start justify-between gap-2 mb-1.5">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#1E1C22] leading-tight">{card.name}</p>
-                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                  <span className="text-[11px] text-[#8A8690]">{card.category}</span>
-                  <span className="text-[#E8E4DE]">·</span>
-                  <span className="text-[11px] text-[#8A8690]">{card.priceLevel}</span>
-                  {card.rating !== null && (
-                    <>
-                      <span className="text-[#E8E4DE]">·</span>
-                      <span className="flex items-center gap-0.5 text-[11px] text-[#8A8690]">
-                        <Star size={9} className="fill-[#8A8690] text-[#8A8690]" aria-hidden="true" />
-                        {card.rating}
-                      </span>
-                    </>
-                  )}
-                </div>
+            {/* Photo */}
+            {card.photoUrl && (
+              <div className="w-full h-28 bg-[#E8E4DE] overflow-hidden">
+                <img
+                  src={card.photoUrl}
+                  alt={card.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const el = e.currentTarget.parentElement;
+                    if (el) el.style.display = 'none';
+                  }}
+                />
               </div>
-              {card.mapsUrl && (
-                <a
-                  href={card.mapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-shrink-0 flex items-center gap-1 text-[11px] font-medium text-[#7B5EA7] hover:opacity-70 transition-opacity mt-0.5"
-                  aria-label={`Open ${card.name} in Maps`}
-                >
-                  <ExternalLink size={11} aria-hidden="true" />
-                  Maps
-                </a>
+            )}
+
+            <div className="px-3.5 py-3">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[#1E1C22] leading-tight">{card.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span className="text-[11px] text-[#8A8690]">{card.category}</span>
+                    <span className="text-[#E8E4DE]">·</span>
+                    <span className="text-[11px] text-[#8A8690]">{card.priceLevel}</span>
+                    {card.rating !== null && (
+                      <>
+                        <span className="text-[#E8E4DE]">·</span>
+                        <span className="flex items-center gap-0.5 text-[11px] text-[#8A8690]">
+                          <Star size={9} className="fill-[#8A8690] text-[#8A8690]" aria-hidden="true" />
+                          {card.rating}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                {card.mapsUrl && (
+                  <a
+                    href={card.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-shrink-0 flex items-center gap-1 text-[11px] font-medium text-[#7B5EA7] hover:opacity-70 transition-opacity mt-0.5"
+                    aria-label={`Open ${card.name} in Maps`}
+                  >
+                    <ExternalLink size={11} aria-hidden="true" />
+                    Maps
+                  </a>
+                )}
+              </div>
+
+              {card.address && (
+                <div className="flex items-start gap-1 mb-1.5">
+                  <MapPin size={10} className="text-[#8A8690] mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  <p className="text-[11px] text-[#8A8690] leading-snug line-clamp-1">{card.address}</p>
+                </div>
+              )}
+
+              {/* Atmosphere tags */}
+              {card.atmosphereTags && card.atmosphereTags.length > 0 && (
+                <div className="flex items-center gap-1 mb-1.5 flex-wrap">
+                  {card.atmosphereTags.map((tag, ti) => (
+                    <span
+                      key={ti}
+                      className="text-[10px] text-[#7B5EA7] bg-[#7B5EA7]/[0.08] px-2 py-0.5 rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {card.whyItFits && (
+                <p className="text-xs text-[#2E2A36] leading-relaxed">{card.whyItFits}</p>
               )}
             </div>
-
-            {card.address && (
-              <div className="flex items-start gap-1 mb-1.5">
-                <MapPin size={10} className="text-[#8A8690] mt-0.5 flex-shrink-0" aria-hidden="true" />
-                <p className="text-[11px] text-[#8A8690] leading-snug line-clamp-1">{card.address}</p>
-              </div>
-            )}
-
-            {card.whyItFits && (
-              <p className="text-xs text-[#2E2A36] leading-relaxed">{card.whyItFits}</p>
-            )}
           </button>
         ))}
+      </div>
+
+      {/* Refresh */}
+      <div className="px-4 pb-3 pt-1 flex justify-center">
+        <button
+          onClick={() => handleGenerate(true)}
+          className="flex items-center gap-1.5 text-[11px] text-[#8A8690] hover:text-[#7B5EA7] transition-colors"
+        >
+          <RefreshCw size={11} aria-hidden="true" />
+          Try different spots
+        </button>
       </div>
     </div>
   );
