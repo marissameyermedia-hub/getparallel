@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { CalendarDays, Loader, X, Star, MapPin, ExternalLink, RefreshCw } from 'lucide-react';
+import { CalendarDays, Loader, X, Star, MapPin, ExternalLink, RefreshCw, CalendarPlus } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
+import type { TimeSlot } from './AvailabilityPicker';
 
 interface DateCard {
   name: string;
@@ -29,10 +30,99 @@ interface Props {
   mutualMatch: boolean;
   flagEnabled: boolean;
   onSelectVenue?: (message: string) => void;
+  agreedSlot?: TimeSlot | null;
 }
 
 type Panel = 'trigger' | 'loading' | 'cards' | 'confirm' | 'dismissed';
 type Budget = 'any' | '$' | '$$' | '$$$';
+
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+
+function slotToDateRange(slot: TimeSlot): { start: Date; end: Date } {
+  const d = new Date(slot.date);
+  const hours = { morning: 10, afternoon: 14, evening: 19 };
+  const duration = { morning: 2, afternoon: 2, evening: 3 };
+  d.setHours(hours[slot.period], 0, 0, 0);
+  const end = new Date(d);
+  end.setHours(d.getHours() + duration[slot.period]);
+  return { start: d, end };
+}
+
+function toGcalDate(d: Date) {
+  return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function buildGoogleCalendarUrl(venue: DateCard, slot: TimeSlot): string {
+  const { start, end } = slotToDateRange(slot);
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: `Date at ${venue.name}`,
+    dates: `${toGcalDate(start)}/${toGcalDate(end)}`,
+    location: venue.address || venue.name,
+    details: venue.mapsUrl ? `View on Maps: ${venue.mapsUrl}` : '',
+  });
+  return `https://calendar.google.com/calendar/render?${p}`;
+}
+
+function buildIcsBlob(venue: DateCard, slot: TimeSlot): string {
+  const { start, end } = slotToDateRange(slot);
+  const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  return [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Parallel//EN',
+    'BEGIN:VEVENT',
+    `DTSTART:${fmt(start)}`,
+    `DTEND:${fmt(end)}`,
+    `SUMMARY:Date at ${venue.name}`,
+    `LOCATION:${venue.address || venue.name}`,
+    venue.mapsUrl ? `DESCRIPTION:${venue.mapsUrl}` : '',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].filter(Boolean).join('\r\n');
+}
+
+function CalendarButton({ venue, slot, onDismiss }: { venue: DateCard; slot: TimeSlot; onDismiss: () => void }) {
+  const isApple = /iphone|ipad|macintosh/i.test(navigator.userAgent);
+
+  const handleAdd = () => {
+    if (isApple) {
+      const blob = new Blob([buildIcsBlob(venue, slot)], { type: 'text/calendar' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'date.ics';
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      window.open(buildGoogleCalendarUrl(venue, slot), '_blank', 'noopener');
+    }
+    onDismiss();
+  };
+
+  return (
+    <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+          <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Add to your calendar</span>
+        </div>
+        <button onClick={onDismiss} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Dismiss">
+          <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+        </button>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-[#1E1C22] truncate">{venue.name}</p>
+          <p className="text-[11px] text-[#8A8690]">{slot.label}</p>
+        </div>
+        <button
+          onClick={handleAdd}
+          className="flex-shrink-0 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity"
+        >
+          Add event
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const AREA_LABELS: Record<string, string> = {
   you: 'Near you',
@@ -40,7 +130,7 @@ const AREA_LABELS: Record<string, string> = {
   middle: 'Meet in the middle',
 };
 
-export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled, onSelectVenue }: Props) {
+export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEnabled, onSelectVenue, agreedSlot }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [cards, setCards] = useState<DateCard[]>([]);
   const [areas, setAreas] = useState<AreaInfo[]>([]);
@@ -50,8 +140,16 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   const [refreshCount, setRefreshCount] = useState(0);
   const [pendingCard, setPendingCard] = useState<DateCard | null>(null);
   const [pendingMessage, setPendingMessage] = useState('');
+  const [sentCard, setSentCard] = useState<DateCard | null>(null);
 
-  if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
+  if (!flagEnabled || !mutualMatch || messageCount < 5) return null;
+
+  if (panel === 'dismissed') {
+    if (!sentCard || !agreedSlot) return null;
+    return (
+      <CalendarButton venue={sentCard} slot={agreedSlot} onDismiss={() => setSentCard(null)} />
+    );
+  }
 
   const handleGenerate = async (force = false) => {
     const prevArea = selectedArea;
@@ -66,6 +164,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       if (budget !== 'any') params.set('maxPrice', budget);
       if (force) params.set('force', 'true');
       if (skip > 0) params.set('skip', String(skip % 18));
+      if (agreedSlot?.period) params.set('timeOfDay', agreedSlot.period);
 
       const res = await fetch(
         `${DATE_AGENT_FUNCTION_URL}/generate?${params}`,
@@ -107,6 +206,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   const handleConfirmSend = () => {
     if (!pendingMessage.trim()) return;
     onSelectVenue?.(pendingMessage);
+    setSentCard(pendingCard);
     setPanel('dismissed');
   };
 
