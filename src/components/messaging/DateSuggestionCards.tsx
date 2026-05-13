@@ -112,7 +112,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
   if (panel === 'trigger') {
     return (
-      <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] px-4 py-3">
+      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
         <div className="flex items-center gap-2 mb-2.5">
           <CalendarDays size={14} className="text-[#7B5EA7] flex-shrink-0" aria-hidden="true" />
           <p className="text-xs text-[#1E1C22] leading-snug">Want date ideas near you both?</p>
@@ -146,7 +146,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
   if (panel === 'loading') {
     return (
-      <div className="mb-2 flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE]">
+      <div className="mb-2 flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50">
         <Loader size={13} className="text-[#7B5EA7] animate-spin flex-shrink-0" aria-hidden="true" />
         <span className="text-xs text-[#8A8690]">Finding spots near you both…</span>
       </div>
@@ -155,7 +155,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
 
   if (panel === 'confirm' && pendingCard) {
     return (
-      <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] px-4 py-3">
+      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1.5">
             <CalendarDays size={13} className="text-[#7B5EA7]" aria-hidden="true" />
@@ -231,7 +231,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   const displayCards = getDisplayCards();
 
   return (
-    <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] overflow-x-hidden overflow-y-auto max-h-[72vh]">
+    <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 overflow-x-hidden overflow-y-auto max-h-[72vh]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <div className="flex items-center gap-1.5">
