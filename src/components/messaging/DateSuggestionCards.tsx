@@ -87,8 +87,10 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   };
 
   const handleSelectCard = (card: DateCard) => {
-    const msg = card.suggestionMessage ||
+    const raw = card.suggestionMessage ||
       `${card.name} looks like a good spot for us. Worth checking out?`;
+    // Strip any trailing Maps URL — clean compose box, share location after she says yes
+    const msg = raw.replace(/\nhttps?:\/\/\S+/g, '').trim();
     onSelectVenue?.(msg);
     setPanel('dismissed');
   };
