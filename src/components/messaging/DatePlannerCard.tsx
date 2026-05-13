@@ -8,7 +8,7 @@ import { getAccessToken } from '../../utils/auth';
 
 interface TimeSlot {
   date: Date;
-  period: 'morning' | 'afternoon' | 'evening';
+  period: 'afternoon' | 'evening';
   label: string;       // "Saturday afternoon"
   shortLabel: string;  // "Sat afternoon"
 }
@@ -40,14 +40,12 @@ interface Props {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const PERIODS = ['morning', 'afternoon', 'evening'] as const;
+const PERIODS = ['afternoon', 'evening'] as const;
 const PERIOD_LABELS: Record<typeof PERIODS[number], string> = {
-  morning: 'Morning',
   afternoon: 'Afternoon',
   evening: 'Evening',
 };
 const PERIOD_SHORT: Record<typeof PERIODS[number], string> = {
-  morning: 'Morn',
   afternoon: 'Aft',
   evening: 'Eve',
 };
@@ -66,7 +64,7 @@ function getUpcomingDays(count = 7) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : full[d.getDay()];
-    const shortLabel = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : short[d.getDay()];
+    const shortLabel = i === 0 ? 'Today' : i === 1 ? 'Tmrw' : `${short[d.getDay()]} ${d.getDate()}`;
     return { date: d, label, shortLabel };
   });
 }
@@ -90,8 +88,8 @@ function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
 
 function slotToRange(slot: TimeSlot) {
   const d = new Date(slot.date);
-  const startHour = { morning: 10, afternoon: 14, evening: 19 }[slot.period];
-  const duration = { morning: 2, afternoon: 2, evening: 3 }[slot.period];
+  const startHour = { afternoon: 14, evening: 19, morning: 10 }[slot.period] ?? 19;
+  const duration = { afternoon: 2, evening: 3, morning: 2 }[slot.period] ?? 3;
   d.setHours(startHour, 0, 0, 0);
   const end = new Date(d);
   end.setHours(startHour + duration);
