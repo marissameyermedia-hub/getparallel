@@ -231,6 +231,7 @@ export function MessagingView({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const safetyMenuRef = useRef<HTMLDivElement>(null);
+  const initialScrollDone = useRef(false);
   const currentUserId = localStorage.getItem('parallel_user_id') || '';
   const lastActiveText = formatLastActive(lastActiveAt);
 
@@ -483,7 +484,14 @@ export function MessagingView({
   }, [messages, matchId, mutualMatch, isInitialLoading, featureFeedbackLoop]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!messagesEndRef.current || messages.length === 0) return;
+    if (!initialScrollDone.current) {
+      // Snap instantly on first load so the user lands at the newest message
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
+      initialScrollDone.current = true;
+    } else {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isTyping, viewportHeight]);
 
   useEffect(() => {
