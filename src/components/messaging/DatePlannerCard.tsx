@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarClock, X, ChevronRight, Loader, Star, RefreshCw, CalendarPlus } from 'lucide-react';
+import { CalendarClock, X, ChevronRight, Loader, Star, RefreshCw, CalendarPlus, Check } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -10,7 +10,7 @@ interface TimeSlot {
   date: Date;
   period: 'afternoon' | 'evening';
   label: string;       // "Saturday afternoon"
-  shortLabel: string;  // "Sat afternoon"
+  shortLabel: string;  // "Sat 16 afternoon"
 }
 
 interface VenueCard {
@@ -26,7 +26,7 @@ interface VenueCard {
   photoUrl?: string;
 }
 
-type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'dismissed';
+type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'confirmed' | 'dismissed';
 type Budget = 'any' | '$' | '$$' | '$$$';
 
 interface Props {
@@ -36,6 +36,7 @@ interface Props {
   mutualMatch: boolean;
   flagEnabled: boolean;
   onSelectMessage: (msg: string) => void;
+  onSendMessage: (msg: string) => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -88,8 +89,8 @@ function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
 
 function slotToRange(slot: TimeSlot) {
   const d = new Date(slot.date);
-  const startHour = { afternoon: 14, evening: 19, morning: 10 }[slot.period] ?? 19;
-  const duration = { afternoon: 2, evening: 3, morning: 2 }[slot.period] ?? 3;
+  const startHour = { afternoon: 14, evening: 19 }[slot.period];
+  const duration = { afternoon: 2, evening: 3 }[slot.period];
   d.setHours(startHour, 0, 0, 0);
   const end = new Date(d);
   end.setHours(startHour + duration);
@@ -134,14 +135,14 @@ function openCalendar(venue: VenueCard, slot: TimeSlot, initials: string) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, onSelectMessage }: Props) {
+export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, onSelectMessage, onSendMessage }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [budget, setBudget] = useState<Budget>('any');
-  const [focusedDayLabel, setFocusedDayLabel] = useState<string | null>(null);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [venues, setVenues] = useState<VenueCard[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<VenueCard | null>(null);
   const [message, setMessage] = useState('');
+  const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
   if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
@@ -150,13 +151,18 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const initials = getInitials(matchName);
   const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
 
-  // ── Day / period selection ────────────────────────────────────────────────────
+  // ── Day selection — tap to select (Evening default); tap again to cycle period ──
 
   const handleDayTap = (day: ReturnType<typeof getUpcomingDays>[0]) => {
-    const alreadySelected = slots.some(s => s.date.toDateString() === day.date.toDateString());
-    if (alreadySelected) {
-      // Already selected: focus it so the period row appears for editing
-      setFocusedDayLabel(day.label);
+    const existing = slots.find(s => s.date.toDateString() === day.date.toDateString());
+    if (existing) {
+      // Already selected: cycle Evening ↔ Afternoon
+      const nextPeriod: typeof PERIODS[number] = existing.period === 'evening' ? 'afternoon' : 'evening';
+      setSlots(prev => prev.map(s =>
+        s.date.toDateString() === day.date.toDateString()
+          ? { ...s, period: nextPeriod, label: `${day.label} ${nextPeriod}`, shortLabel: `${day.shortLabel} ${nextPeriod}` }
+          : s
+      ));
     } else {
       const newSlot: TimeSlot = {
         date: day.date,
@@ -169,27 +175,8 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         if (prev.length >= 2) return [prev[1], newSlot];
         return [...prev, newSlot];
       });
-      setFocusedDayLabel(day.label);
     }
   };
-
-  const handlePeriodChange = (period: typeof PERIODS[number]) => {
-    if (!focusedDayLabel) return;
-    const focusedDay = days.find(d => d.label === focusedDayLabel);
-    if (!focusedDay) return;
-    setSlots(prev => prev.map(s =>
-      s.date.toDateString() === focusedDay.date.toDateString()
-        ? { ...s, period, label: `${focusedDay.label} ${period}`, shortLabel: `${focusedDay.shortLabel} ${period}` }
-        : s
-    ));
-  };
-
-  const focusedSlot = focusedDayLabel
-    ? slots.find(s => {
-        const fd = days.find(d => d.label === focusedDayLabel);
-        return fd && s.date.toDateString() === fd.date.toDateString();
-      })
-    : null;
 
   // ── Fetch venues ─────────────────────────────────────────────────────────────
 
@@ -239,7 +226,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
 
   const handleSend = () => {
     if (!message.trim() || !selectedVenue) return;
-    onSelectMessage(message);
+    onSendMessage(message);
     setPanel('waiting');
   };
 
@@ -291,11 +278,11 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           <div className="flex items-center gap-1.5">
             <CalendarClock size={13} className="text-[#7B5EA7]" aria-hidden="true" />
             <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">
-              When are you free? <span className="text-[#C0BAC8] font-normal">pick up to 2</span>
+              When are you free? <span className="text-[#C0BAC8] font-normal">pick up to 2 · tap again to switch Aft/Eve</span>
             </span>
           </div>
           <button
-            onClick={() => { setSlots([]); setFocusedDayLabel(null); setPanel('trigger'); }}
+            onClick={() => { setSlots([]); setPanel('trigger'); }}
             className="p-0.5 hover:bg-black/5 rounded-full transition-colors"
             aria-label="Back"
           >
@@ -303,7 +290,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           </button>
         </div>
 
-        {/* Day chips — tap to select (Evening default); tap selected to edit period */}
+        {/* Day chips — first tap selects (Evening default); tap again cycles Evening ↔ Afternoon */}
         <div className="flex gap-1.5 flex-wrap mb-3">
           {days.map(day => {
             const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
@@ -324,28 +311,9 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           })}
         </div>
 
-        {/* Period row — appears when a selected day chip is tapped */}
-        {focusedSlot && (
-          <div className="flex gap-1.5 mb-3">
-            {PERIODS.map(period => (
-              <button
-                key={period}
-                onClick={() => handlePeriodChange(period)}
-                className={`flex-1 text-[11px] font-medium py-1.5 rounded-full border transition-colors ${
-                  focusedSlot.period === period
-                    ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
-                    : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
-                }`}
-              >
-                {PERIOD_LABELS[period]}
-              </button>
-            ))}
-          </div>
-        )}
-
         <div className="flex gap-2">
           <button
-            onClick={() => { setSlots([]); setFocusedDayLabel(null); setPanel('trigger'); }}
+            onClick={() => { setSlots([]); setPanel('trigger'); }}
             className="flex-1 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors"
           >
             ← Back
@@ -506,13 +474,35 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           {slots.map(slot => (
             <button
               key={slot.label}
-              onClick={() => { openCalendar(selectedVenue, slot, initials); setPanel('dismissed'); }}
+              onClick={() => {
+                openCalendar(selectedVenue, slot, initials);
+                setConfirmedSlot(slot);
+                setPanel('confirmed');
+              }}
               className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#E8E4DE] text-[#1E1C22] bg-white hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
             >
               {slot.shortLabel}
             </button>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (panel === 'confirmed' && selectedVenue && confirmedSlot) {
+    return (
+      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Check size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Date planned</span>
+          </div>
+          <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Dismiss">
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+        <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{selectedVenue.name}</p>
+        <p className="text-[11px] text-[#8A8690] mt-0.5 capitalize">{confirmedSlot.label} · Added to calendar ✓</p>
       </div>
     );
   }

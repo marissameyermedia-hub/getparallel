@@ -512,8 +512,9 @@ export function MessagingView({
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || conversationId === null) return;
+  const handleSend = async (textOverride?: string) => {
+    const text = (textOverride ?? newMessage).trim();
+    if (!text || conversationId === null) return;
     if (!emailVerified) {
       toast.error('Verify your email to send messages.');
       return;
@@ -523,12 +524,12 @@ export function MessagingView({
     const optimisticMsg: Message = {
       id: `temp-${Date.now()}`,
       senderId: currentUserId,
-      text: newMessage.trim(),
+      text,
       timestamp: new Date(),
       read: false,
     };
     setMessages(prev => [...prev, optimisticMsg]);
-    setNewMessage('');
+    if (!textOverride) setNewMessage('');
     setShowStarters(false);
     try {
       const res = await fetch(`${MESSAGES_FUNCTION_URL}/send`, {
@@ -540,7 +541,7 @@ export function MessagingView({
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
-      setNewMessage(optimisticMsg.text);
+      if (!textOverride) setNewMessage(optimisticMsg.text);
       toast.error('Failed to send. Please try again.');
     }
   };
@@ -1034,6 +1035,7 @@ export function MessagingView({
           mutualMatch={!!mutualMatch}
           flagEnabled={!!featureDateAgent}
           onSelectMessage={(msg) => setNewMessage(msg)}
+          onSendMessage={(msg) => handleSend(msg)}
         />
 
         {/* AI conversation un-sticker — shown after 48h silence, flag-gated */}
