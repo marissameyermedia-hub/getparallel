@@ -168,7 +168,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   const displayCards = getDisplayCards();
 
   return (
-    <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] overflow-hidden">
+    <div className="mb-2 rounded-2xl border border-[#E8E4DE] bg-[#F5F2EE] overflow-x-hidden overflow-y-auto max-h-[72vh]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <div className="flex items-center gap-1.5">
