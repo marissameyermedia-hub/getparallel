@@ -47,11 +47,14 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   const [budget, setBudget] = useState<Budget>('any');
   const [selectedArea, setSelectedArea] = useState<'you' | 'them' | 'middle'>('you');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [refreshCount, setRefreshCount] = useState(0);
 
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
   const handleGenerate = async (force = false) => {
     const prevArea = selectedArea;
+    // Each refresh skips 3 more venues so results are genuinely different
+    const skip = force ? (refreshCount + 1) * 3 : 0;
     setPanel('loading');
     try {
       const token = await getAccessToken();
@@ -60,6 +63,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       const params = new URLSearchParams({ matchId });
       if (budget !== 'any') params.set('maxPrice', budget);
       if (force) params.set('force', 'true');
+      if (skip > 0) params.set('skip', String(skip % 18));
 
       const res = await fetch(
         `${DATE_AGENT_FUNCTION_URL}/generate?${params}`,
@@ -79,6 +83,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
           const areaStillAvailable = loadedAreas.some(a => a.key === prevArea);
           setSelectedArea(areaStillAvailable ? prevArea : (loadedAreas[0]?.key ?? 'you'));
           setSelectedCategory('All');
+          if (force) setRefreshCount(c => c + 1);
           setPanel('cards');
           return;
         }
@@ -90,10 +95,8 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   };
 
   const handleSelectCard = (card: DateCard) => {
-    const raw = card.suggestionMessage ||
+    const msg = card.suggestionMessage ||
       `${card.name} looks like a good spot for us. Worth checking out?`;
-    // Strip any trailing Maps URL — clean compose box, share location after she says yes
-    const msg = raw.replace(/\nhttps?:\/\/\S+/g, '').trim();
     onSelectVenue?.(msg);
     setPanel('dismissed');
   };
