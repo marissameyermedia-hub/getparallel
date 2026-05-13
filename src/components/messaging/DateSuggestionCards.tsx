@@ -51,6 +51,7 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
   if (!flagEnabled || !mutualMatch || messageCount < 5 || panel === 'dismissed') return null;
 
   const handleGenerate = async (force = false) => {
+    const prevArea = selectedArea;
     setPanel('loading');
     try {
       const token = await getAccessToken();
@@ -74,7 +75,9 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
           setCards(data.suggestions);
           const loadedAreas: AreaInfo[] = data.areas ?? [];
           setAreas(loadedAreas);
-          setSelectedArea(loadedAreas[0]?.key ?? 'you');
+          // Preserve the selected area across refreshes if it's still available
+          const areaStillAvailable = loadedAreas.some(a => a.key === prevArea);
+          setSelectedArea(areaStillAvailable ? prevArea : (loadedAreas[0]?.key ?? 'you'));
           setSelectedCategory('All');
           setPanel('cards');
           return;
@@ -152,17 +155,21 @@ export function DateSuggestionCards({ matchId, messageCount, mutualMatch, flagEn
       : areaCards.filter(c => c.category === selectedCategory);
 
     if (selectedCategory === 'All') {
-      // Best one per category, up to 3
+      // First pass: 1 per category for variety
       const seen = new Set<string>();
       const result: DateCard[] = [];
       for (const card of pool) {
-        if (result.length >= 3) break;
         if (!seen.has(card.category)) {
           seen.add(card.category);
           result.push(card);
         }
       }
-      return result;
+      // Fill remaining slots up to 3 with next-best cards
+      for (const card of pool) {
+        if (result.length >= 3) break;
+        if (!result.includes(card)) result.push(card);
+      }
+      return result.slice(0, 3);
     }
     return pool.slice(0, 3);
   };
