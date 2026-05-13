@@ -7,8 +7,7 @@ import { getAccessToken } from '../utils/auth';
 import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
-import { DateSuggestionCards } from './messaging/DateSuggestionCards';
-import { AvailabilityPicker, type TimeSlot } from './messaging/AvailabilityPicker';
+import { DatePlannerCard } from './messaging/DatePlannerCard';
 import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
 
 const FADE_REASONS = [
@@ -219,7 +218,6 @@ export function MessagingView({
   const [showRecoverySheet, setShowRecoverySheet] = useState(false);
   const [recoveryTrigger, setRecoveryTrigger] = useState<'unmatch' | 'conversation_death_14d'>('unmatch');
   const [showChatOutcomeChip, setShowChatOutcomeChip] = useState(false);
-  const [agreedSlot, setAgreedSlot] = useState<TimeSlot | null>(null);
 
   // ── Met-banner state ──────────────────────────────────────────────
   // Fetched once on mount. null = loading/unknown (banner hidden).
@@ -1028,23 +1026,13 @@ export function MessagingView({
         className="flex-shrink-0 bg-parallel-cream border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
-        {/* Availability picker — shown after 10+ messages, flag-gated */}
-        <AvailabilityPicker
+        {/* Date planner — pick times + venue + calendar in one flow, flag-gated */}
+        <DatePlannerCard
+          matchId={matchId}
           messageCount={messages.length}
           mutualMatch={!!mutualMatch}
           flagEnabled={!!featureDateAgent}
           onSelectMessage={(msg) => setNewMessage(msg)}
-          onTimeAgreed={(slot) => setAgreedSlot(slot)}
-        />
-
-        {/* AI date suggestions — shown after 5+ messages, flag-gated */}
-        <DateSuggestionCards
-          matchId={matchId}
-          messageCount={messages.length}
-          mutualMatch={mutualMatch}
-          flagEnabled={featureDateAgent}
-          onSelectVenue={(msg) => setNewMessage(msg)}
-          agreedSlot={agreedSlot}
         />
 
         {/* AI conversation un-sticker — shown after 48h silence, flag-gated */}
