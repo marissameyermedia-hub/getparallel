@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { CalendarClock, X, Loader, Star, RefreshCw, CalendarPlus, Check, ExternalLink, Sparkles } from 'lucide-react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { CalendarClock, X, Loader, CalendarPlus, Check, ExternalLink, Sparkles, ChevronRight } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -31,7 +31,7 @@ interface VenueCard {
   reservable?: boolean;
 }
 
-type Panel = 'trigger' | 'filter' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review' | 'custom';
+type Panel = 'trigger' | 'schedule' | 'filter' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review' | 'custom';
 type Budget = 'any' | '$' | '$$' | '$$$';
 type Occasion = 'any' | 'dinner' | 'drinks' | 'coffee' | 'activity';
 type Vibe = 'any' | 'local_gem' | 'trendy' | 'outdoor';
@@ -50,6 +50,10 @@ const VIBE_LABELS: Record<Vibe, string> = {
   trendy: 'New & trendy',
   outdoor: 'Outdoor',
 };
+
+export interface DatePlannerCardHandle {
+  open: () => void;
+}
 
 interface Props {
   matchId: string;
@@ -242,7 +246,10 @@ function buildOpenTableUrl(venue: VenueCard, slot: TimeSlot, exactHour: number):
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, recentMessages, dateResponseText, onSelectMessage, onSendMessage }: Props) {
+export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function DatePlannerCard(
+  { matchId, matchName, messageCount, mutualMatch, flagEnabled, recentMessages, dateResponseText, onSelectMessage, onSendMessage }: Props,
+  ref,
+) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [budget, setBudget] = useState<Budget>('any');
   const [occasion, setOccasion] = useState<Occasion>('any');
@@ -262,6 +269,15 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [shownVenueUrls, setShownVenueUrls] = useState<string[]>([]);
   const [reservationsChecked, setReservationsChecked] = useState(false);
   const [recommendedPool, setRecommendedPool] = useState<VenueCard[]>([]);
+
+  // Expose open() so the compose bar icon can trigger scheduling without a banner
+  useImperativeHandle(ref, () => ({
+    open: () => {
+      if (panel === 'trigger' || panel === 'dismissed' || panel === 'confirmed') {
+        setPanel('schedule');
+      }
+    },
+  }), [panel]);
 
   // ── Persistence — restore post-send state across navigation ──────────────────
 
@@ -450,12 +466,14 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   // One-tap concierge fetch — Claude picks the best venue from conversation + profile context
   const fetchVenuesConcierge = async () => {
     setPanel('loading');
-    const defaultSlots = getDefaultSlots();
-    setSlots(defaultSlots);
+    // Keep user-selected slots from the schedule panel; fall back to defaults
+    const activeSlots = slots.length > 0 ? slots : getDefaultSlots();
+    if (slots.length === 0) setSlots(activeSlots);
     try {
       const token = await getAccessToken();
       if (!token) { setPanel('trigger'); return; }
-      const params = new URLSearchParams({ matchId, force: 'true', timeOfDay: 'evening' });
+      const params = new URLSearchParams({ matchId, force: 'true', timeOfDay: activeSlots[0]?.period === 'afternoon' ? 'afternoon' : 'evening' });
+      if (occasion !== 'any') params.set('occasion', occasion);
       const skipIds = shownVenueUrls.filter(Boolean).join(',');
       if (skipIds) params.set('skipIds', skipIds);
       const res = await fetch(`${DATE_AGENT_FUNCTION_URL}/generate?${params}`, {
@@ -489,7 +507,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           setPreferredArea('any');
           const areas = [...new Set(top.map(v => v.areaKey).filter(Boolean))] as Array<'you' | 'them' | 'middle'>;
           setAvailableAreas(areas);
-          setMessage(buildPlanMessage(top[tIdx], defaultSlots));
+          setMessage(buildPlanMessage(top[tIdx], activeSlots));
           setShownVenueUrls(prev => [...new Set([...prev, ...top.map(v => v.mapsUrl).filter(Boolean)])]);
           setPanel('quick-review');
           return;
@@ -502,40 +520,84 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   // ── Render ────────────────────────────────────────────────────────────────────
 
   if (panel === 'trigger') {
-    const isReady = detectReadiness(recentMessages);
-    if (isReady) {
-      return (
-        <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-3">
-          <div className="flex items-start justify-between gap-2 mb-2.5">
-            <div className="flex items-start gap-2">
-              <Sparkles size={13} className="text-[#7B5EA7] mt-0.5 flex-shrink-0" aria-hidden="true" />
-              <div>
-                <p className="text-[11px] font-medium text-[#7B5EA7] leading-tight">Sounds like you two click</p>
-                <p className="text-[11px] text-[#8A8690] mt-0.5 leading-snug">Want Parallel to suggest a spot? It picks based on your shared interests and where you both are.</p>
-              </div>
-            </div>
-            <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors flex-shrink-0" aria-label="Dismiss">
-              <X size={13} className="text-[#8A8690]" aria-hidden="true" />
-            </button>
-          </div>
+    // Only render a proactive chip when the conversation signals genuine interest.
+    // The compose-bar icon is the primary trigger — always available without friction.
+    if (!detectReadiness(recentMessages)) return null;
+    return (
+      <button
+        onClick={() => setPanel('schedule')}
+        className="mb-2 w-full flex items-center justify-between px-3.5 py-2 rounded-2xl bg-[#F8F4FD] border border-[#E2D5F5] text-left group"
+      >
+        <div className="flex items-center gap-2">
+          <Sparkles size={11} className="text-[#7B5EA7] flex-shrink-0" aria-hidden="true" />
+          <span className="text-[11px] font-medium text-[#7B5EA7]">Want to plan a date?</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <ChevronRight size={12} className="text-[#7B5EA7] group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
           <button
-            onClick={() => fetchVenuesConcierge()}
-            className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
+            onClick={e => { e.stopPropagation(); setPanel('dismissed'); }}
+            className="p-0.5 hover:bg-black/10 rounded-full transition-colors"
+            aria-label="Dismiss"
           >
-            Find a spot →
+            <X size={11} className="text-[#C0BAC8]" aria-hidden="true" />
           </button>
         </div>
-      );
-    }
-    // Subtle fallback — no signals yet but conversation is long enough
+      </button>
+    );
+  }
+
+  if (panel === 'schedule') {
+    const scheduleDays = getUpcomingDays(7);
+    const chipBase = 'text-[11px] font-medium px-3 py-1.5 rounded-full border transition-colors';
+    const chipOn = `${chipBase} bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]`;
+    const chipOff = `${chipBase} text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]`;
     return (
-      <div className="mb-1.5 flex justify-center">
+      <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <CalendarClock size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7]">Plan a date</span>
+          </div>
+          <button onClick={() => setPanel('trigger')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Close">
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Occasion — what kind of date? */}
+        <p className="text-[10px] text-[#8A8690] mb-1.5">What kind of date?</p>
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {(['any', 'dinner', 'drinks', 'coffee', 'activity'] as Occasion[]).map(o => (
+            <button key={o} onClick={() => setOccasion(o)} className={occasion === o ? chipOn : chipOff}>
+              {{ any: 'Surprise me', dinner: 'Dinner', drinks: 'Drinks', coffee: 'Coffee', activity: 'Activity' }[o]}
+            </button>
+          ))}
+        </div>
+
+        {/* Days — when are you free? */}
+        <p className="text-[10px] text-[#8A8690] mb-1.5">
+          When are you free? <span className="text-[#C0BAC8]">tap again to switch Aft/Eve</span>
+        </p>
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {scheduleDays.map(day => {
+            const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
+            const isSelected = !!slot;
+            return (
+              <button
+                key={day.label}
+                onClick={() => handleDayTap(day)}
+                className={`${chipBase} ${isSelected ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]' : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'}`}
+              >
+                {isSelected ? `${day.shortLabel} · ${PERIOD_SHORT[slot.period]}` : day.shortLabel}
+              </button>
+            );
+          })}
+        </div>
+
         <button
           onClick={() => fetchVenuesConcierge()}
-          className="flex items-center gap-1.5 text-[11px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
+          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
         >
-          <CalendarClock size={11} aria-hidden="true" />
-          Plan a date
+          Find a spot →
         </button>
       </div>
     );
@@ -1182,4 +1244,4 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   }
 
   return null;
-}
+});

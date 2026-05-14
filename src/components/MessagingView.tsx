@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles, X, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -7,7 +7,7 @@ import { getAccessToken } from '../utils/auth';
 import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
-import { DatePlannerCard } from './messaging/DatePlannerCard';
+import { DatePlannerCard, type DatePlannerCardHandle } from './messaging/DatePlannerCard';
 import { DateConfirmCard, DATE_CARD_PREFIX } from './messaging/DateConfirmCard';
 import { DateProposalCard, DATE_PROPOSAL_PREFIX, DATE_RESPONSE_PREFIX, type DateResponseData } from './messaging/DateProposalCard';
 import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
@@ -234,6 +234,7 @@ export function MessagingView({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const safetyMenuRef = useRef<HTMLDivElement>(null);
   const initialScrollDone = useRef(false);
+  const datePlannerRef = useRef<DatePlannerCardHandle>(null);
   const currentUserId = localStorage.getItem('parallel_user_id') || '';
   const lastActiveText = formatLastActive(lastActiveAt);
 
@@ -1001,9 +1002,18 @@ export function MessagingView({
             if (message.text.startsWith(DATE_CARD_PREFIX)) {
               try {
                 const cardData = JSON.parse(message.text.slice(DATE_CARD_PREFIX.length));
+                const isMySend = message.senderId === userId;
                 return (
                   <div key={message.id} className="px-2 my-2">
-                    <DateConfirmCard data={cardData} />
+                    <DateConfirmCard
+                      data={cardData}
+                      isMe={isMySend}
+                      onCancel={() => {
+                        const cancelMsg = `Hey, something came up and I need to cancel our plans at ${cardData.venueName}. So sorry — can we reschedule?`;
+                        setNewMessage(cancelMsg);
+                        setTimeout(() => textareaRef.current?.focus(), 50);
+                      }}
+                    />
                     {isLast && (
                       <p className="text-[10px] text-center text-gray-400 mt-1">{formatTime(message.timestamp)}</p>
                     )}
@@ -1090,12 +1100,13 @@ export function MessagingView({
       >
         {/* Date planner — pick times + venue + calendar in one flow, flag-gated */}
         <DatePlannerCard
+          ref={datePlannerRef}
           matchId={matchId}
           matchName={matchName}
           messageCount={messages.length}
           mutualMatch={!!mutualMatch}
           flagEnabled={!!featureDateAgent}
-          recentMessages={messages.slice(-8).map(m => m.text)}
+          recentMessages={messages.slice(-20).map(m => m.text)}
           dateResponseText={dateResponseMsg?.text}
           onSelectMessage={(msg) => setNewMessage(msg)}
           onSendMessage={(msg) => handleSend(msg)}
@@ -1232,6 +1243,16 @@ export function MessagingView({
         )}
 
         <div className="flex items-end gap-2">
+          {/* Schedule-a-date icon — always available when feature is on */}
+          {featureDateAgent && (
+            <button
+              onClick={() => datePlannerRef.current?.open()}
+              className="flex-shrink-0 p-2 text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors"
+              aria-label="Schedule a date"
+            >
+              <CalendarClock size={18} aria-hidden="true" />
+            </button>
+          )}
           <div className={`flex-1 rounded-full border px-3.5 py-2 transition-colors ${
             messagingDisabled
               ? 'bg-gray-100 border-gray-200 opacity-60'

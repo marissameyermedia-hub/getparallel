@@ -1,4 +1,4 @@
-import { CalendarPlus, ExternalLink } from 'lucide-react';
+import { CalendarPlus, ExternalLink, X } from 'lucide-react';
 
 export const DATE_CARD_PREFIX = '__DATE_CARD__';
 
@@ -50,29 +50,70 @@ function openCalendarFromCard(data: DateCardData) {
   }
 }
 
-export function DateConfirmCard({ data }: { data: DateCardData }) {
+interface DateConfirmCardProps {
+  data: DateCardData;
+  isMe?: boolean;
+  onCancel?: () => void;
+}
+
+export function DateConfirmCard({ data, isMe, onCancel }: DateConfirmCardProps) {
+  const dateObj = new Date(data.dateIso);
+  const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
   return (
-    <div className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-        <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Date confirmed</span>
+    <div className="w-full rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div className="flex items-center gap-1.5">
+          <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+          <span className="text-[11px] font-semibold text-[#7B5EA7] tracking-wide">Date confirmed</span>
+        </div>
+        {isMe && onCancel && (
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-1 text-[10px] text-[#C0BAC8] hover:text-[#8A8690] transition-colors"
+            aria-label="Cancel this date"
+          >
+            <X size={10} aria-hidden="true" />
+            Cancel
+          </button>
+        )}
       </div>
-      <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{data.venueName}</p>
-      <p className="text-[11px] text-[#8A8690] mt-0.5 mb-2.5 capitalize">{data.label}</p>
-      <div className="flex gap-2">
+
+      {/* Venue + time */}
+      <div className="px-4 pb-3">
+        <p className="text-sm font-semibold text-[#1E1C22] leading-tight">{data.venueName}</p>
+        <p className="text-[11px] text-[#8A8690] mt-0.5 capitalize">{displayDate} · {data.label.split(' at ')[1] ?? data.label}</p>
+        {data.venueAddress && (
+          <p className="text-[10px] text-[#C0BAC8] mt-0.5 truncate">{data.venueAddress}</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex border-t border-[#E2D5F5]">
         {data.openTableUrl && (
           <button
             onClick={() => window.open(data.openTableUrl, '_blank', 'noopener')}
-            className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#7B5EA7] border-r border-[#E2D5F5] hover:bg-[#EDE8F8] transition-colors"
           >
             <ExternalLink size={11} aria-hidden="true" />
             Book table
           </button>
         )}
+        {data.mapsUrl && !data.openTableUrl && (
+          <button
+            onClick={() => window.open(data.mapsUrl, '_blank', 'noopener')}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#7B5EA7] border-r border-[#E2D5F5] hover:bg-[#EDE8F8] transition-colors"
+          >
+            <ExternalLink size={11} aria-hidden="true" />
+            View on Maps
+          </button>
+        )}
         <button
           onClick={() => openCalendarFromCard(data)}
-          className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-semibold text-[#7B5EA7] hover:bg-[#EDE8F8] transition-colors"
         >
+          <CalendarPlus size={11} aria-hidden="true" />
           Add to Calendar
         </button>
       </div>
