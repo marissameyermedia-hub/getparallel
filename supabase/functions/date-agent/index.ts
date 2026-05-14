@@ -1,4 +1,4 @@
-// date-agent v24 — adds reservable field to gate OpenTable button on non-reservable venues
+// date-agent v25 — occasion/vibe filters, dual-profile blurbs, quality baseline, 5 per area
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -47,6 +47,14 @@ const PRICE_MAP: Record<string, string> = {
   PRICE_LEVEL_MODERATE: "$$",
   PRICE_LEVEL_EXPENSIVE: "$$$",
   PRICE_LEVEL_VERY_EXPENSIVE: "$$$$",
+};
+
+// When the caller specifies an occasion, this becomes category #1 in the search
+const OCCASION_TYPES: Record<string, { types: string[]; label: string }> = {
+  dinner: { types: ["restaurant"], label: "Dinner" },
+  drinks: { types: ["wine_bar", "cocktail_bar", "bar"], label: "Drinks" },
+  coffee: { types: ["cafe", "coffee_shop"], label: "Café" },
+  activity: { types: ["bowling_alley", "miniature_golf_course", "aquarium", "museum", "art_gallery"], label: "Activity" },
 };
 
 const VENUE_NAME_BLOCKLIST = [
@@ -102,15 +110,33 @@ function qualityScore(rating: number | null, reviewCount: number | null): number
   return r * Math.log10(n + 10);
 }
 
-function dateScore(place: any): number {
+function dateScore(place: any, vibe = "any"): number {
   let bonus = 0;
-  if (place.outdoorSeating) bonus += 0.3;
+  const types: string[] = place.types ?? [];
+  const reviewCount: number = place.userRatingCount ?? 0;
+
+  if (place.outdoorSeating) bonus += vibe === "outdoor" ? 0.8 : 0.3;
   if (place.liveMusic) bonus += 0.3;
   if (place.servesCocktails || place.servesWine) bonus += 0.4;
   if (place.goodForChildren === true) bonus -= 0.5;
   if (place.goodForWatchingSports === true) bonus -= 0.3;
-  const types: string[] = place.types ?? [];
   if (types.includes("tourist_attraction")) bonus -= 0.6;
+
+  if (vibe === "local_gem") {
+    // Sweet spot: well-reviewed but not a tourist magnet
+    if (reviewCount >= 50 && reviewCount <= 500) bonus += 0.6;
+    if (reviewCount > 2000) bonus -= 0.5;
+    if (reviewCount > 10000) bonus -= 1.0;
+  } else if (vibe === "trendy") {
+    if (reviewCount > 1000) bonus += 0.4;
+    if (reviewCount > 5000) bonus += 0.2;
+  } else if (vibe === "outdoor") {
+    if (types.some(t => ["park", "nature_reserve", "hiking_area"].includes(t))) bonus += 1.0;
+  }
+
+  // Anti-tourist penalty for any deliberate vibe
+  if (vibe !== "any" && reviewCount > 10000) bonus -= 0.4;
+
   return bonus;
 }
 
@@ -151,6 +177,8 @@ function buildSearchCategories(
   sharedHobbies: string[], myHobbies: string[], theirHobbies: string[],
   myWeekend: string[], theirWeekend: string[],
   timeOfDay: TimeOfDay,
+  occasion = "any",
+  vibe = "any",
 ): Array<{ types: string[]; label: string }> {
   const all = [...sharedHobbies, ...myHobbies, ...theirHobbies];
   const weeks = [...myWeekend, ...theirWeekend];
@@ -175,9 +203,10 @@ function buildSearchCategories(
     score: isEvening ? dinnerBase + 3 : dinnerBase });
 
   const outdoorKeys = ["walk", "hik", "kayak", "cycl", "camp", "yoga", "pilates", "nature", "outdoor", "garden", "scuba", "snorkel"];
-  cats.push({ types: ["park", "nature_reserve"], label: "Outdoors",
-    score: all.some(h => outdoorKeys.some(k => h.toLowerCase().includes(k))) || weeks.some(w => w.toLowerCase().includes("active"))
-      ? (isAfternoon ? 7 : 5) : (isAfternoon ? 3 : 1) });
+  let outdoorScore = all.some(h => outdoorKeys.some(k => h.toLowerCase().includes(k))) || weeks.some(w => w.toLowerCase().includes("active"))
+    ? (isAfternoon ? 7 : 5) : (isAfternoon ? 3 : 1);
+  if (vibe === "outdoor") outdoorScore += 5; // vibe boost
+  cats.push({ types: ["park", "nature_reserve"], label: "Outdoors", score: outdoorScore });
 
   const cultureKeys = ["astronom", "histor", "science", "museum", "philosoph", "documentar", "art", "paint", "potter", "read", "aviation"];
   const cultureScore = all.some(h => cultureKeys.some(k => h.toLowerCase().includes(k))) ? (isAfternoon ? 7 : 5) : 0;
@@ -193,15 +222,24 @@ function buildSearchCategories(
   if (wildScore > 0) cats.push({ types: ["aquarium", "zoo"], label: "Nature Spot", score: wildScore });
 
   const seen = new Set<string>();
-  return cats
+  const sorted = cats
     .sort((a, b) => b.score - a.score)
     .filter(c => { if (seen.has(c.label)) return false; seen.add(c.label); return true; })
     .slice(0, 4)
     .map(c => ({ types: c.types, label: c.label }));
+
+  // Pin occasion as category #1 when explicitly requested
+  if (occasion !== "any" && OCCASION_TYPES[occasion]) {
+    const pinned = OCCASION_TYPES[occasion];
+    const rest = sorted.filter(c => c.label !== pinned.label);
+    return [pinned, ...rest].slice(0, 4);
+  }
+
+  return sorted;
 }
 
 async function nearbySearch(
-  lat: number, lon: number, includedTypes: string[], radius: number, signal: AbortSignal, skip: number,
+  lat: number, lon: number, includedTypes: string[], radius: number, signal: AbortSignal, skip: number, vibe: string,
 ): Promise<VenueBase[]> {
   if (!GOOGLE_PLACES_API_KEY) return [];
   try {
@@ -226,16 +264,17 @@ async function nearbySearch(
       .filter((p: any) =>
         p?.displayName?.text &&
         !isBlocklisted(p.displayName.text, p.types ?? []) &&
-        !isInsideAirport(p.formattedAddress ?? "")
+        !isInsideAirport(p.formattedAddress ?? "") &&
+        (p.userRatingCount ?? 0) >= 15 // quality baseline: must have meaningful reviews
       )
       .sort((a: any, b: any) => {
-        const scoreA = qualityScore(a.rating, a.userRatingCount) + dateScore(a);
-        const scoreB = qualityScore(b.rating, b.userRatingCount) + dateScore(b);
+        const scoreA = qualityScore(a.rating, a.userRatingCount) + dateScore(a, vibe);
+        const scoreB = qualityScore(b.rating, b.userRatingCount) + dateScore(b, vibe);
         return scoreB - scoreA;
       });
 
-    const sliced = candidates.slice(skip, skip + 3);
-    const toReturn = sliced.length > 0 ? sliced : candidates.slice(0, 3);
+    const sliced = candidates.slice(skip, skip + 5);
+    const toReturn = sliced.length > 0 ? sliced : candidates.slice(0, 5);
 
     return toReturn.map((place: any) => ({
       name: place.displayName.text,
@@ -287,7 +326,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "24" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "25" });
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);
 
     const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
@@ -309,6 +348,13 @@ Deno.serve(async (req) => {
           const h = new Date().getUTCHours();
           return h >= 22 || h < 5 ? "evening" : h >= 13 && h < 18 ? "morning" : "afternoon";
         })();
+
+    // New v25 params
+    const occasion = url.searchParams.get("occasion") ?? "any";
+    const vibe = url.searchParams.get("vibe") ?? "any";
+    const skipIdsParam = url.searchParams.get("skipIds") ?? "";
+    const skipIds = new Set(skipIdsParam.split(",").filter(Boolean));
+    const conversationHints = url.searchParams.get("hints") ?? "";
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -332,7 +378,7 @@ Deno.serve(async (req) => {
       try { await admin.from("date_suggestions").delete().eq("conversation_id", conv.id); } catch { /* ok */ }
     }
 
-    if (!forceRefresh && skip === 0) {
+    if (!forceRefresh && skip === 0 && occasion === "any" && vibe === "any") {
       try {
         const r = await admin.from("date_suggestions").select("suggestions").eq("conversation_id", conv.id).gt("expires_at", new Date().toISOString()).order("generated_at", { ascending: false }).limit(1).maybeSingle();
         if (r.data?.suggestions) {
@@ -429,14 +475,14 @@ Deno.serve(async (req) => {
     let allVenueCards: VenueCard[] = [];
 
     if (GOOGLE_PLACES_API_KEY && searchSpecs.length > 0) {
-      const categories = buildSearchCategories(sharedHobbies, myHobbies, theirHobbies, myWeekend, theirWeekend, timeOfDay);
+      const categories = buildSearchCategories(sharedHobbies, myHobbies, theirHobbies, myWeekend, theirWeekend, timeOfDay, occasion, vibe);
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 12000);
       try {
         const specResults = await Promise.all(
           searchSpecs.map(async spec => {
             const categoryResults = await Promise.all(
-              categories.map(cat => nearbySearch(spec.lat, spec.lon, cat.types, spec.radius, ctrl.signal, skip))
+              categories.map(cat => nearbySearch(spec.lat, spec.lon, cat.types, spec.radius, ctrl.signal, skip, vibe))
             );
             return { spec, categoryResults };
           })
@@ -454,10 +500,17 @@ Deno.serve(async (req) => {
               }
             }
           }
-          const toAdd = filteredForArea.length > 0 ? filteredForArea : allForArea;
+          // Take top 5 per area
+          const toAdd = (filteredForArea.length > 0 ? filteredForArea : allForArea).slice(0, 5);
           for (const v of toAdd) allVenueCards.push({ ...v, areaKey: spec.areaKey });
         }
       } finally { clearTimeout(timer); }
+    }
+
+    // Filter out already-seen venues (skipIds are mapsUrls)
+    if (skipIds.size > 0) {
+      const filtered = allVenueCards.filter(v => !skipIds.has(v.mapsUrl));
+      if (filtered.length > 0) allVenueCards = filtered;
     }
 
     const usingGeneric = allVenueCards.length === 0;
@@ -476,7 +529,9 @@ Deno.serve(async (req) => {
     if (ANTHROPIC_API_KEY && !usingGeneric) {
       try {
         const ctx: string[] = [];
-        if (sharedHobbies.length) ctx.push(`Shared hobbies: ${sharedHobbies.slice(0, 6).join(", ")}`);
+        if (sharedHobbies.length) ctx.push(`Shared interests: ${sharedHobbies.slice(0, 6).join(", ")}`);
+        if (myHobbies.length) ctx.push(`Your interests: ${myHobbies.slice(0, 5).join(", ")}`);
+        if (theirHobbies.length) ctx.push(`Their interests: ${theirHobbies.slice(0, 5).join(", ")}`);
         if (whyMatched.length) ctx.push(`Why matched: ${whyMatched.slice(0, 2).join("; ")}`);
         const cities = [myCity, theirCity].filter(Boolean);
         if (cities.length) ctx.push(`Cities: ${cities.join(" / ")}`);
@@ -484,7 +539,10 @@ Deno.serve(async (req) => {
         if (sharedWeekend.length) ctx.push(`Weekend style: ${sharedWeekend.join(", ")}`);
         if (myDrinking || theirDrinking) ctx.push(`Drinking: ${[myDrinking, theirDrinking].filter(Boolean).join(" / ")}`);
         if (mySocial || theirSocial) ctx.push(`Social style: ${[mySocial, theirSocial].filter(Boolean).join(" / ")}`);
+        if (conversationHints) ctx.push(`Conversation hints: ${conversationHints}`);
         ctx.push(`Date time: ${timeOfDay}`);
+        if (occasion !== "any") ctx.push(`Occasion: ${occasion}`);
+        if (vibe !== "any") ctx.push(`Vibe: ${vibe}`);
 
         const venueList = allVenueCards.map((v, i) => {
           const tags = v.atmosphereTags?.length ? ` [${v.atmosphereTags.join(", ")}]` : "";
@@ -498,8 +556,8 @@ Deno.serve(async (req) => {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
             body: JSON.stringify({
-              model: "claude-haiku-4-5-20251001", max_tokens: 1200,
-              messages: [{ role: "user", content: `Two people matched on a dating app. These are first dates — casual, low-pressure, good for conversation. Recommend LOCAL, neighborhood spots — not tourist traps or chains.\n\nContext: ${ctx.join(" | ") || "No context"}\n\n${venueList}\n\nFor each venue write:\n1. "why": One warm sentence (max 12 words) why this spot suits this couple specifically.\n2. "suggest": A natural first-person message (15-25 words) proposing this date. Specific to the venue. No addresses. No exclamation marks. Don't start with 'I' or use the word 'suggest'.\n\nReturn only JSON: [{"index":0,"why":"...","suggest":"..."}]` }],
+              model: "claude-haiku-4-5-20251001", max_tokens: 1400,
+              messages: [{ role: "user", content: `Two people matched on a dating app. These are first dates — casual, low-pressure, good for conversation. Recommend LOCAL, neighborhood spots — not tourist traps or chains.\n\nContext: ${ctx.join(" | ") || "No context"}\n\n${venueList}\n\nFor each venue write:\n1. "why": One warm sentence (max 14 words) explaining why this spot suits THIS couple. Reference a specific interest from either person when possible — e.g. "You both listed hiking, and this spot has great outdoor seating" or "She's into art, you love cocktails — this gallery bar covers both."\n2. "suggest": A natural first-person message (15-25 words) proposing this date. Specific to the venue. No addresses. No exclamation marks. Don't start with 'I' or use the word 'suggest'.\n\nReturn only JSON: [{"index":0,"why":"...","suggest":"..."}]` }],
             }),
             signal: ctrl.signal,
           });
@@ -534,7 +592,7 @@ Deno.serve(async (req) => {
       if (card.mapsUrl) card.suggestionMessage += `\n${card.mapsUrl}`;
     }
 
-    if (skip === 0) {
+    if (skip === 0 && occasion === "any" && vibe === "any") {
       admin.from("date_suggestions").insert({
         conversation_id: conv.id, suggestions: allVenueCards,
         venue_api: GOOGLE_PLACES_API_KEY && !usingGeneric ? "google_places_v1" : "none",
@@ -547,7 +605,7 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v24] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 24 }, 500);
+    console.error("[v25] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 25 }, 500);
   }
 });

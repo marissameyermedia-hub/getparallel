@@ -31,8 +31,25 @@ interface VenueCard {
   reservable?: boolean;
 }
 
-type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review' | 'custom';
+type Panel = 'trigger' | 'filter' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review' | 'custom';
 type Budget = 'any' | '$' | '$$' | '$$$';
+type Occasion = 'any' | 'dinner' | 'drinks' | 'coffee' | 'activity';
+type Vibe = 'any' | 'local_gem' | 'trendy' | 'outdoor';
+
+const OCCASION_LABELS: Record<Occasion, string> = {
+  any: 'Surprise me',
+  dinner: 'Dinner',
+  drinks: 'Drinks',
+  coffee: 'Coffee',
+  activity: 'Activity',
+};
+
+const VIBE_LABELS: Record<Vibe, string> = {
+  any: 'Any',
+  local_gem: 'Local gem',
+  trendy: 'New & trendy',
+  outdoor: 'Outdoor',
+};
 
 interface Props {
   matchId: string;
@@ -228,6 +245,8 @@ function buildOpenTableUrl(venue: VenueCard, slot: TimeSlot, exactHour: number):
 export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, recentMessages, dateResponseText, onSelectMessage, onSendMessage }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [budget, setBudget] = useState<Budget>('any');
+  const [occasion, setOccasion] = useState<Occasion>('any');
+  const [vibe, setVibe] = useState<Vibe>('any');
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [venues, setVenues] = useState<VenueCard[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<VenueCard | null>(null);
@@ -240,6 +259,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [customMapsUrl, setCustomMapsUrl] = useState('');
   const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
+  const [shownVenueUrls, setShownVenueUrls] = useState<string[]>([]);
 
   // ── Persistence — restore post-send state across navigation ──────────────────
 
@@ -412,15 +432,32 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
     setPanel('waiting');
   };
 
+  // Extract food/activity keywords from recent messages to pass as hints
+  function extractConversationHints(messages: string[]): string {
+    const KEYWORDS = [
+      'thai', 'sushi', 'italian', 'mexican', 'ramen', 'pizza', 'seafood', 'bbq', 'vegan', 'brunch',
+      'hike', 'hiking', 'bowling', 'museum', 'art', 'concert', 'climbing', 'cooking', 'wine',
+    ];
+    const combined = messages.join(' ').toLowerCase();
+    return KEYWORDS.filter(k => combined.includes(k)).slice(0, 5).join(',');
+  }
+
   // One-tap concierge fetch — auto-picks best venue, pre-selects default days
-  const fetchVenuesConcierge = async () => {
+  const fetchVenuesConcierge = async (fetchOccasion: Occasion = occasion, fetchVibe: Vibe = vibe) => {
     setPanel('loading');
     const defaultSlots = getDefaultSlots();
     setSlots(defaultSlots);
     try {
       const token = await getAccessToken();
-      if (!token) { setPanel('trigger'); return; }
+      if (!token) { setPanel('filter'); return; }
       const params = new URLSearchParams({ matchId, force: 'true', timeOfDay: 'evening' });
+      if (fetchOccasion !== 'any') params.set('occasion', fetchOccasion);
+      if (fetchVibe !== 'any') params.set('vibe', fetchVibe);
+      const hints = extractConversationHints(recentMessages);
+      if (hints) params.set('hints', hints);
+      // Pass skipIds so backend avoids venues already seen this session
+      const skipIds = shownVenueUrls.filter(Boolean).join(',');
+      if (skipIds) params.set('skipIds', skipIds);
       const res = await fetch(`${DATE_AGENT_FUNCTION_URL}/generate?${params}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey },
@@ -431,7 +468,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           const seen = new Set<string>();
           const top: VenueCard[] = [];
           for (const v of data.suggestions) {
-            if (!seen.has(v.name) && top.length < 9) { seen.add(v.name); top.push(v); }
+            if (!seen.has(v.name) && top.length < 15) { seen.add(v.name); top.push(v); }
           }
           setVenues(top);
           setVenueIndex(0);
@@ -440,12 +477,14 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           const areas = [...new Set(top.map(v => v.areaKey).filter(Boolean))] as Array<'you' | 'them' | 'middle'>;
           setAvailableAreas(areas);
           setMessage(buildPlanMessage(top[0], defaultSlots));
+          // Track shown venue URLs for future skip
+          setShownVenueUrls(prev => [...new Set([...prev, ...top.map(v => v.mapsUrl).filter(Boolean)])]);
           setPanel('quick-review');
           return;
         }
       }
     } catch { /* fall through */ }
-    setPanel('trigger');
+    setPanel('filter');
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -468,7 +507,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             </button>
           </div>
           <button
-            onClick={fetchVenuesConcierge}
+            onClick={() => setPanel('filter')}
             className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
           >
             Find a spot →
@@ -480,11 +519,61 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
     return (
       <div className="mb-1.5 flex justify-center">
         <button
-          onClick={fetchVenuesConcierge}
+          onClick={() => setPanel('filter')}
           className="flex items-center gap-1.5 text-[11px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
         >
           <CalendarClock size={11} aria-hidden="true" />
           Plan a date
+        </button>
+      </div>
+    );
+  }
+
+  if (panel === 'filter') {
+    const chipBase = 'text-[11px] font-medium px-3 py-1 rounded-full border transition-colors';
+    const chipOn = `${chipBase} bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]`;
+    const chipOff = `${chipBase} text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]`;
+    return (
+      <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">What are you thinking?</span>
+          </div>
+          <button onClick={() => setPanel('trigger')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Occasion */}
+        <div className="mb-3">
+          <p className="text-[10px] text-[#8A8690] mb-1.5">Occasion</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {(Object.keys(OCCASION_LABELS) as Occasion[]).map(o => (
+              <button key={o} onClick={() => setOccasion(o)} className={occasion === o ? chipOn : chipOff}>
+                {OCCASION_LABELS[o]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Vibe */}
+        <div className="mb-4">
+          <p className="text-[10px] text-[#8A8690] mb-1.5">Vibe</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {(Object.keys(VIBE_LABELS) as Vibe[]).map(v => (
+              <button key={v} onClick={() => setVibe(v)} className={vibe === v ? chipOn : chipOff}>
+                {VIBE_LABELS[v]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => fetchVenuesConcierge(occasion, vibe)}
+          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
+        >
+          Find spots →
         </button>
       </div>
     );
@@ -745,7 +834,6 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
                 return (
                   <button key={area} onClick={() => {
                     setPreferredArea(area);
-                    // Try area+budget first; if empty, relax budget so the area is always honored
                     let newPool = area === 'any'
                       ? venues.filter(v => passesMaxPriceClient(v.priceLevel, budget))
                       : venues.filter(v => v.areaKey === area && passesMaxPriceClient(v.priceLevel, budget));
@@ -772,14 +860,18 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
                     (preferredArea === 'any' || v.areaKey === preferredArea) &&
                     passesMaxPriceClient(v.priceLevel, b)
                   );
-                  // If this budget yields nothing for the current area, just switch budget;
-                  // the empty-pool fallback in render will show all venues
                   setSelectedVenue((newPool.length > 0 ? newPool : venues)[0]);
                   setMessage(buildPlanMessage((newPool.length > 0 ? newPool : venues)[0], slots));
                 }} className={isOn ? chipOn : chipOff}>{b === 'any' ? 'Any' : b}</button>
               );
             })}
           </div>
+          {/* Active filter summary */}
+          {(occasion !== 'any' || vibe !== 'any') && (
+            <p className="text-[10px] text-[#7B5EA7]">
+              {[occasion !== 'any' && OCCASION_LABELS[occasion], vibe !== 'any' && VIBE_LABELS[vibe]].filter(Boolean).join(' · ')}
+            </p>
+          )}
         </div>
 
         {/* Day chips with inline slot+message sync */}
@@ -852,12 +944,18 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             Send →
           </button>
         </div>
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3 flex items-center justify-between gap-2">
+          <button
+            onClick={() => setPanel('filter')}
+            className="text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
+          >
+            ← Change filters
+          </button>
           <button
             onClick={() => { setCustomVenueName(''); setCustomMapsUrl(''); setPanel('custom'); }}
-            className="w-full text-center text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
+            className="text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
           >
-            Have somewhere in mind? Add your own spot →
+            Add your own spot →
           </button>
         </div>
       </div>
