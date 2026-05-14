@@ -1,4 +1,4 @@
-import { CalendarDays, MapPin } from 'lucide-react';
+import { CalendarDays, MapPin, ChevronRight } from 'lucide-react';
 
 export const DATE_PROPOSAL_PREFIX = '__DATE_PROPOSAL__';
 export const DATE_RESPONSE_PREFIX = '__DATE_RESPONSE__';
@@ -37,16 +37,25 @@ interface Props {
 export function DateProposalCard({ data, isMe, matchName, responseData, onRespond }: Props) {
   const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
 
-  // After a day is picked — compact confirmed state for both users
+  // After a day is picked — shows picked day; sender gets a "Pick a time" CTA
   if (responseData) {
+    const pickedDay = responseData.shortLabel || responseData.label;
     return (
       <div className="w-full rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-3">
         <div className="flex items-center gap-1.5 mb-1">
           <CalendarDays size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-          <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Day confirmed</span>
+          <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">
+            {isMe ? `${matchFirstName} picked a day` : 'Day picked'}
+          </span>
         </div>
         <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{data.venueName}</p>
-        <p className="text-[11px] text-[#8A8690] mt-0.5 capitalize">{responseData.label}</p>
+        <p className="text-[11px] text-[#8A8690] mt-0.5 capitalize">{pickedDay}</p>
+        {isMe && (
+          <p className="text-[10px] text-[#7B5EA7] mt-1.5 flex items-center gap-0.5">
+            Now pick a time to lock it in
+            <ChevronRight size={10} aria-hidden="true" />
+          </p>
+        )}
       </div>
     );
   }

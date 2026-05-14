@@ -1106,7 +1106,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           Waiting for {matchFirstName} to choose a day. Or tap a slot below if you've already agreed:
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {slots.map(slot => (
+          {[...slots].sort((a, b) => a.date.getTime() - b.date.getTime()).map(slot => (
             <button
               key={slot.label}
               onClick={() => { setConfirmedSlot(slot); setConfirmedTime(null); setPanel('time-pick'); }}
