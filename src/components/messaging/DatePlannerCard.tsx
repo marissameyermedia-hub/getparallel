@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CalendarClock, X, ChevronRight, Loader, Star, RefreshCw, CalendarPlus, Check, ExternalLink } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
@@ -175,6 +175,52 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
+
+  // ── Persistence — restore post-send state across navigation ──────────────────
+
+  useEffect(() => {
+    const key = `parallel_date_planner_${matchId}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (!saved) {
+        // Different conversation or never used — reset to clean trigger state
+        setPanel('trigger');
+        setSlots([]);
+        setSelectedVenue(null);
+        setMessage('');
+        setConfirmedSlot(null);
+        setConfirmedTime(null);
+        return;
+      }
+      const s = JSON.parse(saved);
+      if (s.panel) setPanel(s.panel);
+      if (s.selectedVenue) setSelectedVenue(s.selectedVenue);
+      if (Array.isArray(s.slots)) setSlots(s.slots.map((sl: { date: string } & Omit<TimeSlot, 'date'>) => ({ ...sl, date: new Date(sl.date) })));
+      if (s.message) setMessage(s.message);
+      if (s.confirmedSlot) setConfirmedSlot({ ...s.confirmedSlot, date: new Date(s.confirmedSlot.date) });
+      if (s.confirmedTime !== undefined && s.confirmedTime !== null) setConfirmedTime(s.confirmedTime);
+    } catch { /* corrupt storage — ignore and start fresh */ }
+  }, [matchId]);
+
+  useEffect(() => {
+    const key = `parallel_date_planner_${matchId}`;
+    if (panel === 'dismissed') {
+      localStorage.removeItem(key);
+      return;
+    }
+    if ((panel === 'waiting' || panel === 'time-pick' || panel === 'confirmed') && selectedVenue) {
+      try {
+        localStorage.setItem(key, JSON.stringify({
+          panel,
+          selectedVenue,
+          slots: slots.map(sl => ({ ...sl, date: sl.date.toISOString() })),
+          message,
+          confirmedSlot: confirmedSlot ? { ...confirmedSlot, date: confirmedSlot.date.toISOString() } : null,
+          confirmedTime,
+        }));
+      } catch { /* storage full — ignore */ }
+    }
+  }, [panel, selectedVenue, slots, message, confirmedSlot, confirmedTime, matchId]);
 
   if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
 
