@@ -261,6 +261,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
   const [shownVenueUrls, setShownVenueUrls] = useState<string[]>([]);
   const [reservationsChecked, setReservationsChecked] = useState(false);
+  const [recommendedPool, setRecommendedPool] = useState<VenueCard[]>([]);
 
   // ── Persistence — restore post-send state across navigation ──────────────────
 
@@ -446,25 +447,21 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
     return KEYWORDS.filter(k => combined.includes(k)).slice(0, 5).join(',');
   }
 
-  // One-tap concierge fetch — auto-picks best venue, pre-selects default days
-  const fetchVenuesConcierge = async (fetchOccasion: Occasion = occasion, fetchVibe: Vibe = vibe) => {
+  // One-tap concierge fetch — Claude picks the best venue from conversation + profile context
+  const fetchVenuesConcierge = async () => {
     setPanel('loading');
     const defaultSlots = getDefaultSlots();
     setSlots(defaultSlots);
     try {
       const token = await getAccessToken();
-      if (!token) { setPanel('filter'); return; }
+      if (!token) { setPanel('trigger'); return; }
       const params = new URLSearchParams({ matchId, force: 'true', timeOfDay: 'evening' });
-      if (fetchOccasion !== 'any') params.set('occasion', fetchOccasion);
-      if (fetchVibe !== 'any') params.set('vibe', fetchVibe);
-      const hints = extractConversationHints(recentMessages);
-      if (hints) params.set('hints', hints);
-      // Pass skipIds so backend avoids venues already seen this session
       const skipIds = shownVenueUrls.filter(Boolean).join(',');
       if (skipIds) params.set('skipIds', skipIds);
       const res = await fetch(`${DATE_AGENT_FUNCTION_URL}/generate?${params}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey },
+        headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: recentMessages.slice(-20) }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -475,20 +472,31 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             if (!seen.has(v.name) && top.length < 15) { seen.add(v.name); top.push(v); }
           }
           setVenues(top);
-          setVenueIndex(0);
-          setSelectedVenue(top[0]);
+
+          // Build Claude's curated pick pool: top pick first, then 3 alternatives
+          const tIdx = typeof data.topPickIndex === 'number' && data.topPickIndex >= 0 && data.topPickIndex < top.length
+            ? data.topPickIndex : 0;
+          const rawAlts: number[] = Array.isArray(data.altIndices) ? data.altIndices : [];
+          const altPool = rawAlts
+            .filter((i): i is number => typeof i === 'number' && i >= 0 && i < top.length && i !== tIdx)
+            .slice(0, 3)
+            .map(i => top[i]);
+          const pool = [top[tIdx], ...altPool];
+          setRecommendedPool(pool.length >= 2 ? pool : top.slice(0, 4));
+
+          setVenueIndex(tIdx);
+          setSelectedVenue(top[tIdx]);
           setPreferredArea('any');
           const areas = [...new Set(top.map(v => v.areaKey).filter(Boolean))] as Array<'you' | 'them' | 'middle'>;
           setAvailableAreas(areas);
-          setMessage(buildPlanMessage(top[0], defaultSlots));
-          // Track shown venue URLs for future skip
+          setMessage(buildPlanMessage(top[tIdx], defaultSlots));
           setShownVenueUrls(prev => [...new Set([...prev, ...top.map(v => v.mapsUrl).filter(Boolean)])]);
           setPanel('quick-review');
           return;
         }
       }
     } catch { /* fall through */ }
-    setPanel('filter');
+    setPanel('trigger');
   };
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -511,7 +519,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             </button>
           </div>
           <button
-            onClick={() => setPanel('filter')}
+            onClick={() => fetchVenuesConcierge()}
             className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
           >
             Find a spot →
@@ -523,7 +531,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
     return (
       <div className="mb-1.5 flex justify-center">
         <button
-          onClick={() => setPanel('filter')}
+          onClick={() => fetchVenuesConcierge()}
           className="flex items-center gap-1.5 text-[11px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
         >
           <CalendarClock size={11} aria-hidden="true" />
@@ -574,7 +582,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         </div>
 
         <button
-          onClick={() => fetchVenuesConcierge(occasion, vibe)}
+          onClick={() => fetchVenuesConcierge()}
           className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
         >
           Find spots →
@@ -769,18 +777,10 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   if (panel === 'quick-review' && selectedVenue) {
     const reviewDays = getUpcomingDays(7);
 
-    // Client-side filtering by budget + area preference
-    const filteredVenues = venues.filter(v =>
-      (preferredArea === 'any' || v.areaKey === preferredArea) &&
-      passesMaxPriceClient(v.priceLevel, budget)
-    );
-    const pool = filteredVenues.length > 0 ? filteredVenues : venues;
+    // Use Claude's curated pool for Try Another Spot (top pick + 3 alternatives)
+    const pool = recommendedPool.length >= 2 ? recommendedPool : venues.slice(0, 4);
     const hasMultipleAreas = availableAreas.length > 1;
     const poolIdx = pool.findIndex(v => v.name === selectedVenue.name);
-
-    const chipBase = 'text-[10px] px-2 py-0.5 rounded-full border transition-colors';
-    const chipOn = `${chipBase} bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]`;
-    const chipOff = `${chipBase} text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]`;
 
     return (
       <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden">
@@ -825,58 +825,6 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             )}
           </div>
         </button>
-
-        {/* Filters: area + budget */}
-        <div className="px-4 mb-2 space-y-1.5">
-          {hasMultipleAreas && (
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] text-[#8A8690]">Where:</span>
-              {(['any', 'you', 'middle', 'them'] as const).map(area => {
-                if (area !== 'any' && !availableAreas.includes(area as 'you' | 'them' | 'middle')) return null;
-                const label = { any: 'Any', you: 'Near me', middle: 'Middle', them: 'Near them' }[area];
-                const isOn = preferredArea === area;
-                return (
-                  <button key={area} onClick={() => {
-                    setPreferredArea(area);
-                    let newPool = area === 'any'
-                      ? venues.filter(v => passesMaxPriceClient(v.priceLevel, budget))
-                      : venues.filter(v => v.areaKey === area && passesMaxPriceClient(v.priceLevel, budget));
-                    if (newPool.length === 0 && budget !== 'any') {
-                      setBudget('any');
-                      newPool = area === 'any' ? venues : venues.filter(v => v.areaKey === area);
-                    }
-                    if (newPool.length === 0) newPool = venues;
-                    setSelectedVenue(newPool[0]);
-                    setMessage(buildPlanMessage(newPool[0], slots));
-                  }} className={isOn ? chipOn : chipOff}>{label}</button>
-                );
-              })}
-            </div>
-          )}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] text-[#8A8690]">Budget:</span>
-            {(['any', '$', '$$', '$$$'] as const).map(b => {
-              const isOn = budget === b;
-              return (
-                <button key={b} onClick={() => {
-                  setBudget(b);
-                  const newPool = venues.filter(v =>
-                    (preferredArea === 'any' || v.areaKey === preferredArea) &&
-                    passesMaxPriceClient(v.priceLevel, b)
-                  );
-                  setSelectedVenue((newPool.length > 0 ? newPool : venues)[0]);
-                  setMessage(buildPlanMessage((newPool.length > 0 ? newPool : venues)[0], slots));
-                }} className={isOn ? chipOn : chipOff}>{b === 'any' ? 'Any' : b}</button>
-              );
-            })}
-          </div>
-          {/* Active filter summary */}
-          {(occasion !== 'any' || vibe !== 'any') && (
-            <p className="text-[10px] text-[#7B5EA7]">
-              {[occasion !== 'any' && OCCASION_LABELS[occasion], vibe !== 'any' && VIBE_LABELS[vibe]].filter(Boolean).join(' · ')}
-            </p>
-          )}
-        </div>
 
         {/* Day chips with inline slot+message sync */}
         <div className="px-4 mb-2">
@@ -987,13 +935,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             Send →
           </button>
         </div>
-        <div className="px-4 pb-3 flex items-center justify-between gap-2">
-          <button
-            onClick={() => setPanel('filter')}
-            className="text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
-          >
-            ← Change filters
-          </button>
+        <div className="px-4 pb-3 flex justify-end">
           <button
             onClick={() => { setCustomVenueName(''); setCustomMapsUrl(''); setPanel('custom'); }}
             className="text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"

@@ -1,4 +1,4 @@
-// date-agent v25 — occasion/vibe filters, dual-profile blurbs, quality baseline, 5 per area
+// date-agent v26 — conversation-aware ranking: Claude reads last 20 messages, picks top venue + 3 alts
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -326,7 +326,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "25" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "26" });
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);
 
     const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
@@ -338,6 +338,19 @@ Deno.serve(async (req) => {
 
     const matchId = url.searchParams.get("matchId") ?? "";
     if (!matchId || matchId === userId) return json({ error: "Invalid matchId" }, 400);
+
+    // Parse conversation messages from POST body (last 20, used for AI ranking)
+    let conversationMessages: string[] = [];
+    try {
+      const ct = req.headers.get("content-type") ?? "";
+      if (ct.includes("application/json")) {
+        const body = await req.json() as { messages?: unknown };
+        if (Array.isArray(body.messages)) {
+          conversationMessages = body.messages.filter((m): m is string => typeof m === "string").slice(-20);
+        }
+      }
+    } catch { /* body is optional */ }
+
     const maxPrice = url.searchParams.get("maxPrice") ?? "any";
     const forceRefresh = url.searchParams.get("force") === "true";
     const skip = Math.max(0, Math.min(18, parseInt(url.searchParams.get("skip") ?? "0") || 0));
@@ -526,6 +539,9 @@ Deno.serve(async (req) => {
       .filter(k => areaGroups.has(k))
       .map(k => ({ key: k, tagline: buildAreaTagline(areaGroups.get(k)!, k, distKm, sharedHobbies, myHobbies, theirHobbies) }));
 
+    let topPickIndex = 0;
+    let altIndices: number[] = [];
+
     if (ANTHROPIC_API_KEY && !usingGeneric) {
       try {
         const ctx: string[] = [];
@@ -539,15 +555,18 @@ Deno.serve(async (req) => {
         if (sharedWeekend.length) ctx.push(`Weekend style: ${sharedWeekend.join(", ")}`);
         if (myDrinking || theirDrinking) ctx.push(`Drinking: ${[myDrinking, theirDrinking].filter(Boolean).join(" / ")}`);
         if (mySocial || theirSocial) ctx.push(`Social style: ${[mySocial, theirSocial].filter(Boolean).join(" / ")}`);
-        if (conversationHints) ctx.push(`Conversation hints: ${conversationHints}`);
         ctx.push(`Date time: ${timeOfDay}`);
-        if (occasion !== "any") ctx.push(`Occasion: ${occasion}`);
-        if (vibe !== "any") ctx.push(`Vibe: ${vibe}`);
 
         const venueList = allVenueCards.map((v, i) => {
           const tags = v.atmosphereTags?.length ? ` [${v.atmosphereTags.join(", ")}]` : "";
-          return `${i + 1}. ${v.name} (${v.category}${tags})`;
+          return `${i + 1}. ${v.name} (${v.category}, ${v.priceLevel}${tags})`;
         }).join("\n");
+
+        const convoSection = conversationMessages.length > 0
+          ? `Recent conversation between these two people:\n${conversationMessages.join("\n")}\n\n`
+          : "";
+
+        const prompt = `Two people matched on a dating app. Help pick where they should go on their first date — casual, low-pressure, good for conversation. Recommend LOCAL neighborhood spots, not tourist traps or chains.\n\n${convoSection}Profile context: ${ctx.join(" | ") || "No context"}\n\nAvailable venues (0-indexed):\n${venueList}\n\nYour task:\n1. Read the conversation carefully. Pick the SINGLE best venue for this specific couple — if they mentioned specific cuisines, interests, or neighborhoods, that's your primary signal. Otherwise use their profile interests.\n2. Pick 3 alternatives (good options but not the top pick). Cover different categories if possible.\n3. For the top pick and each alternative, write:\n   - "why": One warm sentence (max 14 words) explaining why this spot suits THIS couple. Reference something specific from their conversation or a shared interest — e.g. "You both mentioned loving wine, and this place has a great natural wine list." Be specific, not generic.\n   - "suggest": A natural first-person message (15–25 words) proposing this spot. Specific to the venue. No addresses. No exclamation marks. Don't start with 'I' or use the word 'suggest'.\n\nReturn JSON only — no other text:\n{"topPickIndex":0,"altIndices":[2,5,8],"picks":[{"index":0,"why":"...","suggest":"..."},{"index":2,"why":"...","suggest":"..."},{"index":5,"why":"...","suggest":"..."},{"index":8,"why":"...","suggest":"..."}]}`;
 
         const ctrl = new AbortController();
         const aiTimer = setTimeout(() => ctrl.abort(), 20000);
@@ -556,8 +575,8 @@ Deno.serve(async (req) => {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
             body: JSON.stringify({
-              model: "claude-haiku-4-5-20251001", max_tokens: 1400,
-              messages: [{ role: "user", content: `Two people matched on a dating app. These are first dates — casual, low-pressure, good for conversation. Recommend LOCAL, neighborhood spots — not tourist traps or chains.\n\nContext: ${ctx.join(" | ") || "No context"}\n\n${venueList}\n\nFor each venue write:\n1. "why": One warm sentence (max 14 words) explaining why this spot suits THIS couple. Reference a specific interest from either person when possible — e.g. "You both listed hiking, and this spot has great outdoor seating" or "She's into art, you love cocktails — this gallery bar covers both."\n2. "suggest": A natural first-person message (15-25 words) proposing this date. Specific to the venue. No addresses. No exclamation marks. Don't start with 'I' or use the word 'suggest'.\n\nReturn only JSON: [{"index":0,"why":"...","suggest":"..."}]` }],
+              model: "claude-haiku-4-5-20251001", max_tokens: 900,
+              messages: [{ role: "user", content: prompt }],
             }),
             signal: ctrl.signal,
           });
@@ -565,14 +584,28 @@ Deno.serve(async (req) => {
           if (aiRes.ok) {
             const aiData = await aiRes.json();
             const raw: string = aiData?.content?.[0]?.text?.trim() ?? "";
-            const m = raw.match(/\[.*\]/s);
+            const m = raw.match(/\{.*\}/s);
             if (m) {
               try {
-                const parsed = JSON.parse(m[0]) as Array<{ index: number; why: string; suggest: string }>;
-                for (const item of parsed) {
-                  if (typeof item.index === "number" && item.index >= 0 && item.index < allVenueCards.length) {
-                    if (item.why) allVenueCards[item.index].whyItFits = String(item.why);
-                    if (item.suggest) allVenueCards[item.index].suggestionMessage = String(item.suggest);
+                const parsed = JSON.parse(m[0]) as {
+                  topPickIndex: number;
+                  altIndices: number[];
+                  picks: Array<{ index: number; why: string; suggest: string }>;
+                };
+                if (typeof parsed.topPickIndex === "number" && parsed.topPickIndex >= 0 && parsed.topPickIndex < allVenueCards.length) {
+                  topPickIndex = parsed.topPickIndex;
+                }
+                if (Array.isArray(parsed.altIndices)) {
+                  altIndices = parsed.altIndices.filter(
+                    (i) => typeof i === "number" && i >= 0 && i < allVenueCards.length && i !== topPickIndex
+                  ).slice(0, 3);
+                }
+                if (Array.isArray(parsed.picks)) {
+                  for (const item of parsed.picks) {
+                    if (typeof item.index === "number" && item.index >= 0 && item.index < allVenueCards.length) {
+                      if (item.why) allVenueCards[item.index].whyItFits = String(item.why);
+                      if (item.suggest) allVenueCards[item.index].suggestionMessage = String(item.suggest);
+                    }
                   }
                 }
               } catch { /* keep defaults */ }
@@ -601,11 +634,11 @@ Deno.serve(async (req) => {
       }).then(() => {}).catch(() => {});
     }
 
-    return json({ suggestions: allVenueCards, areas, cached: false });
+    return json({ suggestions: allVenueCards, areas, topPickIndex, altIndices, cached: false });
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v25] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 25 }, 500);
+    console.error("[v26] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 26 }, 500);
   }
 });
