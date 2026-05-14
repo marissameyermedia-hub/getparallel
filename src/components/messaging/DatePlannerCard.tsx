@@ -103,7 +103,8 @@ function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
     ? `Are you free ${dayName(slots[0])}?`
     : null;
   const tail = `Parallel matched us to ${venue.name} — apparently it's our kind of place. Have you been?`;
-  return availability ? `${availability} ${tail}` : tail;
+  const body = availability ? `${availability} ${tail}` : tail;
+  return venue.mapsUrl ? `${body}\n${venue.mapsUrl}` : body;
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
