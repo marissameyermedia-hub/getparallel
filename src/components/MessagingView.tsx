@@ -686,6 +686,11 @@ export function MessagingView({
   const messagingDisabled = isLocked || !emailVerified;
 
   const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
+  // Only the most recent suggestion card should render; older ones are replaced by the latest
+  const lastProposalMsgId = messages.reduce<string | null>(
+    (last, m) => m.text.startsWith(DATE_PROPOSAL_PREFIX) ? m.id : last,
+    null
+  );
   const dateResponseMsg = messages.slice().reverse().find(m => m.text.startsWith(DATE_RESPONSE_PREFIX));
   const dateResponseData: DateResponseData | null = dateResponseMsg ? (() => {
     try { return JSON.parse(dateResponseMsg.text.slice(DATE_RESPONSE_PREFIX.length)); } catch { return null; }
@@ -1008,6 +1013,9 @@ export function MessagingView({
             }
 
             if (message.text.startsWith(DATE_PROPOSAL_PREFIX)) {
+              // Skip older suggestion cards — only the latest renders; earlier ones become invisible
+              // (the preceding text message still gives context)
+              if (message.id !== lastProposalMsgId) return null;
               try {
                 const proposalData = JSON.parse(message.text.slice(DATE_PROPOSAL_PREFIX.length));
                 return (

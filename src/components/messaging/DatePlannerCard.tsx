@@ -440,7 +440,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
               <Sparkles size={13} className="text-[#7B5EA7] mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div>
                 <p className="text-[11px] font-medium text-[#7B5EA7] leading-tight">Sounds like you two click</p>
-                <p className="text-[11px] text-[#8A8690] mt-0.5 leading-snug">Want Parallel to find a spot and draft the invite?</p>
+                <p className="text-[11px] text-[#8A8690] mt-0.5 leading-snug">Want Parallel to suggest a spot? It picks based on your shared interests and where you both are.</p>
               </div>
             </div>
             <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors flex-shrink-0" aria-label="Dismiss">
@@ -840,7 +840,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Proposal sent ✓</span>
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Suggestion sent ✓</span>
           </div>
           <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Dismiss">
             <X size={13} className="text-[#8A8690]" aria-hidden="true" />
