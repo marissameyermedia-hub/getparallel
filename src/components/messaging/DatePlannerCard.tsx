@@ -260,6 +260,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
   const [shownVenueUrls, setShownVenueUrls] = useState<string[]>([]);
+  const [reservationsChecked, setReservationsChecked] = useState(false);
 
   // ── Persistence — restore post-send state across navigation ──────────────────
 
@@ -307,6 +308,9 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
       } catch { /* storage full — ignore */ }
     }
   }, [panel, selectedVenue, slots, message, confirmedSlot, confirmedTime, matchId]);
+
+  // Reset availability confirmation whenever the user switches to a different venue
+  useEffect(() => { setReservationsChecked(false); }, [selectedVenue?.mapsUrl]);
 
   // When the match picks a day via the proposal card, auto-advance from waiting → time-pick
   useEffect(() => {
@@ -922,6 +926,45 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           />
         </div>
 
+        {/* Reservation availability check — only for venues that take reservations */}
+        {selectedVenue.reservable !== false && slots.length > 0 && (() => {
+          const checkSlot = slots[0];
+          const defaultHour = checkSlot.period === 'evening' ? 19 : 14;
+          const otUrl = buildOpenTableUrl(selectedVenue, checkSlot, defaultHour);
+          return (
+            <div className="px-4 mb-3">
+              <div className="bg-white rounded-xl border border-[#E8E4DE] px-3.5 py-2.5">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-[10px] text-[#8A8690] leading-snug">Check availability before sending so there's definitely a table</p>
+                  <a
+                    href={otUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-0.5 text-[10px] font-semibold text-[#7B5EA7] flex-shrink-0"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    OpenTable <ExternalLink size={9} className="ml-0.5" aria-hidden="true" />
+                  </a>
+                </div>
+                <button
+                  onClick={() => setReservationsChecked(r => !r)}
+                  className="flex items-center gap-2"
+                  aria-pressed={reservationsChecked}
+                >
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                    reservationsChecked ? 'bg-[#7B5EA7] border-[#7B5EA7]' : 'border-[#C0BAC8]'
+                  }`}>
+                    {reservationsChecked && <Check size={10} className="text-white" aria-hidden="true" />}
+                  </div>
+                  <span className={`text-[11px] font-medium transition-colors ${reservationsChecked ? 'text-[#7B5EA7]' : 'text-[#8A8690]'}`}>
+                    {reservationsChecked ? 'Availability confirmed ✓' : 'I\'ve checked — there\'s a table available'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Actions */}
         <div className="px-4 pb-2 flex gap-2">
           <button
@@ -938,7 +981,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           </button>
           <button
             onClick={handleSendConcierge}
-            disabled={!message.trim()}
+            disabled={!message.trim() || (selectedVenue.reservable !== false && slots.length > 0 && !reservationsChecked)}
             className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
           >
             Send →
