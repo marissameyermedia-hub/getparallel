@@ -135,8 +135,16 @@ function formatHour(h: number): string {
   return `${h}am`;
 }
 
-function buildCustomMessage(name: string, slots: TimeSlot[]): string {
-  const availability = slots.length >= 2
+function extractNameFromMapsUrl(url: string): string {
+  try {
+    // https://www.google.com/maps/place/Venue+Name/@...
+    const m = url.match(/maps\/place\/([^/@?&#]+)/);
+    if (m) return decodeURIComponent(m[1].replace(/\+/g, ' '));
+  } catch { /* ignore */ }
+  return '';
+}
+
+function buildCustomMessage(name: string, slots: TimeSlot[]): string {  const availability = slots.length >= 2
     ? `Are you free ${dayName(slots[0])} or ${dayName(slots[1])}?`
     : slots.length === 1
     ? `Are you free ${dayName(slots[0])}?`
@@ -229,6 +237,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
   const [customVenueName, setCustomVenueName] = useState('');
+  const [customMapsUrl, setCustomMapsUrl] = useState('');
   const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
 
@@ -845,7 +854,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         </div>
         <div className="px-4 pb-3">
           <button
-            onClick={() => { setCustomVenueName(''); setPanel('custom'); }}
+            onClick={() => { setCustomVenueName(''); setCustomMapsUrl(''); setPanel('custom'); }}
             className="w-full text-center text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
           >
             Have somewhere in mind? Add your own spot →
@@ -856,6 +865,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   }
 
   if (panel === 'custom') {
+    const canSubmit = customVenueName.trim().length > 0;
     return (
       <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
         <div className="flex items-center justify-between mb-3">
@@ -867,16 +877,36 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             <X size={13} className="text-[#8A8690]" aria-hidden="true" />
           </button>
         </div>
-        <label className="block text-[10px] text-[#8A8690] mb-1.5">Venue name</label>
+
+        <label className="block text-[10px] text-[#8A8690] mb-1">Venue name</label>
         <input
           type="text"
           value={customVenueName}
           onChange={e => setCustomVenueName(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && customVenueName.trim()) e.currentTarget.blur(); }}
           placeholder="e.g. The Pink Door"
           className="w-full bg-white rounded-xl px-3.5 py-2.5 border border-[#E8E4DE] text-xs text-[#2E2A36] focus:outline-none focus:border-[#7B5EA7] transition-colors mb-3"
           autoFocus
         />
+
+        <label className="block text-[10px] text-[#8A8690] mb-1">
+          Google Maps link <span className="text-[#C0BAC8]">— optional, so they can check it out</span>
+        </label>
+        <input
+          type="url"
+          value={customMapsUrl}
+          onChange={e => {
+            const val = e.target.value;
+            setCustomMapsUrl(val);
+            // Auto-fill name from a standard maps/place/... URL if name is still blank
+            if (!customVenueName.trim()) {
+              const extracted = extractNameFromMapsUrl(val);
+              if (extracted) setCustomVenueName(extracted);
+            }
+          }}
+          placeholder="Paste a Google Maps link…"
+          className="w-full bg-white rounded-xl px-3.5 py-2.5 border border-[#E8E4DE] text-xs text-[#2E2A36] focus:outline-none focus:border-[#7B5EA7] transition-colors mb-3"
+        />
+
         <div className="flex gap-2">
           <button
             onClick={() => setPanel('quick-review')}
@@ -888,13 +918,15 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             onClick={() => {
               const name = customVenueName.trim();
               if (!name) return;
+              const pastedUrl = customMapsUrl.trim();
+              const mapsUrl = pastedUrl || `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
               const customCard: VenueCard = {
                 name,
                 category: 'Custom',
                 priceLevel: '$$',
                 rating: null,
                 address: '',
-                mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(name)}`,
+                mapsUrl,
                 whyItFits: '',
                 suggestionMessage: '',
                 areaKey: 'middle' as const,
@@ -903,7 +935,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
               setMessage(buildCustomMessage(name, slots));
               setPanel('quick-review');
             }}
-            disabled={!customVenueName.trim()}
+            disabled={!canSubmit}
             className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
           >
             Use this spot →
