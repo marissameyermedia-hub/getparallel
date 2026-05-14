@@ -725,14 +725,17 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
                 return (
                   <button key={area} onClick={() => {
                     setPreferredArea(area);
-                    const newPool = area === 'any'
+                    // Try area+budget first; if empty, relax budget so the area is always honored
+                    let newPool = area === 'any'
                       ? venues.filter(v => passesMaxPriceClient(v.priceLevel, budget))
                       : venues.filter(v => v.areaKey === area && passesMaxPriceClient(v.priceLevel, budget));
-                    const first = (newPool.length > 0 ? newPool : venues)[0];
-                    if (first && first.name !== selectedVenue.name) {
-                      setSelectedVenue(first);
-                      setMessage(buildPlanMessage(first, slots));
+                    if (newPool.length === 0 && budget !== 'any') {
+                      setBudget('any');
+                      newPool = area === 'any' ? venues : venues.filter(v => v.areaKey === area);
                     }
+                    if (newPool.length === 0) newPool = venues;
+                    setSelectedVenue(newPool[0]);
+                    setMessage(buildPlanMessage(newPool[0], slots));
                   }} className={isOn ? chipOn : chipOff}>{label}</button>
                 );
               })}
@@ -749,11 +752,10 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
                     (preferredArea === 'any' || v.areaKey === preferredArea) &&
                     passesMaxPriceClient(v.priceLevel, b)
                   );
-                  const first = (newPool.length > 0 ? newPool : venues)[0];
-                  if (first && first.name !== selectedVenue.name) {
-                    setSelectedVenue(first);
-                    setMessage(buildPlanMessage(first, slots));
-                  }
+                  // If this budget yields nothing for the current area, just switch budget;
+                  // the empty-pool fallback in render will show all venues
+                  setSelectedVenue((newPool.length > 0 ? newPool : venues)[0]);
+                  setMessage(buildPlanMessage((newPool.length > 0 ? newPool : venues)[0], slots));
                 }} className={isOn ? chipOn : chipOff}>{b === 'any' ? 'Any' : b}</button>
               );
             })}

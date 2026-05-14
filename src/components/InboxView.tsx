@@ -6,6 +6,33 @@ import { InboxSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { SetupChecklist } from './SetupChecklist';
 
+const DATE_PROPOSAL_PREFIX = '__DATE_PROPOSAL__';
+const DATE_RESPONSE_PREFIX = '__DATE_RESPONSE__';
+const DATE_CARD_PREFIX = '__DATE_CARD__';
+
+function formatMessagePreview(text: string): string {
+  if (!text) return '';
+  if (text.startsWith(DATE_PROPOSAL_PREFIX)) {
+    try {
+      const d = JSON.parse(text.slice(DATE_PROPOSAL_PREFIX.length));
+      return `📅 Suggested ${d.venueName ?? 'a date spot'}`;
+    } catch { return '📅 Date suggestion'; }
+  }
+  if (text.startsWith(DATE_RESPONSE_PREFIX)) {
+    try {
+      const d = JSON.parse(text.slice(DATE_RESPONSE_PREFIX.length));
+      return `✓ Picked ${d.label ?? 'a day'}`;
+    } catch { return '✓ Picked a day'; }
+  }
+  if (text.startsWith(DATE_CARD_PREFIX)) {
+    try {
+      const d = JSON.parse(text.slice(DATE_CARD_PREFIX.length));
+      return `🗓 Date at ${d.venueName ?? 'a venue'} confirmed`;
+    } catch { return '🗓 Date confirmed'; }
+  }
+  return text;
+}
+
 interface Message {
   matchId: string;
   matchName: string;
@@ -314,7 +341,7 @@ export function InboxView({
                       </span>
                     </div>
                     <p className={`text-sm truncate ${message.unread ? 'text-parallel-void font-medium' : 'text-gray-500'}`}>
-                      {message.lastMessage}
+                      {formatMessagePreview(message.lastMessage)}
                     </p>
                   </button>
                 </div>
