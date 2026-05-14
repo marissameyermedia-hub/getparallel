@@ -31,7 +31,7 @@ interface VenueCard {
   reservable?: boolean;
 }
 
-type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review';
+type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review' | 'custom';
 type Budget = 'any' | '$' | '$$' | '$$$';
 
 interface Props {
@@ -135,6 +135,16 @@ function formatHour(h: number): string {
   return `${h}am`;
 }
 
+function buildCustomMessage(name: string, slots: TimeSlot[]): string {
+  const availability = slots.length >= 2
+    ? `Are you free ${dayName(slots[0])} or ${dayName(slots[1])}?`
+    : slots.length === 1
+    ? `Are you free ${dayName(slots[0])}?`
+    : null;
+  const tail = `I was thinking ${name} could be fun for us. Have you been?`;
+  return availability ? `${availability} ${tail}` : tail;
+}
+
 function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
   const availability = slots.length >= 2
     ? `Are you free ${dayName(slots[0])} or ${dayName(slots[1])}?`
@@ -218,6 +228,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
+  const [customVenueName, setCustomVenueName] = useState('');
   const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
 
@@ -811,7 +822,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         </div>
 
         {/* Actions */}
-        <div className="px-4 pb-3 flex gap-2">
+        <div className="px-4 pb-2 flex gap-2">
           <button
             onClick={() => {
               const next = pool[(poolIdx + 1) % pool.length];
@@ -830,6 +841,72 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
           >
             Send →
+          </button>
+        </div>
+        <div className="px-4 pb-3">
+          <button
+            onClick={() => { setCustomVenueName(''); setPanel('custom'); }}
+            className="w-full text-center text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
+          >
+            Have somewhere in mind? Add your own spot →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (panel === 'custom') {
+    return (
+      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Your own spot</span>
+          </div>
+          <button onClick={() => setPanel('quick-review')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+        <label className="block text-[10px] text-[#8A8690] mb-1.5">Venue name</label>
+        <input
+          type="text"
+          value={customVenueName}
+          onChange={e => setCustomVenueName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && customVenueName.trim()) e.currentTarget.blur(); }}
+          placeholder="e.g. The Pink Door"
+          className="w-full bg-white rounded-xl px-3.5 py-2.5 border border-[#E8E4DE] text-xs text-[#2E2A36] focus:outline-none focus:border-[#7B5EA7] transition-colors mb-3"
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPanel('quick-review')}
+            className="flex-1 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors"
+          >
+            ← Back
+          </button>
+          <button
+            onClick={() => {
+              const name = customVenueName.trim();
+              if (!name) return;
+              const customCard: VenueCard = {
+                name,
+                category: 'Custom',
+                priceLevel: '$$',
+                rating: null,
+                address: '',
+                mapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(name)}`,
+                whyItFits: '',
+                suggestionMessage: '',
+                areaKey: 'middle' as const,
+              };
+              setSelectedVenue(customCard);
+              setMessage(buildCustomMessage(name, slots));
+              setPanel('quick-review');
+            }}
+            disabled={!customVenueName.trim()}
+            className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            Use this spot →
           </button>
         </div>
       </div>
