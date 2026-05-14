@@ -1,4 +1,4 @@
-import { CalendarPlus, ExternalLink, X } from 'lucide-react';
+import { CalendarPlus, MapPin, X } from 'lucide-react';
 
 export const DATE_CARD_PREFIX = '__DATE_CARD__';
 
@@ -6,7 +6,7 @@ export interface DateCardData {
   venueName: string;
   venueAddress: string;
   mapsUrl: string;
-  openTableUrl: string;
+  openTableUrl?: string;
   dateIso: string;
   time: number;
   label: string;       // "Friday at 7pm"
@@ -91,21 +91,12 @@ export function DateConfirmCard({ data, isMe, onCancel }: DateConfirmCardProps) 
 
       {/* Actions */}
       <div className="flex border-t border-[#E2D5F5]">
-        {data.openTableUrl && (
-          <button
-            onClick={() => window.open(data.openTableUrl, '_blank', 'noopener')}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#7B5EA7] border-r border-[#E2D5F5] hover:bg-[#EDE8F8] transition-colors"
-          >
-            <ExternalLink size={11} aria-hidden="true" />
-            Book table
-          </button>
-        )}
-        {data.mapsUrl && !data.openTableUrl && (
+        {data.mapsUrl && (
           <button
             onClick={() => window.open(data.mapsUrl, '_blank', 'noopener')}
             className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium text-[#7B5EA7] border-r border-[#E2D5F5] hover:bg-[#EDE8F8] transition-colors"
           >
-            <ExternalLink size={11} aria-hidden="true" />
+            <MapPin size={11} aria-hidden="true" />
             View on Maps
           </button>
         )}

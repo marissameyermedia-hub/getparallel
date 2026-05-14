@@ -1,4 +1,4 @@
-// date-agent v26 — conversation-aware ranking: Claude reads last 20 messages, picks top venue + 3 alts
+// date-agent v27 — remove OpenTable, bigger venue pool (10/area), areaKey in Claude prompt, budget filter wired
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -326,7 +326,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "26" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "27" });
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);
 
     const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
@@ -513,8 +513,8 @@ Deno.serve(async (req) => {
               }
             }
           }
-          // Take top 5 per area
-          const toAdd = (filteredForArea.length > 0 ? filteredForArea : allForArea).slice(0, 5);
+          // Take top 10 per area to give Claude a bigger pool to pick from
+          const toAdd = (filteredForArea.length > 0 ? filteredForArea : allForArea).slice(0, 10);
           for (const v of toAdd) allVenueCards.push({ ...v, areaKey: spec.areaKey });
         }
       } finally { clearTimeout(timer); }
@@ -557,9 +557,11 @@ Deno.serve(async (req) => {
         if (mySocial || theirSocial) ctx.push(`Social style: ${[mySocial, theirSocial].filter(Boolean).join(" / ")}`);
         ctx.push(`Date time: ${timeOfDay}`);
 
+        const AREA_LABEL: Record<string, string> = { you: "near you", them: "near them", middle: "midway" };
         const venueList = allVenueCards.map((v, i) => {
           const tags = v.atmosphereTags?.length ? ` [${v.atmosphereTags.join(", ")}]` : "";
-          return `${i + 1}. ${v.name} (${v.category}, ${v.priceLevel}${tags})`;
+          const area = v.areaKey ? ` — ${AREA_LABEL[v.areaKey] ?? v.areaKey}` : "";
+          return `${i}. ${v.name} (${v.category}, ${v.priceLevel}${tags}${area})`;
         }).join("\n");
 
         const convoSection = conversationMessages.length > 0
@@ -638,7 +640,7 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v26] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 26 }, 500);
+    console.error("[v27] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 27 }, 500);
   }
 });

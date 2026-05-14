@@ -233,17 +233,6 @@ function openCalendar(venue: VenueCard, slot: TimeSlot, initials: string, exactH
   }
 }
 
-function buildOpenTableUrl(venue: VenueCard, slot: TimeSlot, exactHour: number): string {
-  const d = new Date(slot.date);
-  d.setHours(exactHour, 0, 0, 0);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(exactHour)}:00:00`;
-  const params = new URLSearchParams({ covers: '2', dateTime: dateStr, term: venue.name });
-  if (venue.latitude) params.set('latitude', String(venue.latitude));
-  if (venue.longitude) params.set('longitude', String(venue.longitude));
-  return `https://www.opentable.com/s/?${params}`;
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function DatePlannerCard(
@@ -267,7 +256,6 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
   const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
   const [shownVenueUrls, setShownVenueUrls] = useState<string[]>([]);
-  const [reservationsChecked, setReservationsChecked] = useState(false);
   const [recommendedPool, setRecommendedPool] = useState<VenueCard[]>([]);
 
   // Expose open() so the compose bar icon can trigger scheduling without a banner
@@ -325,9 +313,6 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
       } catch { /* storage full — ignore */ }
     }
   }, [panel, selectedVenue, slots, message, confirmedSlot, confirmedTime, matchId]);
-
-  // Reset availability confirmation whenever the user switches to a different venue
-  useEffect(() => { setReservationsChecked(false); }, [selectedVenue?.mapsUrl]);
 
   // When the match picks a day via the proposal card, auto-advance from waiting → time-pick
   useEffect(() => {
@@ -474,6 +459,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
       if (!token) { setPanel('trigger'); return; }
       const params = new URLSearchParams({ matchId, force: 'true', timeOfDay: activeSlots[0]?.period === 'afternoon' ? 'afternoon' : 'evening' });
       if (occasion !== 'any') params.set('occasion', occasion);
+      if (budget !== 'any') params.set('maxPrice', budget);
       const skipIds = shownVenueUrls.filter(Boolean).join(',');
       if (skipIds) params.set('skipIds', skipIds);
       const res = await fetch(`${DATE_AGENT_FUNCTION_URL}/generate?${params}`, {
@@ -569,6 +555,16 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           {(['any', 'dinner', 'drinks', 'coffee', 'activity'] as Occasion[]).map(o => (
             <button key={o} onClick={() => setOccasion(o)} className={occasion === o ? chipOn : chipOff}>
               {{ any: 'Surprise me', dinner: 'Dinner', drinks: 'Drinks', coffee: 'Coffee', activity: 'Activity' }[o]}
+            </button>
+          ))}
+        </div>
+
+        {/* Budget */}
+        <p className="text-[10px] text-[#8A8690] mb-1.5">Budget?</p>
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {(['any', '$', '$$', '$$$'] as Budget[]).map(b => (
+            <button key={b} onClick={() => setBudget(b)} className={budget === b ? chipOn : chipOff}>
+              {b === 'any' ? 'Any' : b}
             </button>
           ))}
         </div>
@@ -936,45 +932,6 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           />
         </div>
 
-        {/* Reservation availability check — only for venues that take reservations */}
-        {selectedVenue.reservable !== false && slots.length > 0 && (() => {
-          const checkSlot = slots[0];
-          const defaultHour = checkSlot.period === 'evening' ? 19 : 14;
-          const otUrl = buildOpenTableUrl(selectedVenue, checkSlot, defaultHour);
-          return (
-            <div className="px-4 mb-3">
-              <div className="bg-white rounded-xl border border-[#E8E4DE] px-3.5 py-2.5">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <p className="text-[10px] text-[#8A8690] leading-snug">Check availability before sending so there's definitely a table</p>
-                  <a
-                    href={otUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-0.5 text-[10px] font-semibold text-[#7B5EA7] flex-shrink-0"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    OpenTable <ExternalLink size={9} className="ml-0.5" aria-hidden="true" />
-                  </a>
-                </div>
-                <button
-                  onClick={() => setReservationsChecked(r => !r)}
-                  className="flex items-center gap-2"
-                  aria-pressed={reservationsChecked}
-                >
-                  <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
-                    reservationsChecked ? 'bg-[#7B5EA7] border-[#7B5EA7]' : 'border-[#C0BAC8]'
-                  }`}>
-                    {reservationsChecked && <Check size={10} className="text-white" aria-hidden="true" />}
-                  </div>
-                  <span className={`text-[11px] font-medium transition-colors ${reservationsChecked ? 'text-[#7B5EA7]' : 'text-[#8A8690]'}`}>
-                    {reservationsChecked ? 'Availability confirmed ✓' : 'I\'ve checked — there\'s a table available'}
-                  </span>
-                </button>
-              </div>
-            </div>
-          );
-        })()}
-
         {/* Actions */}
         <div className="px-4 pb-2 flex gap-2">
           <button
@@ -991,7 +948,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           </button>
           <button
             onClick={handleSendConcierge}
-            disabled={!message.trim() || (selectedVenue.reservable !== false && slots.length > 0 && !reservationsChecked)}
+            disabled={!message.trim()}
             className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
           >
             Send →
@@ -1160,15 +1117,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
         {/* Book + Calendar CTAs — appear once a time is chosen */}
         {confirmedTime !== null && (
           <div className="flex gap-2">
-            {selectedVenue.reservable !== false ? (
-              <button
-                onClick={() => window.open(buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime), '_blank', 'noopener')}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
-              >
-                <ExternalLink size={11} aria-hidden="true" />
-                Book on OpenTable
-              </button>
-            ) : selectedVenue.mapsUrl ? (
+            {selectedVenue.mapsUrl && (
               <button
                 onClick={() => window.open(selectedVenue.mapsUrl, '_blank', 'noopener')}
                 className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
@@ -1176,7 +1125,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
                 <ExternalLink size={11} aria-hidden="true" />
                 View on Maps
               </button>
-            ) : null}
+            )}
             <button
               onClick={() => {
                 openCalendar(selectedVenue, confirmedSlot, initials, confirmedTime);
@@ -1184,9 +1133,6 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
                   venueName: selectedVenue.name,
                   venueAddress: selectedVenue.address,
                   mapsUrl: selectedVenue.mapsUrl,
-                  openTableUrl: selectedVenue.reservable !== false
-                    ? buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime)
-                    : '',
                   dateIso: confirmedSlot.date.toISOString(),
                   time: confirmedTime,
                   label: `${dayName(confirmedSlot)} at ${formatHour(confirmedTime)}`,
@@ -1221,16 +1167,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
         <p className="text-[11px] text-[#8A8690] mt-0.5">
           {dayName(confirmedSlot)}{confirmedTime !== null ? ` at ${formatHour(confirmedTime)}` : ''} · Added to calendar ✓
         </p>
-        {confirmedTime !== null && selectedVenue.reservable !== false && (
-          <button
-            onClick={() => window.open(buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime), '_blank', 'noopener')}
-            className="mt-2 flex items-center gap-1 text-[11px] text-[#8A8690] hover:text-[#7B5EA7] transition-colors"
-          >
-            <ExternalLink size={10} aria-hidden="true" />
-            Book on OpenTable
-          </button>
-        )}
-        {selectedVenue.reservable === false && selectedVenue.mapsUrl && (
+        {selectedVenue.mapsUrl && (
           <button
             onClick={() => window.open(selectedVenue.mapsUrl, '_blank', 'noopener')}
             className="mt-2 flex items-center gap-1 text-[11px] text-[#8A8690] hover:text-[#7B5EA7] transition-colors"
