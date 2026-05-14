@@ -3,6 +3,7 @@ import { CalendarClock, X, ChevronRight, Loader, Star, RefreshCw, CalendarPlus, 
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
+import { DATE_CARD_PREFIX, type DateCardData } from './DateConfirmCard';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -611,6 +612,18 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             <button
               onClick={() => {
                 openCalendar(selectedVenue, confirmedSlot, initials, confirmedTime);
+                // Send shared date card so both users see it in the thread
+                const cardData: DateCardData = {
+                  venueName: selectedVenue.name,
+                  venueAddress: selectedVenue.address,
+                  mapsUrl: selectedVenue.mapsUrl,
+                  openTableUrl: buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime),
+                  dateIso: confirmedSlot.date.toISOString(),
+                  time: confirmedTime,
+                  label: `${dayName(confirmedSlot)} at ${formatHour(confirmedTime)}`,
+                  period: confirmedSlot.period,
+                };
+                onSendMessage(`${DATE_CARD_PREFIX}${JSON.stringify(cardData)}`);
                 setPanel('confirmed');
               }}
               className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity"

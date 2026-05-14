@@ -8,6 +8,7 @@ import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
 import { DatePlannerCard } from './messaging/DatePlannerCard';
+import { DateConfirmCard, DATE_CARD_PREFIX } from './messaging/DateConfirmCard';
 import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
 
 const FADE_REASONS = [
@@ -987,6 +988,20 @@ export function MessagingView({
             const isLast = index === messages.length - 1;
             const prevMsg = index > 0 ? messages[index - 1] : null;
             const showSenderChange = !prevMsg || prevMsg.senderId !== message.senderId;
+
+            if (message.text.startsWith(DATE_CARD_PREFIX)) {
+              try {
+                const cardData = JSON.parse(message.text.slice(DATE_CARD_PREFIX.length));
+                return (
+                  <div key={message.id} className="px-2 my-2">
+                    <DateConfirmCard data={cardData} />
+                    {isLast && (
+                      <p className="text-[10px] text-center text-gray-400 mt-1">{formatTime(message.timestamp)}</p>
+                    )}
+                  </div>
+                );
+              } catch { /* fall through to normal bubble */ }
+            }
 
             return (
               <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showSenderChange && index > 0 ? 'mt-3' : 'mt-0.5'}`}>
