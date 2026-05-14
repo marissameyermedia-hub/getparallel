@@ -27,6 +27,7 @@ interface VenueCard {
   photoUrl?: string;
   latitude?: number;
   longitude?: number;
+  reservable?: boolean;
 }
 
 type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed';
@@ -176,7 +177,6 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
-  const [inviteUrl, setInviteUrl] = useState('');
 
   // ── Persistence — restore post-send state across navigation ──────────────────
 
@@ -601,24 +601,33 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         {/* Book + Calendar CTAs — appear once a time is chosen */}
         {confirmedTime !== null && (
           <div className="flex gap-2">
-            <button
-              onClick={() => {
-                window.open(buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime), '_blank', 'noopener');
-              }}
-              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
-            >
-              <ExternalLink size={11} aria-hidden="true" />
-              Book on OpenTable
-            </button>
+            {selectedVenue.reservable !== false ? (
+              <button
+                onClick={() => window.open(buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime), '_blank', 'noopener')}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
+              >
+                <ExternalLink size={11} aria-hidden="true" />
+                Book on OpenTable
+              </button>
+            ) : selectedVenue.mapsUrl ? (
+              <button
+                onClick={() => window.open(selectedVenue.mapsUrl, '_blank', 'noopener')}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
+              >
+                <ExternalLink size={11} aria-hidden="true" />
+                View on Maps
+              </button>
+            ) : null}
             <button
               onClick={() => {
                 openCalendar(selectedVenue, confirmedSlot, initials, confirmedTime);
-                // Send shared date card so both users see it in the thread
                 const cardData: DateCardData = {
                   venueName: selectedVenue.name,
                   venueAddress: selectedVenue.address,
                   mapsUrl: selectedVenue.mapsUrl,
-                  openTableUrl: buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime),
+                  openTableUrl: selectedVenue.reservable !== false
+                    ? buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime)
+                    : '',
                   dateIso: confirmedSlot.date.toISOString(),
                   time: confirmedTime,
                   label: `${dayName(confirmedSlot)} at ${formatHour(confirmedTime)}`,
@@ -653,7 +662,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         <p className="text-[11px] text-[#8A8690] mt-0.5">
           {dayName(confirmedSlot)}{confirmedTime !== null ? ` at ${formatHour(confirmedTime)}` : ''} · Added to calendar ✓
         </p>
-        {confirmedTime !== null && (
+        {confirmedTime !== null && selectedVenue.reservable !== false && (
           <button
             onClick={() => window.open(buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime), '_blank', 'noopener')}
             className="mt-2 flex items-center gap-1 text-[11px] text-[#8A8690] hover:text-[#7B5EA7] transition-colors"
@@ -662,27 +671,15 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             Book on OpenTable
           </button>
         )}
-
-        {/* Let sender share the OpenTable confirmation/invite link with their match */}
-        <div className="mt-3 pt-2.5 border-t border-gray-200">
-          <p className="text-[10px] text-[#8A8690] mb-1.5">Got your OpenTable invite? Share it with {matchFirstName}:</p>
-          <div className="flex gap-1.5">
-            <input
-              type="url"
-              value={inviteUrl}
-              onChange={e => setInviteUrl(e.target.value)}
-              placeholder="Paste confirmation link…"
-              className="flex-1 min-w-0 text-[11px] bg-white border border-[#E8E4DE] rounded-full px-3 py-1.5 outline-none focus:border-[#7B5EA7] transition-colors"
-            />
-            <button
-              onClick={() => { onSendMessage(inviteUrl.trim()); setInviteUrl(''); }}
-              disabled={!inviteUrl.trim().startsWith('http')}
-              className="flex-shrink-0 text-[11px] font-semibold text-[#F5F2EE] bg-[#0D0D0F] px-3 py-1.5 rounded-full hover:opacity-80 disabled:opacity-40 transition-opacity"
-            >
-              Share
-            </button>
-          </div>
-        </div>
+        {selectedVenue.reservable === false && selectedVenue.mapsUrl && (
+          <button
+            onClick={() => window.open(selectedVenue.mapsUrl, '_blank', 'noopener')}
+            className="mt-2 flex items-center gap-1 text-[11px] text-[#8A8690] hover:text-[#7B5EA7] transition-colors"
+          >
+            <ExternalLink size={10} aria-hidden="true" />
+            View on Maps
+          </button>
+        )}
       </div>
     );
   }
