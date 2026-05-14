@@ -74,15 +74,20 @@ function getInitials(name: string): string {
   return name.trim().split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('').slice(0, 2);
 }
 
+function dayName(slot: TimeSlot): string {
+  // label is e.g. "Friday evening" or "Today afternoon" — strip the trailing period word
+  const parts = slot.label.split(' ');
+  return parts.slice(0, -1).join(' ');
+}
+
 function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
-  const timePart = slots.length >= 2
-    ? `I'm free ${slots[0].label} or ${slots[1].label}`
+  const availability = slots.length >= 2
+    ? `Are you free ${dayName(slots[0])} or ${dayName(slots[1])}?`
     : slots.length === 1
-    ? `I'm free ${slots[0].label}`
-    : '';
-  const mapsPart = venue.mapsUrl ? `\n${venue.mapsUrl}` : '';
-  if (!timePart) return `${venue.name} could be a great spot for us. Worth checking out?${mapsPart}`;
-  return `${venue.name} could be a fun spot for us — ${timePart}. Which works better for you?${mapsPart}`;
+    ? `Are you free ${dayName(slots[0])}?`
+    : null;
+  const tail = `Parallel matched us to ${venue.name} — apparently it's our kind of place. Have you been?`;
+  return availability ? `${availability} ${tail}` : tail;
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
