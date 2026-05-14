@@ -4,6 +4,7 @@ import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
 import { DATE_CARD_PREFIX, type DateCardData } from './DateConfirmCard';
+import { DATE_PROPOSAL_PREFIX, DATE_RESPONSE_PREFIX, type DateProposalData, type DateResponseData } from './DateProposalCard';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -40,6 +41,7 @@ interface Props {
   mutualMatch: boolean;
   flagEnabled: boolean;
   recentMessages: string[];
+  dateResponseText?: string;
   onSelectMessage: (msg: string) => void;
   onSendMessage: (msg: string) => void;
 }
@@ -196,7 +198,7 @@ function buildOpenTableUrl(venue: VenueCard, slot: TimeSlot, exactHour: number):
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, recentMessages, onSelectMessage, onSendMessage }: Props) {
+export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, recentMessages, dateResponseText, onSelectMessage, onSendMessage }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [budget, setBudget] = useState<Budget>('any');
   const [slots, setSlots] = useState<TimeSlot[]>([]);
@@ -254,6 +256,22 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
       } catch { /* storage full — ignore */ }
     }
   }, [panel, selectedVenue, slots, message, confirmedSlot, confirmedTime, matchId]);
+
+  // When the match picks a day via the proposal card, auto-advance from waiting → time-pick
+  useEffect(() => {
+    if (!dateResponseText || !dateResponseText.startsWith(DATE_RESPONSE_PREFIX)) return;
+    try {
+      const response = JSON.parse(dateResponseText.slice(DATE_RESPONSE_PREFIX.length)) as DateResponseData;
+      setConfirmedSlot({
+        date: new Date(response.dateIso),
+        period: response.period,
+        label: response.label,
+        shortLabel: response.shortLabel,
+      });
+      setConfirmedTime(null);
+      setPanel(prev => prev === 'waiting' ? 'time-pick' : prev);
+    } catch { /* ignore malformed response */ }
+  }, [dateResponseText]);
 
   if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
 
@@ -335,6 +353,31 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const handleSend = () => {
     if (!message.trim() || !selectedVenue) return;
     onSendMessage(message);
+    setPanel('waiting');
+  };
+
+  // Concierge send: text message first, then interactive proposal card
+  const handleSendConcierge = () => {
+    if (!message.trim() || !selectedVenue) return;
+    onSendMessage(message);
+    const proposalData: DateProposalData = {
+      venueName: selectedVenue.name,
+      venueAddress: selectedVenue.address,
+      mapsUrl: selectedVenue.mapsUrl,
+      whyItFits: selectedVenue.whyItFits,
+      photoUrl: selectedVenue.photoUrl,
+      slots: slots.map(s => {
+        const periodShort = s.period === 'evening' ? 'Eve' : 'Aft';
+        const dayPart = s.shortLabel.replace(` ${s.period}`, '');
+        return {
+          label: s.label,
+          shortLabel: `${dayPart} · ${periodShort}`,
+          dateIso: s.date.toISOString(),
+          period: s.period,
+        };
+      }),
+    };
+    onSendMessage(`${DATE_PROPOSAL_PREFIX}${JSON.stringify(proposalData)}`);
     setPanel('waiting');
   };
 
@@ -694,7 +737,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             Try another spot
           </button>
           <button
-            onClick={handleSend}
+            onClick={handleSendConcierge}
             disabled={!message.trim()}
             className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
           >
@@ -718,7 +761,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           </button>
         </div>
         <p className="text-[11px] text-[#8A8690] mb-2.5">
-          Once {matchFirstName} agrees on a day, tap it to lock in the time.
+          Waiting for {matchFirstName} to choose a day. Or tap a slot below if you've already agreed:
         </p>
         <div className="flex flex-wrap gap-1.5">
           {slots.map(slot => (

@@ -9,6 +9,7 @@ import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
 import { DatePlannerCard } from './messaging/DatePlannerCard';
 import { DateConfirmCard, DATE_CARD_PREFIX } from './messaging/DateConfirmCard';
+import { DateProposalCard, DATE_PROPOSAL_PREFIX, DATE_RESPONSE_PREFIX, type DateResponseData } from './messaging/DateProposalCard';
 import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
 
 const FADE_REASONS = [
@@ -682,10 +683,13 @@ export function MessagingView({
     }`;
 
   const isLocked = conversationId === null;
-  // Email verification gate: read existing messages freely, but disable sending
-  // until the user verifies their email. We need a verified email to send them
-  // notifications about replies (no push notifications on the web app).
   const messagingDisabled = isLocked || !emailVerified;
+
+  const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
+  const dateResponseMsg = messages.slice().reverse().find(m => m.text.startsWith(DATE_RESPONSE_PREFIX));
+  const dateResponseData: DateResponseData | null = dateResponseMsg ? (() => {
+    try { return JSON.parse(dateResponseMsg.text.slice(DATE_RESPONSE_PREFIX.length)); } catch { return null; }
+  })() : null;
 
   // Show a skeleton while the initial load is in flight. This is the worst
   // single perceived-lag moment in the app — opening a chat hits 3 fetches
@@ -1003,6 +1007,40 @@ export function MessagingView({
               } catch { /* fall through to normal bubble */ }
             }
 
+            if (message.text.startsWith(DATE_PROPOSAL_PREFIX)) {
+              try {
+                const proposalData = JSON.parse(message.text.slice(DATE_PROPOSAL_PREFIX.length));
+                return (
+                  <div key={message.id} className="px-2 my-2">
+                    <DateProposalCard
+                      data={proposalData}
+                      isMe={isMe}
+                      matchName={matchName}
+                      responseData={dateResponseData}
+                      onRespond={isMe ? undefined : (slot) => handleSend(`${DATE_RESPONSE_PREFIX}${JSON.stringify(slot)}`)}
+                    />
+                    {isLast && (
+                      <p className="text-[10px] text-center text-gray-400 mt-1">{formatTime(message.timestamp)}</p>
+                    )}
+                  </div>
+                );
+              } catch { /* fall through to normal bubble */ }
+            }
+
+            if (message.text.startsWith(DATE_RESPONSE_PREFIX)) {
+              try {
+                const responseData = JSON.parse(message.text.slice(DATE_RESPONSE_PREFIX.length)) as DateResponseData;
+                const systemText = isMe
+                  ? `You picked ${responseData.label}`
+                  : `${matchFirstName} picked ${responseData.label}`;
+                return (
+                  <div key={message.id} className="py-2 px-4">
+                    <p className="text-[11px] text-center text-[#8A8690]">{systemText}</p>
+                  </div>
+                );
+              } catch { /* fall through to normal bubble */ }
+            }
+
             return (
               <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showSenderChange && index > 0 ? 'mt-3' : 'mt-0.5'}`}>
                 <div className={`max-w-[80%] ${
@@ -1050,6 +1088,7 @@ export function MessagingView({
           mutualMatch={!!mutualMatch}
           flagEnabled={!!featureDateAgent}
           recentMessages={messages.slice(-8).map(m => m.text)}
+          dateResponseText={dateResponseMsg?.text}
           onSelectMessage={(msg) => setNewMessage(msg)}
           onSendMessage={(msg) => handleSend(msg)}
         />
