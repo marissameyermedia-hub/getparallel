@@ -113,6 +113,15 @@ function getInitials(name: string): string {
   return name.trim().split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('').slice(0, 2);
 }
 
+function passesMaxPriceClient(priceLevel: string, budget: Budget): boolean {
+  if (budget === 'any') return true;
+  const order = ['Free', '$', '$$', '$$$', '$$$$'];
+  const maxIdx = order.indexOf(budget);
+  const cardIdx = order.indexOf(priceLevel);
+  if (cardIdx === -1 || maxIdx === -1) return true;
+  return cardIdx <= maxIdx;
+}
+
 // "Friday evening" → "Friday"
 function dayName(slot: TimeSlot): string {
   const parts = slot.label.split(' ');
@@ -209,6 +218,8 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
+  const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
+  const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
 
   // ── Persistence — restore post-send state across navigation ──────────────────
 
@@ -400,11 +411,14 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           const seen = new Set<string>();
           const top: VenueCard[] = [];
           for (const v of data.suggestions) {
-            if (!seen.has(v.name) && top.length < 3) { seen.add(v.name); top.push(v); }
+            if (!seen.has(v.name) && top.length < 9) { seen.add(v.name); top.push(v); }
           }
           setVenues(top);
           setVenueIndex(0);
           setSelectedVenue(top[0]);
+          setPreferredArea('any');
+          const areas = [...new Set(top.map(v => v.areaKey).filter(Boolean))] as Array<'you' | 'them' | 'middle'>;
+          setAvailableAreas(areas);
           setMessage(buildPlanMessage(top[0], defaultSlots));
           setPanel('quick-review');
           return;
@@ -640,7 +654,21 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   }
 
   if (panel === 'quick-review' && selectedVenue) {
-    const days = getUpcomingDays(7);
+    const reviewDays = getUpcomingDays(7);
+
+    // Client-side filtering by budget + area preference
+    const filteredVenues = venues.filter(v =>
+      (preferredArea === 'any' || v.areaKey === preferredArea) &&
+      passesMaxPriceClient(v.priceLevel, budget)
+    );
+    const pool = filteredVenues.length > 0 ? filteredVenues : venues;
+    const hasMultipleAreas = availableAreas.length > 1;
+    const poolIdx = pool.findIndex(v => v.name === selectedVenue.name);
+
+    const chipBase = 'text-[10px] px-2 py-0.5 rounded-full border transition-colors';
+    const chipOn = `${chipBase} bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]`;
+    const chipOff = `${chipBase} text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]`;
+
     return (
       <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden">
         <div className="flex items-center justify-between px-4 pt-3 pb-2">
@@ -653,8 +681,12 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           </button>
         </div>
 
-        {/* Venue card */}
-        <div className="mx-3 mb-3 flex bg-white rounded-xl border border-[#E8E4DE] overflow-hidden">
+        {/* Venue card — tappable to preview in Maps */}
+        <button
+          onClick={() => selectedVenue.mapsUrl && window.open(selectedVenue.mapsUrl, '_blank', 'noopener')}
+          className="mx-3 mb-2 w-[calc(100%-24px)] flex bg-white rounded-xl border border-[#E8E4DE] overflow-hidden active:bg-gray-50 transition-colors text-left"
+          aria-label={`Preview ${selectedVenue.name} on Google Maps`}
+        >
           {selectedVenue.photoUrl && (
             <div className="w-16 flex-shrink-0 bg-gray-100 self-stretch">
               <img src={selectedVenue.photoUrl} alt="" className="w-full h-full object-cover"
@@ -662,7 +694,12 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             </div>
           )}
           <div className="flex-1 px-3 py-2.5 min-w-0">
-            <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{selectedVenue.name}</p>
+            <div className="flex items-start justify-between gap-1">
+              <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{selectedVenue.name}</p>
+              {selectedVenue.areaKey && hasMultipleAreas && (
+                <span className="text-[9px] text-[#8A8690] flex-shrink-0 mt-0.5">{AREA_LABELS[selectedVenue.areaKey]}</span>
+              )}
+            </div>
             <p className="text-[10px] text-[#8A8690] mt-0.5">
               {selectedVenue.category} · {selectedVenue.priceLevel}
               {selectedVenue.rating !== null ? ` · ★ ${selectedVenue.rating}` : ''}
@@ -670,6 +707,56 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             {selectedVenue.whyItFits && (
               <p className="text-[10px] text-[#2E2A36] leading-snug mt-1 line-clamp-2">{selectedVenue.whyItFits}</p>
             )}
+            {selectedVenue.mapsUrl && (
+              <p className="text-[9px] text-[#7B5EA7] mt-1">Tap to preview →</p>
+            )}
+          </div>
+        </button>
+
+        {/* Filters: area + budget */}
+        <div className="px-4 mb-2 space-y-1.5">
+          {hasMultipleAreas && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-[#8A8690]">Where:</span>
+              {(['any', 'you', 'middle', 'them'] as const).map(area => {
+                if (area !== 'any' && !availableAreas.includes(area as 'you' | 'them' | 'middle')) return null;
+                const label = { any: 'Any', you: 'Near me', middle: 'Middle', them: 'Near them' }[area];
+                const isOn = preferredArea === area;
+                return (
+                  <button key={area} onClick={() => {
+                    setPreferredArea(area);
+                    const newPool = area === 'any'
+                      ? venues.filter(v => passesMaxPriceClient(v.priceLevel, budget))
+                      : venues.filter(v => v.areaKey === area && passesMaxPriceClient(v.priceLevel, budget));
+                    const first = (newPool.length > 0 ? newPool : venues)[0];
+                    if (first && first.name !== selectedVenue.name) {
+                      setSelectedVenue(first);
+                      setMessage(buildPlanMessage(first, slots));
+                    }
+                  }} className={isOn ? chipOn : chipOff}>{label}</button>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] text-[#8A8690]">Budget:</span>
+            {(['any', '$', '$$', '$$$'] as const).map(b => {
+              const isOn = budget === b;
+              return (
+                <button key={b} onClick={() => {
+                  setBudget(b);
+                  const newPool = venues.filter(v =>
+                    (preferredArea === 'any' || v.areaKey === preferredArea) &&
+                    passesMaxPriceClient(v.priceLevel, b)
+                  );
+                  const first = (newPool.length > 0 ? newPool : venues)[0];
+                  if (first && first.name !== selectedVenue.name) {
+                    setSelectedVenue(first);
+                    setMessage(buildPlanMessage(first, slots));
+                  }
+                }} className={isOn ? chipOn : chipOff}>{b === 'any' ? 'Any' : b}</button>
+              );
+            })}
           </div>
         </div>
 
@@ -677,14 +764,13 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         <div className="px-4 mb-2">
           <p className="text-[10px] text-[#8A8690] mb-1.5">When are you free? <span className="text-[#C0BAC8]">pick up to 2 · tap again to switch Aft/Eve</span></p>
           <div className="flex gap-1.5 flex-wrap">
-            {days.map(day => {
+            {reviewDays.map(day => {
               const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
               const isSelected = !!slot;
               return (
                 <button
                   key={day.label}
                   onClick={() => {
-                    // Compute new slots synchronously so message rebuilds in the same tick
                     let newSlots: TimeSlot[];
                     if (slot) {
                       const next = slot.period === 'evening' ? 'afternoon' : 'evening';
@@ -726,12 +812,12 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         <div className="px-4 pb-3 flex gap-2">
           <button
             onClick={() => {
-              const next = (venueIndex + 1) % venues.length;
-              setVenueIndex(next);
-              setSelectedVenue(venues[next]);
-              setMessage(buildPlanMessage(venues[next], slots));
+              const next = pool[(poolIdx + 1) % pool.length];
+              setSelectedVenue(next);
+              setVenueIndex(venues.indexOf(next));
+              setMessage(buildPlanMessage(next, slots));
             }}
-            disabled={venues.length <= 1}
+            disabled={pool.length <= 1}
             className="flex-1 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors disabled:opacity-40"
           >
             Try another spot
