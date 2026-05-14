@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarClock, X, ChevronRight, Loader, Star, RefreshCw, CalendarPlus, Check, ExternalLink } from 'lucide-react';
+import { CalendarClock, X, Loader, Star, RefreshCw, CalendarPlus, Check, ExternalLink, Sparkles } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -30,7 +30,7 @@ interface VenueCard {
   reservable?: boolean;
 }
 
-type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed';
+type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review';
 type Budget = 'any' | '$' | '$$' | '$$$';
 
 interface Props {
@@ -39,8 +39,36 @@ interface Props {
   messageCount: number;
   mutualMatch: boolean;
   flagEnabled: boolean;
+  recentMessages: string[];
   onSelectMessage: (msg: string) => void;
   onSendMessage: (msg: string) => void;
+}
+
+// ── Concierge readiness detection ─────────────────────────────────────────────
+
+const READINESS_SIGNALS = [
+  'free', 'meet', 'weekend', 'this week', 'tonight', 'tomorrow',
+  'dinner', 'drinks', 'coffee', 'lunch', 'sometime', "let's", 'lets',
+  'hang', 'grab', 'get together', 'catch up', 'go out',
+  'would you want', 'want to', 'should we', 'would love',
+];
+
+function detectReadiness(messages: string[]): boolean {
+  const combined = messages.join(' ').toLowerCase();
+  return READINESS_SIGNALS.some(s => combined.includes(s));
+}
+
+function getDefaultSlots(): TimeSlot[] {
+  const days = getUpcomingDays(10);
+  // Prefer upcoming Fri/Sat/Sun; fall back to days 2–3
+  const weekend = days.filter(d => [5, 6, 0].includes(d.date.getDay()));
+  const picks = weekend.length >= 2 ? weekend.slice(0, 2) : days.slice(2, 4);
+  return picks.map(day => ({
+    date: day.date,
+    period: 'evening' as const,
+    label: `${day.label} evening`,
+    shortLabel: `${day.shortLabel} evening`,
+  }));
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -168,12 +196,13 @@ function buildOpenTableUrl(venue: VenueCard, slot: TimeSlot, exactHour: number):
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, onSelectMessage, onSendMessage }: Props) {
+export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, recentMessages, onSelectMessage, onSendMessage }: Props) {
   const [panel, setPanel] = useState<Panel>('trigger');
   const [budget, setBudget] = useState<Budget>('any');
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [venues, setVenues] = useState<VenueCard[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<VenueCard | null>(null);
+  const [venueIndex, setVenueIndex] = useState(0);
   const [message, setMessage] = useState('');
   const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
@@ -196,7 +225,8 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         return;
       }
       const s = JSON.parse(saved);
-      if (s.panel) setPanel(s.panel);
+      // quick-review is transient (needs venues in memory) — don't restore it
+      if (s.panel && s.panel !== 'quick-review') setPanel(s.panel);
       if (s.selectedVenue) setSelectedVenue(s.selectedVenue);
       if (Array.isArray(s.slots)) setSlots(s.slots.map((sl: { date: string } & Omit<TimeSlot, 'date'>) => ({ ...sl, date: new Date(sl.date) })));
       if (s.message) setMessage(s.message);
@@ -308,43 +338,77 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
     setPanel('waiting');
   };
 
+  // One-tap concierge fetch — auto-picks best venue, pre-selects default days
+  const fetchVenuesConcierge = async () => {
+    setPanel('loading');
+    const defaultSlots = getDefaultSlots();
+    setSlots(defaultSlots);
+    try {
+      const token = await getAccessToken();
+      if (!token) { setPanel('trigger'); return; }
+      const params = new URLSearchParams({ matchId, force: 'true', timeOfDay: 'evening' });
+      const res = await fetch(`${DATE_AGENT_FUNCTION_URL}/generate?${params}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+          const seen = new Set<string>();
+          const top: VenueCard[] = [];
+          for (const v of data.suggestions) {
+            if (!seen.has(v.name) && top.length < 3) { seen.add(v.name); top.push(v); }
+          }
+          setVenues(top);
+          setVenueIndex(0);
+          setSelectedVenue(top[0]);
+          setMessage(buildPlanMessage(top[0], defaultSlots));
+          setPanel('quick-review');
+          return;
+        }
+      }
+    } catch { /* fall through */ }
+    setPanel('trigger');
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   if (panel === 'trigger') {
-    return (
-      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="flex items-center justify-between mb-2.5">
-          <div className="flex items-center gap-1.5">
-            <CalendarClock size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Plan a date</span>
-          </div>
-          <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Dismiss">
-            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
-          </button>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5">
-            {(['any', '$', '$$', '$$$'] as Budget[]).map(lvl => (
-              <button
-                key={lvl}
-                onClick={() => setBudget(lvl)}
-                className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
-                  budget === lvl
-                    ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
-                    : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
-                }`}
-              >
-                {lvl === 'any' ? 'Any' : lvl}
-              </button>
-            ))}
+    const isReady = detectReadiness(recentMessages);
+    if (isReady) {
+      return (
+        <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-3">
+          <div className="flex items-start justify-between gap-2 mb-2.5">
+            <div className="flex items-start gap-2">
+              <Sparkles size={13} className="text-[#7B5EA7] mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <div>
+                <p className="text-[11px] font-medium text-[#7B5EA7] leading-tight">Sounds like you two click</p>
+                <p className="text-[11px] text-[#8A8690] mt-0.5 leading-snug">Want Parallel to find a spot and draft the invite?</p>
+              </div>
+            </div>
+            <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors flex-shrink-0" aria-label="Dismiss">
+              <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+            </button>
           </div>
           <button
-            onClick={() => setPanel('times')}
-            className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] px-3 py-1.5 rounded-full hover:opacity-80 transition-opacity"
+            onClick={fetchVenuesConcierge}
+            className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
           >
-            Let's plan <ChevronRight size={11} aria-hidden="true" />
+            Find a spot →
           </button>
         </div>
+      );
+    }
+    // Subtle fallback — no signals yet but conversation is long enough
+    return (
+      <div className="mb-1.5 flex justify-center">
+        <button
+          onClick={fetchVenuesConcierge}
+          className="flex items-center gap-1.5 text-[11px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
+        >
+          <CalendarClock size={11} aria-hidden="true" />
+          Plan a date
+        </button>
       </div>
     );
   }
@@ -526,6 +590,115 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
             className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
           >
             Send
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (panel === 'quick-review' && selectedVenue) {
+    const days = getUpcomingDays(7);
+    return (
+      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 overflow-hidden">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Parallel's pick for you two</span>
+          </div>
+          <button onClick={() => setPanel('trigger')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Venue card */}
+        <div className="mx-3 mb-3 flex bg-white rounded-xl border border-[#E8E4DE] overflow-hidden">
+          {selectedVenue.photoUrl && (
+            <div className="w-16 flex-shrink-0 bg-gray-100 self-stretch">
+              <img src={selectedVenue.photoUrl} alt="" className="w-full h-full object-cover"
+                onError={e => { const el = e.currentTarget.parentElement; if (el) el.style.display = 'none'; }} />
+            </div>
+          )}
+          <div className="flex-1 px-3 py-2.5 min-w-0">
+            <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{selectedVenue.name}</p>
+            <p className="text-[10px] text-[#8A8690] mt-0.5">
+              {selectedVenue.category} · {selectedVenue.priceLevel}
+              {selectedVenue.rating !== null ? ` · ★ ${selectedVenue.rating}` : ''}
+            </p>
+            {selectedVenue.whyItFits && (
+              <p className="text-[10px] text-[#2E2A36] leading-snug mt-1 line-clamp-2">{selectedVenue.whyItFits}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Day chips with inline slot+message sync */}
+        <div className="px-4 mb-2">
+          <p className="text-[10px] text-[#8A8690] mb-1.5">When are you free? <span className="text-[#C0BAC8]">pick up to 2 · tap again to switch Aft/Eve</span></p>
+          <div className="flex gap-1.5 flex-wrap">
+            {days.map(day => {
+              const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
+              const isSelected = !!slot;
+              return (
+                <button
+                  key={day.label}
+                  onClick={() => {
+                    // Compute new slots synchronously so message rebuilds in the same tick
+                    let newSlots: TimeSlot[];
+                    if (slot) {
+                      const next = slot.period === 'evening' ? 'afternoon' : 'evening';
+                      newSlots = slots.map(s => s.date.toDateString() === day.date.toDateString()
+                        ? { ...s, period: next, label: `${day.label} ${next}`, shortLabel: `${day.shortLabel} ${next}` }
+                        : s);
+                    } else {
+                      const newSlot: TimeSlot = { date: day.date, period: 'evening', label: `${day.label} evening`, shortLabel: `${day.shortLabel} evening` };
+                      newSlots = slots.length >= 2 ? [slots[1], newSlot] : [...slots, newSlot];
+                    }
+                    setSlots(newSlots);
+                    setMessage(buildPlanMessage(selectedVenue, newSlots));
+                  }}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
+                    isSelected
+                      ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
+                      : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
+                  }`}
+                >
+                  {isSelected ? `${day.shortLabel} · ${PERIOD_SHORT[slot.period]}` : day.shortLabel}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Editable message preview */}
+        <div className="px-4 mb-3">
+          <textarea
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+            rows={3}
+            className="w-full bg-white rounded-xl px-3.5 py-2.5 border border-[#E8E4DE] text-xs text-[#2E2A36] leading-relaxed resize-none focus:outline-none focus:border-[#7B5EA7] transition-colors"
+            aria-label="Edit your date proposal"
+          />
+        </div>
+
+        {/* Actions */}
+        <div className="px-4 pb-3 flex gap-2">
+          <button
+            onClick={() => {
+              const next = (venueIndex + 1) % venues.length;
+              setVenueIndex(next);
+              setSelectedVenue(venues[next]);
+              setMessage(buildPlanMessage(venues[next], slots));
+            }}
+            disabled={venues.length <= 1}
+            className="flex-1 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors disabled:opacity-40"
+          >
+            Try another spot
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={!message.trim()}
+            className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
+          >
+            Send →
           </button>
         </div>
       </div>

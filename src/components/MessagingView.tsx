@@ -1049,6 +1049,7 @@ export function MessagingView({
           messageCount={messages.length}
           mutualMatch={!!mutualMatch}
           flagEnabled={!!featureDateAgent}
+          recentMessages={messages.slice(-8).map(m => m.text)}
           onSelectMessage={(msg) => setNewMessage(msg)}
           onSendMessage={(msg) => handleSend(msg)}
         />
