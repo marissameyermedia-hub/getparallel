@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarClock, X, ChevronRight, Loader, Star, RefreshCw, CalendarPlus, Check } from 'lucide-react';
+import { CalendarClock, X, ChevronRight, Loader, Star, RefreshCw, CalendarPlus, Check, ExternalLink } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -9,8 +9,8 @@ import { getAccessToken } from '../../utils/auth';
 interface TimeSlot {
   date: Date;
   period: 'afternoon' | 'evening';
-  label: string;       // "Saturday afternoon"
-  shortLabel: string;  // "Sat 16 afternoon"
+  label: string;       // "Friday evening"
+  shortLabel: string;  // "Fri 15 evening"
 }
 
 interface VenueCard {
@@ -24,9 +24,11 @@ interface VenueCard {
   suggestionMessage?: string;
   areaKey?: 'you' | 'them' | 'middle';
   photoUrl?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
-type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'confirmed' | 'dismissed';
+type Panel = 'trigger' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed';
 type Budget = 'any' | '$' | '$$' | '$$$';
 
 interface Props {
@@ -55,6 +57,11 @@ const AREA_LABELS: Record<string, string> = {
   them: 'Near them',
   middle: 'In the middle',
 };
+// Time options shown in the time-pick panel, keyed by period
+const TIME_OPTIONS: Record<typeof PERIODS[number], number[]> = {
+  afternoon: [13, 14, 15, 16, 17],
+  evening: [17, 18, 19, 20, 21],
+};
 
 function getUpcomingDays(count = 7) {
   const today = new Date();
@@ -74,10 +81,17 @@ function getInitials(name: string): string {
   return name.trim().split(/\s+/).map(w => w[0]?.toUpperCase() ?? '').join('').slice(0, 2);
 }
 
+// "Friday evening" → "Friday"
 function dayName(slot: TimeSlot): string {
-  // label is e.g. "Friday evening" or "Today afternoon" — strip the trailing period word
   const parts = slot.label.split(' ');
   return parts.slice(0, -1).join(' ');
+}
+
+// 19 → "7pm", 13 → "1pm"
+function formatHour(h: number): string {
+  if (h === 12) return '12pm';
+  if (h > 12) return `${h - 12}pm`;
+  return `${h}am`;
 }
 
 function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
@@ -92,9 +106,9 @@ function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
 
-function slotToRange(slot: TimeSlot) {
+function slotToRange(slot: TimeSlot, exactHour?: number) {
   const d = new Date(slot.date);
-  const startHour = { afternoon: 14, evening: 19 }[slot.period];
+  const startHour = exactHour ?? { afternoon: 14, evening: 19 }[slot.period];
   const duration = { afternoon: 2, evening: 3 }[slot.period];
   d.setHours(startHour, 0, 0, 0);
   const end = new Date(d);
@@ -106,8 +120,8 @@ function toGcalDate(d: Date) {
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
-function openCalendar(venue: VenueCard, slot: TimeSlot, initials: string) {
-  const { start, end } = slotToRange(slot);
+function openCalendar(venue: VenueCard, slot: TimeSlot, initials: string, exactHour?: number) {
+  const { start, end } = slotToRange(slot, exactHour);
   const title = initials ? `Date with ${initials} at ${venue.name}` : `Date at ${venue.name}`;
   const isApple = /iphone|ipad|macintosh/i.test(navigator.userAgent);
   if (isApple) {
@@ -138,6 +152,17 @@ function openCalendar(venue: VenueCard, slot: TimeSlot, initials: string) {
   }
 }
 
+function buildOpenTableUrl(venue: VenueCard, slot: TimeSlot, exactHour: number): string {
+  const d = new Date(slot.date);
+  d.setHours(exactHour, 0, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const dateStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(exactHour)}:00:00`;
+  const params = new URLSearchParams({ covers: '2', dateTime: dateStr, term: venue.name });
+  if (venue.latitude) params.set('latitude', String(venue.latitude));
+  if (venue.longitude) params.set('longitude', String(venue.longitude));
+  return `https://www.opentable.com/s/?${params}`;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch, flagEnabled, onSelectMessage, onSendMessage }: Props) {
@@ -148,6 +173,7 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const [selectedVenue, setSelectedVenue] = useState<VenueCard | null>(null);
   const [message, setMessage] = useState('');
   const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
+  const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
 
   if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
@@ -156,12 +182,11 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
   const initials = getInitials(matchName);
   const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
 
-  // ── Day selection — tap to select (Evening default); tap again to cycle period ──
+  // ── Day selection — tap to select (Evening default); tap again to cycle ────────
 
   const handleDayTap = (day: ReturnType<typeof getUpcomingDays>[0]) => {
     const existing = slots.find(s => s.date.toDateString() === day.date.toDateString());
     if (existing) {
-      // Already selected: cycle Evening ↔ Afternoon
       const nextPeriod: typeof PERIODS[number] = existing.period === 'evening' ? 'afternoon' : 'evening';
       setSlots(prev => prev.map(s =>
         s.date.toDateString() === day.date.toDateString()
@@ -176,7 +201,6 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
         shortLabel: `${day.shortLabel} evening`,
       };
       setSlots(prev => {
-        // Auto-replace oldest when 2 are already selected
         if (prev.length >= 2) return [prev[1], newSlot];
         return [...prev, newSlot];
       });
@@ -295,7 +319,6 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           </button>
         </div>
 
-        {/* Day chips — first tap selects (Evening default); tap again cycles Evening ↔ Afternoon */}
         <div className="flex gap-1.5 flex-wrap mb-3">
           {days.map(day => {
             const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
@@ -473,23 +496,83 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           </button>
         </div>
         <p className="text-[11px] text-[#8A8690] mb-2.5">
-          Once {matchFirstName} agrees on a time, tap it to add to your calendar.
+          Once {matchFirstName} agrees on a day, tap it to lock in the time.
         </p>
         <div className="flex flex-wrap gap-1.5">
           {slots.map(slot => (
             <button
               key={slot.label}
-              onClick={() => {
-                openCalendar(selectedVenue, slot, initials);
-                setConfirmedSlot(slot);
-                setPanel('confirmed');
-              }}
+              onClick={() => { setConfirmedSlot(slot); setConfirmedTime(null); setPanel('time-pick'); }}
               className="text-xs font-medium px-3 py-1.5 rounded-full border border-[#E8E4DE] text-[#1E1C22] bg-white hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
             >
               {slot.shortLabel}
             </button>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (panel === 'time-pick' && confirmedSlot && selectedVenue) {
+    const timeOptions = TIME_OPTIONS[confirmedSlot.period];
+    return (
+      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">
+              What time did you agree on?
+            </span>
+          </div>
+          <button onClick={() => setPanel('waiting')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+
+        <p className="text-[11px] text-[#8A8690] mb-2.5">
+          {dayName(confirmedSlot)} · {selectedVenue.name}
+        </p>
+
+        {/* Time chips */}
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {timeOptions.map(h => (
+            <button
+              key={h}
+              onClick={() => setConfirmedTime(h)}
+              className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${
+                confirmedTime === h
+                  ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
+                  : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
+              }`}
+            >
+              {formatHour(h)}
+            </button>
+          ))}
+        </div>
+
+        {/* Book + Calendar CTAs — appear once a time is chosen */}
+        {confirmedTime !== null && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                window.open(buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime), '_blank', 'noopener');
+              }}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
+            >
+              <ExternalLink size={11} aria-hidden="true" />
+              Book on OpenTable
+            </button>
+            <button
+              onClick={() => {
+                openCalendar(selectedVenue, confirmedSlot, initials, confirmedTime);
+                setPanel('confirmed');
+              }}
+              className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity"
+            >
+              Add to Calendar
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -507,7 +590,19 @@ export function DatePlannerCard({ matchId, matchName, messageCount, mutualMatch,
           </button>
         </div>
         <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{selectedVenue.name}</p>
-        <p className="text-[11px] text-[#8A8690] mt-0.5 capitalize">{confirmedSlot.label} · Added to calendar ✓</p>
+        <p className="text-[11px] text-[#8A8690] mt-0.5">
+          {dayName(confirmedSlot)}{confirmedTime !== null ? ` at ${formatHour(confirmedTime)}` : ''} · Added to calendar ✓
+        </p>
+        {/* Let them also book on OpenTable from confirmed if they haven't yet */}
+        {confirmedTime !== null && selectedVenue.latitude && (
+          <button
+            onClick={() => window.open(buildOpenTableUrl(selectedVenue, confirmedSlot, confirmedTime), '_blank', 'noopener')}
+            className="mt-2 flex items-center gap-1 text-[11px] text-[#8A8690] hover:text-[#7B5EA7] transition-colors"
+          >
+            <ExternalLink size={10} aria-hidden="true" />
+            Book on OpenTable
+          </button>
+        )}
       </div>
     );
   }
