@@ -694,7 +694,13 @@ export function MessagingView({
     (last, m) => m.text.startsWith(DATE_PROPOSAL_PREFIX) ? m.id : last,
     null
   );
-  const dateResponseMsg = messages.slice().reverse().find(m => m.text.startsWith(DATE_RESPONSE_PREFIX));
+  // Only treat a DATE_RESPONSE as belonging to the current proposal — must follow it in the thread
+  const lastProposalMsgIndex = lastProposalMsgId
+    ? messages.findIndex(m => m.id === lastProposalMsgId)
+    : -1;
+  const dateResponseMsg = lastProposalMsgIndex >= 0
+    ? messages.slice(lastProposalMsgIndex + 1).find(m => m.text.startsWith(DATE_RESPONSE_PREFIX))
+    : null;
   const dateResponseData: DateResponseData | null = dateResponseMsg ? (() => {
     try { return JSON.parse(dateResponseMsg.text.slice(DATE_RESPONSE_PREFIX.length)); } catch { return null; }
   })() : null;
