@@ -63,14 +63,14 @@ const CATEGORY_ORDER = [
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Attachment & Emotional Health': 'bg-purple-500',
-  'Communication & Conflict': 'bg-indigo-500',
-  'Life Goals': 'bg-blue-500',
-  'Values & Beliefs': 'bg-cyan-500',
-  'Financial & Career': 'bg-amber-500',
-  'Intimacy & Connection': 'bg-pink-500',
-  'Lifestyle Behaviors': 'bg-green-500',
-  'Social & Shared Life': 'bg-orange-400',
+  'Attachment & Emotional Health': 'bg-parallel-purple',
+  'Communication & Conflict':      'bg-purple-700',
+  'Life Goals':                    'bg-violet-600',
+  'Values & Beliefs':              'bg-purple-900',
+  'Financial & Career':            'bg-violet-500',
+  'Intimacy & Connection':         'bg-parallel-soft-violet',
+  'Lifestyle Behaviors':           'bg-purple-600',
+  'Social & Shared Life':          'bg-parallel-stone',
 };
 
 export function MatchProfileView({
