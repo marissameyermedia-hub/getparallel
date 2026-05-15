@@ -340,10 +340,10 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
         {/* Completed */}
         {status === 'completed' && (
           <>
-            <div className="bg-green-50 border border-green-200 rounded-3xl p-6 text-center mb-8">
-              <CheckCircle size={40} className="text-green-500 mx-auto mb-3" aria-hidden="true" />
-              <h2 className="text-xl font-semibold text-green-800 mb-2">You're verified! ✓</h2>
-              <p className="text-green-700 text-sm">Your profile now shows a blue verified checkmark to all your matches.</p>
+            <div className="bg-[#F8F4FD] border border-[#E2D5F5] rounded-3xl p-6 text-center mb-8">
+              <CheckCircle size={40} className="text-parallel-purple mx-auto mb-3" aria-hidden="true" />
+              <h2 className="text-xl font-semibold text-parallel-void mb-2">You're verified! ✓</h2>
+              <p className="text-parallel-stone text-sm">Your profile now shows a blue verified checkmark to all your matches.</p>
             </div>
             <button
               onClick={onBack}
@@ -357,15 +357,15 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
         {/* Declined — Persona returned a hard decline. */}
         {status === 'declined' && (
           <>
-            <div role="alert" className="bg-red-50 border border-red-200 rounded-3xl p-6 text-center mb-8">
-              <XCircle size={40} className="text-red-400 mx-auto mb-3" aria-hidden="true" />
-              <h2 className="text-xl font-semibold text-red-800 mb-2">Verification couldn't be completed</h2>
-              <p className="text-red-700 text-sm mb-4">
+            <div role="alert" className="bg-parallel-deep-ink border border-parallel-dusk rounded-3xl p-6 text-center mb-8">
+              <XCircle size={40} className="text-parallel-stone mx-auto mb-3" aria-hidden="true" />
+              <h2 className="text-xl font-semibold text-parallel-cream mb-2">Verification couldn't be completed</h2>
+              <p className="text-parallel-stone text-sm mb-4">
                 {declineReason
                   ? `Reason: ${declineReason}`
                   : "We couldn't confirm your identity from the documents you submitted."}
               </p>
-              <p className="text-red-600 text-xs leading-relaxed">
+              <p className="text-parallel-stone text-xs leading-relaxed">
                 Common causes: blurry ID photo, lighting that makes the selfie hard to read, or an ID type we don't yet support.
               </p>
             </div>
@@ -390,10 +390,10 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
         {/* Failed — user cancelled the popup, or we polled past the timeout. */}
         {status === 'failed' && (
           <>
-            <div role="alert" className="bg-yellow-50 border border-yellow-200 rounded-3xl p-6 text-center mb-8">
-              <XCircle size={40} className="text-yellow-500 mx-auto mb-3" aria-hidden="true" />
-              <h2 className="text-xl font-semibold text-yellow-800 mb-2">Verification didn't finish</h2>
-              <p className="text-yellow-700 text-sm">
+            <div role="alert" className="bg-[#F5F2EE] border border-parallel-linen rounded-3xl p-6 text-center mb-8">
+              <XCircle size={40} className="text-parallel-stone mx-auto mb-3" aria-hidden="true" />
+              <h2 className="text-xl font-semibold text-parallel-void mb-2">Verification didn't finish</h2>
+              <p className="text-parallel-stone text-sm">
                 It looks like the verification window was closed or the result didn't reach us. You can try again whenever you're ready.
               </p>
             </div>
