@@ -1,4 +1,4 @@
-// date-agent v27 — remove OpenTable, bigger venue pool (10/area), areaKey in Claude prompt, budget filter wired
+// date-agent v28 — block pure tourist attractions (tours, excursions, sightseeing)
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -82,10 +82,19 @@ const BLOCKED_PLACE_TYPES = new Set([
   "fast_food_restaurant", "airport", "transit_depot",
 ]);
 
+// Types that make a venue a valid date spot (food, drink, culture, activity, outdoors)
+const DATE_VENUE_TYPES = new Set([
+  "restaurant", "cafe", "coffee_shop", "bakery", "bar", "wine_bar", "cocktail_bar",
+  "museum", "art_gallery", "bowling_alley", "miniature_golf_course", "aquarium", "zoo",
+  "park", "nature_reserve", "hiking_area", "national_park",
+]);
+
 function isBlocklisted(name: string, types: string[]): boolean {
   const lower = name.toLowerCase();
   if (VENUE_NAME_BLOCKLIST.some(b => lower.includes(b))) return true;
   if (types.some(t => BLOCKED_PLACE_TYPES.has(t))) return true;
+  // Block pure tourist attractions — tours, sightseeing, excursions — that aren't also a dining/activity venue
+  if (types.includes("tourist_attraction") && !types.some(t => DATE_VENUE_TYPES.has(t))) return true;
   return false;
 }
 
@@ -326,7 +335,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "27" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "28" });
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);
 
     const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
@@ -640,7 +649,7 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v27] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 27 }, 500);
+    console.error("[v28] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 28 }, 500);
   }
 });
