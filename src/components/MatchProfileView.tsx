@@ -410,7 +410,7 @@ export function MatchProfileView({
               </>
             )}
             {user.isVerified && (
-              <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-blue-500 text-parallel-cream px-3 py-1.5 rounded-full shadow-lg">
+              <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1 bg-parallel-purple text-parallel-cream px-3 py-1.5 rounded-full shadow-lg">
                 <ShieldCheck size={13} aria-hidden="true" /><span className="text-xs font-medium">Verified</span>
               </div>
             )}

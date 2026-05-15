@@ -158,7 +158,7 @@ export function MatchCard({
 
             {/* Verified badge — top left */}
             {user.isVerified && (
-              <div className="absolute top-3 left-3 bg-blue-500 rounded-full p-1.5 shadow-lg z-20">
+              <div className="absolute top-3 left-3 bg-parallel-purple rounded-full p-1.5 shadow-lg z-20">
                 <ShieldCheck size={16} className="text-parallel-cream" />
               </div>
             )}
