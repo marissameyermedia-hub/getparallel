@@ -1,4 +1,4 @@
-// date-agent v30 — block tour operations that also carry bar/food types
+// date-agent v31 — Google Places text-search proxy endpoint for client autocomplete
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -340,7 +340,95 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "30" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "31" });
+
+    // ── /search — Google Places text-search proxy (API key stays server-side) ──
+    if (path === "/search" && req.method === "GET") {
+      const q = (url.searchParams.get("q") ?? "").trim();
+      if (!q || q.length < 2) return json({ results: [] });
+
+      const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
+      if (!token) return json({ error: "Unauthorized" }, 401);
+      const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: authData, error: authErr } = await anonClient.auth.getUser(token);
+      if (authErr || !authData?.user) return json({ error: "Unauthorized" }, 401);
+      const userId = authData.user.id;
+
+      if (!GOOGLE_PLACES_API_KEY) return json({ results: [] });
+
+      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      let searchLat: number | null = null, searchLon: number | null = null;
+      try {
+        const matchIdParam = url.searchParams.get("matchId") ?? "";
+        const ids = [userId, matchIdParam].filter(Boolean);
+        const { data: profiles } = await admin.from("profiles").select("id, latitude, longitude").in("id", ids);
+        const me = profiles?.find((p: any) => p.id === userId);
+        const them = matchIdParam ? profiles?.find((p: any) => p.id === matchIdParam) : null;
+        if (me?.latitude && me?.longitude) {
+          searchLat = me.latitude;
+          searchLon = me.longitude;
+          if (them?.latitude && them?.longitude) {
+            searchLat = (me.latitude + them.latitude) / 2;
+            searchLon = (me.longitude + them.longitude) / 2;
+          }
+        }
+      } catch { /* proceed without location bias */ }
+
+      try {
+        const body: Record<string, unknown> = { textQuery: q, maxResultCount: 10 };
+        if (searchLat !== null && searchLon !== null) {
+          body.locationBias = {
+            circle: { center: { latitude: searchLat, longitude: searchLon }, radius: 20000 },
+          };
+        }
+
+        const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
+            "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel,places.googleMapsUri,places.photos,places.outdoorSeating,places.servesCocktails,places.servesWine,places.reservable,places.businessStatus",
+          },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) return json({ results: [] });
+        const data = await res.json();
+
+        const results: VenueCard[] = (data.places ?? [])
+          .filter((p: any) =>
+            p?.displayName?.text &&
+            (p.businessStatus === undefined || p.businessStatus === "OPERATIONAL") &&
+            !isBlocklisted(p.displayName.text, p.types ?? []) &&
+            !isInsideAirport(p.formattedAddress ?? "")
+          )
+          .slice(0, 5)
+          .map((place: any) => ({
+            name: place.displayName.text,
+            category: detectCategory(place.types ?? []),
+            priceLevel: PRICE_MAP[place.priceLevel ?? ""] ?? "$$",
+            rating: typeof place.rating === "number" ? Math.round(place.rating * 10) / 10 : null,
+            address: place.formattedAddress ?? "",
+            mapsUrl: place.googleMapsUri ?? "",
+            whyItFits: "",
+            suggestionMessage: "",
+            photoUrl: buildPhotoUrl(place),
+            atmosphereTags: extractAtmosphereTags(place),
+            latitude: place.location?.latitude,
+            longitude: place.location?.longitude,
+            reservable: typeof place.reservable === "boolean" ? place.reservable : undefined,
+            areaKey: "middle" as const,
+          }));
+
+        return json({ results });
+      } catch {
+        return json({ results: [] });
+      }
+    }
+
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);
 
     const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
@@ -670,7 +758,7 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v30] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 30 }, 500);
+    console.error("[v31] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 31 }, 500);
   }
 });

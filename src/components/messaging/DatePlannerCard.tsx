@@ -243,6 +243,8 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<VenueCard[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [globalPeriod, setGlobalPeriod] = useState<'afternoon' | 'evening'>('evening');
   const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
@@ -325,6 +327,32 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
       setPanel(prev => prev === 'waiting' ? 'time-pick' : prev);
     } catch { /* ignore malformed response */ }
   }, [dateResponseText]);
+
+  // Debounced Google Places search — fires 350ms after the user stops typing
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+        const params = new URLSearchParams({ q: searchQuery.trim(), matchId });
+        const res = await fetch(`${DATE_AGENT_FUNCTION_URL}/search?${params}`, {
+          headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey },
+        });
+        if (res.ok) {
+          const data = await res.json() as { results?: VenueCard[] };
+          if (Array.isArray(data.results)) setSearchResults(data.results);
+        }
+      } catch { /* ignore */ } finally {
+        setSearchLoading(false);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery, matchId]);
 
   if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
 
@@ -914,6 +942,47 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           </div>
         </button>
 
+        {/* Google Places search — replaces the venue card with a real result */}
+        <div className="px-4 mb-2">
+          <div className="relative">
+            <div className="relative flex items-center">
+              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C0BAC8] pointer-events-none" aria-hidden="true" />
+              {searchLoading && <Loader size={11} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C0BAC8] animate-spin" aria-hidden="true" />}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onBlur={() => setTimeout(() => setSearchResults([]), 200)}
+                placeholder="Or search for a specific spot…"
+                className="w-full bg-white rounded-xl pl-8 pr-8 py-2 border border-[#E8E4DE] text-xs text-[#2E2A36] placeholder-[#C0BAC8] focus:outline-none focus:border-[#7B5EA7] transition-colors"
+              />
+            </div>
+            {searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 bg-white border border-[#E8E4DE] rounded-xl mt-1 z-10 shadow-lg overflow-hidden">
+                {searchResults.map((result, i) => (
+                  <button
+                    key={i}
+                    onMouseDown={() => {
+                      setSelectedVenue(result);
+                      setMessage(buildCustomMessage(result.name, slots));
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                    className="w-full text-left px-3 py-2.5 hover:bg-[#F8F4FD] transition-colors border-b border-[#F0ECF8] last:border-0"
+                  >
+                    <p className="text-xs font-medium text-[#1E1C22] leading-tight">{result.name}</p>
+                    <p className="text-[10px] text-[#8A8690] mt-0.5">
+                      {result.category} · {result.priceLevel}
+                      {result.rating !== null ? ` · ★ ${result.rating}` : ''}
+                      {result.address ? ` · ${result.address.split(',')[0]}` : ''}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Day chips with period toggle */}
         <div className="px-4 mb-2">
           <p className="text-[10px] text-[#8A8690] mb-1.5">When are you free?</p>
@@ -991,48 +1060,6 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           >
             Send →
           </button>
-        </div>
-        {/* Inline venue search — type a spot name to replace the Google suggestion */}
-        <div className="px-4 pb-3 border-t border-[#F0ECF8] pt-3">
-          <p className="text-[10px] text-[#8A8690] mb-1.5">Want a specific spot?</p>
-          <div className="relative flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C0BAC8]" aria-hidden="true" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    const name = searchQuery.trim();
-                    if (!name) return;
-                    const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
-                    const custom: VenueCard = { name, category: 'Custom', priceLevel: '$$', rating: null, address: '', mapsUrl, whyItFits: '', suggestionMessage: '', areaKey: 'middle' };
-                    setSelectedVenue(custom);
-                    setMessage(buildCustomMessage(name, slots));
-                    setSearchQuery('');
-                  }
-                }}
-                placeholder="Type a venue name…"
-                className="w-full bg-white rounded-xl pl-8 pr-3 py-2 border border-[#E8E4DE] text-xs text-[#2E2A36] placeholder-[#C0BAC8] focus:outline-none focus:border-[#7B5EA7] transition-colors"
-              />
-            </div>
-            <button
-              onClick={() => {
-                const name = searchQuery.trim();
-                if (!name) return;
-                const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
-                const custom: VenueCard = { name, category: 'Custom', priceLevel: '$$', rating: null, address: '', mapsUrl, whyItFits: '', suggestionMessage: '', areaKey: 'middle' };
-                setSelectedVenue(custom);
-                setMessage(buildCustomMessage(name, slots));
-                setSearchQuery('');
-              }}
-              disabled={!searchQuery.trim()}
-              className="flex-shrink-0 text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] px-3 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-30"
-            >
-              Use →
-            </button>
-          </div>
         </div>
       </div>
     );
