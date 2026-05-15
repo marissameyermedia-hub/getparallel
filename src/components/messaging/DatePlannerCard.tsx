@@ -879,7 +879,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
               <p className="text-[10px] text-[#2E2A36] leading-snug mt-1 line-clamp-2">{selectedVenue.whyItFits}</p>
             )}
             {selectedVenue.mapsUrl && (
-              <p className="text-[9px] text-[#7B5EA7] mt-1">Tap to preview →</p>
+              <p className="text-[9px] text-[#7B5EA7] mt-1">Check reservation availability →</p>
             )}
           </div>
         </button>
