@@ -1,4 +1,4 @@
-// date-agent v29 — filter closed venues, fix category ordering, activity occasion filter
+// date-agent v30 — block tour operations that also carry bar/food types
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -95,6 +95,9 @@ function isBlocklisted(name: string, types: string[]): boolean {
   if (types.some(t => BLOCKED_PLACE_TYPES.has(t))) return true;
   // Block pure tourist attractions — tours, sightseeing, excursions — that aren't also a dining/activity venue
   if (types.includes("tourist_attraction") && !types.some(t => DATE_VENUE_TYPES.has(t))) return true;
+  // Block tour operations even when Google also tags them as bar/restaurant (e.g. "Underground Tour"
+  // that serves drinks during the tour — we want actual bars/restaurants, not sightseeing experiences)
+  if (types.includes("tourist_attraction") && /\btours?\b/i.test(lower)) return true;
   return false;
 }
 
@@ -337,7 +340,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "29" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "30" });
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);
 
     const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
@@ -667,7 +670,7 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v29] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 29 }, 500);
+    console.error("[v30] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 30 }, 500);
   }
 });
