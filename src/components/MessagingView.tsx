@@ -1023,7 +1023,7 @@ export function MessagingView({
                       }}
                     />
                     {isLast && (
-                      <p className="text-[10px] text-center text-gray-400 mt-1">{formatTime(message.timestamp)}</p>
+                      <p className="text-[10px] text-center text-gray-500 mt-1">{formatTime(message.timestamp)}</p>
                     )}
                   </div>
                 );
@@ -1046,7 +1046,7 @@ export function MessagingView({
                       onRespond={isMe ? undefined : (slot) => handleSend(`${DATE_RESPONSE_PREFIX}${JSON.stringify(slot)}`)}
                     />
                     {isLast && (
-                      <p className="text-[10px] text-center text-gray-400 mt-1">{formatTime(message.timestamp)}</p>
+                      <p className="text-[10px] text-center text-gray-500 mt-1">{formatTime(message.timestamp)}</p>
                     )}
                   </div>
                 );
@@ -1077,8 +1077,8 @@ export function MessagingView({
                   <p className="text-sm leading-snug whitespace-pre-line">{renderWithLinks(message.text, isMe)}</p>
                   {isLast && (
                     <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <p className={`text-[10px] ${isMe ? 'text-gray-400' : 'text-gray-500'}`}>{formatTime(message.timestamp)}</p>
-                      {isMe && <CheckCheck size={10} className="text-gray-400" aria-label="Sent" />}
+                      <p className={`text-[10px] ${isMe ? 'text-gray-500' : 'text-gray-500'}`}>{formatTime(message.timestamp)}</p>
+                      {isMe && <CheckCheck size={10} className="text-gray-500" aria-label="Sent" />}
                     </div>
                   )}
                 </div>
@@ -1164,7 +1164,7 @@ export function MessagingView({
                 Tell us
               </button>
               <button onClick={dismissFadeNudge} aria-label="Dismiss" className="p-1 hover:bg-gray-200 rounded-full transition-colors">
-                <X className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+                <X className="w-3.5 h-3.5 text-gray-500" aria-hidden="true" />
               </button>
             </div>
           </div>

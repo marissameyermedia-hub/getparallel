@@ -94,7 +94,7 @@ export function PromoCodeInput({ onSuccess }: PromoCodeInputProps) {
             setError(null);
             setSuccess(null);
           }}
-          className="text-gray-400 hover:text-gray-600 text-sm"
+          className="text-gray-500 hover:text-gray-600 text-sm"
           disabled={loading}
         >
           Cancel

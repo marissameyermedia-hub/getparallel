@@ -239,7 +239,7 @@ export function PrivacySafetyView({ onBack }: PrivacySafetyViewProps) {
               <a href="https://www.stalkingawareness.org" target="_blank" rel="noopener noreferrer" className="text-sm font-medium underline">stalkingawareness.org</a>
             </div>
           </div>
-          <p className="text-xs text-gray-400 mt-5 leading-relaxed">
+          <p className="text-xs text-gray-500 mt-5 leading-relaxed">
             To report a concern within Parallel, use the Report button on any profile or message. Our safety team reviews all reports as quickly as possible. Email legal@getparallel.vip for urgent safety issues.
           </p>
         </div>

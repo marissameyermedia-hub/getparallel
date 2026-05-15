@@ -322,7 +322,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
               Not right now
             </button>
 
-            <p className="text-center text-xs text-gray-400 mt-4 leading-relaxed">
+            <p className="text-center text-xs text-gray-500 mt-4 leading-relaxed">
               Verification is optional. Verified profiles display a checkmark to matches.
             </p>
           </>

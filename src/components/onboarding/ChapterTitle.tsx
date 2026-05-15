@@ -47,10 +47,10 @@ export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, on
             transition={{ duration: 0.3 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-400 uppercase tracking-widest font-medium">
+              <span className="text-xs text-gray-500 uppercase tracking-widest font-medium">
                 Section {chapterNumber} of {total}
               </span>
-              <span className="text-xs text-gray-400 font-medium">
+              <span className="text-xs text-gray-500 font-medium">
                 {progressPercent}% complete
               </span>
             </div>

@@ -239,9 +239,9 @@ export function InviteView({ onBack }: InviteViewProps) {
               {ripples}
             </div>
           )}
-          <div className="text-xs uppercase tracking-widest text-gray-400">ripples started</div>
+          <div className="text-xs uppercase tracking-widest text-gray-500">ripples started</div>
           {data && data.indirectRippleCount > 0 && (
-            <div className="text-xs text-gray-400 mt-1">
+            <div className="text-xs text-gray-500 mt-1">
               {data.directRippleCount} direct · {data.indirectRippleCount} through your referrals
             </div>
           )}
@@ -269,7 +269,7 @@ export function InviteView({ onBack }: InviteViewProps) {
               {isLoading ? '—' : challenge.text}
             </div>
             {challenge.to && !isLoading && (
-              <div className="text-xs text-gray-400">{ripples} / {challenge.to}</div>
+              <div className="text-xs text-gray-500">{ripples} / {challenge.to}</div>
             )}
           </div>
           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -341,7 +341,7 @@ export function InviteView({ onBack }: InviteViewProps) {
 
         {/* ── Tier ladder ── */}
         <div className="mt-8">
-          <div className="text-xs uppercase tracking-widest text-gray-400 mb-3">Ripple tiers</div>
+          <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Ripple tiers</div>
           <div className="border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100">
             {TIERS.map((t, i) => {
               const active = ripples >= t.min;
@@ -364,7 +364,7 @@ export function InviteView({ onBack }: InviteViewProps) {
                   </div>
                   <div className="flex-1">
                     <div className="text-sm font-medium text-gray-900">{t.name}</div>
-                    <div className="text-xs text-gray-400">{t.min === 50 ? '50+ ripples' : `${t.min}–${t.max} ripples`}</div>
+                    <div className="text-xs text-gray-500">{t.min === 50 ? '50+ ripples' : `${t.min}–${t.max} ripples`}</div>
                   </div>
                   <div
                     className="text-sm font-medium w-5 text-right transition-colors duration-300"
@@ -381,7 +381,7 @@ export function InviteView({ onBack }: InviteViewProps) {
         {/* ── Friends list ── */}
         {!isLoading && (data?.friends?.length ?? 0) > 0 && (
           <div className="mt-8">
-            <div className="text-xs uppercase tracking-widest text-gray-400 mb-3">Your referrals</div>
+            <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Your referrals</div>
             <div className="space-y-2">
               {data!.friends.map((friend, idx) => {
                 const pill = STATUS_PILL[friend.status];

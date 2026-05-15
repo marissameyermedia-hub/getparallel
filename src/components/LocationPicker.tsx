@@ -235,7 +235,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
       {mode === 'search' && (
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
             <input
               type="text"
               value={searchQuery}
@@ -244,7 +244,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
               className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-parallel-purple focus:outline-none"
             />
             {isSearching && (
-              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 animate-spin" />
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 animate-spin" />
             )}
           </div>
 
@@ -259,7 +259,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
                 >
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <MapPin className="w-4 h-4 text-gray-500 flex-shrink-0" />
                     <span className="text-sm text-gray-900">{result.displayName}</span>
                   </div>
                 </button>

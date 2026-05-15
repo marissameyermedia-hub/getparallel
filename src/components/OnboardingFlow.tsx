@@ -848,7 +848,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
           <div className="flex-1 min-h-0 flex flex-col">
             {/* Section title replaces "Section X of Y" — more meaningful to users */}
             <div className="px-6 pt-2 pb-0 flex items-center justify-between flex-shrink-0">
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">
+              <span className="text-xs text-gray-500 font-medium uppercase tracking-wide">
                 {currentChapter.title}
               </span>
               <span className="text-xs text-green-500 font-medium flex items-center gap-1">

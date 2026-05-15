@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="font-bold text-red-600 mb-1">Location:</p>
               <p className="text-gray-600 whitespace-pre-wrap">{this.state.error?.stack?.slice(0, 400)}</p>
             </div>
-            <p className="text-xs text-gray-400 mb-6">If this keeps happening, contact us at support@getparallel.vip</p>
+            <p className="text-xs text-gray-500 mb-6">If this keeps happening, contact us at support@getparallel.vip</p>
             <button
               onClick={() => {
                 // Clear only auth keys — preserve questionnaire progress and match state

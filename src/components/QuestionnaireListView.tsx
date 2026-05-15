@@ -351,7 +351,7 @@ export function QuestionnaireListView({
             <div className="h-full bg-parallel-void rounded-full transition-all" style={{ width: `${completionPct}%` }} />
           </div>
           {completionPct < 100 && (
-            <p className="text-xs text-gray-400 mt-2">More complete answers = better matches. Tap any section to edit.</p>
+            <p className="text-xs text-gray-500 mt-2">More complete answers = better matches. Tap any section to edit.</p>
           )}
         </div>
 
@@ -359,7 +359,7 @@ export function QuestionnaireListView({
           const partSections = parallelQuestionnaire.filter(s => s.part === part);
           return (
             <div key={part} className="mb-6">
-              <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 px-1">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3 px-1">
                 {part === 1 ? 'Part 1 — About You' : 'Part 2 — Your Preferences'}
               </p>
               <div className="space-y-2">
@@ -385,11 +385,11 @@ export function QuestionnaireListView({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm">{section.title}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <p className="text-xs text-gray-500 mt-0.5">
                             {sectionComplete ? 'All answered' : `${sectionAnswered} of ${requiredQuestions.length} answered`}
                           </p>
                         </div>
-                        <ChevronRight size={16} className={`text-gray-400 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight size={16} className={`text-gray-500 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`} />
                       </button>
 
                       {isExpanded && (

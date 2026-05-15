@@ -53,7 +53,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
                 </button>
                 <button
                   onClick={() => setShowVerifyPrompt(false)}
-                  className="w-full text-gray-400 text-sm py-2 mt-2 hover:text-gray-600 transition-colors"
+                  className="w-full text-gray-500 text-sm py-2 mt-2 hover:text-gray-600 transition-colors"
                 >
                   Skip for now
                 </button>

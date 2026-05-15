@@ -175,10 +175,10 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
               <h3 id="pause-confirm-title" className="mb-3">Pause your profile?</h3>
               <p className="text-gray-700 mb-3">While paused:</p>
               <ul className="text-sm text-gray-600 space-y-2 mb-6">
-                <li className="flex items-start gap-2"><span className="text-gray-400 mt-0.5" aria-hidden="true">•</span>You won't appear in new or existing match queues</li>
-                <li className="flex items-start gap-2"><span className="text-gray-400 mt-0.5" aria-hidden="true">•</span>Messaging is disabled</li>
-                <li className="flex items-start gap-2"><span className="text-gray-400 mt-0.5" aria-hidden="true">•</span>Your matches and data are saved</li>
-                <li className="flex items-start gap-2"><span className="text-gray-400 mt-0.5" aria-hidden="true">•</span>Unpause anytime to reactivate instantly</li>
+                <li className="flex items-start gap-2"><span className="text-gray-500 mt-0.5" aria-hidden="true">•</span>You won't appear in new or existing match queues</li>
+                <li className="flex items-start gap-2"><span className="text-gray-500 mt-0.5" aria-hidden="true">•</span>Messaging is disabled</li>
+                <li className="flex items-start gap-2"><span className="text-gray-500 mt-0.5" aria-hidden="true">•</span>Your matches and data are saved</li>
+                <li className="flex items-start gap-2"><span className="text-gray-500 mt-0.5" aria-hidden="true">•</span>Unpause anytime to reactivate instantly</li>
               </ul>
               <div className="flex gap-3">
                 <button onClick={() => setShowConfirmation(false)} className="flex-1 py-3 px-6 rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors">Cancel</button>

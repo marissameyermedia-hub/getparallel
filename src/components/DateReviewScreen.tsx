@@ -222,7 +222,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
           {/* Positive signals — shown when going again */}
           {wouldGoAgain === true && (
             <div className="space-y-3 pt-4 border-t border-gray-200">
-              <span className="text-sm font-medium text-gray-900 block">What made this match work? <span className="text-gray-400 font-normal">(Optional)</span></span>
+              <span className="text-sm font-medium text-gray-900 block">What made this match work? <span className="text-gray-500 font-normal">(Optional)</span></span>
               <div className="flex flex-wrap gap-2">
                 {POSITIVE_SIGNALS.map(s => (
                   <button
@@ -241,7 +241,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
           {/* Negative reasons — shown when not going again */}
           {wouldGoAgain === false && (
             <div className="space-y-3 pt-4 border-t border-gray-200">
-              <span className="text-sm font-medium text-gray-900 block">What went wrong? <span className="text-gray-400 font-normal">(Optional)</span></span>
+              <span className="text-sm font-medium text-gray-900 block">What went wrong? <span className="text-gray-500 font-normal">(Optional)</span></span>
               <div className="flex flex-wrap gap-2">
                 {NEGATIVE_REASONS.map(r => (
                   <button
@@ -272,7 +272,7 @@ export function DateReviewScreen({ isOpen, onClose, matchName, matchId, onSubmit
           {/* Would change future — shown after an answer is given */}
           {wouldGoAgain !== null && (
             <div className="space-y-3 pt-4 border-t border-gray-200">
-              <span className="text-sm font-medium text-gray-900 block">What would you change about future matches? <span className="text-gray-400 font-normal">(Optional)</span></span>
+              <span className="text-sm font-medium text-gray-900 block">What would you change about future matches? <span className="text-gray-500 font-normal">(Optional)</span></span>
               <div className="flex flex-wrap gap-2">
                 {WOULD_CHANGE_FUTURE.map(c => (
                   <button

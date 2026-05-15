@@ -143,7 +143,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             {/* Left: copy. md:pt-4 nudges the headline down just enough so it
                 visually sits across from the top edge of the angled cards. */}
             <div className="md:pt-4">
-              <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-5 font-medium">
+              <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-5 font-medium">
                 Professional matchmaking
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
@@ -222,7 +222,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   />
                 </div>
               </div>
-              <p className="text-xs text-center text-gray-400 mt-8 md:mt-48 italic">
+              <p className="text-xs text-center text-gray-500 mt-8 md:mt-48 italic">
                 Every match comes with a score and a reason why.
               </p>
             </div>
@@ -234,7 +234,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
       <section className="w-full border-t border-gray-100 bg-gray-50">
         <div className="max-w-3xl mx-auto px-6 py-20 md:py-24">
           <div className="text-center mb-14">
-            <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-3 font-medium">How it works</p>
+            <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-3 font-medium">How it works</p>
             <h2 className="text-3xl md:text-4xl font-semibold tracking-tight">
               We do the work. You meet the right person.
             </h2>
@@ -264,7 +264,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
       <section className="w-full border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-6 py-20 md:py-24">
           <div className="text-center mb-14">
-            <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-3 font-medium">Why Parallel</p>
+            <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-3 font-medium">Why Parallel</p>
             <h2 className="text-3xl md:text-4xl font-semibold tracking-tight mb-4">
               Built differently.
             </h2>
@@ -315,7 +315,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               Already a member? Sign in
             </button>
           </div>
-          <p className="text-xs text-gray-400 mt-6">
+          <p className="text-xs text-gray-500 mt-6">
             $79/year for founding members
           </p>
         </div>
@@ -345,7 +345,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               </div>
               <button
                 onClick={closeSignInModal}
-                className="text-gray-400 hover:text-parallel-void transition-colors"
+                className="text-gray-500 hover:text-parallel-void transition-colors"
                 aria-label="Close"
               >
                 <X size={20} aria-hidden="true" />
@@ -368,7 +368,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <div>
                       <label htmlFor="email" className="block text-xs mb-1.5 text-gray-700 font-medium">Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
                         <input
                           id="email"
                           type="email"
@@ -388,7 +388,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <div>
                       <label htmlFor="password" className="block text-xs mb-1.5 text-gray-700 font-medium">Password</label>
                       <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
                         <input
                           id="password"
                           type="password"
@@ -457,7 +457,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     <div>
                       <label htmlFor="resetEmail" className="block text-xs mb-1.5 text-gray-700 font-medium">Email</label>
                       <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden="true" />
                         <input
                           id="resetEmail"
                           type="email"
@@ -666,7 +666,7 @@ function PreviewMatchCard({
 
         {/* 8-category compatibility breakdown */}
         <div>
-          <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">
+          <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
             Compatibility Breakdown
           </h4>
           <div className="space-y-2.5">
@@ -677,11 +677,11 @@ function PreviewMatchCard({
               return (
                 <div key={label}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs ${hasScore ? 'text-gray-700' : 'text-gray-400'}`}>{label}</span>
+                    <span className={`text-xs ${hasScore ? 'text-gray-700' : 'text-gray-500'}`}>{label}</span>
                     {hasScore ? (
                       <span className="text-xs font-medium text-gray-800">{raw}%</span>
                     ) : (
-                      <span className="text-[10px] italic text-gray-400">Not enough data yet</span>
+                      <span className="text-[10px] italic text-gray-500">Not enough data yet</span>
                     )}
                   </div>
                   <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">

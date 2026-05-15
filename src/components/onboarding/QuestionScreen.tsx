@@ -356,7 +356,7 @@ export function QuestionScreen({
       {/* Question number row */}
       {chapterTitle && (
         <div className="px-6 pt-1 pb-0 flex-shrink-0">
-          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{chapterTitle}</p>
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{chapterTitle}</p>
         </div>
       )}
 
@@ -381,12 +381,12 @@ export function QuestionScreen({
             {question.privacyNote && (
               <div className="flex items-center gap-1.5 mt-2">
                 <span className="text-xs">🔒</span>
-                <span className="text-xs text-gray-400">{question.privacyNote}</span>
+                <span className="text-xs text-gray-500">{question.privacyNote}</span>
               </div>
             )}
             {/* helperText shown only when it adds genuine context beyond privacyNote */}
             {question.helperText && (
-              <p className="text-xs text-gray-400 mt-2 leading-relaxed">{question.helperText}</p>
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">{question.helperText}</p>
             )}
           </div>
 
@@ -510,11 +510,11 @@ export function QuestionScreen({
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-500">{selected.length === 0 ? 'None selected yet' : `${selected.length} selected`}</p>
                       {remaining !== null && selected.length > 0 && (
-                        <p className="text-sm text-gray-400">{remaining > 0 ? `${remaining} more` : 'Maximum reached'}</p>
+                        <p className="text-sm text-gray-500">{remaining > 0 ? `${remaining} more` : 'Maximum reached'}</p>
                       )}
                     </div>
                     <div className="relative">
-                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                       <input
                         type="text"
                         value={hobbySearch}
@@ -523,7 +523,7 @@ export function QuestionScreen({
                         className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors text-sm"
                       />
                       {hobbySearch && (
-                        <button onClick={() => setHobbySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">×</button>
+                        <button onClick={() => setHobbySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600">×</button>
                       )}
                     </div>
                     {selected.length > 0 && !hobbySearch && (
@@ -540,7 +540,7 @@ export function QuestionScreen({
                     )}
                     {filteredCategories.map(cat => (
                       <div key={cat.label}>
-                        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">{cat.emoji} {cat.label}</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">{cat.emoji} {cat.label}</p>
                         <div className="flex flex-wrap gap-2">
                           {cat.hobbies.map(hobby => {
                             const isSelected = selected.includes(hobby);
@@ -562,7 +562,7 @@ export function QuestionScreen({
                       </div>
                     ))}
                     {filteredCategories.length === 0 && (
-                      <p className="text-center text-gray-400 text-sm py-8">No hobbies match "{hobbySearch}"</p>
+                      <p className="text-center text-gray-500 text-sm py-8">No hobbies match "{hobbySearch}"</p>
                     )}
                   </div>
                 );
@@ -776,7 +776,7 @@ export function QuestionScreen({
                     className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-move ${draggedItem === option ? 'border-parallel-void opacity-50' : 'border-gray-200'}`}
                   >
                     <div className="w-7 h-7 rounded-full bg-parallel-purple text-parallel-cream text-sm flex items-center justify-center flex-shrink-0">{index + 1}</div>
-                    <GripVertical className="w-4 h-4 text-gray-400" />
+                    <GripVertical className="w-4 h-4 text-gray-500" />
                     <span className="flex-1 text-sm">{option}</span>
                   </motion.div>
                 ))}
@@ -831,7 +831,7 @@ export function QuestionScreen({
                   style={{ fontSize: '16px' }}
                 />
                 {question.maxCharacters && (
-                  <div className="text-right text-xs text-gray-400 mt-1">{textInputs[0]?.length || 0}/{question.maxCharacters}</div>
+                  <div className="text-right text-xs text-gray-500 mt-1">{textInputs[0]?.length || 0}/{question.maxCharacters}</div>
                 )}
               </div>
             )}
@@ -840,7 +840,7 @@ export function QuestionScreen({
             {question.type === 'UPLOAD' && (
               <label className="w-full cursor-pointer">
                 <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-parallel-void transition-colors">
-                  <Upload size={32} className="mx-auto mb-3 text-gray-400" />
+                  <Upload size={32} className="mx-auto mb-3 text-gray-500" />
                   <p className="font-medium">{localAnswer ? 'File uploaded ✓' : 'Click to upload'}</p>
                 </div>
                 <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden"

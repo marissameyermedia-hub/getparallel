@@ -206,7 +206,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
                   <span className="text-sm font-semibold text-gray-900 leading-tight">{cat.label}</span>
                   <button
                     onClick={() => setActiveHelper(activeHelper === cat.key ? null : cat.key)}
-                    className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="flex-shrink-0 text-gray-500 hover:text-gray-600 transition-colors"
                   >
                     <Info size={14} />
                   </button>
@@ -272,7 +272,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
                 } catch {}
               }
               onComplete();
-            }} className="w-full text-center text-sm text-gray-400 mt-3 hover:text-gray-600 transition-colors">
+            }} className="w-full text-center text-sm text-gray-500 mt-3 hover:text-gray-600 transition-colors">
               Skip — use defaults
             </button>
           )}

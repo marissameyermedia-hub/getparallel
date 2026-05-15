@@ -196,7 +196,7 @@ export function AdminCaseDetail({
                     <div className="flex gap-2">
                       {caseData.screenshots.map((_, idx) => (
                         <div key={idx} className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-gray-400" />
+                          <FileText className="w-6 h-6 text-gray-500" />
                         </div>
                       ))}
                     </div>

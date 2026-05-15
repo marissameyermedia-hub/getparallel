@@ -247,7 +247,7 @@ export function InboxView({
         {waiting.length > 0 && (
           <div className="border-b border-gray-100 py-4">
             <div className="px-5 mb-3">
-              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
                 You matched — say hi
               </p>
             </div>
@@ -336,7 +336,7 @@ export function InboxView({
                       <span className={`text-base truncate ${message.unread ? 'font-semibold text-parallel-void' : 'font-medium text-gray-800'}`}>
                         {message.matchName}
                       </span>
-                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2 tabular-nums">
+                      <span className="text-xs text-gray-500 flex-shrink-0 ml-2 tabular-nums">
                         {formatTimestamp(message.timestamp)}
                       </span>
                     </div>
@@ -357,7 +357,7 @@ export function InboxView({
         {!hasAnything && (
           <div className="flex flex-col items-center justify-center px-8 text-center" style={{ minHeight: '60vh' }}>
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-5">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-500">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
