@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { CalendarClock, X, Loader, CalendarPlus, Check, ExternalLink, Sparkles, ChevronRight } from 'lucide-react';
+import { CalendarClock, X, Loader, CalendarPlus, Check, ExternalLink, Sparkles, ChevronRight, RefreshCw, Star, Search } from 'lucide-react';
 import { DATE_AGENT_FUNCTION_URL } from '../../utils/supabase/client';
 import { publicAnonKey } from '../../utils/supabase/info';
 import { getAccessToken } from '../../utils/auth';
@@ -31,7 +31,7 @@ interface VenueCard {
   reservable?: boolean;
 }
 
-type Panel = 'trigger' | 'schedule' | 'filter' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review' | 'custom';
+type Panel = 'trigger' | 'schedule' | 'filter' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review';
 type Budget = 'any' | '$' | '$$' | '$$$';
 type Occasion = 'any' | 'dinner' | 'drinks' | 'coffee' | 'activity';
 type Vibe = 'any' | 'local_gem' | 'trendy' | 'outdoor';
@@ -156,15 +156,6 @@ function formatHour(h: number): string {
   return `${h}am`;
 }
 
-function extractNameFromMapsUrl(url: string): string {
-  try {
-    // https://www.google.com/maps/place/Venue+Name/@...
-    const m = url.match(/maps\/place\/([^/@?&#]+)/);
-    if (m) return decodeURIComponent(m[1].replace(/\+/g, ' '));
-  } catch { /* ignore */ }
-  return '';
-}
-
 function buildCustomMessage(name: string, slots: TimeSlot[]): string {  const availability = slots.length >= 2
     ? `Are you free ${dayName(slots[0])} or ${dayName(slots[1])}?`
     : slots.length === 1
@@ -251,8 +242,8 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
   const [confirmedSlot, setConfirmedSlot] = useState<TimeSlot | null>(null);
   const [confirmedTime, setConfirmedTime] = useState<number | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
-  const [customVenueName, setCustomVenueName] = useState('');
-  const [customMapsUrl, setCustomMapsUrl] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [globalPeriod, setGlobalPeriod] = useState<'afternoon' | 'evening'>('evening');
   const [preferredArea, setPreferredArea] = useState<'any' | 'you' | 'them' | 'middle'>('any');
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
   const [shownVenueUrls, setShownVenueUrls] = useState<string[]>([]);
@@ -341,18 +332,14 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
   const handleDayTap = (day: ReturnType<typeof getUpcomingDays>[0]) => {
     const existing = slots.find(s => s.date.toDateString() === day.date.toDateString());
     if (existing) {
-      const nextPeriod: typeof PERIODS[number] = existing.period === 'evening' ? 'afternoon' : 'evening';
-      setSlots(prev => prev.map(s =>
-        s.date.toDateString() === day.date.toDateString()
-          ? { ...s, period: nextPeriod, label: `${day.label} ${nextPeriod}`, shortLabel: `${day.shortLabel} ${nextPeriod}` }
-          : s
-      ));
+      // Tap selected day = deselect
+      setSlots(prev => prev.filter(s => s.date.toDateString() !== day.date.toDateString()));
     } else {
       const newSlot: TimeSlot = {
         date: day.date,
-        period: 'evening',
-        label: `${day.label} evening`,
-        shortLabel: `${day.shortLabel} evening`,
+        period: globalPeriod,
+        label: `${day.label} ${globalPeriod}`,
+        shortLabel: `${day.shortLabel} ${globalPeriod}`,
       };
       setSlots(prev => {
         if (prev.length >= 2) return [prev[1], newSlot];
@@ -570,9 +557,27 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
         </div>
 
         {/* Days — when are you free? */}
-        <p className="text-[10px] text-[#8A8690] mb-1.5">
-          When are you free? <span className="text-[#C0BAC8]">tap again to switch Aft/Eve</span>
-        </p>
+        <p className="text-[10px] text-[#8A8690] mb-1.5">When are you free?</p>
+        <div className="flex gap-1.5 mb-2">
+          {(['afternoon', 'evening'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => {
+                const allDays = getUpcomingDays(10);
+                setGlobalPeriod(p);
+                setSlots(prev => prev.map(s => {
+                  const day = allDays.find(d => d.date.toDateString() === s.date.toDateString());
+                  const base = day?.label ?? s.label.replace(/ (afternoon|evening)$/, '');
+                  const short = day?.shortLabel ?? s.shortLabel.replace(/ (afternoon|evening)$/, '');
+                  return { ...s, period: p, label: `${base} ${p}`, shortLabel: `${short} ${p}` };
+                }));
+              }}
+              className={`${chipBase} ${globalPeriod === p ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]' : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'}`}
+            >
+              {p === 'afternoon' ? 'Afternoon' : 'Evening'}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-1.5 flex-wrap mb-3">
           {scheduleDays.map(day => {
             const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
@@ -656,7 +661,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           <div className="flex items-center gap-1.5">
             <CalendarClock size={13} className="text-[#7B5EA7]" aria-hidden="true" />
             <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">
-              When are you free? <span className="text-[#C0BAC8] font-normal">pick up to 2 · tap again to switch Aft/Eve</span>
+              When are you free? <span className="text-[#C0BAC8] font-normal">pick up to 2</span>
             </span>
           </div>
           <button
@@ -668,6 +673,26 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           </button>
         </div>
 
+        <div className="flex gap-1.5 mb-2">
+          {(['afternoon', 'evening'] as const).map(p => (
+            <button
+              key={p}
+              onClick={() => {
+                const allDays = getUpcomingDays(10);
+                setGlobalPeriod(p);
+                setSlots(prev => prev.map(s => {
+                  const day = allDays.find(d => d.date.toDateString() === s.date.toDateString());
+                  const base = day?.label ?? s.label.replace(/ (afternoon|evening)$/, '');
+                  const short = day?.shortLabel ?? s.shortLabel.replace(/ (afternoon|evening)$/, '');
+                  return { ...s, period: p, label: `${base} ${p}`, shortLabel: `${short} ${p}` };
+                }));
+              }}
+              className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${globalPeriod === p ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]' : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'}`}
+            >
+              {p === 'afternoon' ? 'Afternoon' : 'Evening'}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-1.5 flex-wrap mb-3">
           {days.map(day => {
             const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
@@ -884,9 +909,31 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           </div>
         </button>
 
-        {/* Day chips with inline slot+message sync */}
+        {/* Day chips with period toggle */}
         <div className="px-4 mb-2">
-          <p className="text-[10px] text-[#8A8690] mb-1.5">When are you free? <span className="text-[#C0BAC8]">pick up to 2 · tap again to switch Aft/Eve</span></p>
+          <p className="text-[10px] text-[#8A8690] mb-1.5">When are you free?</p>
+          <div className="flex gap-1.5 mb-2">
+            {(['afternoon', 'evening'] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => {
+                  const allDays = getUpcomingDays(10);
+                  const newSlots = slots.map(s => {
+                    const day = allDays.find(d => d.date.toDateString() === s.date.toDateString());
+                    const base = day?.label ?? s.label.replace(/ (afternoon|evening)$/, '');
+                    const short = day?.shortLabel ?? s.shortLabel.replace(/ (afternoon|evening)$/, '');
+                    return { ...s, period: p, label: `${base} ${p}`, shortLabel: `${short} ${p}` };
+                  });
+                  setGlobalPeriod(p);
+                  setSlots(newSlots);
+                  setMessage(buildPlanMessage(selectedVenue, newSlots));
+                }}
+                className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${globalPeriod === p ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]' : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'}`}
+              >
+                {p === 'afternoon' ? 'Afternoon' : 'Evening'}
+              </button>
+            ))}
+          </div>
           <div className="flex gap-1.5 flex-wrap">
             {reviewDays.map(day => {
               const slot = slots.find(s => s.date.toDateString() === day.date.toDateString());
@@ -897,12 +944,9 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
                   onClick={() => {
                     let newSlots: TimeSlot[];
                     if (slot) {
-                      const next = slot.period === 'evening' ? 'afternoon' : 'evening';
-                      newSlots = slots.map(s => s.date.toDateString() === day.date.toDateString()
-                        ? { ...s, period: next, label: `${day.label} ${next}`, shortLabel: `${day.shortLabel} ${next}` }
-                        : s);
+                      newSlots = slots.filter(s => s.date.toDateString() !== day.date.toDateString());
                     } else {
-                      const newSlot: TimeSlot = { date: day.date, period: 'evening', label: `${day.label} evening`, shortLabel: `${day.shortLabel} evening` };
+                      const newSlot: TimeSlot = { date: day.date, period: globalPeriod, label: `${day.label} ${globalPeriod}`, shortLabel: `${day.shortLabel} ${globalPeriod}` };
                       newSlots = slots.length >= 2 ? [slots[1], newSlot] : [...slots, newSlot];
                     }
                     setSlots(newSlots);
@@ -954,94 +998,29 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
             Send →
           </button>
         </div>
-        <div className="px-4 pb-3 flex justify-end">
-          <button
-            onClick={() => { setCustomVenueName(''); setCustomMapsUrl(''); setPanel('custom'); }}
-            className="text-[10px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors py-1"
-          >
-            Add your own spot →
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (panel === 'custom') {
-    const canSubmit = customVenueName.trim().length > 0;
-    return (
-      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1.5">
-            <Sparkles size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Your own spot</span>
+        {/* Inline venue search — type a spot name to replace the Google suggestion */}
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C0BAC8]" aria-hidden="true" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  const name = searchQuery.trim();
+                  if (!name) return;
+                  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
+                  const custom: VenueCard = { name, category: 'Custom', priceLevel: '$$', rating: null, address: '', mapsUrl, whyItFits: '', suggestionMessage: '', areaKey: 'middle' };
+                  setSelectedVenue(custom);
+                  setMessage(buildCustomMessage(name, slots));
+                  setSearchQuery('');
+                }
+              }}
+              placeholder="Or search for a different spot…"
+              className="w-full bg-white rounded-xl pl-8 pr-3.5 py-2 border border-[#E8E4DE] text-xs text-[#2E2A36] placeholder-[#C0BAC8] focus:outline-none focus:border-[#7B5EA7] transition-colors"
+            />
           </div>
-          <button onClick={() => setPanel('quick-review')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
-            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
-          </button>
-        </div>
-
-        <label className="block text-[10px] text-[#8A8690] mb-1">Venue name</label>
-        <input
-          type="text"
-          value={customVenueName}
-          onChange={e => setCustomVenueName(e.target.value)}
-          placeholder="e.g. The Pink Door"
-          className="w-full bg-white rounded-xl px-3.5 py-2.5 border border-[#E8E4DE] text-xs text-[#2E2A36] focus:outline-none focus:border-[#7B5EA7] transition-colors mb-3"
-          autoFocus
-        />
-
-        <label className="block text-[10px] text-[#8A8690] mb-1">
-          Google Maps link <span className="text-[#C0BAC8]">— optional, so they can check it out</span>
-        </label>
-        <input
-          type="url"
-          value={customMapsUrl}
-          onChange={e => {
-            const val = e.target.value;
-            setCustomMapsUrl(val);
-            // Auto-fill name from a standard maps/place/... URL if name is still blank
-            if (!customVenueName.trim()) {
-              const extracted = extractNameFromMapsUrl(val);
-              if (extracted) setCustomVenueName(extracted);
-            }
-          }}
-          placeholder="Paste a Google Maps link…"
-          className="w-full bg-white rounded-xl px-3.5 py-2.5 border border-[#E8E4DE] text-xs text-[#2E2A36] focus:outline-none focus:border-[#7B5EA7] transition-colors mb-3"
-        />
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPanel('quick-review')}
-            className="flex-1 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors"
-          >
-            ← Back
-          </button>
-          <button
-            onClick={() => {
-              const name = customVenueName.trim();
-              if (!name) return;
-              const pastedUrl = customMapsUrl.trim();
-              const mapsUrl = pastedUrl || `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
-              const customCard: VenueCard = {
-                name,
-                category: 'Custom',
-                priceLevel: '$$',
-                rating: null,
-                address: '',
-                mapsUrl,
-                whyItFits: '',
-                suggestionMessage: '',
-                areaKey: 'middle' as const,
-              };
-              setSelectedVenue(customCard);
-              setMessage(buildCustomMessage(name, slots));
-              setPanel('quick-review');
-            }}
-            disabled={!canSubmit}
-            className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity disabled:opacity-40"
-          >
-            Use this spot →
-          </button>
         </div>
       </div>
     );
@@ -1139,7 +1118,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
                   period: confirmedSlot.period,
                 };
                 onSendMessage(`${DATE_CARD_PREFIX}${JSON.stringify(cardData)}`);
-                setPanel('confirmed');
+                setPanel('dismissed');
               }}
               className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity"
             >

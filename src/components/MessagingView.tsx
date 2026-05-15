@@ -1002,7 +1002,7 @@ export function MessagingView({
             if (message.text.startsWith(DATE_CARD_PREFIX)) {
               try {
                 const cardData = JSON.parse(message.text.slice(DATE_CARD_PREFIX.length));
-                const isMySend = message.senderId === userId;
+                const isMySend = message.senderId === currentUserId;
                 return (
                   <div key={message.id} className="px-2 my-2">
                     <DateConfirmCard

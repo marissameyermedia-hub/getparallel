@@ -1,4 +1,4 @@
-// date-agent v28 — block pure tourist attractions (tours, excursions, sightseeing)
+// date-agent v29 — filter closed venues, fix category ordering, activity occasion filter
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -165,8 +165,9 @@ function buildPhotoUrl(place: any): string | undefined {
 }
 
 function detectCategory(types: string[]): string {
-  if (types.some(t => ["cafe", "coffee_shop", "bakery"].includes(t))) return "Café";
+  // Check wine_bar/cocktail_bar before cafe to avoid misclassifying "Purple Café and Wine Bar" etc.
   if (types.some(t => ["wine_bar", "cocktail_bar"].includes(t))) return "Drinks";
+  if (types.some(t => ["cafe", "coffee_shop", "bakery"].includes(t))) return "Café";
   if (types.some(t => ["restaurant"].includes(t))) return "Dinner";
   if (types.some(t => ["bar"].includes(t))) return "Drinks";
   if (types.some(t => ["hiking_area", "nature_reserve", "national_park"].includes(t))) return "Outdoors";
@@ -257,11 +258,10 @@ async function nearbySearch(
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_PLACES_API_KEY,
-        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel,places.googleMapsUri,places.photos,places.outdoorSeating,places.liveMusic,places.servesCocktails,places.servesWine,places.goodForChildren,places.goodForWatchingSports,places.reservable",
+        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.location,places.types,places.rating,places.userRatingCount,places.priceLevel,places.googleMapsUri,places.photos,places.outdoorSeating,places.liveMusic,places.servesCocktails,places.servesWine,places.goodForChildren,places.goodForWatchingSports,places.reservable,places.businessStatus",
       },
       body: JSON.stringify({
         includedTypes, maxResultCount: 20, rankPreference: "POPULARITY",
-        openNow: true,
         locationRestriction: { circle: { center: { latitude: lat, longitude: lon }, radius } },
       }),
       signal,
@@ -272,6 +272,8 @@ async function nearbySearch(
     const candidates = (data.places ?? [])
       .filter((p: any) =>
         p?.displayName?.text &&
+        // Skip permanently or temporarily closed venues
+        (p.businessStatus === undefined || p.businessStatus === "OPERATIONAL") &&
         !isBlocklisted(p.displayName.text, p.types ?? []) &&
         !isInsideAirport(p.formattedAddress ?? "") &&
         (p.userRatingCount ?? 0) >= 15 // quality baseline: must have meaningful reviews
@@ -335,7 +337,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "28" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "29" });
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);
 
     const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
@@ -529,6 +531,22 @@ Deno.serve(async (req) => {
       } finally { clearTimeout(timer); }
     }
 
+    // When an occasion is explicitly selected, strip out venues that don't match it
+    // so e.g. "The 5 Point Cafe" never appears when the user picked Activity
+    if (occasion !== "any") {
+      const occasionAllowed: Record<string, Set<string>> = {
+        dinner: new Set(["Dinner"]),
+        drinks: new Set(["Drinks"]),
+        coffee: new Set(["Café"]),
+        activity: new Set(["Museum", "Art Gallery", "Bowling", "Mini Golf", "Aquarium", "Outdoors", "Park", "Activity"]),
+      };
+      const allowed = occasionAllowed[occasion];
+      if (allowed) {
+        const filtered = allVenueCards.filter(v => allowed.has(v.category));
+        if (filtered.length >= 3) allVenueCards = filtered;
+      }
+    }
+
     // Filter out already-seen venues (skipIds are mapsUrls)
     if (skipIds.size > 0) {
       const filtered = allVenueCards.filter(v => !skipIds.has(v.mapsUrl));
@@ -649,7 +667,7 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v28] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 28 }, 500);
+    console.error("[v29] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 29 }, 500);
   }
 });
