@@ -233,7 +233,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             animate={{ opacity: 1, y: 0 }}
             className="mb-5 bg-parallel-purple text-parallel-cream rounded-2xl p-4"
           >
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Founding pricing ends at launch</p>
+            <p className="text-xs font-medium text-parallel-cream/60 uppercase tracking-wide mb-1">Founding pricing ends at launch</p>
             <p className="text-sm leading-relaxed">
               You're on monthly. Select annual below to lock in founding pricing before it's gone.
             </p>
