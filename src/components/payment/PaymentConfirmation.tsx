@@ -24,7 +24,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
           </div>
           <h1 className="text-4xl mb-3">You're in.</h1>
           <p className="text-gray-600 leading-relaxed">
-            Welcome to Parallel Premium. Your matches are waiting.
+            Matches are ready.
           </p>
         </motion.div>
 
