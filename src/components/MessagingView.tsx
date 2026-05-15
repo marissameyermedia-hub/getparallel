@@ -303,6 +303,8 @@ export function MessagingView({
   // When input gains focus, scroll messages to bottom instead of letting
   // iOS auto-scroll the page (which hides the header).
   const handleInputFocus = () => {
+    // Dismiss the date planner panel if it's open so it doesn't block the compose bar
+    datePlannerRef.current?.dismiss();
     // Delay to let keyboard animation start, then pin messages to bottom.
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });

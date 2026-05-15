@@ -53,6 +53,7 @@ const VIBE_LABELS: Record<Vibe, string> = {
 
 export interface DatePlannerCardHandle {
   open: () => void;
+  dismiss: () => void;
 }
 
 interface Props {
@@ -172,8 +173,7 @@ function buildPlanMessage(venue: VenueCard, slots: TimeSlot[]): string {
     ? `Are you free ${dayName(slots[0])}?`
     : null;
   const tail = `Parallel matched us to ${venue.name} — apparently it's our kind of place. Have you been?`;
-  const body = availability ? `${availability} ${tail}` : tail;
-  return venue.mapsUrl ? `${body}\n${venue.mapsUrl}` : body;
+  return availability ? `${availability} ${tail}` : tail;
 }
 
 // ── Calendar ──────────────────────────────────────────────────────────────────
@@ -254,6 +254,11 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
     open: () => {
       if (panel === 'trigger' || panel === 'dismissed' || panel === 'confirmed') {
         setPanel('schedule');
+      }
+    },
+    dismiss: () => {
+      if (['quick-review', 'schedule', 'filter', 'times'].includes(panel)) {
+        setPanel('trigger');
       }
     },
   }), [panel]);
@@ -999,27 +1004,45 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           </button>
         </div>
         {/* Inline venue search — type a spot name to replace the Google suggestion */}
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C0BAC8]" aria-hidden="true" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  const name = searchQuery.trim();
-                  if (!name) return;
-                  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
-                  const custom: VenueCard = { name, category: 'Custom', priceLevel: '$$', rating: null, address: '', mapsUrl, whyItFits: '', suggestionMessage: '', areaKey: 'middle' };
-                  setSelectedVenue(custom);
-                  setMessage(buildCustomMessage(name, slots));
-                  setSearchQuery('');
-                }
+        <div className="px-4 pb-3 border-t border-[#F0ECF8] pt-3">
+          <p className="text-[10px] text-[#8A8690] mb-1.5">Want a specific spot?</p>
+          <div className="relative flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search size={11} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C0BAC8]" aria-hidden="true" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    const name = searchQuery.trim();
+                    if (!name) return;
+                    const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
+                    const custom: VenueCard = { name, category: 'Custom', priceLevel: '$$', rating: null, address: '', mapsUrl, whyItFits: '', suggestionMessage: '', areaKey: 'middle' };
+                    setSelectedVenue(custom);
+                    setMessage(buildCustomMessage(name, slots));
+                    setSearchQuery('');
+                  }
+                }}
+                placeholder="Type a venue name…"
+                className="w-full bg-white rounded-xl pl-8 pr-3 py-2 border border-[#E8E4DE] text-xs text-[#2E2A36] placeholder-[#C0BAC8] focus:outline-none focus:border-[#7B5EA7] transition-colors"
+              />
+            </div>
+            <button
+              onClick={() => {
+                const name = searchQuery.trim();
+                if (!name) return;
+                const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(name)}`;
+                const custom: VenueCard = { name, category: 'Custom', priceLevel: '$$', rating: null, address: '', mapsUrl, whyItFits: '', suggestionMessage: '', areaKey: 'middle' };
+                setSelectedVenue(custom);
+                setMessage(buildCustomMessage(name, slots));
+                setSearchQuery('');
               }}
-              placeholder="Or search for a different spot…"
-              className="w-full bg-white rounded-xl pl-8 pr-3.5 py-2 border border-[#E8E4DE] text-xs text-[#2E2A36] placeholder-[#C0BAC8] focus:outline-none focus:border-[#7B5EA7] transition-colors"
-            />
+              disabled={!searchQuery.trim()}
+              className="flex-shrink-0 text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] px-3 py-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-30"
+            >
+              Use →
+            </button>
           </div>
         </div>
       </div>
