@@ -970,17 +970,6 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
           </div>
         </div>
 
-        {/* Editable message preview */}
-        <div className="px-4 mb-3">
-          <textarea
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            rows={3}
-            className="w-full bg-white rounded-xl px-3.5 py-2.5 border border-[#E8E4DE] text-xs text-[#2E2A36] leading-relaxed resize-none focus:outline-none focus:border-[#7B5EA7] transition-colors"
-            aria-label="Edit your date proposal"
-          />
-        </div>
-
         {/* Actions */}
         <div className="px-4 pb-2 flex gap-2">
           <button
