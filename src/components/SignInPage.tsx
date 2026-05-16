@@ -167,6 +167,17 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   Already a member? Sign in
                 </button>
               </div>
+              {onNavigate && (
+                <div className="mt-4">
+                  <button
+                    onClick={() => onNavigate('waitlist')}
+                    className="text-sm text-gray-500 hover:text-parallel-void transition-colors"
+                  >
+                    Not in your city yet?{' '}
+                    <span className="font-medium text-parallel-purple">Join the waitlist</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Right: two match cards, one M, one F, visually overlapped.
