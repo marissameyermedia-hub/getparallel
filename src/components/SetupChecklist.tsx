@@ -160,7 +160,7 @@ export function SetupChecklist({
           {/* 1. Profile complete — always ✓, decorative */}
           <li className="flex items-center gap-3 px-4 py-3">
             <Dot done />
-            <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+            <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
               Profile complete
             </span>
           </li>
@@ -169,7 +169,7 @@ export function SetupChecklist({
           {item2Done ? (
             <li className="flex items-center gap-3 px-4 py-3">
               <Dot done />
-              <span className={`flex-1 text-sm ${emailJustVerified ? 'text-green-700 font-medium' : 'text-gray-400 line-through decoration-gray-300'}`}>
+              <span className={`flex-1 text-sm ${emailJustVerified ? 'text-green-700 font-medium' : 'text-gray-500 line-through decoration-gray-300'}`}>
                 {emailJustVerified ? 'Email verified' : 'Verify your email'}
               </span>
             </li>
@@ -194,7 +194,7 @@ export function SetupChecklist({
                   </span>
                 </span>
                 {!emailSending
-                  ? <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                  ? <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
                   : <Spinner />}
               </button>
             </li>
@@ -204,7 +204,7 @@ export function SetupChecklist({
           {item3Done ? (
             <li className="flex items-center gap-3 px-4 py-3">
               <Dot done />
-              <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+              <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
                 Set notification preferences
               </span>
             </li>
@@ -223,7 +223,7 @@ export function SetupChecklist({
                     Choose how to hear about new matches
                   </span>
                 </span>
-                <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
               </button>
             </li>
           )}
@@ -233,7 +233,7 @@ export function SetupChecklist({
             item4Done ? (
               <li className="flex items-center gap-3 px-4 py-3">
                 <Dot done />
-                <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+                <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
                   Subscribe to see your matches
                 </span>
               </li>
@@ -252,7 +252,7 @@ export function SetupChecklist({
                       Unlock your matches and start messaging
                     </span>
                   </span>
-                  <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                  <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
                 </button>
               </li>
             )
@@ -263,7 +263,7 @@ export function SetupChecklist({
             item5Done ? (
               <li className="flex items-center gap-3 px-4 py-3">
                 <Dot done />
-                <span className="flex-1 text-sm text-gray-400 line-through decoration-gray-300">
+                <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
                   Verify your identity
                 </span>
               </li>
@@ -282,7 +282,7 @@ export function SetupChecklist({
                       Get a blue checkmark on your profile
                     </span>
                   </span>
-                  <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" aria-hidden="true" />
+                  <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
                 </button>
               </li>
             )
@@ -318,7 +318,7 @@ function Dot({ done = false }: { done?: boolean }) {
 function Spinner() {
   return (
     <svg
-      className="w-4 h-4 text-gray-400 animate-spin flex-shrink-0"
+      className="w-4 h-4 text-gray-500 animate-spin flex-shrink-0"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"

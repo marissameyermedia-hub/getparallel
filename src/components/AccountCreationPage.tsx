@@ -359,7 +359,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
           <div>
             <label htmlFor="email" className="block text-sm mb-2 text-gray-700">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
               <input
                 id="email"
                 type="email"
@@ -380,7 +380,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
           <div>
             <label htmlFor="phone" className="block text-sm mb-2 text-gray-700">Phone Number</label>
             <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
               <input
                 id="phone"
                 type="tel"
@@ -420,7 +420,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
                 type="button"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
                 aria-pressed={showPassword}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}
@@ -471,7 +471,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
                 type="button"
                 aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 aria-pressed={showConfirmPassword}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               >
                 {showConfirmPassword ? <EyeOff size={20} aria-hidden="true" /> : <Eye size={20} aria-hidden="true" />}

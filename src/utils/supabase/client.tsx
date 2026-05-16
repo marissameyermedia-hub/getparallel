@@ -151,6 +151,9 @@ export const FEEDBACK_PROCESSOR_URL = `${supabaseUrl}/functions/v1/feedback-proc
 // Dedicated date-agent function. Handles: /generate.
 export const DATE_AGENT_FUNCTION_URL = `${supabaseUrl}/functions/v1/date-agent`;
 
+// Dedicated waitlist function. Handles: POST / (signup).
+export const WAITLIST_FUNCTION_URL = `${supabaseUrl}/functions/v1/waitlist-signup`;
+
 // Dedicated misc function — final chunk of the make-server rebuild.
 // Handles: /auth/email-confirmed, /auth/resend-verification, /auth/validate-token,
 // /auth/send-phone-otp, /auth/verify-phone-otp, /sms/log-consent,

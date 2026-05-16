@@ -24,7 +24,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
           </div>
           <h1 className="text-4xl mb-3">You're in.</h1>
           <p className="text-gray-600 leading-relaxed">
-            Welcome to Parallel Premium. Your matches are waiting.
+            Matches are ready.
           </p>
         </motion.div>
 
@@ -53,7 +53,7 @@ export function PaymentConfirmation({ onContinue, onVerify }: PaymentConfirmatio
                 </button>
                 <button
                   onClick={() => setShowVerifyPrompt(false)}
-                  className="w-full text-gray-400 text-sm py-2 mt-2 hover:text-gray-600 transition-colors"
+                  className="w-full text-gray-500 text-sm py-2 mt-2 hover:text-gray-600 transition-colors"
                 >
                   Skip for now
                 </button>

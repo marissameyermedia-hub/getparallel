@@ -192,14 +192,14 @@ export function MapSelector({ onLocationSelect, initialLocation }: MapSelectorPr
           placeholder="Enter zip code"
           className="w-full pl-10 pr-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
         />
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" aria-hidden="true" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
             aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2"
           >
-            <X className="w-5 h-5 text-gray-400 hover:text-parallel-void transition-colors" aria-hidden="true" />
+            <X className="w-5 h-5 text-gray-500 hover:text-parallel-void transition-colors" aria-hidden="true" />
           </button>
         )}
       </div>

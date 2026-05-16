@@ -426,11 +426,11 @@ export function ProfileEditor({
                 <p className="text-xs font-medium text-gray-700">Instagram</p>
                 <p className="text-xs text-gray-500">Unlocks for matches after you both like each other</p>
               </div>
-              <Instagram size={16} className="text-gray-400 flex-shrink-0" aria-hidden="true" />
+              <Instagram size={16} className="text-gray-500 flex-shrink-0" aria-hidden="true" />
             </div>
           )}
 
-          <p className="text-xs text-gray-400 text-center pt-4">
+          <p className="text-xs text-gray-500 text-center pt-4">
             This is how your profile appears to potential matches
           </p>
         </div>
@@ -509,7 +509,7 @@ export function ProfileEditor({
                     key={`empty-${slotIndex}`}
                     onClick={isFirstEmpty && !isUploading ? () => fileInputRef.current?.click() : undefined}
                     className={`aspect-[3/4] rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-1 text-gray-300 ${
-                      isFirstEmpty && !isUploading ? 'cursor-pointer hover:border-gray-300 hover:text-gray-400 transition-colors' : ''
+                      isFirstEmpty && !isUploading ? 'cursor-pointer hover:border-gray-300 hover:text-gray-500 transition-colors' : ''
                     }`}
                   >
                     {isFirstEmpty && isUploading ? (
@@ -540,10 +540,10 @@ export function ProfileEditor({
           {/* Career */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Career <span className="text-gray-400 font-normal">— shown on your profile</span>
+              Career <span className="text-gray-500 font-normal">— shown on your profile</span>
             </label>
             <div className="relative">
-              <Briefcase size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Briefcase size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
               <input type="text" value={career}
                 onChange={e => { setCareer(e.target.value); setHasSaved(false); }}
                 placeholder="e.g. Product Manager, Teacher, Nurse..."
@@ -557,10 +557,10 @@ export function ProfileEditor({
           {/* Education */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Education <span className="text-gray-400 font-normal">— shown on your profile</span>
+              Education <span className="text-gray-500 font-normal">— shown on your profile</span>
             </label>
             <div className="relative">
-              <GraduationCap size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <GraduationCap size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
               <input type="text" value={education}
                 onChange={e => { setEducation(e.target.value); setHasSaved(false); }}
                 placeholder="e.g. University of Washington, Trade School..."
@@ -573,7 +573,7 @@ export function ProfileEditor({
           {/* Bio */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              About Me <span className="text-gray-400 font-normal">— shown on your profile</span>
+              About Me <span className="text-gray-500 font-normal">— shown on your profile</span>
             </label>
             <textarea
               value={bio}
@@ -592,7 +592,7 @@ export function ProfileEditor({
           {/* Pronouns */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pronouns <span className="text-gray-400 font-normal">— optional</span>
+              Pronouns <span className="text-gray-500 font-normal">— optional</span>
             </label>
             <input type="text" value={pronouns}
               onChange={e => { setPronouns(e.target.value); setHasSaved(false); }}
@@ -606,7 +606,7 @@ export function ProfileEditor({
           {/* Instagram */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Instagram <span className="text-gray-400 font-normal">— optional, shown after mutual match</span>
+              Instagram <span className="text-gray-500 font-normal">— optional, shown after mutual match</span>
             </label>
             <div className="flex items-center rounded-2xl border-2 border-gray-200 focus-within:border-parallel-purple transition-colors overflow-hidden">
               <span className="pl-4 pr-1 text-gray-500 font-medium select-none" style={{fontSize:'16px'}}>@</span>
@@ -625,7 +625,7 @@ export function ProfileEditor({
           {/* Location */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Location <span className="text-gray-400 font-normal">— used to calculate distance</span>
+              Location <span className="text-gray-500 font-normal">— used to calculate distance</span>
             </label>
             {/* LocationPicker is NOT inside a scroll container — no double scroll bar */}
             <LocationPicker

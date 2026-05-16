@@ -6,6 +6,33 @@ import { InboxSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { SetupChecklist } from './SetupChecklist';
 
+const DATE_PROPOSAL_PREFIX = '__DATE_PROPOSAL__';
+const DATE_RESPONSE_PREFIX = '__DATE_RESPONSE__';
+const DATE_CARD_PREFIX = '__DATE_CARD__';
+
+function formatMessagePreview(text: string): string {
+  if (!text) return '';
+  if (text.startsWith(DATE_PROPOSAL_PREFIX)) {
+    try {
+      const d = JSON.parse(text.slice(DATE_PROPOSAL_PREFIX.length));
+      return `📅 Suggested ${d.venueName ?? 'a date spot'}`;
+    } catch { return '📅 Date suggestion'; }
+  }
+  if (text.startsWith(DATE_RESPONSE_PREFIX)) {
+    try {
+      const d = JSON.parse(text.slice(DATE_RESPONSE_PREFIX.length));
+      return `✓ Picked ${d.label ?? 'a day'}`;
+    } catch { return '✓ Picked a day'; }
+  }
+  if (text.startsWith(DATE_CARD_PREFIX)) {
+    try {
+      const d = JSON.parse(text.slice(DATE_CARD_PREFIX.length));
+      return `🗓 Date at ${d.venueName ?? 'a venue'} confirmed`;
+    } catch { return '🗓 Date confirmed'; }
+  }
+  return text;
+}
+
 interface Message {
   matchId: string;
   matchName: string;
@@ -220,7 +247,7 @@ export function InboxView({
         {waiting.length > 0 && (
           <div className="border-b border-gray-100 py-4">
             <div className="px-5 mb-3">
-              <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">
+              <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">
                 You matched — say hi
               </p>
             </div>
@@ -309,12 +336,12 @@ export function InboxView({
                       <span className={`text-base truncate ${message.unread ? 'font-semibold text-parallel-void' : 'font-medium text-gray-800'}`}>
                         {message.matchName}
                       </span>
-                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2 tabular-nums">
+                      <span className="text-xs text-gray-500 flex-shrink-0 ml-2 tabular-nums">
                         {formatTimestamp(message.timestamp)}
                       </span>
                     </div>
                     <p className={`text-sm truncate ${message.unread ? 'text-parallel-void font-medium' : 'text-gray-500'}`}>
-                      {message.lastMessage}
+                      {formatMessagePreview(message.lastMessage)}
                     </p>
                   </button>
                 </div>
@@ -330,7 +357,7 @@ export function InboxView({
         {!hasAnything && (
           <div className="flex flex-col items-center justify-center px-8 text-center" style={{ minHeight: '60vh' }}>
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-5">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-400">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-gray-500">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>

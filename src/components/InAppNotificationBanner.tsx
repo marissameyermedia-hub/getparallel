@@ -175,7 +175,7 @@ export function InAppNotificationBanner({
               />
             ) : (
               <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <MessageCircle className="w-5 h-5 text-gray-400" aria-hidden="true" />
+                <MessageCircle className="w-5 h-5 text-gray-500" aria-hidden="true" />
               </div>
             )}
             {/* Unread dot */}
@@ -205,7 +205,7 @@ export function InAppNotificationBanner({
             className="flex-shrink-0 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Dismiss notification"
           >
-            <X className="w-4 h-4 text-gray-400" aria-hidden="true" />
+            <X className="w-4 h-4 text-gray-500" aria-hidden="true" />
           </button>
         </button>
       </div>

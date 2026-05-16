@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 // even if both the pre-session and in-session code paths both trigger.
 let emailConfirmedNotified = false;
 import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from './utils/supabase/client';
+import { WaitlistPage } from './components/WaitlistPage';
 import { publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
 import { SignInPage } from './components/SignInPage';
@@ -74,8 +75,8 @@ function App() {
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
     | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
     | 'verification' | 'invite-friends' | 'reset-password'
-    | 'preview-profile'
-  >('signin');
+    | 'preview-profile' | 'waitlist'
+  >(() => window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
 
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   // Tracks how the user arrived at the profile view. Determines whether the
@@ -591,11 +592,11 @@ function App() {
               setCurrentView('signin');
             }
           } else {
-            setCurrentView('signin');
+            setCurrentView(window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
           }
         }
       } catch (e) {
-        setCurrentView('signin');
+        setCurrentView(window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
       }
 
       setIsLoading(false);
@@ -1205,7 +1206,7 @@ function App() {
 
   const isFullscreenView = [
     'onboarding', 'signin', 'account-creation', 'phone-verification',
-    'payment-confirmation', 'reset-password', 'messaging',
+    'payment-confirmation', 'reset-password', 'messaging', 'waitlist',
     // my-profile: editor has its own sticky header + fixed save bar
     // preview-profile: full-screen photo carousel
     // profile: match profile view has its own fixed action bar (z-60);
@@ -1278,6 +1279,11 @@ function App() {
               toast.success('Password updated! Please sign in with your new password.', { duration: 4000 });
             }}
           />
+        )}
+
+        {/* ── Waitlist ── */}
+        {currentView === 'waitlist' && (
+          <WaitlistPage onNavigate={(v) => setCurrentView(v as any)} />
         )}
 
         {/* ── Sign In ── */}

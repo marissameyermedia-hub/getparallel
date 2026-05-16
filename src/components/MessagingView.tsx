@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Send, Check, CheckCheck, MoreVertical, Flag, Ban, UserMinus, Sparkles, X, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -7,7 +7,9 @@ import { getAccessToken } from '../utils/auth';
 import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
-import { DateSuggestionCards } from './messaging/DateSuggestionCards';
+import { DatePlannerCard, type DatePlannerCardHandle } from './messaging/DatePlannerCard';
+import { DateConfirmCard, DATE_CARD_PREFIX } from './messaging/DateConfirmCard';
+import { DateProposalCard, DATE_PROPOSAL_PREFIX, DATE_RESPONSE_PREFIX, type DateResponseData } from './messaging/DateProposalCard';
 import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
 
 const FADE_REASONS = [
@@ -231,6 +233,8 @@ export function MessagingView({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const safetyMenuRef = useRef<HTMLDivElement>(null);
+  const initialScrollDone = useRef(false);
+  const datePlannerRef = useRef<DatePlannerCardHandle>(null);
   const currentUserId = localStorage.getItem('parallel_user_id') || '';
   const lastActiveText = formatLastActive(lastActiveAt);
 
@@ -299,6 +303,8 @@ export function MessagingView({
   // When input gains focus, scroll messages to bottom instead of letting
   // iOS auto-scroll the page (which hides the header).
   const handleInputFocus = () => {
+    // Dismiss the date planner panel if it's open so it doesn't block the compose bar
+    datePlannerRef.current?.dismiss();
     // Delay to let keyboard animation start, then pin messages to bottom.
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
@@ -483,13 +489,20 @@ export function MessagingView({
   }, [messages, matchId, mutualMatch, isInitialLoading, featureFeedbackLoop]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!messagesEndRef.current || messages.length === 0) return;
+    if (!initialScrollDone.current) {
+      // Snap instantly on first load so the user lands at the newest message
+      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
+      initialScrollDone.current = true;
+    } else {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, isTyping, viewportHeight]);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
     }
   }, [newMessage]);
 
@@ -504,8 +517,9 @@ export function MessagingView({
     return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || conversationId === null) return;
+  const handleSend = async (textOverride?: string) => {
+    const text = (textOverride ?? newMessage).trim();
+    if (!text || conversationId === null) return;
     if (!emailVerified) {
       toast.error('Verify your email to send messages.');
       return;
@@ -515,12 +529,12 @@ export function MessagingView({
     const optimisticMsg: Message = {
       id: `temp-${Date.now()}`,
       senderId: currentUserId,
-      text: newMessage.trim(),
+      text,
       timestamp: new Date(),
       read: false,
     };
     setMessages(prev => [...prev, optimisticMsg]);
-    setNewMessage('');
+    if (!textOverride) setNewMessage('');
     setShowStarters(false);
     try {
       const res = await fetch(`${MESSAGES_FUNCTION_URL}/send`, {
@@ -532,7 +546,7 @@ export function MessagingView({
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
-      setNewMessage(optimisticMsg.text);
+      if (!textOverride) setNewMessage(optimisticMsg.text);
       toast.error('Failed to send. Please try again.');
     }
   };
@@ -672,10 +686,24 @@ export function MessagingView({
     }`;
 
   const isLocked = conversationId === null;
-  // Email verification gate: read existing messages freely, but disable sending
-  // until the user verifies their email. We need a verified email to send them
-  // notifications about replies (no push notifications on the web app).
   const messagingDisabled = isLocked || !emailVerified;
+
+  const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
+  // Only the most recent suggestion card should render; older ones are replaced by the latest
+  const lastProposalMsgId = messages.reduce<string | null>(
+    (last, m) => m.text.startsWith(DATE_PROPOSAL_PREFIX) ? m.id : last,
+    null
+  );
+  // Only treat a DATE_RESPONSE as belonging to the current proposal — must follow it in the thread
+  const lastProposalMsgIndex = lastProposalMsgId
+    ? messages.findIndex(m => m.id === lastProposalMsgId)
+    : -1;
+  const dateResponseMsg = lastProposalMsgIndex >= 0
+    ? messages.slice(lastProposalMsgIndex + 1).find(m => m.text.startsWith(DATE_RESPONSE_PREFIX))
+    : null;
+  const dateResponseData: DateResponseData | null = dateResponseMsg ? (() => {
+    try { return JSON.parse(dateResponseMsg.text.slice(DATE_RESPONSE_PREFIX.length)); } catch { return null; }
+  })() : null;
 
   // Show a skeleton while the initial load is in flight. This is the worst
   // single perceived-lag moment in the app — opening a chat hits 3 fetches
@@ -979,6 +1007,66 @@ export function MessagingView({
             const prevMsg = index > 0 ? messages[index - 1] : null;
             const showSenderChange = !prevMsg || prevMsg.senderId !== message.senderId;
 
+            if (message.text.startsWith(DATE_CARD_PREFIX)) {
+              try {
+                const cardData = JSON.parse(message.text.slice(DATE_CARD_PREFIX.length));
+                const isMySend = message.senderId === currentUserId;
+                return (
+                  <div key={message.id} className="px-2 my-2">
+                    <DateConfirmCard
+                      data={cardData}
+                      isMe={isMySend}
+                      onCancel={() => {
+                        const cancelMsg = `Hey, something came up and I need to cancel our plans at ${cardData.venueName}. So sorry — can we reschedule?`;
+                        setNewMessage(cancelMsg);
+                        setTimeout(() => textareaRef.current?.focus(), 50);
+                      }}
+                    />
+                    {isLast && (
+                      <p className="text-[10px] text-center text-gray-500 mt-1">{formatTime(message.timestamp)}</p>
+                    )}
+                  </div>
+                );
+              } catch { /* fall through to normal bubble */ }
+            }
+
+            if (message.text.startsWith(DATE_PROPOSAL_PREFIX)) {
+              // Skip older suggestion cards — only the latest renders; earlier ones become invisible
+              // (the preceding text message still gives context)
+              if (message.id !== lastProposalMsgId) return null;
+              try {
+                const proposalData = JSON.parse(message.text.slice(DATE_PROPOSAL_PREFIX.length));
+                return (
+                  <div key={message.id} className="px-2 my-2">
+                    <DateProposalCard
+                      data={proposalData}
+                      isMe={isMe}
+                      matchName={matchName}
+                      responseData={dateResponseData}
+                      onRespond={isMe ? undefined : (slot) => handleSend(`${DATE_RESPONSE_PREFIX}${JSON.stringify(slot)}`)}
+                    />
+                    {isLast && (
+                      <p className="text-[10px] text-center text-gray-500 mt-1">{formatTime(message.timestamp)}</p>
+                    )}
+                  </div>
+                );
+              } catch { /* fall through to normal bubble */ }
+            }
+
+            if (message.text.startsWith(DATE_RESPONSE_PREFIX)) {
+              try {
+                const responseData = JSON.parse(message.text.slice(DATE_RESPONSE_PREFIX.length)) as DateResponseData;
+                const systemText = isMe
+                  ? `You picked ${responseData.label}`
+                  : `${matchFirstName} picked ${responseData.label}`;
+                return (
+                  <div key={message.id} className="py-2 px-4">
+                    <p className="text-[11px] text-center text-[#8A8690]">{systemText}</p>
+                  </div>
+                );
+              } catch { /* fall through to normal bubble */ }
+            }
+
             return (
               <div key={message.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${showSenderChange && index > 0 ? 'mt-3' : 'mt-0.5'}`}>
                 <div className={`max-w-[80%] ${
@@ -989,8 +1077,8 @@ export function MessagingView({
                   <p className="text-sm leading-snug whitespace-pre-line">{renderWithLinks(message.text, isMe)}</p>
                   {isLast && (
                     <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                      <p className={`text-[10px] ${isMe ? 'text-gray-400' : 'text-gray-500'}`}>{formatTime(message.timestamp)}</p>
-                      {isMe && <CheckCheck size={10} className="text-gray-400" aria-label="Sent" />}
+                      <p className={`text-[10px] ${isMe ? 'text-gray-500' : 'text-gray-500'}`}>{formatTime(message.timestamp)}</p>
+                      {isMe && <CheckCheck size={10} className="text-gray-500" aria-label="Sent" />}
                     </div>
                   )}
                 </div>
@@ -1018,13 +1106,18 @@ export function MessagingView({
         className="flex-shrink-0 bg-parallel-cream border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
-        {/* AI date suggestions — shown after 5+ messages, flag-gated */}
-        <DateSuggestionCards
+        {/* Date planner — pick times + venue + calendar in one flow, flag-gated */}
+        <DatePlannerCard
+          ref={datePlannerRef}
           matchId={matchId}
+          matchName={matchName}
           messageCount={messages.length}
-          mutualMatch={mutualMatch}
-          flagEnabled={featureDateAgent}
-          onSelectVenue={(msg) => setNewMessage(msg)}
+          mutualMatch={!!mutualMatch}
+          flagEnabled={!!featureDateAgent}
+          recentMessages={messages.slice(-20).map(m => m.text)}
+          dateResponseText={dateResponseMsg?.text}
+          onSelectMessage={(msg) => setNewMessage(msg)}
+          onSendMessage={(msg) => handleSend(msg)}
         />
 
         {/* AI conversation un-sticker — shown after 48h silence, flag-gated */}
@@ -1071,7 +1164,7 @@ export function MessagingView({
                 Tell us
               </button>
               <button onClick={dismissFadeNudge} aria-label="Dismiss" className="p-1 hover:bg-gray-200 rounded-full transition-colors">
-                <X className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
+                <X className="w-3.5 h-3.5 text-gray-500" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -1158,6 +1251,16 @@ export function MessagingView({
         )}
 
         <div className="flex items-end gap-2">
+          {/* Schedule-a-date icon — always available when feature is on */}
+          {featureDateAgent && (
+            <button
+              onClick={() => datePlannerRef.current?.open()}
+              className="flex-shrink-0 p-2 text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors"
+              aria-label="Schedule a date"
+            >
+              <CalendarClock size={18} aria-hidden="true" />
+            </button>
+          )}
           <div className={`flex-1 rounded-full border px-3.5 py-2 transition-colors ${
             messagingDisabled
               ? 'bg-gray-100 border-gray-200 opacity-60'

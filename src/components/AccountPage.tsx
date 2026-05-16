@@ -98,7 +98,7 @@ function ExitFeedbackSheet({ action, onConfirm, onDismiss }: ExitFeedbackSheetPr
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 id="exit-feedback-title" className="text-lg font-semibold">Before you go</h2>
-          <button onClick={onDismiss} className="text-gray-400 hover:text-gray-600 text-sm">
+          <button onClick={onDismiss} className="text-gray-500 hover:text-gray-600 text-sm">
             Cancel
           </button>
         </div>
@@ -498,7 +498,7 @@ export function AccountPage({
                   Customize what matters most in your matches
                 </p>
               </div>
-              <ChevronRight size={20} className="text-gray-400" />
+              <ChevronRight size={20} className="text-gray-500" />
             </div>
           </button>
 
@@ -581,7 +581,7 @@ export function AccountPage({
                   <p className="text-sm text-gray-600">Payment Method</p>
                   <p className="text-sm">Manage billing</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => onNavigate?.('notifications')} className="w-full flex items-center gap-3 pb-4 border-b border-gray-200">
                 <Bell size={20} className="text-gray-600" />
@@ -589,7 +589,7 @@ export function AccountPage({
                   <p className="text-sm text-gray-600">Notifications</p>
                   <p className="text-sm">Get notified of new matches and messages</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-500" />
               </button>
             </div>
           </div>
@@ -616,25 +616,25 @@ export function AccountPage({
             <h3 className="mb-4 text-sm font-medium text-gray-500">Support & Legal</h3>
             <div className="space-y-1">
               <button onClick={() => onNavigate?.('help-support')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <HelpCircle size={20} className="text-gray-600" /><span className="flex-1 text-left">Help & Support</span><ChevronRight size={16} className="text-gray-400" />
+                <HelpCircle size={20} className="text-gray-600" /><span className="flex-1 text-left">Help & Support</span><ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => onNavigate?.('privacy-safety')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <Lock size={20} className="text-gray-600" /><span className="flex-1 text-left">Privacy & Safety</span><ChevronRight size={16} className="text-gray-400" />
+                <Lock size={20} className="text-gray-600" /><span className="flex-1 text-left">Privacy & Safety</span><ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => onNavigate?.('community-guidelines')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Community Guidelines</span><ChevronRight size={16} className="text-gray-400" />
+                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Community Guidelines</span><ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => onNavigate?.('terms-service')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Terms of Service</span><ChevronRight size={16} className="text-gray-400" />
+                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Terms of Service</span><ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => onNavigate?.('privacy-policy')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Privacy Policy</span><ChevronRight size={16} className="text-gray-400" />
+                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Privacy Policy</span><ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => onNavigate?.('refund-policy')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Refund Policy</span><ChevronRight size={16} className="text-gray-400" />
+                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Refund Policy</span><ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => onNavigate?.('consumer-health-data-policy')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Consumer Health Data Policy (WA)</span><ChevronRight size={16} className="text-gray-400" />
+                <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Consumer Health Data Policy (WA)</span><ChevronRight size={16} className="text-gray-500" />
               </button>
             </div>
           </div>
@@ -649,7 +649,7 @@ export function AccountPage({
                   <p className="text-sm">Share your story</p>
                   <p className="text-xs text-gray-500 mt-0.5">Tell us how Parallel worked for you</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => setFeedbackModal('bug')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
                 <FileText size={20} className="text-gray-600" />
@@ -657,7 +657,7 @@ export function AccountPage({
                   <p className="text-sm">Send feedback</p>
                   <p className="text-xs text-gray-500 mt-0.5">Report a bug or share a thought</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-500" />
               </button>
               <button onClick={() => setFeedbackModal('feature')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
                 <FileText size={20} className="text-gray-600" />
@@ -665,7 +665,7 @@ export function AccountPage({
                   <p className="text-sm">Feature request</p>
                   <p className="text-xs text-gray-500 mt-0.5">Tell us what you'd like to see</p>
                 </div>
-                <ChevronRight size={16} className="text-gray-400" />
+                <ChevronRight size={16} className="text-gray-500" />
               </button>
             </div>
           </div>
@@ -752,7 +752,7 @@ export function AccountPage({
                   <h2 id="share-story-title" className="text-lg font-semibold">Share your story</h2>
                   <button
                     onClick={() => { setShowStoryModal(false); setStoryText(''); setStoryHowLong(''); setStorySubmitted(false); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700 text-lg"
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700 text-lg"
                     aria-label="Close"
                   >✕</button>
                 </div>
@@ -856,7 +856,7 @@ export function AccountPage({
                   <h2 id="email-update-title" className="text-lg font-semibold">Update email</h2>
                   <button
                     onClick={() => { setShowEmailModal(false); setEmailUpdateStatus('idle'); setEmailUpdateError(''); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700 text-lg"
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700 text-lg"
                     aria-label="Close"
                   >
                     ×
@@ -915,7 +915,7 @@ export function AccountPage({
                   </h2>
                   <button
                     onClick={() => { setFeedbackModal(null); setFeedbackMessage(''); setFeedbackSubmitted(false); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-700 text-lg"
+                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700 text-lg"
                     aria-label="Close"
                   >✕</button>
                 </div>

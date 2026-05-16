@@ -233,7 +233,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             animate={{ opacity: 1, y: 0 }}
             className="mb-5 bg-parallel-purple text-parallel-cream rounded-2xl p-4"
           >
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Founding pricing ends at launch</p>
+            <p className="text-xs font-medium text-parallel-cream/60 uppercase tracking-wide mb-1">Founding pricing ends at launch</p>
             <p className="text-sm leading-relaxed">
               You're on monthly. Select annual below to lock in founding pricing before it's gone.
             </p>
@@ -307,7 +307,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="font-semibold">Annual</p>
                   <div className="text-right">
-                    <p className="font-semibold">$6.58<span className={`text-xs font-normal ml-1 ${billing === 'annual' ? 'text-gray-400' : 'text-gray-500'}`}>/ mo</span></p>
+                    <p className="font-semibold">$6.58<span className={`text-xs font-normal ml-1 ${billing === 'annual' ? 'text-gray-500' : 'text-gray-500'}`}>/ mo</span></p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
@@ -354,7 +354,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="font-semibold">Monthly</p>
-                  <p className="font-semibold">$24.99<span className={`text-xs font-normal ml-1 ${billing === 'monthly' ? 'text-gray-400' : 'text-gray-500'}`}>/ mo</span></p>
+                  <p className="font-semibold">$24.99<span className={`text-xs font-normal ml-1 ${billing === 'monthly' ? 'text-gray-500' : 'text-gray-500'}`}>/ mo</span></p>
                 </div>
                 <p className={`text-xs mt-2 ${billing === 'monthly' ? 'text-gray-300' : 'text-gray-500'}`}>
                   Billed monthly — cancel anytime. We hope you do.
@@ -503,7 +503,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             </p>
 
             {/* Row 3: Business entity + support */}
-            <p className="text-center text-[11px] text-gray-400 leading-relaxed mb-3">
+            <p className="text-center text-[11px] text-gray-500 leading-relaxed mb-3">
               PARALLEL VIP LLC · Spokane, WA · USD pricing<br />
               Questions?{' '}
               <a href="mailto:legal@getparallel.vip" className="underline hover:text-gray-700 transition-colors">
@@ -512,7 +512,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
             </p>
 
             {/* Row 4: Security reassurance */}
-            <div className="flex items-start justify-center gap-1.5 text-[11px] text-gray-400 leading-relaxed">
+            <div className="flex items-start justify-center gap-1.5 text-[11px] text-gray-500 leading-relaxed">
               <Lock size={11} className="flex-shrink-0 mt-0.5" />
               <span className="text-center">
                 We never see or store your card details. Payments are processed securely by PayPal.
@@ -531,7 +531,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           >
             <button
               onClick={onSkip}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors underline underline-offset-2"
+              className="text-xs text-gray-500 hover:text-gray-600 transition-colors underline underline-offset-2"
             >
               Skip for now
             </button>

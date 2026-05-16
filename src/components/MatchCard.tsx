@@ -26,14 +26,14 @@ const CATEGORY_ORDER = [
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Attachment & Emotional Health': 'bg-purple-500',
-  'Communication & Conflict': 'bg-indigo-500',
-  'Life Goals': 'bg-blue-500',
-  'Values & Beliefs': 'bg-cyan-500',
-  'Financial & Career': 'bg-amber-500',
-  'Intimacy & Connection': 'bg-pink-500',
-  'Lifestyle Behaviors': 'bg-green-500',
-  'Social & Shared Life': 'bg-orange-400',
+  'Attachment & Emotional Health': 'bg-parallel-purple',
+  'Communication & Conflict':      'bg-purple-700',
+  'Life Goals':                    'bg-violet-600',
+  'Values & Beliefs':              'bg-purple-900',
+  'Financial & Career':            'bg-violet-500',
+  'Intimacy & Connection':         'bg-parallel-soft-violet',
+  'Lifestyle Behaviors':           'bg-purple-600',
+  'Social & Shared Life':          'bg-parallel-stone',
 };
 
 export function MatchCard({
@@ -158,7 +158,7 @@ export function MatchCard({
 
             {/* Verified badge — top left */}
             {user.isVerified && (
-              <div className="absolute top-3 left-3 bg-blue-500 rounded-full p-1.5 shadow-lg z-20">
+              <div className="absolute top-3 left-3 bg-parallel-purple rounded-full p-1.5 shadow-lg z-20">
                 <ShieldCheck size={16} className="text-parallel-cream" />
               </div>
             )}
@@ -228,7 +228,7 @@ export function MatchCard({
           {/* 8-category Compatibility Breakdown — always all 8, same bar colors as profile */}
           {showBreakdown && (
             <div>
-              <h4 className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">
+              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
                 Compatibility Breakdown
               </h4>
               <div className="space-y-2.5">
@@ -241,11 +241,11 @@ export function MatchCard({
                   return (
                     <div key={label}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs ${hasScore ? 'text-gray-700' : 'text-gray-400'}`}>{label}</span>
+                        <span className={`text-xs ${hasScore ? 'text-gray-700' : 'text-gray-500'}`}>{label}</span>
                         {hasScore ? (
                           <span className="text-xs font-medium text-gray-800">{score}%</span>
                         ) : (
-                          <span className="text-[10px] italic text-gray-400">Not enough data yet</span>
+                          <span className="text-[10px] italic text-gray-500">Not enough data yet</span>
                         )}
                       </div>
                       <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">

@@ -91,7 +91,7 @@ export function SwipeableMatchView({
             Match Suggestions
           </span>
           {showCounter && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-500">
               {safeIndex + 1} of {matches.length}
             </span>
           )}
@@ -107,7 +107,7 @@ export function SwipeableMatchView({
       {canUndo && (
         <div className="flex justify-start px-4 pt-1 pb-0 max-w-md mx-auto w-full">
           <button onClick={handleUndo}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-parallel-void transition-colors"
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-parallel-void transition-colors"
           >
             <Undo2 size={14} />
             <span>Undo last pass</span>

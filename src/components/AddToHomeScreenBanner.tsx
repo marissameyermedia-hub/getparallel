@@ -89,7 +89,7 @@ export function AddToHomeScreenBanner({ accessToken }: Props) {
             ))}
           </ol>
 
-          <p className="text-xs text-gray-400 mt-6 text-center leading-relaxed">
+          <p className="text-xs text-gray-500 mt-6 text-center leading-relaxed">
             You'll stay signed in automatically once it's added.
           </p>
         </div>

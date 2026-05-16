@@ -11,7 +11,7 @@ export function PageLoader({ message }: PageLoaderProps) {
       <ParallelWordmark sizeClassName="text-2xl" />
       <LoadingDots />
       {message && (
-        <p className="text-sm text-gray-400 font-medium">{message}</p>
+        <p className="text-sm text-gray-500 font-medium">{message}</p>
       )}
     </div>
   );

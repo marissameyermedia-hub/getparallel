@@ -156,7 +156,7 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
               className={`w-full py-4 px-6 rounded-full font-medium transition-colors mb-3 flex items-center justify-center gap-2 ${
                 confirmText.toLowerCase() === 'delete' && !isDeleting
                   ? 'bg-red-600 text-parallel-cream hover:bg-red-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }`}
             >
               <Trash2 className="w-5 h-5" />
