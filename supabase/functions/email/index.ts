@@ -1,6 +1,6 @@
 // Parallel — email edge function v8
 // v8: Brand palette applied throughout shellHtml.
-//     - Background: Cream #F5F2EE (was pure white)
+//     - Background: White #FFFFFF (Cream per tailwind.config.ts brand tokens)
 //     - Wordmark: PARA//EL. with // in Purple #7B5EA7 (was plain "Parallel" text)
 //     - CTA button: Purple #7B5EA7 (was black)
 //     - Borders: Linen #E8E4DE (was #e5e5e5)
@@ -105,7 +105,7 @@ function escapeHtml(s: string): string {
 // Locked brand colors from the Parallel brand book (April 2026).
 // Do not substitute generic blacks/whites — use these exact values.
 const B = {
-  cream:  "#F5F2EE",  // Light backgrounds — never pure white
+  cream:  "#FFFFFF",  // White. Light backgrounds, text on dark.
   void_:  "#0D0D0F",  // Primary text — never pure black
   purple: "#7B5EA7",  // CTA buttons, // in wordmark on light bg
   linen:  "#E8E4DE",  // Borders and dividers
