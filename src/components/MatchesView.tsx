@@ -488,8 +488,8 @@ export function MatchesView({
               </div>
             </div>
 
-            <div className="bg-parallel-void rounded-2xl p-4 text-center">
-              <p className="text-sm text-white/60 mb-3 leading-relaxed">
+            <div className="bg-gray-200 rounded-2xl p-4 text-center">
+              <p className="text-sm text-gray-600 mb-3 leading-relaxed">
                 Parallel works better when more thoughtful people join. Invite someone you trust.
               </p>
               <button
