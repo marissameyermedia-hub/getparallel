@@ -520,14 +520,6 @@ export function MessagingView({
   const handleSend = async (textOverride?: string) => {
     const text = (textOverride ?? newMessage).trim();
     if (!text) return;
-    if (conversationId === null) {
-      // Conversation hasn't loaded yet — retry the fetch then bail with a toast
-      await fetchMessages();
-      if (conversationId === null) {
-        toast.error('Still loading — please try again in a moment.');
-      }
-      return;
-    }
     if (!emailVerified) {
       toast.error('Verify your email to send messages.');
       return;
@@ -696,8 +688,8 @@ export function MessagingView({
         : 'bg-parallel-cream text-gray-700 border-gray-300 hover:border-gray-400'
     }`;
 
-  const isLocked = conversationId === null;
-  const messagingDisabled = isLocked || !emailVerified;
+  const isLocked = false;
+  const messagingDisabled = !emailVerified;
 
   const matchFirstName = matchName.trim().split(/\s+/)[0] ?? 'them';
   // Only the most recent suggestion card should render; older ones are replaced by the latest
