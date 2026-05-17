@@ -519,13 +519,24 @@ export function MessagingView({
 
   const handleSend = async (textOverride?: string) => {
     const text = (textOverride ?? newMessage).trim();
-    if (!text || conversationId === null) return;
+    if (!text) return;
+    if (conversationId === null) {
+      // Conversation hasn't loaded yet — retry the fetch then bail with a toast
+      await fetchMessages();
+      if (conversationId === null) {
+        toast.error('Still loading — please try again in a moment.');
+      }
+      return;
+    }
     if (!emailVerified) {
       toast.error('Verify your email to send messages.');
       return;
     }
     const token = await getAccessToken();
-    if (!token) return;
+    if (!token) {
+      toast.error('Session expired. Please refresh the page.');
+      return;
+    }
     const optimisticMsg: Message = {
       id: `temp-${Date.now()}`,
       senderId: currentUserId,
