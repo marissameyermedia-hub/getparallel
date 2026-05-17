@@ -150,7 +150,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 Ready to get matched?
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
-                We're your matchmaker. You tell us what you want. We find the person you're looking for.
+                Parallel is releasing matches city by city — when your city's match pool hits the threshold, everyone gets real matches at once. Complete your profile now so you're ready when your city opens.
               </p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
@@ -173,7 +173,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                     onClick={() => onNavigate('waitlist')}
                     className="text-sm text-gray-500 hover:text-parallel-void transition-colors"
                   >
-                    Not in your city yet?{' '}
+                    We're building your city now.{' '}
                     <span className="font-medium text-parallel-purple">Join the waitlist</span>
                   </button>
                 </div>
@@ -260,7 +260,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             <Step
               number="02"
               title="We run the numbers"
-              body="The algorithm goes to work. We read your answers, run the math, and find the person who actually fits what you said you want."
+              body="The algorithm goes to work. We read your answers, run the math, and build your match pool. When your city is ready, we release matches for everyone at once — so your first experience is a good one."
             />
             <Step
               number="03"
