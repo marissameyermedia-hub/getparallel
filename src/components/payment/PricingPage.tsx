@@ -2,38 +2,44 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { publicAnonKey } from '../../utils/supabase/info';
-import { EDGE_FUNCTION_URL, MISC_FUNCTION_URL } from '../../utils/supabase/client';
+import { MISC_FUNCTION_URL } from '../../utils/supabase/client';
 import { PromoCodeInput } from "./PromoCodeInput";
 import { getAccessToken } from '../../utils/auth';
 
-// ── PRE_LAUNCH flag — controlled by VITE_PRE_LAUNCH env var ───
-const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH === 'true';
-
 interface PricingPageProps {
   onBack: () => void;
-  onCheckout: (plan: 'annual' | 'monthly') => void; // called after successful subscription
+  onCheckout: (plan: 'annual') => void;
   onSkip?: () => void;
   userEmail?: string;
-  plan?: string; // current user plan: 'free' | 'monthly' | 'annual'
-  onNavigate?: (view: string) => void; // for linking to Refund Policy / Terms / Privacy
+  plan?: string;
+  onNavigate?: (view: string) => void;
 }
 
-// PayPal config fetched from the edge function. Client ID and plan IDs live
-// in Supabase secrets so we can flip sandbox ↔ live without redeploying.
 interface PayPalConfig {
   clientId: string;
   env: 'sandbox' | 'live';
   plans: {
-    monthly: { planId: string; price: string; currency: string; interval: string; label: string };
-    annualFounding: { planId: string; price: string; currency: string; interval: string; label: string };
+    annualFounding: { planId: string; price: string; currency: string; interval: string; label: string; trialDays?: number };
   };
+  annualPlanId?: string;
 }
 
-// First renewal date for display in the ROSCA disclosure.
-function getRenewalDateString(billing: 'annual' | 'monthly'): string {
+function getTrialEndDate(): string {
   const d = new Date();
-  if (billing === 'annual') d.setFullYear(d.getFullYear() + 1);
-  else d.setMonth(d.getMonth() + 1);
+  d.setDate(d.getDate() + 5);
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function getFirstChargeDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 5);
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+
+function getNextRenewalDate(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 5);
+  d.setFullYear(d.getFullYear() + 1);
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
@@ -65,8 +71,7 @@ function loadPayPalSdk(clientId: string): Promise<any> {
   return w.__paypal_sdk_promise__;
 }
 
-export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan = 'free', onNavigate }: PricingPageProps) {
-  const [billing, setBilling] = useState<'annual' | 'monthly'>('annual');
+export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavigate }: PricingPageProps) {
   const [config, setConfig] = useState<PayPalConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -76,10 +81,9 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
   const buttonContainerRef = useRef<HTMLDivElement | null>(null);
   const buttonsInstanceRef = useRef<any>(null);
 
-  const isMonthlyUser = plan === 'monthly';
-  const planPriceFull = billing === 'annual' ? '$79' : '$24.99';
-  const planCadence = billing === 'annual' ? 'year' : 'month';
-  const renewalDate = getRenewalDateString(billing);
+  const trialEndDate = getTrialEndDate();
+  const firstChargeDate = getFirstChargeDate();
+  const nextRenewalDate = getNextRenewalDate();
 
   // Load PayPal config once on mount
   useEffect(() => {
@@ -107,8 +111,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
     return () => { cancelled = true; };
   }, []);
 
-  // Render PayPal buttons — re-renders when `billing` toggles so the plan_id
-  // sent to PayPal always matches the user's current selection.
+  // Render PayPal buttons
   useEffect(() => {
     if (!config) return;
 
@@ -119,12 +122,10 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
         const paypal = await loadPayPalSdk(config.clientId);
         if (cancelled || !buttonContainerRef.current) return;
 
-        const planId = billing === 'annual'
-          ? config.plans.annualFounding.planId
-          : config.plans.monthly.planId;
+        const planId = config.plans.annualFounding?.planId || config.annualPlanId || 'P-7PT724153F712010ANIFAOHA';
 
         if (!planId) {
-          setError('This plan is not available right now. Please try the other option or contact support.');
+          setError('This plan is not available right now. Please contact support.');
           return;
         }
 
@@ -163,14 +164,14 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                 },
                 body: JSON.stringify({
                   subscriptionId: data.subscriptionID,
-                  plan: billing === 'annual' ? 'annual_founding' : 'monthly',
+                  plan: 'annual_founding',
                 }),
               });
               const body = await res.json();
               if (!res.ok) {
                 throw new Error(body.error || 'Could not confirm your subscription. Please contact support.');
               }
-              onCheckout(billing);
+              onCheckout('annual');
             } catch (e: any) {
               console.error('[Subscribe] onApprove error:', e);
               setError(e.message || 'Something went wrong confirming your subscription.');
@@ -206,11 +207,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
         buttonsInstanceRef.current = null;
       }
     };
-  }, [config, billing, onCheckout]);
-
-  // Click handler for the radio-card rows. Visible click target is the whole card.
-  const selectAnnual = () => setBilling('annual');
-  const selectMonthly = () => setBilling('monthly');
+  }, [config, onCheckout]);
 
   return (
     <div className="min-h-screen bg-parallel-cream">
@@ -225,20 +222,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
       </div>
 
       <div className="max-w-md mx-auto px-6 py-6 pb-16">
-
-        {/* Monthly-to-annual conversion banner — pre-launch, monthly subscribers only */}
-        {PRE_LAUNCH && isMonthlyUser && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-5 bg-parallel-purple text-parallel-cream rounded-2xl p-4"
-          >
-            <p className="text-xs font-medium text-parallel-cream/60 uppercase tracking-wide mb-1">Founding pricing ends at launch</p>
-            <p className="text-sm leading-relaxed">
-              You're on monthly. Select annual below to lock in founding pricing before it's gone.
-            </p>
-          </motion.div>
-        )}
 
         {/* Headline */}
         <motion.div
@@ -255,7 +238,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           </p>
         </motion.div>
 
-        {/* What's included — darker box, positioned first to sell value before price */}
+        {/* What's included */}
         <div className="bg-gray-100 border border-gray-200 rounded-2xl p-4 mb-5">
           <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-2">What's included</p>
           <ul className="grid grid-cols-1 gap-1.5">
@@ -273,98 +256,50 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           </ul>
         </div>
 
-        {/* Cart-style plan selector — two radio cards */}
+        {/* Plan card — annual with free trial */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.05 }}
-          className="space-y-3 mb-5"
-          role="radiogroup"
-          aria-label="Choose your plan"
+          className="mb-5"
         >
-          {/* Annual card */}
-          <button
-            type="button"
-            role="radio"
-            aria-checked={billing === 'annual'}
-            onClick={selectAnnual}
-            className={`w-full text-left rounded-2xl p-4 border-2 transition-all ${
-              billing === 'annual'
-                ? 'border-parallel-purple bg-parallel-purple text-parallel-cream'
-                : 'border-gray-200 bg-parallel-cream text-parallel-void hover:border-gray-400'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              {/* Radio indicator */}
-              <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1 flex items-center justify-center ${
-                billing === 'annual' ? 'border-white bg-parallel-cream' : 'border-gray-300 bg-parallel-cream'
-              }`}>
-                {billing === 'annual' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-parallel-void" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-semibold">Annual</p>
-                  <div className="text-right">
-                    <p className="font-semibold">$6.58<span className={`text-xs font-normal ml-1 ${billing === 'annual' ? 'text-gray-500' : 'text-gray-500'}`}>/ mo</span></p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  {PRE_LAUNCH && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      billing === 'annual' ? 'bg-parallel-cream/15 text-parallel-cream' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      ⭐ Founding Rate
-                    </span>
-                  )}
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                    billing === 'annual' ? 'bg-parallel-cream/15 text-parallel-cream' : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    Save 73%
-                  </span>
-                </div>
-                <p className={`text-xs mt-2 ${billing === 'annual' ? 'text-gray-300' : 'text-gray-500'}`}>
-                  Billed as $79 USD once a year
-                </p>
-              </div>
+          <div className="rounded-2xl border-2 border-parallel-purple bg-parallel-purple text-parallel-cream p-5">
+            {/* Free trial badge */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full">
+                5-day free trial
+              </span>
+              {PRE_LAUNCH && (
+                <span className="text-xs font-medium bg-white/15 text-parallel-cream px-2 py-0.5 rounded-full">
+                  ⭐ Founding Rate
+                </span>
+              )}
             </div>
-          </button>
 
-          {/* Monthly card */}
-          <button
-            type="button"
-            role="radio"
-            aria-checked={billing === 'monthly'}
-            onClick={selectMonthly}
-            className={`w-full text-left rounded-2xl p-4 border-2 transition-all ${
-              billing === 'monthly'
-                ? 'border-parallel-purple bg-parallel-purple text-parallel-cream'
-                : 'border-gray-200 bg-parallel-cream text-parallel-void hover:border-gray-400'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1 flex items-center justify-center ${
-                billing === 'monthly' ? 'border-white bg-parallel-cream' : 'border-gray-300 bg-parallel-cream'
-              }`}>
-                {billing === 'monthly' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-parallel-void" />
-                )}
+            <div className="flex items-baseline justify-between mb-1">
+              <p className="text-xl font-bold">$0.00 today</p>
+              <p className="text-sm text-white/70">then $79 / year</p>
+            </div>
+            <p className="text-xs text-white/60 mb-3">
+              Try free for 5 days — cancel anytime before {trialEndDate} and you won't be charged.
+            </p>
+
+            <div className="border-t border-white/20 pt-3 space-y-1">
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                <Check size={12} className="flex-shrink-0" />
+                First charge of $79.00 on {firstChargeDate}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-semibold">Monthly</p>
-                  <p className="font-semibold">$24.99<span className={`text-xs font-normal ml-1 ${billing === 'monthly' ? 'text-gray-500' : 'text-gray-500'}`}>/ mo</span></p>
-                </div>
-                <p className={`text-xs mt-2 ${billing === 'monthly' ? 'text-gray-300' : 'text-gray-500'}`}>
-                  Billed monthly — cancel anytime. We hope you do.
-                </p>
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                <Check size={12} className="flex-shrink-0" />
+                Renews annually — cancel anytime
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                <Check size={12} className="flex-shrink-0" />
+                $6.58 / month — billed once a year
               </div>
             </div>
-          </button>
+          </div>
         </motion.div>
-
-        {/* Sandbox banner moved to bottom of page — see below for placement */}
 
         {/* Error */}
         {error && (
@@ -373,7 +308,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           </div>
         )}
 
-        {/* PayPal buttons — prominent, immediate action */}
+        {/* PayPal buttons */}
         {loadingConfig ? (
           <div className="flex items-center justify-center py-6 text-gray-500 gap-2">
             <Loader size={18} className="animate-spin" />
@@ -399,13 +334,12 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           </motion.div>
         )}
 
-
-        {/* ROSCA auto-renewal disclosure — always visible, compact */}
+        {/* ROSCA disclosure */}
         {!loadingConfig && (
           <p className="text-[11px] text-gray-500 text-center leading-relaxed mb-4">
-            Your payment method will be charged{' '}
-            <span className="text-gray-700 font-medium">{planPriceFull} USD</span> on{' '}
-            <span className="text-gray-700 font-medium">{renewalDate}</span> and every {planCadence} after until you cancel.
+            Free trial ends <span className="text-gray-700 font-medium">{trialEndDate}</span>. After that,{' '}
+            <span className="text-gray-700 font-medium">$79.00 USD</span> will be charged on{' '}
+            <span className="text-gray-700 font-medium">{firstChargeDate}</span> and every year after until you cancel.
           </p>
         )}
 
@@ -432,11 +366,18 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
                 >
                   <div className="pt-3 space-y-2 text-sm text-gray-600 leading-relaxed">
                     <p>
-                      Your subscription auto-renews at <strong>{planPriceFull} USD per {planCadence}</strong> until you cancel.
-                      Cancel anytime in <span className="font-medium text-gray-900">Account Settings → Cancel Subscription</span>.
+                      Your 5-day free trial begins immediately. If you don't cancel before{' '}
+                      <strong>{trialEndDate}</strong>, you'll be charged{' '}
+                      <strong>$79.00 USD</strong> on {firstChargeDate}.
+                      Your subscription then auto-renews annually on{' '}
+                      <strong>{nextRenewalDate}</strong> and each year after.
+                    </p>
+                    <p>
+                      Cancel anytime in{' '}
+                      <span className="font-medium text-gray-900">Account Settings → Cancel Subscription</span>.
                       Cancelling takes effect at the end of your current billing period.
                     </p>
-                    {billing === 'annual' && PRE_LAUNCH && (
+                    {PRE_LAUNCH && (
                       <p>
                         After launch, annual renews at <strong>$149/year</strong>.
                       </p>
@@ -448,43 +389,24 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           </div>
         )}
 
-        {/* Founding footnote — pre-launch only */}
+        {/* Founding footnote */}
         {PRE_LAUNCH && !loadingConfig && (
           <p className="text-center text-[11px] text-gray-500 leading-relaxed mb-5">
-            Founding pricing is annual-only, available for a limited time. After launch, annual renews at $149/year.
+            Founding pricing is available for a limited time. After launch, annual renews at $149/year.
           </p>
         )}
 
-        {/* Legal + security block — clean, structured, clickable links */}
+        {/* Legal + security */}
         {!loadingConfig && (
           <div className="border-t border-gray-100 pt-4">
-            {/* Row 1: Legal links */}
             <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-gray-500 mb-3">
               {onNavigate ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('terms-service')}
-                    className="underline hover:text-parallel-void transition-colors"
-                  >
-                    Terms of Service
-                  </button>
+                  <button type="button" onClick={() => onNavigate('terms-service')} className="underline hover:text-parallel-void transition-colors">Terms of Service</button>
                   <span className="text-gray-300">·</span>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('privacy-policy')}
-                    className="underline hover:text-parallel-void transition-colors"
-                  >
-                    Privacy Policy
-                  </button>
+                  <button type="button" onClick={() => onNavigate('privacy-policy')} className="underline hover:text-parallel-void transition-colors">Privacy Policy</button>
                   <span className="text-gray-300">·</span>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('refund-policy')}
-                    className="underline hover:text-parallel-void transition-colors"
-                  >
-                    Refund Policy
-                  </button>
+                  <button type="button" onClick={() => onNavigate('refund-policy')} className="underline hover:text-parallel-void transition-colors">Refund Policy</button>
                 </>
               ) : (
                 <>
@@ -497,12 +419,10 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
               )}
             </div>
 
-            {/* Row 2: Refund & agreement note */}
             <p className="text-center text-[11px] text-gray-500 leading-relaxed mb-3">
-              Subscriptions are non-refundable once active. By continuing, you agree to the Terms, Privacy Policy, and Refund Policy.
+              Subscriptions are non-refundable once the trial period ends. By continuing, you agree to the Terms, Privacy Policy, and Refund Policy.
             </p>
 
-            {/* Row 3: Business entity + support */}
             <p className="text-center text-[11px] text-gray-500 leading-relaxed mb-3">
               PARALLEL VIP LLC · Spokane, WA · USD pricing<br />
               Questions?{' '}
@@ -511,7 +431,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
               </a>
             </p>
 
-            {/* Row 4: Security reassurance */}
             <div className="flex items-start justify-center gap-1.5 text-[11px] text-gray-500 leading-relaxed">
               <Lock size={11} className="flex-shrink-0 mt-0.5" />
               <span className="text-center">
@@ -521,7 +440,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           </div>
         )}
 
-        {/* Skip for now — beta/review access */}
+        {/* Skip for now */}
         {onSkip && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -538,7 +457,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
           </motion.div>
         )}
 
-        {/* Sandbox banner — moved to very bottom so it doesn't mess up the design while testing */}
+        {/* Sandbox banner */}
         {config?.env === 'sandbox' && (
           <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-2.5 text-xs text-yellow-800 text-center">
             Test mode — no real charges. Use a PayPal sandbox account.
@@ -548,3 +467,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, userEmail = '', plan =
     </div>
   );
 }
+
+// PRE_LAUNCH flag — same pattern as MatchesView
+const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH === 'true';
