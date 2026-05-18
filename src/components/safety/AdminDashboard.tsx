@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { AdminCaseDetail } from './AdminCaseDetail';
 import { CityLaunchDashboard } from './CityLaunchDashboard';
+import { AdminPulsePanel } from './AdminPulsePanel';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -295,7 +296,11 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
 
       {/* Trust & Safety tab */}
       {activeTab === 'trust-safety' && (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+      <>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+          <AdminPulsePanel accessToken={accessToken} />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {filteredCases.length === 0 ? (
           <div className="bg-parallel-cream rounded-lg border border-gray-200 p-12 text-center">
             <p className="text-gray-600">No cases match your filters</p>
@@ -384,7 +389,8 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
             ))}
           </div>
         )}
-      </div>
+        </div>
+      </>
       )}
     </div>
   );
