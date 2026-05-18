@@ -108,7 +108,7 @@ function parseDistancePreference(pref: string): number {
   if (pref.includes('state') || pref.includes('region')) return 300;
   if (pref.includes('country')) return 3000;
   if (pref.includes('continent')) return 7000;
-  if (pref.includes('world')) return 25000;
+  if (pref.includes('world') || pref.includes('US & Canada')) return 25000;
   return 50; // default
 }
 

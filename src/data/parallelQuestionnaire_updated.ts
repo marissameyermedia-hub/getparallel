@@ -778,7 +778,7 @@ export const parallelQuestionnaire: Section[] = [
       id: "9.4",
       text: "How far away are you open to dating someone right now?",
       type: "MC",
-      options: ["Within 25 miles","Within 50 miles","Within 100 miles","Anywhere within my state or region","Anywhere within my country","Anywhere within my continent","Open to anywhere in the world"],
+      options: ["Within 25 miles","Within 50 miles","Within 100 miles","Anywhere within my state or region","Anywhere within my country","Anywhere within my continent","Anywhere in the US & Canada"],
       tags: ["Hard Filter"],
       weight: 0,
       privacyNote: "Used for matching — this is a hard filter.",

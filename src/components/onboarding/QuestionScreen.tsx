@@ -61,7 +61,7 @@ const HOBBY_CATEGORIES: { label: string; emoji: string; hobbies: string[] }[] = 
 
 const NO_PREFERENCE_VALUES = new Set([
   'No preference','Open to all genders','Open to all backgrounds',
-  'Open to all body types','Open to anywhere in the world',
+  'Open to all body types','Anywhere in the US & Canada',
   'I love pets — any pet is fine',
 ]);
 
