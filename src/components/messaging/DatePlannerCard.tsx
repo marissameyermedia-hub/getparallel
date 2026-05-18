@@ -31,7 +31,7 @@ interface VenueCard {
   reservable?: boolean;
 }
 
-type Panel = 'trigger' | 'schedule' | 'filter' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review';
+type Panel = 'trigger' | 'schedule' | 'filter' | 'times' | 'loading' | 'venues' | 'confirm' | 'waiting' | 'time-pick' | 'confirmed' | 'dismissed' | 'quick-review' | 'auto-picking' | 'auto-confirm';
 type Budget = 'any' | '$' | '$$' | '$$$';
 type Occasion = 'any' | 'dinner' | 'drinks' | 'coffee' | 'activity';
 type Vibe = 'any' | 'local_gem' | 'trendy' | 'outdoor';
@@ -250,6 +250,8 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
   const [availableAreas, setAvailableAreas] = useState<Array<'you' | 'them' | 'middle'>>([]);
   const [shownVenueUrls, setShownVenueUrls] = useState<string[]>([]);
   const [recommendedPool, setRecommendedPool] = useState<VenueCard[]>([]);
+  const [autoPickedVenue, setAutoPickedVenue] = useState<VenueCard | null>(null);
+  const [autoPickedSlots, setAutoPickedSlots] = useState<Array<{ label: string; shortLabel: string; dateIso: string; period: 'afternoon' | 'evening' }>>([]);
 
   // Expose open() so the compose bar icon can trigger scheduling without a banner
   useImperativeHandle(ref, () => ({
@@ -458,6 +460,31 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
     setPanel('waiting');
   };
 
+  const fetchAutoPick = async () => {
+    setPanel('auto-picking');
+    try {
+      const token = await getAccessToken();
+      if (!token) { setPanel('trigger'); return; }
+      const params = new URLSearchParams({ matchId });
+      if (occasion !== 'any') params.set('occasion', occasion);
+      if (budget !== 'any') params.set('maxPrice', budget);
+      const res = await fetch(`${DATE_AGENT_FUNCTION_URL}/auto-pick?${params}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, apikey: publicAnonKey, 'Content-Type': 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.venue && Array.isArray(data.slots) && data.slots.length > 0) {
+          setAutoPickedVenue(data.venue);
+          setAutoPickedSlots(data.slots);
+          setPanel('auto-confirm');
+          return;
+        }
+      }
+    } catch { /* fall through */ }
+    setPanel('trigger');
+  };
+
   // Extract food/activity keywords from recent messages to pass as hints
   function extractConversationHints(messages: string[]): string {
     const KEYWORDS = [
@@ -629,10 +656,96 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
 
         <button
           onClick={() => fetchVenuesConcierge()}
-          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
+          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity mb-2"
         >
           Find a spot →
         </button>
+        <button
+          onClick={fetchAutoPick}
+          className="w-full text-[11px] text-[#7B5EA7] py-1.5 rounded-full border border-[#E2D5F5] hover:bg-[#EDE8F8] transition-colors flex items-center justify-center gap-1.5"
+        >
+          <Sparkles size={11} aria-hidden="true" />
+          Just pick for us →
+        </button>
+      </div>
+    );
+  }
+
+  if (panel === 'auto-picking') {
+    return (
+      <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-5 flex items-center justify-center gap-2">
+        <Sparkles size={13} className="text-[#7B5EA7] animate-pulse" aria-hidden="true" />
+        <span className="text-[11px] text-[#7B5EA7]">Parallel is picking your date…</span>
+      </div>
+    );
+  }
+
+  if (panel === 'auto-confirm' && autoPickedVenue && autoPickedSlots.length > 0) {
+    const sendAutoPick = () => {
+      const proposalData = {
+        venueName: autoPickedVenue.name,
+        venueAddress: autoPickedVenue.address,
+        mapsUrl: autoPickedVenue.mapsUrl,
+        whyItFits: autoPickedVenue.whyItFits,
+        photoUrl: autoPickedVenue.photoUrl,
+        slots: autoPickedSlots.map(s => ({
+          label: s.label,
+          shortLabel: s.shortLabel,
+          dateIso: s.dateIso,
+          period: s.period,
+        })),
+      };
+      const text = autoPickedVenue.suggestionMessage || `${autoPickedVenue.name} looks like a great spot for us — want to check it out?`;
+      onSendMessage(text);
+      onSendMessage(`${DATE_PROPOSAL_PREFIX}${JSON.stringify(proposalData)}`);
+      setPanel('waiting');
+    };
+    return (
+      <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] overflow-hidden">
+        <div className="flex items-center justify-between px-4 pt-3 pb-2">
+          <div className="flex items-center gap-1.5">
+            <Sparkles size={13} className="text-[#7B5EA7]" aria-hidden="true" />
+            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">Parallel's pick for you two</span>
+          </div>
+          <button onClick={() => setPanel('trigger')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
+            <X size={13} className="text-[#8A8690]" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="mx-3 mb-3 flex bg-white rounded-xl border border-[#E8E4DE] overflow-hidden">
+          {autoPickedVenue.photoUrl && (
+            <div className="w-16 flex-shrink-0 bg-gray-100 self-stretch">
+              <img src={autoPickedVenue.photoUrl} alt="" className="w-full h-full object-cover"
+                onError={e => { const el = e.currentTarget.parentElement; if (el) el.style.display = 'none'; }} />
+            </div>
+          )}
+          <div className="flex-1 px-3 py-2.5 min-w-0">
+            <p className="text-xs font-semibold text-[#1E1C22] leading-tight">{autoPickedVenue.name}</p>
+            <p className="text-[10px] text-[#8A8690] mt-0.5">
+              {autoPickedVenue.category} · {autoPickedVenue.priceLevel}
+              {autoPickedVenue.rating !== null ? ` · ★ ${autoPickedVenue.rating}` : ''}
+            </p>
+            {autoPickedVenue.whyItFits && (
+              <p className="text-[10px] text-[#2E2A36] leading-snug mt-1 line-clamp-2">{autoPickedVenue.whyItFits}</p>
+            )}
+            <p className="text-[10px] text-[#7B5EA7] mt-1">
+              {autoPickedSlots.map(s => s.shortLabel).join(' · ')}
+            </p>
+          </div>
+        </div>
+        <div className="px-3 pb-3 flex gap-2">
+          <button
+            onClick={() => setPanel('schedule')}
+            className="flex-1 text-[11px] text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] transition-colors"
+          >
+            Customize
+          </button>
+          <button
+            onClick={sendAutoPick}
+            className="flex-1 text-[11px] font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
+          >
+            Send proposal
+          </button>
+        </div>
       </div>
     );
   }

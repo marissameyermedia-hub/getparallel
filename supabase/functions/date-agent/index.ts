@@ -1,4 +1,4 @@
-// date-agent v31 — Google Places text-search proxy endpoint for client autocomplete
+// date-agent v32 — /decline + /auto-pick endpoints for date scheduling features
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -340,7 +340,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "31" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "32" });
 
     // ── /search — Google Places text-search proxy (API key stays server-side) ──
     if (path === "/search" && req.method === "GET") {
@@ -427,6 +427,193 @@ Deno.serve(async (req) => {
       } catch {
         return json({ results: [] });
       }
+    }
+
+    // ── /decline — AI-generated graceful decline options ─────────────────────
+    if (path === "/decline" && req.method === "POST") {
+      const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
+      if (!token) return json({ error: "Unauthorized" }, 401);
+      const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: authData, error: authErr } = await anonClient.auth.getUser(token);
+      if (authErr || !authData?.user) return json({ error: "Unauthorized" }, 401);
+
+      let messages: string[] = [];
+      let matchName = "";
+      try {
+        const body = await req.json() as { messages?: unknown; matchName?: string };
+        if (Array.isArray(body.messages)) {
+          messages = body.messages.filter((m): m is string => typeof m === "string").slice(-10);
+        }
+        if (typeof body.matchName === "string") matchName = body.matchName.trim().split(/\s+/)[0] ?? "";
+      } catch { /* ok */ }
+
+      const STATIC_DECLINES = [
+        "I appreciate you asking! I'm not quite ready to meet just yet — can we keep chatting a bit more first?",
+        "The timing isn't perfect for me right now — maybe another week or two?",
+        "I'd love to eventually, but let's keep getting to know each other a little longer first.",
+      ];
+
+      if (!ANTHROPIC_API_KEY) return json({ options: STATIC_DECLINES });
+
+      const ctrl = new AbortController();
+      const aiTimer = setTimeout(() => ctrl.abort(), 8000);
+      let options = STATIC_DECLINES;
+      try {
+        const ctx = messages.length > 0
+          ? `\n\nRecent chat:\n${messages.map((m, i) => `${i % 2 === 0 ? "Me" : (matchName || "Them")}: ${m}`).join("\n")}`
+          : "";
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 300,
+            messages: [{ role: "user", content: `You are helping someone on a dating app politely decline or delay a date request. Write exactly 3 short, warm, non-ghosting responses (1-2 sentences each). Vary tone: one about timing, one about wanting to chat more first, one open-ended. Sound natural, not robotic. No emojis.${ctx}\n\nReturn ONLY a JSON array of 3 strings, no other text.` }],
+          }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(aiTimer);
+        if (res.ok) {
+          const data = await res.json();
+          const raw = (data?.content?.[0]?.text ?? "").trim();
+          const m = raw.match(/\[[\s\S]*\]/);
+          if (m) {
+            const parsed = JSON.parse(m[0]);
+            if (Array.isArray(parsed) && parsed.length >= 2) {
+              options = parsed.filter((s: unknown): s is string => typeof s === "string").slice(0, 3);
+            }
+          }
+        }
+      } catch { /* use static */ } finally { clearTimeout(aiTimer); }
+      return json({ options });
+    }
+
+    // ── /auto-pick — AI picks venue + time slots automatically ───────────────
+    if (path === "/auto-pick" && req.method === "POST") {
+      const token = (req.headers.get("authorization") ?? "").replace(/^bearer\s+/i, "").trim();
+      if (!token) return json({ error: "Unauthorized" }, 401);
+      const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data: authData, error: authErr } = await anonClient.auth.getUser(token);
+      if (authErr || !authData?.user) return json({ error: "Unauthorized" }, 401);
+      const userId = authData.user.id;
+
+      const apMatchId = url.searchParams.get("matchId") ?? "";
+      if (!apMatchId || apMatchId === userId) return json({ error: "Invalid matchId" }, 400);
+
+      const apOccasion = url.searchParams.get("occasion") ?? "any";
+      const apMaxPrice = url.searchParams.get("maxPrice") ?? "any";
+
+      const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      const { data: apFlag } = await admin.from("feature_flags").select("enabled").eq("flag_key", "feature_date_agent_enabled").maybeSingle();
+      if (!apFlag?.enabled) return json({ error: "Feature not available" }, 403);
+
+      let apMyLat: number | null = null, apMyLon: number | null = null;
+      let apTheirLat: number | null = null, apTheirLon: number | null = null;
+      let apShared: string[] = [], apMyH: string[] = [], apTheirH: string[] = [];
+      let apMyW: string[] = [], apTheirW: string[] = [];
+
+      try {
+        const [pr, m1, m2, ar] = await Promise.all([
+          admin.from("profiles").select("id, latitude, longitude").in("id", [userId, apMatchId]),
+          admin.from("matches").select("shared_hobbies").eq("user_id", userId).eq("matched_user_id", apMatchId).maybeSingle(),
+          admin.from("matches").select("shared_hobbies").eq("user_id", apMatchId).eq("matched_user_id", userId).maybeSingle(),
+          admin.from("user_answers").select("user_id, answers").in("user_id", [userId, apMatchId]),
+        ]);
+        for (const p of pr.data ?? []) {
+          if (p.id === userId) { apMyLat = p.latitude; apMyLon = p.longitude; }
+          else { apTheirLat = p.latitude; apTheirLon = p.longitude; }
+        }
+        apShared = ((m1.data ?? m2.data) as any)?.shared_hobbies ?? [];
+        for (const row of ar.data ?? []) {
+          const ans = (row.answers ?? {}) as Record<string, unknown>;
+          const h = Array.isArray(ans["3.9"]) ? ans["3.9"] as string[] : [];
+          const w = Array.isArray(ans["3.7"]) ? ans["3.7"] as string[] : [];
+          if (row.user_id === userId) { apMyH = h; apMyW = w; } else { apTheirH = h; apTheirW = w; }
+        }
+      } catch { /* optional */ }
+
+      // Build 3 upcoming weekend evening slots
+      const apNow = new Date();
+      const apSlots: Array<{ label: string; shortLabel: string; dateIso: string; period: "afternoon" | "evening" }> = [];
+      for (let d = 1; d <= 14 && apSlots.length < 3; d++) {
+        const c = new Date(apNow);
+        c.setDate(apNow.getDate() + d);
+        c.setHours(0, 0, 0, 0);
+        if ([5, 6, 0].includes(c.getDay())) {
+          apSlots.push({
+            label: `${c.toLocaleDateString("en-US", { weekday: "long" })} evening`,
+            shortLabel: `${c.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · Eve`,
+            dateIso: c.toISOString(),
+            period: "evening",
+          });
+        }
+      }
+      // Fallback: next 3 days
+      if (apSlots.length === 0) {
+        for (let d = 1; d <= 3; d++) {
+          const c = new Date(apNow);
+          c.setDate(apNow.getDate() + d);
+          c.setHours(0, 0, 0, 0);
+          apSlots.push({
+            label: `${c.toLocaleDateString("en-US", { weekday: "long" })} evening`,
+            shortLabel: `${c.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · Eve`,
+            dateIso: c.toISOString(),
+            period: "evening",
+          });
+        }
+      }
+
+      let topVenue: VenueCard = { ...GENERIC_FALLBACK[0] };
+
+      if (GOOGLE_PLACES_API_KEY && apMyLat && apMyLon) {
+        try {
+          const sLat = apTheirLat != null ? (apMyLat + apTheirLat) / 2 : apMyLat;
+          const sLon = apTheirLon != null ? (apMyLon + apTheirLon) / 2 : apMyLon;
+          const cats = buildSearchCategories(apShared, apMyH, apTheirH, apMyW, apTheirW, "evening", apOccasion, "any");
+          const apCtrl = new AbortController();
+          const apTimer = setTimeout(() => apCtrl.abort(), 10000);
+          try {
+            const venues = await nearbySearch(sLat, sLon, cats[0].types, 8000, apCtrl.signal, 0, "any");
+            const filtered = apMaxPrice !== "any" ? venues.filter(v => passesMaxPrice(v.priceLevel, apMaxPrice)) : venues;
+            const pick = (filtered.length > 0 ? filtered : venues)[0];
+            if (pick) topVenue = { ...pick, areaKey: "middle" };
+          } finally { clearTimeout(apTimer); }
+        } catch { /* use fallback */ }
+      }
+
+      if (ANTHROPIC_API_KEY && topVenue.name !== GENERIC_FALLBACK[0].name) {
+        try {
+          const apCtrl2 = new AbortController();
+          const apTimer2 = setTimeout(() => apCtrl2.abort(), 6000);
+          try {
+            const res = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+              body: JSON.stringify({
+                model: "claude-haiku-4-5-20251001",
+                max_tokens: 120,
+                messages: [{ role: "user", content: `Write a 1-2 sentence casual date proposal for going to "${topVenue.name}" (${topVenue.category}). Warm, direct, no emojis. Return ONLY the message text.` }],
+              }),
+              signal: apCtrl2.signal,
+            });
+            clearTimeout(apTimer2);
+            if (res.ok) {
+              const data = await res.json();
+              const text = (data?.content?.[0]?.text ?? "").trim();
+              if (text) topVenue = { ...topVenue, suggestionMessage: text + (topVenue.mapsUrl ? `\n${topVenue.mapsUrl}` : "") };
+            }
+          } finally { clearTimeout(apTimer2); }
+        } catch { /* keep default */ }
+      }
+
+      if (!topVenue.suggestionMessage) {
+        topVenue = { ...topVenue, suggestionMessage: `${topVenue.name} looks like a great spot for us — want to check it out?${topVenue.mapsUrl ? `\n${topVenue.mapsUrl}` : ""}` };
+      }
+
+      return json({ venue: topVenue, slots: apSlots });
     }
 
     if (path !== "/generate" || req.method !== "POST") return json({ error: "Not found" }, 404);

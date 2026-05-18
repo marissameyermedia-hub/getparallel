@@ -9,8 +9,9 @@ import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
 import { DatePlannerCard, type DatePlannerCardHandle } from './messaging/DatePlannerCard';
 import { DateConfirmCard, DATE_CARD_PREFIX } from './messaging/DateConfirmCard';
-import { DateProposalCard, DATE_PROPOSAL_PREFIX, DATE_RESPONSE_PREFIX, type DateResponseData } from './messaging/DateProposalCard';
+import { DateProposalCard, DATE_PROPOSAL_PREFIX, DATE_RESPONSE_PREFIX, type DateResponseData, type ProposalSlot } from './messaging/DateProposalCard';
 import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
+import { DateResponseBanner } from './messaging/DateResponseBanner';
 
 const FADE_REASONS = [
   { id: 'values_felt_off',              label: "Values didn't align" },
@@ -733,6 +734,33 @@ export function MessagingView({
     try { return JSON.parse(dateResponseMsg.text.slice(DATE_RESPONSE_PREFIX.length)); } catch { return null; }
   })() : null;
 
+  // Show recipient banner when the latest proposal came from the match and has no response yet
+  const lastProposalMsg = lastProposalMsgId ? messages.find(m => m.id === lastProposalMsgId) : null;
+  const showResponseBanner = !!(
+    featureDateAgent &&
+    lastProposalMsg &&
+    lastProposalMsg.senderId !== currentUserId &&
+    !dateResponseMsg &&
+    !messages.some(m => m.text.startsWith(DATE_CARD_PREFIX))
+  );
+  const pendingProposalSlots: ProposalSlot[] = showResponseBanner && lastProposalMsg ? (() => {
+    try {
+      const d = JSON.parse(lastProposalMsg.text.slice(DATE_PROPOSAL_PREFIX.length));
+      return Array.isArray(d.slots) ? d.slots : [];
+    } catch { return []; }
+  })() : [];
+
+  // "Both online now" nudge — show when match is active now and no date confirmed
+  const isMatchActiveNow = formatLastActive(lastActiveAt) === 'Active now';
+  const hasConfirmedDate = messages.some(m => m.text.startsWith(DATE_CARD_PREFIX));
+  const showBothOnlineNudge = !!(
+    featureDateAgent &&
+    isMatchActiveNow &&
+    !hasConfirmedDate &&
+    !showResponseBanner &&
+    messages.length >= 5
+  );
+
   // Show a skeleton while the initial load is in flight. This is the worst
   // single perceived-lag moment in the app — opening a chat hits 3 fetches
   // (messages, mark-read, realtime-config) and on a cold edge worker that
@@ -1050,6 +1078,11 @@ export function MessagingView({
                         setNewMessage(cancelMsg);
                         setTimeout(() => textareaRef.current?.focus(), 50);
                       }}
+                      onReschedule={() => {
+                        const rescheduleMsg = `Hey, I'm so sorry — something came up and I need to reschedule. Can we find another time that works?`;
+                        setNewMessage(rescheduleMsg);
+                        setTimeout(() => textareaRef.current?.focus(), 50);
+                      }}
                     />
                     {isLast && (
                       <p className="text-[10px] text-center text-gray-500 mt-1">{formatTime(message.timestamp)}</p>
@@ -1135,6 +1168,31 @@ export function MessagingView({
         className="flex-shrink-0 bg-parallel-cream border-t border-gray-200 px-3 py-2"
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
       >
+        {/* Recipient banner — shown when match proposed a date and we haven't responded */}
+        {showResponseBanner && (
+          <DateResponseBanner
+            proposalSlots={pendingProposalSlots}
+            matchName={matchName}
+            recentMessages={messages.slice(-10).map(m => m.text)}
+            onAccept={(slot) => handleSend(`${DATE_RESPONSE_PREFIX}${JSON.stringify(slot)}`)}
+            onDeclineMessage={(msg) => { setNewMessage(msg); setTimeout(() => textareaRef.current?.focus(), 50); }}
+            onProposeNewTimes={() => datePlannerRef.current?.open()}
+          />
+        )}
+
+        {/* "Both online now" nudge — shown when match is active and no date planned */}
+        {showBothOnlineNudge && (
+          <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-2.5 flex items-center justify-between gap-3">
+            <p className="text-[11px] text-[#7B5EA7] font-medium">You're both here — plan a date?</p>
+            <button
+              onClick={() => datePlannerRef.current?.open()}
+              className="flex-shrink-0 text-[11px] font-semibold text-[#F5F2EE] bg-[#7B5EA7] px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+            >
+              Plan it →
+            </button>
+          </div>
+        )}
+
         {/* Date planner — pick times + venue + calendar in one flow, flag-gated */}
         <DatePlannerCard
           ref={datePlannerRef}

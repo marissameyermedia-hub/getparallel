@@ -54,9 +54,10 @@ interface DateConfirmCardProps {
   data: DateCardData;
   isMe?: boolean;
   onCancel?: () => void;
+  onReschedule?: () => void;
 }
 
-export function DateConfirmCard({ data, isMe, onCancel }: DateConfirmCardProps) {
+export function DateConfirmCard({ data, isMe, onCancel, onReschedule }: DateConfirmCardProps) {
   const dateObj = new Date(data.dateIso);
   const displayDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
@@ -108,6 +109,16 @@ export function DateConfirmCard({ data, isMe, onCancel }: DateConfirmCardProps) 
           Add to Calendar
         </button>
       </div>
+      {onReschedule && (
+        <div className="flex justify-center border-t border-[#E2D5F5] py-2">
+          <button
+            onClick={onReschedule}
+            className="text-[11px] text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors"
+          >
+            Need to reschedule?
+          </button>
+        </div>
+      )}
     </div>
   );
 }
