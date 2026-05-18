@@ -1291,6 +1291,7 @@ export function MessagingView({
             />
           </div>
           <button
+            onPointerDown={(e) => e.preventDefault()}
             onClick={handleSend}
             disabled={!newMessage.trim() || messagingDisabled}
             aria-label="Send message"
