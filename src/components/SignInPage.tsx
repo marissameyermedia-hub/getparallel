@@ -169,60 +169,30 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               </div>
             </div>
 
-            {/* Right: two match cards, one M, one F, visually overlapped.
-                Reduced max width + tamed translations so the stack stays
-                inside the hero section and doesn't dwarf the headline. */}
+            {/* Right: single match card preview */}
             <div className="relative py-4 md:py-8">
-              <div className="relative max-w-[320px] mx-auto">
-                <div className="md:-translate-x-4 md:rotate-[-3deg] transition-transform">
-                  <PreviewMatchCard
-                    name="Daniel"
-                    age={31}
-                    height={'6\'1"'}
-                    location="Seattle · 3 miles away"
-                    score={87}
-                    photoUrl="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=600&q=80&auto=format&fit=crop"
-                    verified
-                    bio="Software engineer, runner, dog dad to a very good golden named Olive."
-                    breakdown={{
-                      'Attachment & Emotional Health': 92,
-                      'Communication & Conflict': 88,
-                      'Life Goals': 90,
-                      'Values & Beliefs': 84,
-                      'Financial & Career': 86,
-                      'Intimacy & Connection': 82,
-                      'Lifestyle Behaviors': 85,
-                      'Social & Shared Life': 89,
-                    }}
-                  />
-                </div>
-                {/* Maya: previously had md:-translate-y-24 which pushed her above
-                    the section into the navbar. -translate-y-8 keeps the overlap
-                    effect without breaking the layout. */}
-                <div className="md:translate-x-6 md:-translate-y-8 md:rotate-[4deg] relative md:absolute md:inset-x-0 md:top-0 mt-6 md:mt-0 transition-transform">
-                  <PreviewMatchCard
-                    name="Maya"
-                    age={28}
-                    height={'5\'6"'}
-                    location="Seattle · 4 miles away"
-                    score={91}
-                    photoUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80&auto=format&fit=crop"
-                    verified
-                    bio="Product designer, weekend hiker, reading my way through every Toni Morrison book."
-                    breakdown={{
-                      'Attachment & Emotional Health': 95,
-                      'Communication & Conflict': 90,
-                      'Life Goals': 94,
-                      'Values & Beliefs': 91,
-                      'Financial & Career': 88,
-                      'Intimacy & Connection': 89,
-                      'Lifestyle Behaviors': 92,
-                      'Social & Shared Life': 87,
-                    }}
-                  />
-                </div>
+              <div className="max-w-[300px] mx-auto">
+                <PreviewMatchCard
+                  name="Jordan"
+                  age={29}
+                  location="Seattle · 2 miles away"
+                  score={91}
+                  photoUrl=""
+                  verified
+                  bio="Landscape architect, weekend cyclist, always chasing the perfect pour-over."
+                  breakdown={{
+                    'Attachment & Emotional Health': 95,
+                    'Communication & Conflict': 90,
+                    'Life Goals': 94,
+                    'Values & Beliefs': 91,
+                    'Financial & Career': 88,
+                    'Intimacy & Connection': 89,
+                    'Lifestyle Behaviors': 92,
+                    'Social & Shared Life': 87,
+                  }}
+                />
               </div>
-              <p className="text-xs text-center text-gray-500 mt-8 md:mt-48 italic">
+              <p className="text-xs text-center text-gray-500 mt-6 italic">
                 Every match comes with a score and a reason why.
               </p>
             </div>
@@ -586,14 +556,14 @@ const CATEGORY_ORDER = [
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Attachment & Emotional Health': 'bg-purple-500',
-  'Communication & Conflict': 'bg-indigo-500',
-  'Life Goals': 'bg-blue-500',
-  'Values & Beliefs': 'bg-cyan-500',
-  'Financial & Career': 'bg-amber-500',
-  'Intimacy & Connection': 'bg-pink-500',
-  'Lifestyle Behaviors': 'bg-green-500',
-  'Social & Shared Life': 'bg-orange-400',
+  'Attachment & Emotional Health': 'bg-parallel-purple',
+  'Communication & Conflict':      'bg-purple-700',
+  'Life Goals':                    'bg-violet-600',
+  'Values & Beliefs':              'bg-purple-900',
+  'Financial & Career':            'bg-violet-500',
+  'Intimacy & Connection':         'bg-parallel-soft-violet',
+  'Lifestyle Behaviors':           'bg-purple-600',
+  'Social & Shared Life':          'bg-parallel-stone',
 };
 
 function getMatchLabel(score: number) {
