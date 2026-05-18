@@ -629,7 +629,7 @@ function PreviewMatchCard({
     <div className="bg-parallel-cream rounded-2xl border-2 border-gray-200 overflow-hidden shadow-xl">
       {/* Photo zone — aspect-[3/4] */}
       <div className="relative aspect-[3/4] bg-gray-100">
-        <img src={photoUrl} alt={name} className="w-full h-full object-cover" style={{ filter: 'blur(18px)', transform: 'scale(1.12)' }} />
+        <div className="w-full h-full" style={{ background: 'linear-gradient(160deg, #A98FD0 0%, #7B5EA7 45%, #0D0D0F 100%)' }} />
 
         {/* Verified badge — top left */}
         {verified && (
