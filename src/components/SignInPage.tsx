@@ -150,14 +150,14 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 Ready to get matched?
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
-                Parallel is releasing matches city by city — when your city's match pool hits the threshold, everyone gets real matches at once. Complete your profile now so you're ready when your city opens.
+                We're launching city by city. To count toward your city's match pool, you'll need to complete the full questionnaire. When enough compatible people are ready in your city, matches release for everyone at once.
               </p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={onShowExplainer}
                   className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
                 >
-                  Get matched
+                  Join the waitlist
                   <ArrowRight size={18} />
                 </button>
                 <button
@@ -167,17 +167,6 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                   Already a member? Sign in
                 </button>
               </div>
-              {onNavigate && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => onNavigate('waitlist')}
-                    className="text-sm text-gray-500 hover:text-parallel-void transition-colors"
-                  >
-                    We're building your city now.{' '}
-                    <span className="font-medium text-parallel-purple">Join the waitlist</span>
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Right: two match cards, one M, one F, visually overlapped.
@@ -316,7 +305,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               onClick={onShowExplainer}
               className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-10 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
             >
-              Get matched
+              Join the waitlist
               <ArrowRight size={18} />
             </button>
             <button
