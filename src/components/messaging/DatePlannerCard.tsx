@@ -365,7 +365,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
     return () => clearTimeout(timer);
   }, [searchQuery, matchId]);
 
-  if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
+  if (!flagEnabled || panel === 'dismissed') return null;
 
   const days = getUpcomingDays(7);
   const initials = getInitials(matchName);
@@ -562,9 +562,9 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
   // ── Render ────────────────────────────────────────────────────────────────────
 
   if (panel === 'trigger') {
-    // Only render a proactive chip when the conversation signals genuine interest.
-    // The compose-bar icon is the primary trigger — always available without friction.
-    if (!detectReadiness(recentMessages)) return null;
+    // Proactive chip only shows when the conversation has enough history and signals.
+    // The compose-bar icon bypasses this — it sets panel directly to 'schedule'.
+    if (!mutualMatch || messageCount < 10 || !detectReadiness(recentMessages)) return null;
     return (
       <button
         onClick={() => setPanel('schedule')}
