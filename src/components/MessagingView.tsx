@@ -233,7 +233,6 @@ export function MessagingView({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const safetyMenuRef = useRef<HTMLDivElement>(null);
-  const initialScrollDone = useRef(false);
   const datePlannerRef = useRef<DatePlannerCardHandle>(null);
   const lastSendMs = useRef(0);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -356,7 +355,7 @@ export function MessagingView({
     (async () => {
       const token = await getAccessToken();
       if (!token || cancelled) {
-        if (!cancelled) setIsInitialLoading(false);
+        if (!cancelled) { setIsInitialLoading(false); setShowStarters(true); }
         progress.done();
         return;
       }
@@ -403,9 +402,19 @@ export function MessagingView({
             realtimeChannel = supabase
               .channel('messages-' + convId)
               .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter }, (payload) => {
+                const newMsg = { id: payload.new.id, senderId: payload.new.sender_id, text: payload.new.text, timestamp: payload.new.created_at };
                 setMessages(prev => {
                   if (prev.some(m => m.id === payload.new.id)) return prev;
-                  return [...prev, { id: payload.new.id, senderId: payload.new.sender_id, text: payload.new.text, timestamp: payload.new.created_at }];
+                  // Replace matching optimistic message to avoid duplicate
+                  const tempIdx = prev.findIndex(
+                    m => m.id.startsWith('temp-') && m.senderId === payload.new.sender_id && m.text === payload.new.text
+                  );
+                  if (tempIdx >= 0) {
+                    const next = [...prev];
+                    next[tempIdx] = newMsg;
+                    return next;
+                  }
+                  return [...prev, newMsg];
                 });
               })
               .subscribe();
@@ -417,15 +426,13 @@ export function MessagingView({
 
       if (eligData) setMetBannerEligibility(eligData);
       setIsInitialLoading(false);
+      setShowStarters(true);
       progress.done();
     })();
 
     // 8-second background poll as a safety net in case realtime drops.
     // Doesn't touch isInitialLoading — these are silent updates.
     const pollInterval = setInterval(() => fetchMessages(), 8000);
-    // Show starters immediately for this conversation (skeleton gates render until
-    // messages are loaded, so no flash risk). handleSend/handleUseStarter hide them.
-    setShowStarters(true);
 
     return () => {
       cancelled = true;
@@ -493,16 +500,11 @@ export function MessagingView({
   }, [messages, matchId, mutualMatch, isInitialLoading, featureFeedbackLoop]);
 
   useEffect(() => {
+    if (isInitialLoading) return;
     const container = messagesContainerRef.current;
     if (!container || messages.length === 0) return;
-    if (!initialScrollDone.current) {
-      // Snap to bottom on first load — scrollTop is more reliable than scrollIntoView on iOS
-      container.scrollTop = container.scrollHeight;
-      initialScrollDone.current = true;
-    } else {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [messages, isTyping, viewportHeight]);
+    container.scrollTop = container.scrollHeight;
+  }, [messages, isTyping, viewportHeight, isInitialLoading]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -560,6 +562,15 @@ export function MessagingView({
         body: JSON.stringify({ matchId, text: optimisticMsg.text }),
       });
       if (!res.ok) throw new Error('send failed');
+      // Replace the temp ID with the real message ID so the realtime INSERT
+      // dedup check matches and doesn't append a second copy.
+      try {
+        const data = await res.json();
+        const realId = data.id || data.messageId;
+        if (realId) {
+          setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? { ...m, id: realId } : m));
+        }
+      } catch {} // response may not include an ID — realtime text-match dedup handles it
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
