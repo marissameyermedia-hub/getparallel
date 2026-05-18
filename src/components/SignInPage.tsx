@@ -138,63 +138,30 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           {/* Anchor both columns at the top — the card stack on the right is
               taller than the copy on the left, and items-center was pulling the
               headline halfway down the viewport. */}
-          <div className="grid md:grid-cols-[1.1fr_1fr] gap-12 md:gap-16 items-start">
-
-            {/* Left: copy. md:pt-4 nudges the headline down just enough so it
-                visually sits across from the top edge of the angled cards. */}
-            <div className="md:pt-4">
-              <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-5 font-medium">
-                Professional matchmaking
-              </p>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
-                Ready to get matched?
-              </h1>
-              <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
-                We're launching city by city. To count toward your city's match pool, you'll need to complete the full questionnaire. When enough compatible people are ready in your city, matches release for everyone at once.
-              </p>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <button
-                  onClick={onShowExplainer}
-                  className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
-                >
-                  Join the waitlist
-                  <ArrowRight size={18} />
-                </button>
-                <button
-                  onClick={() => setShowSignIn(true)}
-                  className="text-gray-600 hover:text-parallel-void transition-colors font-medium text-sm py-4 sm:px-4"
-                >
-                  Already a member? Sign in
-                </button>
-              </div>
-            </div>
-
-            {/* Right: single match card preview */}
-            <div className="relative py-4 md:py-8">
-              <div className="max-w-[300px] mx-auto">
-                <PreviewMatchCard
-                  name="Jordan"
-                  age={29}
-                  location="Seattle · 2 miles away"
-                  score={91}
-                  photoUrl=""
-                  verified
-                  bio="Landscape architect, weekend cyclist, always chasing the perfect pour-over."
-                  breakdown={{
-                    'Attachment & Emotional Health': 95,
-                    'Communication & Conflict': 90,
-                    'Life Goals': 94,
-                    'Values & Beliefs': 91,
-                    'Financial & Career': 88,
-                    'Intimacy & Connection': 89,
-                    'Lifestyle Behaviors': 92,
-                    'Social & Shared Life': 87,
-                  }}
-                />
-              </div>
-              <p className="text-xs text-center text-gray-500 mt-6 italic">
-                Every match comes with a score and a reason why.
-              </p>
+          <div className="max-w-2xl">
+            <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-5 font-medium">
+              Professional matchmaking
+            </p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
+              Ready to get matched?
+            </h1>
+            <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
+              We're launching city by city. To count toward your city's match pool, you'll need to complete the full questionnaire. When enough compatible people are ready in your city, matches release for everyone at once.
+            </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <button
+                onClick={onShowExplainer}
+                className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
+              >
+                Join the waitlist
+                <ArrowRight size={18} />
+              </button>
+              <button
+                onClick={() => setShowSignIn(true)}
+                className="text-gray-600 hover:text-parallel-void transition-colors font-medium text-sm py-4 sm:px-4"
+              >
+                Already a member? Sign in
+              </button>
             </div>
           </div>
         </div>
@@ -225,6 +192,37 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               number="03"
               title="You make the call"
               body="You decide who to meet. We're with you the whole way — feedback, tips, and the nudge to get off the app and into the world."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ── MATCH CARD PREVIEW ────────────────────────────────────── */}
+      <section className="w-full border-t border-gray-100">
+        <div className="max-w-3xl mx-auto px-6 py-20 md:py-24 flex flex-col items-center text-center">
+          <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-3 font-medium">What a match looks like</p>
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight mb-10">
+            Every match comes with a score and a reason why.
+          </h2>
+          <div className="w-full max-w-[300px]">
+            <PreviewMatchCard
+              name="Jordan"
+              age={29}
+              location="Seattle · 2 miles away"
+              score={91}
+              photoUrl=""
+              verified
+              bio="Landscape architect, weekend cyclist, always chasing the perfect pour-over."
+              breakdown={{
+                'Attachment & Emotional Health': 95,
+                'Communication & Conflict': 90,
+                'Life Goals': 94,
+                'Values & Beliefs': 91,
+                'Financial & Career': 88,
+                'Intimacy & Connection': 89,
+                'Lifestyle Behaviors': 92,
+                'Social & Shared Life': 87,
+              }}
             />
           </div>
         </div>
