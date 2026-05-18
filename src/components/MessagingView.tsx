@@ -518,7 +518,10 @@ export function MessagingView({
   };
 
   const handleSend = async (textOverride?: string) => {
-    const text = (textOverride ?? newMessage).trim();
+    // Read directly from DOM so iOS autocorrect doesn't leave React state stale
+    const domValue = textareaRef.current?.value ?? '';
+    const text = (textOverride ?? domValue).trim();
+    if (!domValue.trim() && !textOverride) setNewMessage(''); // sync state if DOM is empty
     if (!text) return;
     if (!emailVerified) {
       toast.error('Verify your email to send messages.');
@@ -1291,7 +1294,12 @@ export function MessagingView({
             />
           </div>
           <button
-            onPointerDown={(e) => e.preventDefault()}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              const domText = textareaRef.current?.value?.trim() ?? '';
+              if (!domText || messagingDisabled) return;
+              void handleSend();
+            }}
             onClick={handleSend}
             disabled={!newMessage.trim() || messagingDisabled}
             aria-label="Send message"
