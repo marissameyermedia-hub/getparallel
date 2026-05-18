@@ -572,6 +572,23 @@ export function MessagingView({
           setMessages(prev => prev.map(m => m.id === optimisticMsg.id ? { ...m, id: realId } : m));
         }
       } catch {} // response may not include an ID — realtime text-match dedup handles it
+      // When a confirmed date card is sent, persist it so the reminder cron can fire
+      if (text.startsWith(DATE_CARD_PREFIX) && conversationId) {
+        try {
+          const cardData = JSON.parse(text.slice(DATE_CARD_PREFIX.length));
+          await supabase.from('scheduled_dates').insert({
+            conversation_id: conversationId,
+            proposer_id: currentUserId,
+            venue_name: cardData.venueName,
+            venue_address: cardData.venueAddress ?? null,
+            maps_url: cardData.mapsUrl ?? null,
+            date_iso: cardData.dateIso,
+            time_hour: cardData.time ?? null,
+            label: cardData.label ?? null,
+            period: cardData.period ?? null,
+          });
+        } catch {} // non-critical — reminder is best-effort
+      }
     } catch (err) {
       console.error('Failed to send message:', err);
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
