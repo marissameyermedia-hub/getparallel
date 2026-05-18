@@ -53,7 +53,9 @@ export function DeleteAccountView({ onBack, onDeleteComplete }: DeleteAccountVie
       await supabase.auth.signOut();
       localStorage.clear();
 
-      toast.success('Your account has been permanently deleted.');
+      toast.success(
+        "Your account has been permanently deleted. A confirmation has been sent to your email."
+      );
       onDeleteComplete();
 
     } catch (err: any) {
