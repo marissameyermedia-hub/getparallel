@@ -236,6 +236,7 @@ export function MessagingView({
   const initialScrollDone = useRef(false);
   const datePlannerRef = useRef<DatePlannerCardHandle>(null);
   const lastSendMs = useRef(0);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const currentUserId = localStorage.getItem('parallel_user_id') || '';
   const lastActiveText = formatLastActive(lastActiveAt);
 
@@ -304,12 +305,10 @@ export function MessagingView({
   // When input gains focus, scroll messages to bottom instead of letting
   // iOS auto-scroll the page (which hides the header).
   const handleInputFocus = () => {
-    // Dismiss the date planner panel if it's open so it doesn't block the compose bar
     datePlannerRef.current?.dismiss();
-    // Delay to let keyboard animation start, then pin messages to bottom.
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
-      // Force window scroll back to top to counteract iOS auto-scroll
+      const c = messagesContainerRef.current;
+      if (c) c.scrollTop = c.scrollHeight;
       window.scrollTo(0, 0);
     }, 300);
   };
@@ -490,13 +489,14 @@ export function MessagingView({
   }, [messages, matchId, mutualMatch, isInitialLoading, featureFeedbackLoop]);
 
   useEffect(() => {
-    if (!messagesEndRef.current || messages.length === 0) return;
+    const container = messagesContainerRef.current;
+    if (!container || messages.length === 0) return;
     if (!initialScrollDone.current) {
-      // Snap instantly on first load so the user lands at the newest message
-      messagesEndRef.current.scrollIntoView({ behavior: 'instant' });
+      // Snap to bottom on first load — scrollTop is more reliable than scrollIntoView on iOS
+      container.scrollTop = container.scrollHeight;
       initialScrollDone.current = true;
     } else {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      container.scrollTop = container.scrollHeight;
     }
   }, [messages, isTyping, viewportHeight]);
 
@@ -968,6 +968,7 @@ export function MessagingView({
 
       {/* Messages area - ONLY this scrolls */}
       <div
+        ref={messagesContainerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3"
         style={{ WebkitOverflowScrolling: 'touch' }}
         role="log"
