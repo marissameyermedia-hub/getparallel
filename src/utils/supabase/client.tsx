@@ -166,6 +166,12 @@ export const WAITLIST_FUNCTION_URL = `${supabaseUrl}/functions/v1/waitlist-signu
 // /account/export, /user/delete.
 export const MISC_FUNCTION_URL = `${supabaseUrl}/functions/v1/misc`;
 
+// Admin-only API. Handles: /check (is_admin), /cities (city_health + thresholds + release_log).
+export const ADMIN_FUNCTION_URL = `${supabaseUrl}/functions/v1/admin-api`;
+
+// Release-city edge function — flips a city from ready → live.
+export const RELEASE_CITY_FUNCTION_URL = `${supabaseUrl}/functions/v1/release-city`;
+
 export function getAuthHeaders(accessToken: string) {
   return {
     'Authorization': `Bearer ${accessToken}`,

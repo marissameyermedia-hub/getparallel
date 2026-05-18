@@ -1,15 +1,13 @@
-import { useState, useEffect } from 'react';
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import { useState } from 'react';
+import {
+  AlertTriangle,
   Search,
-  Filter,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  MapPin,
 } from 'lucide-react';
 import { AdminCaseDetail } from './AdminCaseDetail';
+import { CityLaunchDashboard } from './CityLaunchDashboard';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -124,6 +122,7 @@ const MOCK_CASES: SafetyCase[] = [
 ];
 
 export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
+  const [activeTab, setActiveTab] = useState<'city-launch' | 'trust-safety'>('city-launch');
   const [cases, setCases] = useState<SafetyCase[]>(MOCK_CASES);
   const [selectedCase, setSelectedCase] = useState<SafetyCase | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -197,70 +196,105 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
       {/* Header */}
       <div className="bg-parallel-cream border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onBack}
-                aria-label="Go back"
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" aria-hidden="true" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold">Trust & Safety Dashboard</h1>
-                <p className="text-sm text-gray-600">Internal moderation system</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by case number, user name..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple text-sm"
-              />
-            </div>
-            <select
-              value={filterPriority}
-              onChange={(e) => setFilterPriority(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple text-sm"
+          <div className="flex items-center gap-4 mb-4">
+            <button
+              onClick={onBack}
+              aria-label="Go back"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <option value="all">All Priorities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+              <ArrowLeft className="w-5 h-5" aria-hidden="true" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold">Admin Panel</h1>
+              <p className="text-sm text-gray-500">Internal dashboard</p>
+            </div>
           </div>
 
-          {/* Status Tabs */}
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-            {(['all', 'open', 'under-review', 'escalated', 'resolved'] as const).map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === status
-                    ? 'bg-parallel-purple text-parallel-cream'
-                    : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                {status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                <span className="ml-2 text-xs opacity-75">
-                  ({statusCounts[status]})
+          {/* Top-level tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => setActiveTab('city-launch')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'city-launch'
+                  ? 'bg-parallel-purple text-parallel-cream'
+                  : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              <MapPin size={14} />
+              City Launch
+            </button>
+            <button
+              onClick={() => setActiveTab('trust-safety')}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === 'trust-safety'
+                  ? 'bg-parallel-purple text-parallel-cream'
+                  : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
+              }`}
+            >
+              <AlertTriangle size={14} />
+              Trust & Safety
+              {statusCounts.open + statusCounts['under-review'] > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1 font-semibold">
+                  {statusCounts.open + statusCounts['under-review']}
                 </span>
-              </button>
-            ))}
+              )}
+            </button>
           </div>
+
+          {/* Trust & Safety sub-filters (only when that tab is active) */}
+          {activeTab === 'trust-safety' && (
+            <>
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search by case number, user name..."
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple text-sm"
+                  />
+                </div>
+                <select
+                  value={filterPriority}
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-parallel-purple text-sm"
+                >
+                  <option value="all">All Priorities</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
+                {(['all', 'open', 'under-review', 'escalated', 'resolved'] as const).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilterStatus(status)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                      filterStatus === status
+                        ? 'bg-parallel-purple text-parallel-cream'
+                        : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
+                    }`}
+                  >
+                    {status.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                    <span className="ml-2 text-xs opacity-75">
+                      ({statusCounts[status]})
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Cases List */}
+      {/* City Launch tab */}
+      {activeTab === 'city-launch' && <CityLaunchDashboard />}
+
+      {/* Trust & Safety tab */}
+      {activeTab === 'trust-safety' && (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {filteredCases.length === 0 ? (
           <div className="bg-parallel-cream rounded-lg border border-gray-200 p-12 text-center">
@@ -351,6 +385,7 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

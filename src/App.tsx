@@ -42,6 +42,7 @@ import { AppFeedbackBottomSheet } from './components/AppFeedbackBottomSheet';
 import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
+import { AdminDashboard } from './components/safety/AdminDashboard';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
 import { EnablePushBanner } from './components/EnablePushBanner';
@@ -53,6 +54,7 @@ import { NavigationProgress } from './components/NavigationProgress';
 import { ChevronLeft } from 'lucide-react';
 import { PageLoader } from './components/PageLoader';
 import { loadFlags, FeatureFlags } from './hooks/useFeatureFlags';
+import { ADMIN_FUNCTION_URL } from './utils/supabase/client';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/json',
@@ -75,8 +77,9 @@ function App() {
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
     | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
     | 'verification' | 'invite-friends' | 'reset-password'
-    | 'preview-profile' | 'waitlist'
+    | 'preview-profile' | 'waitlist' | 'admin'
   >(() => window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   // Tracks how the user arrived at the profile view. Determines whether the
@@ -659,6 +662,17 @@ function App() {
     loadFlags().then(setFeatureFlags);
   }, [accessToken]);
 
+  // ── Admin check ───────────────────────────────────────────────
+  useEffect(() => {
+    if (!accessToken) { setIsAdmin(false); return; }
+    fetch(`${ADMIN_FUNCTION_URL}/check`, {
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'apikey': publicAnonKey },
+    })
+      .then(r => r.ok ? r.json() : { isAdmin: false })
+      .then(data => setIsAdmin(data.isAdmin === true))
+      .catch(() => setIsAdmin(false));
+  }, [accessToken]);
+
   // ── Re-validate session on app foreground ────────────────────
   // Supabase's autoRefreshToken timer is paused while the app is minimized
   // or the device is asleep. If the access token (1 hour TTL) expired during
@@ -1212,6 +1226,8 @@ function App() {
     // profile: match profile view has its own fixed action bar (z-60);
     //   BottomNav (z-50) was competing with it at the bottom
     'my-profile', 'preview-profile', 'profile',
+    // admin: has its own sticky header with back button
+    'admin',
   ].includes(currentView);
 
   return (
@@ -1460,6 +1476,15 @@ function App() {
             userEmail={localStorage.getItem('parallel_user_email') || ''}
             hasVerified={hasVerified}
             userAnswers={userAnswers}
+            isAdmin={isAdmin}
+          />
+        )}
+
+        {/* ── Admin Panel ── */}
+        {currentView === 'admin' && (
+          <AdminDashboard
+            onBack={() => setCurrentView('account')}
+            accessToken={accessToken}
           />
         )}
 
