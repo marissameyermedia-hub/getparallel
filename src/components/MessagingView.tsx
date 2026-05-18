@@ -342,6 +342,9 @@ export function MessagingView({
       return;
     }
 
+    // Reset starters so switching conversations always starts fresh
+    setShowStarters(false);
+
     let realtimeChannel: any = null;
     let cancelled = false;
 
@@ -420,12 +423,13 @@ export function MessagingView({
     // 8-second background poll as a safety net in case realtime drops.
     // Doesn't touch isInitialLoading — these are silent updates.
     const pollInterval = setInterval(() => fetchMessages(), 8000);
-    const starterTimer = setTimeout(() => setShowStarters(true), 800);
+    // Show starters immediately for this conversation (skeleton gates render until
+    // messages are loaded, so no flash risk). handleSend/handleUseStarter hide them.
+    setShowStarters(true);
 
     return () => {
       cancelled = true;
       clearInterval(pollInterval);
-      clearTimeout(starterTimer);
       if (realtimeChannel) realtimeChannel.unsubscribe();
     };
   }, [matchId, mutualMatch, fetchMessages]);
