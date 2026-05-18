@@ -235,6 +235,7 @@ export function MessagingView({
   const safetyMenuRef = useRef<HTMLDivElement>(null);
   const initialScrollDone = useRef(false);
   const datePlannerRef = useRef<DatePlannerCardHandle>(null);
+  const lastSendMs = useRef(0);
   const currentUserId = localStorage.getItem('parallel_user_id') || '';
   const lastActiveText = formatLastActive(lastActiveAt);
 
@@ -518,6 +519,12 @@ export function MessagingView({
   };
 
   const handleSend = async (textOverride?: string) => {
+    // Debounce: onTouchEnd + onClick both fire on iOS — ignore the second within 400ms
+    if (!textOverride) {
+      const now = Date.now();
+      if (now - lastSendMs.current < 400) return;
+      lastSendMs.current = now;
+    }
     // Read directly from DOM so iOS autocorrect doesn't leave React state stale
     const domValue = textareaRef.current?.value ?? '';
     const text = (textOverride ?? domValue).trim();
