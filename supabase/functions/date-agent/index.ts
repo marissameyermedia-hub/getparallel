@@ -1,4 +1,4 @@
-// date-agent v32 — /decline + /auto-pick endpoints for date scheduling features
+// date-agent v33 — block tour/excursion venues by name regardless of Google type tags
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -93,11 +93,11 @@ function isBlocklisted(name: string, types: string[]): boolean {
   const lower = name.toLowerCase();
   if (VENUE_NAME_BLOCKLIST.some(b => lower.includes(b))) return true;
   if (types.some(t => BLOCKED_PLACE_TYPES.has(t))) return true;
-  // Block pure tourist attractions — tours, sightseeing, excursions — that aren't also a dining/activity venue
+  // Block tour/excursion/sightseeing venues by name regardless of how Google types them —
+  // \b guards prevent false positives on "Detour", "Contour", etc.
+  if (/\b(tours?|sightseeing|excursion|ghost hunt|pub crawl|walking tour|bus tour)\b/i.test(name)) return true;
+  // Block pure tourist attractions that aren't also a dining/activity venue
   if (types.includes("tourist_attraction") && !types.some(t => DATE_VENUE_TYPES.has(t))) return true;
-  // Block tour operations even when Google also tags them as bar/restaurant (e.g. "Underground Tour"
-  // that serves drinks during the tour — we want actual bars/restaurants, not sightseeing experiences)
-  if (types.includes("tourist_attraction") && /\btours?\b/i.test(lower)) return true;
   return false;
 }
 
@@ -340,7 +340,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/date-agent\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, version: "32" });
+    if (path === "/" || path === "/health") return json({ ok: true, version: "33" });
 
     // ── /search — Google Places text-search proxy (API key stays server-side) ──
     if (path === "/search" && req.method === "GET") {
@@ -945,7 +945,7 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     const detail = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.error("[v31] unhandled:", detail);
-    return json({ error: "Internal server error", detail, version: 31 }, 500);
+    console.error("[v33] unhandled:", detail);
+    return json({ error: "Internal server error", detail, version: 33 }, 500);
   }
 });
