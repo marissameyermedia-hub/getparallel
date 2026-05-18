@@ -261,11 +261,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
 
   // Expose open() so the compose bar icon can trigger scheduling without a banner
   useImperativeHandle(ref, () => ({
-    open: () => {
-      if (panel === 'trigger' || panel === 'dismissed' || panel === 'confirmed') {
-        setPanel('schedule');
-      }
-    },
+    open: () => setPanel('schedule'),
     dismiss: () => {
       if (['quick-review', 'schedule', 'filter', 'times'].includes(panel)) {
         setPanel('trigger');
