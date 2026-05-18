@@ -1359,10 +1359,10 @@ export function MessagingView({
           {featureDateAgent && (
             <button
               onClick={() => datePlannerRef.current?.open()}
-              className="flex-shrink-0 p-2 text-[#C0BAC8] hover:text-[#7B5EA7] transition-colors"
+              className="flex-shrink-0 p-2 rounded-full text-[#7B5EA7] hover:bg-[#EDE8F8] active:scale-95 transition-all"
               aria-label="Schedule a date"
             >
-              <CalendarClock size={18} aria-hidden="true" />
+              <CalendarClock size={20} aria-hidden="true" />
             </button>
           )}
           <div className={`flex-1 rounded-full border px-3.5 py-2 transition-colors ${
