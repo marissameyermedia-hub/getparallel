@@ -1398,6 +1398,7 @@ function App() {
             phone={phoneToVerify}
             accessToken={accessToken || ''}
             onVerified={() => setCurrentView('onboarding')}
+            onSkip={() => setCurrentView('onboarding')}
             onBack={async () => { await supabase.auth.signOut(); resetAppState(); }}
           />
         )}
