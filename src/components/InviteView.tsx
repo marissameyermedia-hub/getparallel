@@ -449,6 +449,9 @@ export function InviteView({ onBack }: InviteViewProps) {
           <p className="text-sm text-gray-600 leading-relaxed">
             A ripple is someone who joined the matching pool because of you — directly or through someone you referred. Every real person who completes their profile makes the pool better for everyone.
           </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Your count updates once someone completes their profile.
+          </p>
         </div>
 
       </div>
