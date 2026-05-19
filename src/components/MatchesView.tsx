@@ -199,7 +199,7 @@ export function MatchesView({
 
           {/* TikTok */}
           <a
-            href="https://tiktok.com/@parallelvip"
+            href="https://tiktok.com/@parallel_vip"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Parallel on TikTok"
