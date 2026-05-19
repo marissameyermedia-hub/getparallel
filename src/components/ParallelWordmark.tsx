@@ -27,19 +27,17 @@ export function ParallelWordmark({
   sizeClassName = 'text-xl',
   className = '',
 }: ParallelWordmarkProps) {
-  const letterColor = variant === 'dark' ? 'text-parallel-cream' : 'text-parallel-void';
-  // Left slash = darker purple, right slash = lighter violet — per brand logo spec.
-  const slash1Color = variant === 'dark' ? 'text-parallel-purple' : 'text-parallel-purple';
-  const slash2Color = variant === 'dark' ? 'text-parallel-soft-violet' : 'text-parallel-soft-violet';
+  const letterColor = variant === 'dark' ? '#F5F2EE' : '#0D0D0F';
 
   return (
     <span
-      className={`inline-flex items-baseline font-bold tracking-tight ${sizeClassName} ${letterColor} ${className}`}
+      className={`inline-flex items-baseline ${sizeClassName} ${className}`}
+      style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 800, letterSpacing: '0.08em', color: letterColor }}
       aria-label="Parallel"
     >
       <span aria-hidden="true">PARA</span>
-      <span aria-hidden="true" className={slash1Color}>/</span>
-      <span aria-hidden="true" className={slash2Color}>/</span>
+      <span aria-hidden="true" style={{ color: '#7B5EA7' }}>/</span>
+      <span aria-hidden="true" style={{ color: '#A98FD0' }}>/</span>
       <span aria-hidden="true">EL.</span>
     </span>
   );
