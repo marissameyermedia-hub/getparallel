@@ -1,3 +1,5 @@
+import { ParallelWordmark } from './ParallelWordmark';
+
 // AppFooter — required for two legal reasons:
 // 1. WA My Health MY Data Act (MHMDA) — Consumer Health Data Privacy Policy must be
 //    linked SEPARATELY from the general Privacy Policy on the homepage and app entry
@@ -20,7 +22,7 @@ export function AppFooter({ onNavigate }: AppFooterProps) {
       <div className="max-w-2xl mx-auto px-6 py-6">
 
         <p className="text-center mb-4">
-          <span className="text-sm font-semibold tracking-tight text-parallel-void">PARA//EL.</span>
+          <ParallelWordmark variant="light" sizeClassName="text-sm" />
           <span className="block text-xs text-gray-500 mt-1">© {new Date().getFullYear()} PARALLEL VIP LLC · getparallel.vip</span>
         </p>
 

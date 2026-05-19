@@ -1,23 +1,12 @@
-// PARA//EL. wordmark — pre-app brand mark per brand book (April 30, 2026).
-// Used on landing, sign-in, sign-up, phone verification, onboarding,
-// password reset, ads, emails — anywhere a user encounters Parallel
-// before they're inside the app.
-//
-// In-app surfaces (nav bar, etc.) use the P// circle mark instead — never
-// this wordmark.
-//
-// Rules (locked):
-//   - The // is always Parallel Purple #7B5EA7 on light backgrounds and
-//     Soft Violet #A98FD0 on dark/Void backgrounds.
-//   - All other letterforms are Void #0D0D0F on light, Cream #F5F2EE on dark.
-//   - The trailing period . is part of the logo. Never drop it.
-//   - All caps. Never sentence case.
-//   - No taglines, icons, or extra elements appended.
+// PARA//EL. wordmark — pre-app brand mark (locked May 17, 2026).
+// Thin wrapper that accepts Tailwind sizeClassName for backward-compat with
+// existing callers while delegating all brand-spec CSS to inline styles.
+// Canonical spec: Inter 800, 0.08em letter-spacing, antialiased.
+// In-app nav uses ParaelCircle, not this wordmark.
 
 interface ParallelWordmarkProps {
-  /** Pick the variant that matches the surface this sits on. */
   variant?: 'light' | 'dark';
-  /** Tailwind text-size class. Default: text-xl */
+  /** Tailwind text-size class, e.g. "text-xl". Default: "text-xl" */
   sizeClassName?: string;
   className?: string;
 }
@@ -27,16 +16,24 @@ export function ParallelWordmark({
   sizeClassName = 'text-xl',
   className = '',
 }: ParallelWordmarkProps) {
-  const letterColor = variant === 'dark' ? 'text-parallel-cream' : 'text-parallel-void';
-  const slashColor = variant === 'dark' ? 'text-parallel-soft-violet' : 'text-parallel-purple';
+  const fg    = variant === 'dark' ? '#FFFFFF' : '#0D0D0F';
+  const slash = variant === 'dark' ? '#A98FD0' : '#7B5EA7';
 
   return (
     <span
-      className={`inline-flex items-baseline font-bold tracking-tight ${sizeClassName} ${letterColor} ${className}`}
+      className={`inline-flex items-baseline ${sizeClassName} ${className}`}
+      style={{
+        fontFamily: 'Inter, -apple-system, sans-serif',
+        fontWeight: 800,
+        letterSpacing: '0.08em',
+        lineHeight: 1,
+        WebkitFontSmoothing: 'antialiased',
+        color: fg,
+      }}
       aria-label="Parallel"
     >
       <span aria-hidden="true">PARA</span>
-      <span aria-hidden="true" className={slashColor}>//</span>
+      <span aria-hidden="true" style={{ color: slash }}>//</span>
       <span aria-hidden="true">EL.</span>
     </span>
   );

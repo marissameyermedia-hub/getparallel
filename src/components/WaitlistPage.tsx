@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 import { WAITLIST_FUNCTION_URL } from '../utils/supabase/client';
+import { ParallelWordmark } from './ParallelWordmark';
 
 interface WaitlistPageProps {
   onNavigate: (view: string) => void;
@@ -141,9 +142,7 @@ export function WaitlistPage({ onNavigate }: WaitlistPageProps) {
         <div className="w-full max-w-md">
           {/* Wordmark */}
           <div className="mb-10 text-center">
-            <span className="text-2xl font-semibold tracking-tight text-[#0D0D0F]">
-              PARA<span className="text-[#7B5EA7]">//</span>EL
-            </span>
+            <ParallelWordmark variant="light" sizeClassName="text-2xl" />
           </div>
 
           <h1 className="text-3xl md:text-4xl font-semibold text-[#0D0D0F] tracking-tight leading-[1.1] mb-4">

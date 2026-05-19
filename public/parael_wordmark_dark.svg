@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 80" role="img" aria-label="Parallel">
+  <!-- PARA//EL. wordmark — dark mode — locked spec May 17, 2026 -->
+  <!-- White #FFFFFF letters · Soft Violet #A98FD0 slashes -->
+  <!-- Inter 800 · 0.08em letter-spacing -->
+  <text
+    x="0"
+    y="66"
+    font-family="Inter,-apple-system,BlinkMacSystemFont,sans-serif"
+    font-weight="800"
+    font-size="80"
+    letter-spacing="6.4"
+    fill="#FFFFFF"
+  >PARA<tspan fill="#A98FD0">//</tspan>EL.</text>
+</svg>
