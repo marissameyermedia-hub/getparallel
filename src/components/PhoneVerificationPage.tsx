@@ -22,6 +22,7 @@ interface PhoneVerificationPageProps {
   // on this page with it already entered.
   phone?: string;
   onVerified: (phone: string, smsConsent: boolean) => void;
+  onSkip?: () => void;
   onBack?: () => void;
 }
 
@@ -33,7 +34,7 @@ const SMS_CONSENT_TEXT =
 
 const SMS_CONSENT_VERSION = 'v1-2026-04';
 
-export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onBack }: PhoneVerificationPageProps) {
+export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVerified, onSkip, onBack }: PhoneVerificationPageProps) {
   const [step, setStep] = useState<'enter' | 'verify'>('enter');
   const [phone, setPhone] = useState(() => initialPhone ? formatInitialPhone(initialPhone) : '');
   const [code, setCode] = useState('');
@@ -46,6 +47,7 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
   // backend never returns this field. It only fires if env vars somehow
   // aren't loaded — keeps us unblocked rather than locking out a tester.
   const [betaOtp, setBetaOtp] = useState<string | null>(null);
+  const [isSkipping, setIsSkipping] = useState(false);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -165,6 +167,26 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
     }
   };
 
+  const skipVerification = async () => {
+    if (!onSkip) return;
+    setIsSkipping(true);
+    try {
+      const token = await getAuthToken();
+      await fetch(`${MISC_FUNCTION_URL}/auth/skip-phone-verification`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': publicAnonKey,
+        },
+      });
+    } catch {
+      // Non-blocking — proceed to onboarding regardless
+    } finally {
+      setIsSkipping(false);
+    }
+    onSkip();
+  };
+
   return (
     <div className="min-h-screen bg-parallel-cream flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
@@ -267,10 +289,20 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
               )}
             </button>
 
+            {onSkip && (
+              <button
+                onClick={skipVerification}
+                disabled={isSending || isSkipping}
+                className="w-full text-xs text-gray-400 hover:text-gray-600 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isSkipping ? 'Skipping…' : 'Skip for now'}
+              </button>
+            )}
+
             {onBack && (
               <button
                 onClick={onBack}
-                disabled={isSending}
+                disabled={isSending || isSkipping}
                 className="w-full text-xs text-gray-500 hover:text-gray-800 mt-2"
               >
                 ← Back

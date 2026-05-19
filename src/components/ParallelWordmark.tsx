@@ -16,8 +16,7 @@ export function ParallelWordmark({
   sizeClassName = 'text-xl',
   className = '',
 }: ParallelWordmarkProps) {
-  const fg    = variant === 'dark' ? '#FFFFFF' : '#0D0D0F';
-  const slash = variant === 'dark' ? '#A98FD0' : '#7B5EA7';
+  const fg = variant === 'dark' ? '#FFFFFF' : '#0D0D0F';
 
   return (
     <span
@@ -33,7 +32,8 @@ export function ParallelWordmark({
       aria-label="Parallel"
     >
       <span aria-hidden="true">PARA</span>
-      <span aria-hidden="true" style={{ color: slash }}>//</span>
+      <span aria-hidden="true" style={{ color: '#7B5EA7' }}>/</span>
+      <span aria-hidden="true" style={{ color: '#A98FD0' }}>/</span>
       <span aria-hidden="true">EL.</span>
     </span>
   );

@@ -1,0 +1,1119 @@
+{
+  "version": "1",
+  "algorithm_version": "100",
+  "description": "Regression test cases for run-matching. All 20 must pass before any deploy.",
+  "notes": [
+    "Each test case inserts two seed profiles into the live DB, runs matching for user A, checks if B appears in matches, then deletes the seeds.",
+    "All profiles use is_seed_account=true. Run when real traffic is low (seeds are briefly visible in candidate pool).",
+    "Option strings must match canonical questionnaire exactly — if a test breaks after a questionnaire update, verify the strings still match."
+  ],
+  "test_cases": [
+    {
+      "id": "TC-01",
+      "description": "Perfect match — both secure attachment, liberal, want kids, compatible lifestyle. Should produce high score.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC01",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Spiritual but not religious",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.8": "No pets",
+          "3.9": ["Hiking", "Yoga", "Reading"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "Occasional drinking is fine",
+          "11.2": "Prefer non-smoker",
+          "11.6": "I love pets — any pet is fine",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC01",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Agnostic",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.8": "No pets",
+          "3.9": ["Hiking", "Yoga", "Running"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "Occasional drinking is fine",
+          "11.2": "Prefer non-smoker",
+          "11.6": "I love pets — any pet is fine",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "MATCH",
+      "expected_reason": null,
+      "score_min": 70,
+      "score_max": 100
+    },
+    {
+      "id": "TC-02",
+      "description": "Dealbreaker — drinking. A marks 'Must not drink' as dealbreaker. B drinks socially. A should reject B.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC02",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Never drink",
+          "3.3": "Never",
+          "11.1": "Must not drink",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": ["11.1"]
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC02",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Socially — a few times a month",
+          "3.3": "Never",
+          "11.1": "Regular drinking is fine",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "dealbreaker",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-03",
+      "description": "Dealbreaker — smoking. A marks 'Must not smoke' as dealbreaker. B smokes regularly.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC03",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "11.1": "No preference",
+          "11.2": "Must not smoke",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": ["11.2"]
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC03",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Regularly",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "dealbreaker",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-04",
+      "description": "Dealbreaker — pet allergies. A is allergic to pets (dealbreaker). B has a dog.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC04",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.8": "No pets",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "11.6": "I cannot be around pets due to allergies",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": ["11.6"]
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC04",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.8": "Dog(s)",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "11.6": "I love pets — any pet is fine",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "dealbreaker",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-05",
+      "description": "Hard filter — distance. A is in NYC with 50-mile max. B is in Los Angeles (~2451 miles away).",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC05",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 50 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC05",
+          "date_of_birth": "1990-03-20",
+          "latitude": 34.0522,
+          "longitude": -118.2437
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "hard_filter",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-06",
+      "description": "Hard filter — age range. A is 25 years old. B only wants to date someone 35-45.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC06",
+          "date_of_birth": "2001-01-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 30, "max": 50},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC06",
+          "date_of_birth": "1986-05-10",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 35, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "hard_filter",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-07",
+      "description": "Hard filter — gender mismatch. A is a Man seeking Women. B is also a Man. B's gender is not in A's seek list.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC07",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC07",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "hard_filter",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-08",
+      "description": "Score floor — fundamentally incompatible. Anxious+avoidant attachment, opposite views on kids and religion, no dealbreakers. Harmonic should fall below 40.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC08",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Feel uneasy and find myself checking my phone",
+          "7.1b": "It feels exciting but also makes me nervous",
+          "8.2": "Definitely yes",
+          "6.2": "Christian",
+          "12.2": "Similar beliefs to mine"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC08",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Feel irritated and start to pull back",
+          "7.1b": "It starts feeling like too much and I need space",
+          "8.2": "Definitely not",
+          "6.2": "Atheist",
+          "12.2": "Prefer secular / non-religious"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "score_floor",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-09",
+      "description": "Asymmetric dealbreaker — B's dealbreaker rejects A. A smokes occasionally. B marks smoking as dealbreaker. A has no dealbreakers.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC09",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Socially / occasionally",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC09",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "11.1": "No preference",
+          "11.2": "Must not smoke",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": ["11.2"]
+      },
+      "expected": "REJECTED",
+      "expected_reason": "dealbreaker",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-10",
+      "description": "Religion preference — both open. A is Christian, B is Agnostic, but both mark 'Open to different beliefs'. No dealbreakers.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC10",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Christian",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC10",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Agnostic",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "MATCH",
+      "expected_reason": null,
+      "score_min": 50,
+      "score_max": 100
+    },
+    {
+      "id": "TC-11",
+      "description": "Religion dealbreaker — strict. A marks 'Similar beliefs to mine' as dealbreaker. A is Christian, B is Atheist.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC11",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Christian",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Similar beliefs to mine"
+        },
+        "dealbreaker_ids": ["12.2"]
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC11",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Atheist",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "dealbreaker",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-12",
+      "description": "Attachment — anxious+avoidant. Both should match but with 10% score penalty. Score should be lower than secure+secure (TC-13).",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC12",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Spiritual but not religious",
+          "7.1a": "Feel uneasy and find myself checking my phone",
+          "7.1b": "It feels exciting but also makes me nervous",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.9": ["Hiking", "Yoga", "Reading"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC12",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Agnostic",
+          "7.1a": "Feel irritated and start to pull back",
+          "7.1b": "It starts feeling like too much and I need space",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.9": ["Hiking", "Yoga", "Running"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "MATCH",
+      "expected_reason": "anxious_avoidant_penalty",
+      "score_min": 40,
+      "score_max": 75
+    },
+    {
+      "id": "TC-13",
+      "description": "Attachment — secure+secure. High scores across the board. Should produce a higher score than TC-12 (no penalty).",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC13",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Spiritual but not religious",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.9": ["Hiking", "Yoga", "Reading"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC13",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Agnostic",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.9": ["Hiking", "Yoga", "Running"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "MATCH",
+      "expected_reason": null,
+      "score_min": 70,
+      "score_max": 100
+    },
+    {
+      "id": "TC-14",
+      "description": "Hard filter — politics incompatible. A is Very liberal. B only wants Conservative/Very conservative partners.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC14",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Very liberal",
+          "12.1": ["No preference"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC14",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Conservative",
+          "12.1": ["Conservative", "Very conservative"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "hard_filter",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-15",
+      "description": "Missing answers — B has answered very few questions (only hard filter fields). Should still match (missing = skipped).",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC15",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC15",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Moderate",
+          "12.1": ["No preference"]
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "MATCH",
+      "expected_reason": null,
+      "score_min": 40,
+      "score_max": 100
+    },
+    {
+      "id": "TC-16",
+      "description": "Adventure partner — fails. A marks Q3.11 as dealbreaker (wants adventure partner). B has no active hobbies and insufficient shared hobbies.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC16",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.9": ["Hiking", "Yoga", "Reading"],
+          "3.11": "A true adventure partner — I want someone who actively does life with me",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": ["3.11"]
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC16",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "3.9": ["Cooking", "Movies", "Board games"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "dealbreaker",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-17",
+      "description": "Adventure partner — passes via active hobbies. A marks Q3.11 as dealbreaker. Both have 3+ active hobbies (no shared ones needed).",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC17",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Spiritual but not religious",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.9": ["Hiking", "Running", "Cycling"],
+          "3.11": "A true adventure partner — I want someone who actively does life with me",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": ["3.11"]
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC17",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "6.2": "Agnostic",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Definitely yes",
+          "3.9": ["Skiing", "Swimming", "Tennis"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "MATCH",
+      "expected_reason": null,
+      "score_min": 50,
+      "score_max": 100
+    },
+    {
+      "id": "TC-18",
+      "description": "Moderate compatibility — passes all thresholds but with moderate scores. Should match with score 40-65.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC18",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["No preference"],
+          "6.2": "Christian",
+          "7.1a": "Feel uneasy and find myself checking my phone",
+          "7.1b": "It feels exciting but also makes me nervous",
+          "8.2": "Definitely yes",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.9": ["Hiking", "Yoga", "Reading"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC18",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Moderate",
+          "12.1": ["No preference"],
+          "6.2": "Agnostic",
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "8.2": "Open to it if my partner wants them",
+          "3.1": "Rarely — special occasions only",
+          "3.3": "Never",
+          "3.9": ["Running", "Cooking", "Movies"],
+          "3.11": "A healthy mix — some shared interests, plenty of independence",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "MATCH",
+      "expected_reason": null,
+      "score_min": 40,
+      "score_max": 70
+    },
+    {
+      "id": "TC-19",
+      "description": "Hard filter — height range. A is 5'2\" (62in). B's height preference minimum is 5'6\" (66in). A's height falls outside B's range.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC19",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "1.5": {"feet": 5, "inches": 2, "unit": "imperial"},
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC19",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 100 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "1.5": {"feet": 5, "inches": 10, "unit": "imperial"},
+          "9.3": {"minFeet": 5, "minInches": 6, "maxFeet": 6, "maxInches": 4},
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "hard_filter",
+      "score_min": null,
+      "score_max": null
+    },
+    {
+      "id": "TC-20",
+      "description": "Dealbreaker — distance reciprocity. A marks distance as dealbreaker. A is open nationwide (3000mi). B is only open to 25-mile radius. B is more restrictive, so A's dealbreaker fires.",
+      "a": {
+        "profile": {
+          "name": "Seed-A-TC20",
+          "date_of_birth": "1992-06-15",
+          "latitude": 40.7128,
+          "longitude": -74.0060
+        },
+        "answers": {
+          "1.1": "Woman",
+          "9.1": ["Men"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Anywhere within my country",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": ["9.4"]
+      },
+      "b": {
+        "profile": {
+          "name": "Seed-B-TC20",
+          "date_of_birth": "1990-03-20",
+          "latitude": 40.6892,
+          "longitude": -74.0445
+        },
+        "answers": {
+          "1.1": "Man",
+          "9.1": ["Women"],
+          "9.2": {"min": 25, "max": 45},
+          "9.4": "Within 25 miles",
+          "6.1": "Liberal",
+          "12.1": ["Liberal", "Moderate", "Very liberal"],
+          "7.1a": "Assume they're busy and don't stress about it",
+          "7.1b": "It feels natural — I lean into it",
+          "11.1": "No preference",
+          "11.2": "No preference",
+          "12.2": "Open to different beliefs"
+        },
+        "dealbreaker_ids": []
+      },
+      "expected": "REJECTED",
+      "expected_reason": "dealbreaker",
+      "score_min": null,
+      "score_max": null
+    }
+  ]
+}
