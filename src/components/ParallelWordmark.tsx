@@ -28,7 +28,9 @@ export function ParallelWordmark({
   className = '',
 }: ParallelWordmarkProps) {
   const letterColor = variant === 'dark' ? 'text-parallel-cream' : 'text-parallel-void';
-  const slashColor = variant === 'dark' ? 'text-parallel-soft-violet' : 'text-parallel-purple';
+  // Left slash = darker purple, right slash = lighter violet — per brand logo spec.
+  const slash1Color = variant === 'dark' ? 'text-parallel-purple' : 'text-parallel-purple';
+  const slash2Color = variant === 'dark' ? 'text-parallel-soft-violet' : 'text-parallel-soft-violet';
 
   return (
     <span
@@ -36,7 +38,8 @@ export function ParallelWordmark({
       aria-label="Parallel"
     >
       <span aria-hidden="true">PARA</span>
-      <span aria-hidden="true" className={slashColor}>//</span>
+      <span aria-hidden="true" className={slash1Color}>/</span>
+      <span aria-hidden="true" className={slash2Color}>/</span>
       <span aria-hidden="true">EL.</span>
     </span>
   );
