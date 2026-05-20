@@ -178,7 +178,7 @@ export function MatchCard({
           <button
             onClick={handleViewProfileClick}
             aria-label={`View ${user.name}'s full profile`}
-            className="w-full py-2.5 rounded-full border-2 border-[#7B5EA7] text-[#7B5EA7] text-sm font-medium hover:bg-[#7B5EA7]/5 transition-colors"
+            className="w-full py-2.5 rounded-full bg-parallel-void text-white text-sm font-medium hover:bg-parallel-void/90 transition-colors active:opacity-80"
           >
             View full profile →
           </button>
