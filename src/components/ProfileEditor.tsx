@@ -441,13 +441,12 @@ export function ProfileEditor({
   // ── Editor view ──────────────────────────────────────────────
   // KEY FIX: Use a single scrollable page with no nested scroll containers.
   // Bottom padding ensures content is never hidden under the fixed save button.
-  // No overflow-hidden on any parent div — keyboard pushes layout naturally.
   return (
-    <div className="bg-parallel-cream min-h-screen">
-      <div className="max-w-[390px] mx-auto bg-parallel-cream">
+    <div className="bg-parallel-cream flex flex-col h-[100dvh]">
+      <div className="max-w-[390px] mx-auto bg-parallel-cream flex flex-col flex-1 w-full min-h-0">
 
-        {/* Sticky header */}
-        <div className="sticky top-0 bg-parallel-cream z-10 border-b border-gray-100">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-parallel-cream z-10 border-b border-gray-100">
           <div className="flex items-center justify-between px-4 py-3">
             {onBack ? (
               <button onClick={onBack} aria-label="Back to account" className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-all">
@@ -463,9 +462,8 @@ export function ProfileEditor({
           </div>
         </div>
 
-        {/* All content in a single, naturally scrolling div */}
-        {/* pb-32 ensures the save button never covers the bottom content */}
-        <div className="px-6 pt-4 pb-36 space-y-6">
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6 space-y-6" style={{ WebkitOverflowScrolling: 'touch' }}>
 
           {/* Photos */}
           <div>
@@ -664,9 +662,9 @@ export function ProfileEditor({
 
         </div>
 
-        {/* Fixed save button at bottom — constrained to match content max-width */}
-        <div className="fixed bottom-0 left-0 right-0 z-20">
-          <div className="max-w-[390px] mx-auto bg-parallel-cream border-t border-gray-100 px-6 py-4 space-y-2">
+        {/* Sticky save button — anchored to bottom of flex container, stays above keyboard */}
+        <div className="flex-shrink-0">
+          <div className="bg-parallel-cream border-t border-gray-100 px-6 py-4 space-y-2" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
             <button
               onClick={handleComplete}
               disabled={!canSave || isUploading || isSaving}
