@@ -127,7 +127,17 @@ function App() {
     confirmed: boolean;
     bothConfirmed: boolean;
   }>>({});
-  const [passSheet, setPassSheet] = useState<{ matchId: string } | null>(null);
+  const [passSheet, setPassSheet] = useState<{
+    matchId: string;
+    snapshot: {
+      compatibility_score: number;
+      matched_age: number | null;
+      distance_miles: number | null;
+      dimension_scores: Record<string, number> | null;
+      why_you_matched: string[] | null;
+      shared_hobbies: string[] | null;
+    } | null;
+  } | null>(null);
   const [goAgainPrompt, setGoAgainPrompt] = useState<{ matchId: string; matchName: string } | null>(null);
   const [appFeedbackSheet, setAppFeedbackSheet] = useState(false);
   const [npsSheet, setNpsSheet] = useState(false);
@@ -944,11 +954,23 @@ function App() {
   };
 
   const handlePassAction = (matchUserId: string) => {
-    setPassSheet({ matchId: matchUserId });
+    const match = matches.find(m => m.user.id === matchUserId);
+    const snapshot = match ? {
+      compatibility_score: match.compatibilityScore,
+      matched_age: match.user.age ?? null,
+      distance_miles: match.distanceMiles ?? null,
+      dimension_scores: (match.matchDetails?.breakdown && Object.keys(match.matchDetails.breakdown).length > 0)
+        ? (match.matchDetails.breakdown as Record<string, number>)
+        : null,
+      why_you_matched: (match.matchDetails?.whyYouMatched?.length ?? 0) > 0 ? match.matchDetails.whyYouMatched : null,
+      shared_hobbies: (match.matchDetails?.sharedHobbies?.length ?? 0) > 0 ? match.matchDetails.sharedHobbies : null,
+    } : null;
+    setPassSheet({ matchId: matchUserId, snapshot });
   };
 
   const handlePassFeedbackSubmit = async (passReasons: string[], wouldAdjust: string[]) => {
     const matchId = passSheet?.matchId;
+    const snapshot = passSheet?.snapshot ?? null;
     setPassSheet(null);
     if (!matchId) return;
     setDeclinedMatchIds(prev => {
@@ -973,6 +995,7 @@ function App() {
           feedbackType: 'pass_reason',
           passReasons,
           wouldAdjust,
+          ...(snapshot ? { snapshot } : {}),
         }),
       }).catch(err => console.error('Feedback API failed:', err));
       // Recompute matching weights from accumulated feedback (fire-and-forget)
