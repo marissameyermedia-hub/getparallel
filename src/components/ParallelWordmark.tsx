@@ -27,9 +27,11 @@ export function ParallelWordmark({
   sizeClassName = 'text-xl',
   className = '',
 }: ParallelWordmarkProps) {
+  // transparent-dark = black text (for light/white backgrounds)
+  // transparent-light = white text (for dark backgrounds)
   const src = variant === 'dark'
-    ? '/PARA-EL-transparent-dark.png'
-    : '/PARA-EL-transparent-light.png';
+    ? '/PARA-EL-transparent-light.png'
+    : '/PARA-EL-transparent-dark.png';
 
   const heightClass = SIZE_HEIGHT[sizeClassName] ?? 'h-5';
 
