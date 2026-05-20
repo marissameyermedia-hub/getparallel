@@ -5,9 +5,16 @@ import {
   ChevronRight,
   ArrowLeft,
   MapPin,
+  Activity,
+  Clock,
+  FileText,
 } from 'lucide-react';
 import { AdminCaseDetail } from './AdminCaseDetail';
-import { CityLaunchDashboard } from './CityLaunchDashboard';
+import { AdminCitiesOverview } from './AdminCitiesOverview';
+import { AdminCityDetail } from './AdminCityDetail';
+import { AdminReports } from './AdminReports';
+import { AdminMatchQuality } from './AdminMatchQuality';
+import { AdminReleases } from './AdminReleases';
 import { AdminPulsePanel } from './AdminPulsePanel';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
@@ -64,8 +71,11 @@ function apiCaseToSafetyCase(c: any): SafetyCase {
   };
 }
 
+type Tab = 'cities' | 'reports' | 'match-quality' | 'releases' | 'trust-safety';
+
 export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'city-launch' | 'trust-safety'>('city-launch');
+  const [activeTab, setActiveTab] = useState<Tab>('cities');
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [cases, setCases] = useState<SafetyCase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -158,6 +168,16 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
     );
   }
 
+  if (selectedCity) {
+    return (
+      <AdminCityDetail
+        cityNormalized={selectedCity}
+        onBack={() => setSelectedCity(null)}
+        accessToken={accessToken}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-parallel-cream border-b border-gray-200 sticky top-0 z-10">
@@ -177,33 +197,31 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
           </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1">
-            <button
-              onClick={() => setActiveTab('city-launch')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'city-launch'
-                  ? 'bg-parallel-purple text-parallel-cream'
-                  : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              <MapPin size={14} />
-              City Launch
-            </button>
-            <button
-              onClick={() => setActiveTab('trust-safety')}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === 'trust-safety'
-                  ? 'bg-parallel-purple text-parallel-cream'
-                  : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              <AlertTriangle size={14} />
-              Trust & Safety
-              {!isLoading && statusCounts.open + statusCounts['under-review'] > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1 font-semibold">
-                  {statusCounts.open + statusCounts['under-review']}
-                </span>
-              )}
-            </button>
+            {([
+              { id: 'cities',        label: 'Cities',        Icon: MapPin },
+              { id: 'reports',       label: 'Reports',       Icon: FileText },
+              { id: 'match-quality', label: 'Match Quality', Icon: Activity },
+              { id: 'releases',      label: 'Releases',      Icon: Clock },
+              { id: 'trust-safety',  label: 'Trust & Safety', Icon: AlertTriangle, badge: !isLoading && statusCounts.open + statusCounts['under-review'] > 0 ? statusCounts.open + statusCounts['under-review'] : 0 },
+            ] as const).map(({ id, label, Icon, badge }) => (
+              <button
+                key={id}
+                onClick={() => { setActiveTab(id as Tab); setSelectedCity(null); }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  activeTab === id
+                    ? 'bg-parallel-purple text-parallel-cream'
+                    : 'bg-parallel-cream text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                <Icon size={14} />
+                {label}
+                {badge != null && badge > 0 && (
+                  <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 ml-1 font-semibold">
+                    {badge}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
 
           {activeTab === 'trust-safety' && (
@@ -252,7 +270,15 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
         </div>
       </div>
 
-      {activeTab === 'city-launch' && <CityLaunchDashboard />}
+      {activeTab === 'cities' && (
+        <AdminCitiesOverview onSelectCity={(city) => setSelectedCity(city)} />
+      )}
+
+      {activeTab === 'reports' && <AdminReports />}
+
+      {activeTab === 'match-quality' && <AdminMatchQuality accessToken={accessToken} />}
+
+      {activeTab === 'releases' && <AdminReleases />}
 
       {activeTab === 'trust-safety' && (
         <>
