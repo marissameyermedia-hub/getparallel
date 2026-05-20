@@ -30,7 +30,7 @@ const MOTIVATIONAL_COPY: Record<number, string> = {
 
 export function ChapterTitle({ title, subtitle, chapterNumber, totalChapters, onContinue, onBack, canGoBack }: ChapterTitleProps) {
   const total = totalChapters || 13;
-  const progressPercent = Math.round((chapterNumber / total) * 100);
+  const progressPercent = Math.round(((chapterNumber - 1) / total) * 100);
   const motivationalText = MOTIVATIONAL_COPY[chapterNumber] || 'Keep going — great matches await.';
 
   return (
