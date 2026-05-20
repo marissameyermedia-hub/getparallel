@@ -177,9 +177,8 @@ export function InboxView({
   // Waiting mutuals (no messages) live in the row at top, not the list.
   const activeConversations = localMessages
     .filter(m => m.mutualMatch === true && m.hasMessages !== false)
-    .filter(m => m.lastMessage && m.lastMessage !== 'You matched! Say hello 👋');
-  // Secondary safety filter: if hasMessages flag is missing (older clients),
-  // fall back to checking that the placeholder text isn't there.
+    .filter(m => m.lastMessage && m.lastMessage !== 'You matched! Say hello 👋')
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const unreadCount = activeConversations.filter(m => m.unread).length;
 
