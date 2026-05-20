@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
 import { EMAIL_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -147,6 +148,143 @@ export function SetupChecklist({
     }
   };
 
+  // ── Build item list, sort done → top, pending → bottom ───────────
+  type ChecklistItem = { key: string; done: boolean; jsx: ReactNode };
+
+  const allItems: ChecklistItem[] = [
+    {
+      key: 'profile',
+      done: true,
+      jsx: (
+        <li key="profile" className="flex items-center gap-3 px-4 py-3">
+          <Dot done />
+          <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">Profile complete</span>
+        </li>
+      ),
+    },
+    {
+      key: 'email',
+      done: item2Done,
+      jsx: item2Done ? (
+        <li key="email" className="flex items-center gap-3 px-4 py-3">
+          <Dot done />
+          <span className={`flex-1 text-sm ${emailJustVerified ? 'text-green-700 font-medium' : 'text-gray-500 line-through decoration-gray-300'}`}>
+            {emailJustVerified ? 'Email verified' : 'Verify your email'}
+          </span>
+        </li>
+      ) : (
+        <li key="email">
+          <button
+            type="button"
+            onClick={handleResendEmail}
+            disabled={emailSending}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors disabled:hover:bg-transparent disabled:cursor-default"
+            aria-label="Verify your email"
+          >
+            <Dot />
+            <span className="flex-1 min-w-0">
+              <span className="text-sm block text-gray-900">Verify your email</span>
+              <span className="text-xs block mt-0.5 leading-snug">
+                {emailSending
+                  ? <span className="text-gray-500">Sending verification email…</span>
+                  : emailError
+                    ? <span className="text-red-700">{emailError}</span>
+                    : <span className="text-gray-500">Tap to resend the verification link</span>}
+              </span>
+            </span>
+            {!emailSending
+              ? <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
+              : <Spinner />}
+          </button>
+        </li>
+      ),
+    },
+    {
+      key: 'notifications',
+      done: item3Done,
+      jsx: item3Done ? (
+        <li key="notifications" className="flex items-center gap-3 px-4 py-3">
+          <Dot done />
+          <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">Set notification preferences</span>
+        </li>
+      ) : (
+        <li key="notifications">
+          <button
+            type="button"
+            onClick={handleNotificationsTap}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+            aria-label="Set notification preferences"
+          >
+            <Dot />
+            <span className="flex-1 min-w-0">
+              <span className="text-sm block text-gray-900">Set notification preferences</span>
+              <span className="text-xs text-gray-500 block mt-0.5 leading-snug">Choose how to hear about new matches</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
+          </button>
+        </li>
+      ),
+    },
+    ...(item4Visible ? [{
+      key: 'subscribe',
+      done: item4Done,
+      jsx: item4Done ? (
+        <li key="subscribe" className="flex items-center gap-3 px-4 py-3">
+          <Dot done />
+          <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">Subscribe to see your matches</span>
+        </li>
+      ) : (
+        <li key="subscribe">
+          <button
+            type="button"
+            onClick={handleSubscribeTap}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+            aria-label="Subscribe to Parallel"
+          >
+            <Dot />
+            <span className="flex-1 min-w-0">
+              <span className="text-sm block text-gray-900">Subscribe to see your matches</span>
+              <span className="text-xs text-gray-500 block mt-0.5 leading-snug">Unlock your matches and start messaging</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
+          </button>
+        </li>
+      ),
+    }] : []),
+    ...(item5Visible ? [{
+      key: 'identity',
+      done: item5Done,
+      jsx: item5Done ? (
+        <li key="identity" className="flex items-center gap-3 px-4 py-3">
+          <Dot done />
+          <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">Verify your identity</span>
+        </li>
+      ) : (
+        <li key="identity">
+          <button
+            type="button"
+            onClick={handleVerificationTap}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+            aria-label="Verify your identity"
+          >
+            <Dot />
+            <span className="flex-1 min-w-0">
+              <span className="text-sm block text-gray-900">Verify your identity</span>
+              <span className="text-xs text-gray-500 block mt-0.5 leading-snug">Get a blue checkmark on your profile</span>
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
+          </button>
+        </li>
+      ),
+    }] : []),
+  ];
+
+  // Stable sort: done items first, pending items second. Preserves relative order within each group.
+  const sortedItems = [...allItems].sort((a, b) => {
+    if (a.done === b.done) return 0;
+    return a.done ? -1 : 1;
+  });
+
   // ── Render ────────────────────────────────────────────────────────
   return (
     <div className="max-w-md mx-auto px-4 pt-3" id="setup-checklist-card">
@@ -154,140 +292,8 @@ export function SetupChecklist({
         <div className="px-4 py-3 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900 text-[15px]">Your setup checklist</h2>
         </div>
-
         <ul className="divide-y divide-gray-100" role="list">
-
-          {/* 1. Profile complete — always ✓, decorative */}
-          <li className="flex items-center gap-3 px-4 py-3">
-            <Dot done />
-            <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
-              Profile complete
-            </span>
-          </li>
-
-          {/* 2. Verify email */}
-          {item2Done ? (
-            <li className="flex items-center gap-3 px-4 py-3">
-              <Dot done />
-              <span className={`flex-1 text-sm ${emailJustVerified ? 'text-green-700 font-medium' : 'text-gray-500 line-through decoration-gray-300'}`}>
-                {emailJustVerified ? 'Email verified' : 'Verify your email'}
-              </span>
-            </li>
-          ) : (
-            <li>
-              <button
-                type="button"
-                onClick={handleResendEmail}
-                disabled={emailSending}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors disabled:hover:bg-transparent disabled:cursor-default"
-                aria-label="Verify your email"
-              >
-                <Dot />
-                <span className="flex-1 min-w-0">
-                  <span className="text-sm block text-gray-900">Verify your email</span>
-                  <span className="text-xs block mt-0.5 leading-snug">
-                    {emailSending
-                      ? <span className="text-gray-500">Sending verification email…</span>
-                      : emailError
-                        ? <span className="text-red-700">{emailError}</span>
-                        : <span className="text-gray-500">Tap to resend the verification link</span>}
-                  </span>
-                </span>
-                {!emailSending
-                  ? <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
-                  : <Spinner />}
-              </button>
-            </li>
-          )}
-
-          {/* 3. Set notification preferences */}
-          {item3Done ? (
-            <li className="flex items-center gap-3 px-4 py-3">
-              <Dot done />
-              <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
-                Set notification preferences
-              </span>
-            </li>
-          ) : (
-            <li>
-              <button
-                type="button"
-                onClick={handleNotificationsTap}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                aria-label="Set notification preferences"
-              >
-                <Dot />
-                <span className="flex-1 min-w-0">
-                  <span className="text-sm block text-gray-900">Set notification preferences</span>
-                  <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                    Choose how to hear about new matches
-                  </span>
-                </span>
-                <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
-              </button>
-            </li>
-          )}
-
-          {/* 4. Subscribe — only visible when there are matches */}
-          {item4Visible && (
-            item4Done ? (
-              <li className="flex items-center gap-3 px-4 py-3">
-                <Dot done />
-                <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
-                  Subscribe to see your matches
-                </span>
-              </li>
-            ) : (
-              <li>
-                <button
-                  type="button"
-                  onClick={handleSubscribeTap}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                  aria-label="Subscribe to Parallel"
-                >
-                  <Dot />
-                  <span className="flex-1 min-w-0">
-                    <span className="text-sm block text-gray-900">Subscribe to see your matches</span>
-                    <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                      Unlock your matches and start messaging
-                    </span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
-                </button>
-              </li>
-            )
-          )}
-
-          {/* 5. Verify identity — only visible when subscribed + has matches */}
-          {item5Visible && (
-            item5Done ? (
-              <li className="flex items-center gap-3 px-4 py-3">
-                <Dot done />
-                <span className="flex-1 text-sm text-gray-500 line-through decoration-gray-300">
-                  Verify your identity
-                </span>
-              </li>
-            ) : (
-              <li>
-                <button
-                  type="button"
-                  onClick={handleVerificationTap}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-                  aria-label="Verify your identity"
-                >
-                  <Dot />
-                  <span className="flex-1 min-w-0">
-                    <span className="text-sm block text-gray-900">Verify your identity</span>
-                    <span className="text-xs text-gray-500 block mt-0.5 leading-snug">
-                      Get a blue checkmark on your profile
-                    </span>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" aria-hidden="true" />
-                </button>
-              </li>
-            )
-          )}
-
+          {sortedItems.map(item => item.jsx)}
         </ul>
       </div>
     </div>
