@@ -1452,7 +1452,6 @@ function App() {
             accessToken={accessToken}
             emailVerified={emailConfirmed}
             onOpenNotifications={() => setCurrentView('notifications')}
-            featureMatchExplainer={featureFlags['feature_match_explainer_enabled'] === true}
             onOpenFeedback={() => setAppFeedbackSheet(true)}
           />
         )}
