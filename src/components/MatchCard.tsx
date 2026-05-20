@@ -92,7 +92,7 @@ export function MatchCard({
       className="bg-parallel-cream rounded-2xl border-2 border-gray-200 overflow-hidden cursor-pointer transition-all active:scale-[0.99] active:bg-gray-50 hover:border-gray-300"
     >
       {/* Photo zone */}
-      <div className="relative aspect-[3/4] bg-gray-100">
+      <div className="relative aspect-[3/4] max-h-[52dvh] bg-gray-100">
         {!hasActivated ? (
           <div className="w-full h-full relative overflow-hidden">
             {primaryPhoto ? (
@@ -172,7 +172,7 @@ export function MatchCard({
           </button>
         </div>
       ) : (
-        <div className="p-5 space-y-4">
+        <div className="p-4 space-y-3">
 
           {/* View full profile — primary affordance, well above Pass/Like */}
           <button
@@ -182,11 +182,6 @@ export function MatchCard({
           >
             View full profile →
           </button>
-
-          {/* Bio */}
-          {user.bio && (
-            <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">{user.bio}</p>
-          )}
 
           {/* Pass + Like */}
           <div className="flex items-center gap-3 pt-1">
