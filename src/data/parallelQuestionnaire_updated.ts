@@ -198,7 +198,7 @@ export const parallelQuestionnaire: Section[] = [
       type: "LOCATION",
       tags: ["Profile Information"],
       weight: 0,
-      privacyNote: "Used for distance-based matching — not shown on your profile",
+      privacyNote: "Your city is shown on your profile",
       category: "Life Goals",
       optional: true,
     },
