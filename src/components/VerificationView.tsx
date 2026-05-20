@@ -232,12 +232,12 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-parallel-void rounded-full flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck size={36} className="text-parallel-cream" />
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: '#1D9BF0' }}>
+            <ShieldCheck size={36} className="text-white" />
           </div>
           <h1 className="text-3xl mb-3">Get verified</h1>
           <p className="text-gray-600 leading-relaxed">
-            A verified badge shows your matches you're a real person. It takes about 2 minutes.
+            Every Parallel user is ID-checked. A verified badge shows your matches you're who you say you are. It takes about 2 minutes.
           </p>
         </div>
 
