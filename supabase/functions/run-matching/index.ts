@@ -16,29 +16,32 @@
 //
 // History:
 //   v71  → archived in git history (was previously in _claude_v71_src table)
-//   v100 → current. Clean rewrite, replaced v71 directly. No v72-v99 exist.
+//   v100 → clean rewrite replacing v71. No v72-v99 exist.
+//   v101 → fix scoreReligion: both-open case now scores 80 instead of 45.
+//          Synced live release_status/shadow_matches logic into local file.
 // ─────────────────────────────────────────────────────────────────────────────
 // =============================================================================
-// run-matching v100 (deployed as run-matching, replacing v71)
+// run-matching v101
 // =============================================================================
-// Clean rewrite. Loads canonical questionnaire from public.matching_config at startup
-// so every option string matches the FE exactly.
+// Changes from v100:
+//   1. scoreReligion: when both users have "Open to different beliefs" in Q12.2,
+//      score returns 80 instead of bumping the baseline to 45. Rationale: if
+//      both parties explicitly say the difference doesn't matter, penalising them
+//      55 points for having different beliefs contradicts their own stated
+//      preference. The 12.2 question (scored at 90) already captures openness;
+//      6.2 should not double-penalise when openness is mutual.
 //
-// Behavior changes from v71:
-//   1. Q12.2 religion-preference dealbreaker now actually fires (was no-op).
-//   2. Single source of truth: canonical JSON drives cluster tables, hard
-//      filter pools, dealbreaker eligibility, pref->behavior pairs.
-//   3. FE/BE category drift impossible — categories come from canonical.
-//
-// To regenerate canonical: run scripts/build_canonical.py and upsert into
-// public.matching_config (key='canonical_questionnaire').
+// Inherited from live v100 (phase 0):
+//   - Candidate pool filtered to release_status IN ('released','released_paying')
+//     OR is_seed_account = true.
+//   - Pending users are scored; results route to shadow_matches instead of matches.
 //
 // Author: Claude (Anthropic) for Marissa Meyer / PARALLEL VIP LLC.
 // =============================================================================
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const VERSION = "100";
+const VERSION = "101";
 
 let CANONICAL: any = null;
 let CANONICAL_HASH: string = "unloaded";
@@ -87,6 +90,7 @@ interface Profile {
   is_paused: boolean | null;
   is_hidden_pending_review: boolean | null;
   is_seed_account: boolean | null;
+  release_status: string; // 'pending' | 'released' | 'released_paying'
 }
 
 type Answers = Record<string, any>;
@@ -117,7 +121,7 @@ function getAnswer(answers: Answers, qid: string): any {
 }
 
 function normalize(s: string): string {
-  return s.toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim();
+  return s.toLowerCase().replace(/['']/g, "'").replace(/[""]/g, '"').replace(/\s+/g, " ").trim();
 }
 
 function getCluster(answer: string | null | undefined, options: string[], qid: string): number {
@@ -477,16 +481,19 @@ function scoreLocation(a: string, b: string): number {
 
 function scoreReligion(a: string, b: string, aOpenInQ12_2?: boolean, bOpenInQ12_2?: boolean): number {
   if (a === b) return 100;
+  // Both users explicitly said they're open to different beliefs — the difference
+  // is low-signal. Score 80 rather than penalising them for a gap they've each
+  // said doesn't matter. The 12.2 question (scored at 90) captures the openness;
+  // 6.2 should not double-penalise when openness is mutual.
+  if (aOpenInQ12_2 && bOpenInQ12_2) return 80;
   const aLower = a.toLowerCase(); const bLower = b.toLowerCase();
-  let baseline = 30;
-  if (aOpenInQ12_2 && bOpenInQ12_2) baseline = 45;
   const seculars = ["atheist", "agnostic", "spiritual but not", "prefer not to label"];
   const aSec = seculars.some(s => aLower.includes(s));
   const bSec = seculars.some(s => bLower.includes(s));
   if (aSec && bSec) return 70;
   const christianish = ["christian", "catholic", "protestant"];
   if (christianish.some(s => aLower.includes(s)) && christianish.some(s => bLower.includes(s))) return 70;
-  return baseline;
+  return 30;
 }
 
 function scoreStress(a: string, b: string): number {
@@ -784,7 +791,15 @@ async function loadProfilesAndAnswers(userId: string) {
     if (isDealbreakerSet(val)) meDB.add(qid);
   }
 
-  const { data: candidates } = await sb.from("profiles").select("*").eq("has_completed_onboarding", true).neq("id", userId);
+  // Candidates: only released users and seeds are eligible to appear in matches.
+  // The source user (userId) is not filtered — a pending user can still be scored
+  // against released candidates; results route to shadow_matches instead of matches.
+  const { data: candidates } = await sb.from("profiles")
+    .select("*")
+    .eq("has_completed_onboarding", true)
+    .neq("id", userId)
+    .or("release_status.in.(released,released_paying),is_seed_account.eq.true");
+
   const candidateAnswers: Record<string, Answers> = {};
   const candidateDBs: Record<string, Set<string>> = {};
   if (candidates && candidates.length > 0) {
@@ -807,8 +822,16 @@ async function loadProfilesAndAnswers(userId: string) {
 async function runMatching(userId: string) {
   const { me, meAnswers, meDB, candidates, candidateAnswers, candidateDBs } = await loadProfilesAndAnswers(userId);
 
-  await sb.from("matches").delete().eq("user_id", userId);
-  await sb.from("matches").delete().eq("matched_user_id", userId);
+  // Route writes based on source user's release status.
+  // Released/seed users write to the live matches table.
+  // Pending users write to shadow_matches for later promotion.
+  const meLive = me.release_status === "released"
+    || me.release_status === "released_paying"
+    || !!me.is_seed_account;
+  const targetTable = meLive ? "matches" : "shadow_matches";
+
+  await sb.from(targetTable).delete().eq("user_id", userId);
+  await sb.from(targetTable).delete().eq("matched_user_id", userId);
 
   const inserts: any[] = [];
   let hardFilterRejects = 0; let dealbreakerRejects = 0; let scoreRejects = 0;
@@ -874,10 +897,11 @@ async function runMatching(userId: string) {
     });
   }
 
-  if (inserts.length > 0) await sb.from("matches").insert(inserts);
+  if (inserts.length > 0) await sb.from(targetTable).insert(inserts);
 
   return {
     success: true, version: VERSION, canonical_hash: CANONICAL_HASH,
+    release_status: me.release_status, target_table: targetTable,
     matched: inserts.length / 2, totalInserted: inserts.length,
     candidatesConsidered: candidates.length,
     hardFilterRejects, dealbreakerRejects, scoreRejects, sampleRejects,
