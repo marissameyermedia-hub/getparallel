@@ -8,6 +8,7 @@ import {
   Activity,
   Clock,
   FileText,
+  DollarSign,
 } from 'lucide-react';
 import { AdminCaseDetail } from './AdminCaseDetail';
 import { AdminCitiesOverview } from './AdminCitiesOverview';
@@ -15,6 +16,7 @@ import { AdminCityDetail } from './AdminCityDetail';
 import { AdminReports } from './AdminReports';
 import { AdminMatchQuality } from './AdminMatchQuality';
 import { AdminReleases } from './AdminReleases';
+import { AdminRevenue } from './AdminRevenue';
 import { AdminPulsePanel } from './AdminPulsePanel';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
@@ -71,7 +73,7 @@ function apiCaseToSafetyCase(c: any): SafetyCase {
   };
 }
 
-type Tab = 'cities' | 'reports' | 'match-quality' | 'releases' | 'trust-safety';
+type Tab = 'cities' | 'reports' | 'match-quality' | 'releases' | 'revenue' | 'trust-safety';
 
 export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('cities');
@@ -202,6 +204,7 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
               { id: 'reports',       label: 'Reports',       Icon: FileText },
               { id: 'match-quality', label: 'Match Quality', Icon: Activity },
               { id: 'releases',      label: 'Releases',      Icon: Clock },
+              { id: 'revenue',       label: 'Revenue',       Icon: DollarSign },
               { id: 'trust-safety',  label: 'Trust & Safety', Icon: AlertTriangle, badge: !isLoading && statusCounts.open + statusCounts['under-review'] > 0 ? statusCounts.open + statusCounts['under-review'] : 0 },
             ] as const).map(({ id, label, Icon, badge }) => (
               <button
@@ -279,6 +282,8 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
       {activeTab === 'match-quality' && <AdminMatchQuality accessToken={accessToken} />}
 
       {activeTab === 'releases' && <AdminReleases />}
+
+      {activeTab === 'revenue' && <AdminRevenue accessToken={accessToken} />}
 
       {activeTab === 'trust-safety' && (
         <>
