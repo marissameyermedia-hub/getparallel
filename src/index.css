@@ -16,13 +16,13 @@
     ─────────────────────────────────────────────────────────────── */
 
     /* Core surfaces */
-    --background:        34 26% 95%;   /* Cream — never pure white */
+    --background:        0 0% 100%;    /* White */
     --foreground:        240 7% 5%;    /* Void  — never pure black */
 
-    --card:              34 26% 95%;   /* Cream */
+    --card:              0 0% 100%;    /* White */
     --card-foreground:   240 7% 5%;    /* Void */
 
-    --popover:           34 26% 95%;   /* Cream */
+    --popover:           0 0% 100%;    /* White */
     --popover-foreground: 240 7% 5%;   /* Void */
 
     /* Interactive */
