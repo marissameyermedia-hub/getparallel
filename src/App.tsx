@@ -143,7 +143,9 @@ function App() {
   const [npsSheet, setNpsSheet] = useState(false);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({});
   const [feedbackInsights, setFeedbackInsights] = useState<Array<{ type: string; message: string }>>([]);
-  const [insightDismissed, setInsightDismissed] = useState(false);
+  const [dismissedInsight, setDismissedInsight] = useState<string>(() => {
+    try { return localStorage.getItem('parallel_dismissed_insight') ?? ''; } catch { return ''; }
+  });
 
   // Captured from ?ref=CODE on first load. Persists in localStorage so it
   // survives the trip through SignIn → AccountCreation. Cleared after the
@@ -1032,8 +1034,13 @@ function App() {
           if (r.ok) {
             const data = await r.json();
             if (Array.isArray(data.insights) && data.insights.length > 0) {
+              const newMsg = data.insights[0]?.message ?? '';
+              const prevDismissed = localStorage.getItem('parallel_dismissed_insight') ?? '';
+              if (newMsg !== prevDismissed) {
+                setDismissedInsight('');
+                try { localStorage.removeItem('parallel_dismissed_insight'); } catch {}
+              }
               setFeedbackInsights(data.insights);
-              setInsightDismissed(false);
             }
           }
         }).catch(() => {});
@@ -1508,8 +1515,12 @@ function App() {
             emailVerified={emailConfirmed}
             onOpenNotifications={() => setCurrentView('notifications')}
             onOpenFeedback={() => setAppFeedbackSheet(true)}
-            feedbackInsights={insightDismissed ? [] : feedbackInsights}
-            onDismissInsight={() => setInsightDismissed(true)}
+            feedbackInsights={feedbackInsights.filter(i => i.message !== dismissedInsight)}
+            onDismissInsight={() => {
+              const msg = feedbackInsights[0]?.message ?? '';
+              setDismissedInsight(msg);
+              try { localStorage.setItem('parallel_dismissed_insight', msg); } catch {}
+            }}
           />
         )}
 

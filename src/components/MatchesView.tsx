@@ -334,10 +334,17 @@ export function MatchesView({
       />
 
       {feedbackInsights.length > 0 && (
-        <div className="mx-4 mb-3 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-          <span className="text-amber-500 text-sm mt-0.5">💡</span>
+        <div className="mx-4 mb-3 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
           <p className="flex-1 text-sm text-amber-800">{feedbackInsights[0].message}</p>
-          <button onClick={onDismissInsight} className="text-amber-400 hover:text-amber-600 text-xs leading-none mt-0.5">✕</button>
+          <button
+            onClick={onDismissInsight}
+            aria-label="Dismiss"
+            className="flex-shrink-0 p-1 -mr-1 text-amber-400 hover:text-amber-600 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          </button>
         </div>
       )}
 
