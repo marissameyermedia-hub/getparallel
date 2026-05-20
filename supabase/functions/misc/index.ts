@@ -1,4 +1,5 @@
-// Parallel — misc edge function v22
+// Parallel — misc edge function v23
+// v23: Default PERSONA_ENV to "production" (was "sandbox")
 // v22: Add POST /paypal/webhook — handles BILLING.SUBSCRIPTION.* and PAYMENT.SALE.COMPLETED events
 // v21: Persist /paypal/config diagnostics to public._paypal_diag table so we can directly query env-var state.
 // v20: Add diagnostic logging in handlePaypalConfig (env, plan, clientId length/prefix).
@@ -20,7 +21,7 @@ const PAYPAL_CLIENT_SECRET = IS_LIVE ? (Deno.env.get("PAYPAL_LIVE_SECRET") || ""
 const PAYPAL_WEBHOOK_ID = IS_LIVE ? (Deno.env.get("PAYPAL_WEBHOOK_ID_LIVE") || "") : (Deno.env.get("PAYPAL_WEBHOOK_ID_SANDBOX") || "");
 const PAYPAL_BASE_URL = IS_LIVE ? "https://api.paypal.com" : "https://api.sandbox.paypal.com";
 const PAYPAL_PLAN_ANNUAL = IS_LIVE ? (Deno.env.get("PAYPAL_PLAN_ANNUAL_LIVE") || "") : (Deno.env.get("PAYPAL_PLAN_ANNUAL_SANDBOX") || "");
-const PERSONA_ENV = (Deno.env.get("PERSONA_ENV") || "sandbox").toLowerCase();
+const PERSONA_ENV = (Deno.env.get("PERSONA_ENV") || "production").toLowerCase();
 const PERSONA_TEMPLATE_ID = Deno.env.get("PERSONA_TEMPLATE_ID") || "itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG";
 const PERSONA_API_KEY = Deno.env.get("PERSONA_API_KEY") || "";
 const PERSONA_WEBHOOK_SECRET = Deno.env.get("PERSONA_WEBHOOK_SECRET") || "";
@@ -909,7 +910,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "22" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "23" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
