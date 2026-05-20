@@ -144,20 +144,20 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 visually sits across from the top edge of the angled cards. */}
             <div className="md:pt-4">
               <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-5 font-medium">
-                Professional matchmaking
+                Beta · Now accepting testers
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
                 Ready to get matched?
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
-                We're launching city by city. To count toward your city's match pool, you'll need to complete the full questionnaire. When enough compatible people are ready in your city, matches release for everyone at once.
+                We're launching in every city. We're looking for beta testers to try Parallel before our hard launch in August — complete the questionnaire and get your first real matches.
               </p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={onShowExplainer}
                   className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
                 >
-                  Join the waitlist
+                  Apply for beta
                   <ArrowRight size={18} />
                 </button>
                 <button
@@ -249,7 +249,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             <Step
               number="02"
               title="We run the numbers"
-              body="The algorithm goes to work. We read your answers, run the math, and build your match pool. When your city is ready, we release matches for everyone at once — so your first experience is a good one."
+              body="The algorithm goes to work. We read your answers, run the math, and find your best matches. During beta we're actively refining — your feedback shapes the product."
             />
             <Step
               number="03"
@@ -305,7 +305,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               onClick={onShowExplainer}
               className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-10 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
             >
-              Join the waitlist
+              Apply for beta
               <ArrowRight size={18} />
             </button>
             <button
@@ -316,7 +316,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-6">
-            $79/year for founding members
+            Free during beta · founding member pricing locks in at launch
           </p>
         </div>
       </section>
