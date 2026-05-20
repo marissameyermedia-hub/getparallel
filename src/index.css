@@ -263,7 +263,7 @@
     padding-top: calc(64px + env(safe-area-inset-top, 0px));
   }
   .pb-nav {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
 }
 

@@ -352,6 +352,9 @@ export function InboxView({
           </div>
         )}
 
+        {/* Bottom spacer — prevents iOS momentum scroll from clipping the last row */}
+        <div aria-hidden="true" style={{ height: 1 }} />
+
         {/* Empty state — only when neither row nor list has anything */}
         {!hasAnything && (
           <div className="flex flex-col items-center justify-center px-8 text-center" style={{ minHeight: '60vh' }}>
