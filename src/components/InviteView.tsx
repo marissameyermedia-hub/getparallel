@@ -301,7 +301,7 @@ export function InviteView({ onBack }: InviteViewProps) {
         <div className="mt-8">
           {/* Nudge copy */}
           <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
-            "{nudge}"
+            {nudge}
           </div>
 
           {/* Share buttons.
