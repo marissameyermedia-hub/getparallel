@@ -1,4 +1,7 @@
-// Parallel — matches edge function v12
+// Parallel — matches edge function v13
+// v13: Extend BREAKDOWN_KEY_MAP to cover all three generations of breakdown
+//      keys found in live DB (Gen 1 short snake, Gen 2 display names, Gen 3
+//      v100 snake). Fixes reweightScore() returning 0 for old matches.
 // v12: feedback/structured now accepts optional `snapshot` field — stores
 //      matched user's compatibility_score, age, distance, dimension_scores,
 //      why_you_matched, shared_hobbies in feedback_snapshot jsonb column.
@@ -169,16 +172,39 @@ const DEFAULT_WEIGHTS: Record<string, number> = {
 };
 
 const BREAKDOWN_KEY_MAP: Record<string, string> = {
-  "Values & Life Goals":       "values_life_goals",
-  "Relationship Psychology":   "relationship_psychology",
-  "Lifestyle Compatibility":   "lifestyle_compatibility",
-  "Attraction & Preferences":  "attraction_preferences",
-  "Life Logistics":            "life_logistics",
-  values_life_goals:           "values_life_goals",
-  relationship_psychology:     "relationship_psychology",
-  lifestyle_compatibility:     "lifestyle_compatibility",
-  attraction_preferences:      "attraction_preferences",
-  life_logistics:              "life_logistics",
+  // Gen 3 — current v100+ snake_case keys
+  values_life_goals:               "values_life_goals",
+  relationship_psychology:         "relationship_psychology",
+  lifestyle_compatibility:         "lifestyle_compatibility",
+  attraction_preferences:          "attraction_preferences",
+  life_logistics:                  "life_logistics",
+  attachment_emotional_health:     "attachment_emotional_health",
+  communication_conflict:          "communication_conflict",
+  intimacy_connection:             "intimacy_connection",
+  // Gen 2 — v100-docs display names (may appear in some records)
+  "Values & Life Goals":           "values_life_goals",
+  "Relationship Psychology":       "relationship_psychology",
+  "Lifestyle Compatibility":       "lifestyle_compatibility",
+  "Attraction & Preferences":      "attraction_preferences",
+  "Life Logistics":                "life_logistics",
+  // Gen 2 — actual display names confirmed in live DB
+  "Life Goals":                    "values_life_goals",
+  "Values & Beliefs":              "values_life_goals",
+  "Lifestyle Behaviors":           "lifestyle_compatibility",
+  "Social & Shared Life":          "lifestyle_compatibility",
+  "Communication & Conflict":      "communication_conflict",
+  "Attachment & Emotional Health": "attachment_emotional_health",
+  "Intimacy & Connection":         "intimacy_connection",
+  "Financial & Career":            "life_logistics",
+  // Gen 1 — early short snake_case keys
+  values:        "values_life_goals",
+  life_goals:    "values_life_goals",
+  lifestyle:     "lifestyle_compatibility",
+  social:        "lifestyle_compatibility",
+  communication: "communication_conflict",
+  attachment:    "attachment_emotional_health",
+  intimacy:      "intimacy_connection",
+  financial:     "life_logistics",
 };
 
 function reweightScore(breakdown: Record<string, number>, weights: Record<string, number>): number {
@@ -769,7 +795,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/matches\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "12" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "13" });
     if (path === "/list" && req.method === "GET") return await handleMatchesList(req);
     if (path === "/mutual" && req.method === "GET") return await handleMatchesMutual(req);
     if (path === "/mutual-waiting" && req.method === "GET") return await handleMatchesMutualWaiting(req);
