@@ -865,7 +865,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
               onBack={handleBack}
               onContinue={handleContinue}
               canGoBack={true}
-              chapterTitle={`QUESTION ${getCurrentQuestionNumber()} OF ${totalQuestions}`}
+              chapterTitle={`QUESTION ${getCurrentQuestionNumber()} OF 68`}
               lockedAge={lockedAge}
               totalDealbreakers={getTotalDealbreakers()}
             />
