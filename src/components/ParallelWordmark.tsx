@@ -1,40 +1,44 @@
-// PARA//EL. wordmark — pre-app brand mark (locked May 17, 2026).
-// Thin wrapper that accepts Tailwind sizeClassName for backward-compat with
-// existing callers while delegating all brand-spec CSS to inline styles.
-// Canonical spec: Inter 800, 0.08em letter-spacing, antialiased.
-// In-app nav uses ParaelCircle, not this wordmark.
+// PARA//EL. wordmark — uses official brand PNGs from /public.
+// variant='light' → black text on transparent bg (for white/light backgrounds)
+// variant='dark'  → white text on transparent bg (for dark backgrounds)
+// sizeClassName maps Tailwind text-size classes to image height classes.
 
 interface ParallelWordmarkProps {
   variant?: 'light' | 'dark';
-  /** Tailwind text-size class, e.g. "text-xl". Default: "text-xl" */
+  /** Tailwind text-size class, e.g. "text-xl". Controls image height. */
   sizeClassName?: string;
   className?: string;
 }
+
+const SIZE_HEIGHT: Record<string, string> = {
+  'text-xs':   'h-3',
+  'text-sm':   'h-3.5',
+  'text-base': 'h-4',
+  'text-lg':   'h-5',
+  'text-xl':   'h-5',
+  'text-2xl':  'h-6',
+  'text-3xl':  'h-8',
+  'text-4xl':  'h-9',
+  'text-5xl':  'h-11',
+};
 
 export function ParallelWordmark({
   variant = 'light',
   sizeClassName = 'text-xl',
   className = '',
 }: ParallelWordmarkProps) {
-  const fg = variant === 'dark' ? '#FFFFFF' : '#0D0D0F';
+  const src = variant === 'dark'
+    ? '/PARA-EL-transparent-dark.png'
+    : '/PARA-EL-transparent-light.png';
+
+  const heightClass = SIZE_HEIGHT[sizeClassName] ?? 'h-5';
 
   return (
-    <span
-      className={`inline-flex items-baseline ${sizeClassName} ${className}`}
-      style={{
-        fontFamily: 'Inter, -apple-system, sans-serif',
-        fontWeight: 800,
-        letterSpacing: '0.08em',
-        lineHeight: 1,
-        WebkitFontSmoothing: 'antialiased',
-        color: fg,
-      }}
-      aria-label="Parallel"
-    >
-      <span aria-hidden="true">PARA</span>
-      <span aria-hidden="true" style={{ color: '#7B5EA7' }}>/</span>
-      <span aria-hidden="true" style={{ color: '#A98FD0' }}>/</span>
-      <span aria-hidden="true">EL.</span>
-    </span>
+    <img
+      src={src}
+      alt="Parallel"
+      className={`${heightClass} w-auto ${className}`}
+      draggable={false}
+    />
   );
 }
