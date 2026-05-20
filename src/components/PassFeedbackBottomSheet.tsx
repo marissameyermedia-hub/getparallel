@@ -113,14 +113,14 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit }: PassFeedb
         </div>
 
         <div className="p-4 border-t border-gray-200 flex-shrink-0 pb-8">
+          <p className="text-xs text-center text-gray-400 mb-3 leading-snug">
+            Every answer teaches us more about what you're looking for — the more you share, the better your matches get.
+          </p>
           <button
             onClick={handleSubmit}
-            className="w-full px-6 py-3 rounded-full bg-parallel-void text-parallel-cream font-medium hover:bg-parallel-void/90 transition-all mb-2"
+            className="w-full px-6 py-3 rounded-full bg-parallel-void text-parallel-cream font-medium hover:bg-parallel-void/90 transition-all"
           >
             Pass on this match
-          </button>
-          <button onClick={onClose} className="w-full text-gray-500 px-6 py-3 rounded-full hover:bg-gray-100 transition-all text-sm">
-            Skip
           </button>
         </div>
       </div>
