@@ -420,8 +420,49 @@ export function MatchesView({
               {socialAndFeedback}
             </div>
 
+          ) : !isVerified ? (
+            // Subscribed but not ID-verified → blurred gate with verify CTA.
+            <div className="max-w-md mx-auto px-4 pt-2 pb-nav">
+              <div className="relative mb-6">
+                <div
+                  className="absolute inset-x-3 top-2 bottom-0 bg-gray-100 rounded-3xl border-2 border-gray-200"
+                  style={{ zIndex: 0 }}
+                />
+                <div
+                  className="relative rounded-3xl border-2 border-gray-200 overflow-hidden"
+                  style={{ zIndex: 1 }}
+                >
+                  <div className="relative">
+                    <img
+                      src={sortedMatches[0]?.user?.photoUrl || sortedMatches[0]?.user?.photos?.[0] || ''}
+                      alt="Your match"
+                      className="w-full aspect-[3/4] object-cover blur-md scale-105"
+                    />
+                    <div className="absolute inset-0 bg-parallel-void/30 flex flex-col items-center justify-center text-center px-6">
+                      <div className="bg-parallel-cream/95 rounded-2xl px-6 py-5 max-w-xs">
+                        <p className="text-2xl font-semibold mb-1">
+                          {matches.length} match{matches.length !== 1 ? 'es' : ''} waiting
+                        </p>
+                        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                          Verify your identity to unlock your matches. It takes about 2 minutes.
+                        </p>
+                        <button
+                          onClick={onVerify}
+                          className="w-full py-3 rounded-full font-medium text-white text-[13px] transition-colors"
+                          style={{ backgroundColor: '#1D9BF0' }}
+                        >
+                          Get verified →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {socialAndFeedback}
+            </div>
+
           ) : (
-            // Subscribed + has matches → real swipe cards + small invite footer.
+            // Subscribed + verified → real swipe cards + small invite footer.
             <>
               <SwipeableMatchView
                 matches={sortedMatches}
