@@ -150,7 +150,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 Ready to get matched?
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
-                Parallel is launching in every city. Join now, complete the questionnaire, and you'll be matched when your city's pool is ready. Beta members lock in their first year free.
+                We're launching in every city. Join now, complete the questionnaire, and you'll be matched when your city's pool is ready. Beta members lock in their first year free.
               </p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
