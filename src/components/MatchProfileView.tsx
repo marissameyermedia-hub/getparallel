@@ -665,7 +665,7 @@ export function MatchProfileView({
               disabled={isLiked || isLiking}
               aria-label={isLiked ? `Liked ${user.name}` : `Like ${user.name}`}
               className={`flex-1 h-14 rounded-full transition-all flex items-center justify-center gap-2 font-medium shadow-lg ${
-                isLiked ? 'bg-red-500 text-parallel-cream cursor-default'
+                isLiked ? 'bg-parallel-purple text-parallel-cream cursor-default'
                 : isLiking ? 'bg-gray-400 text-parallel-cream cursor-wait'
                 : 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
               }`}

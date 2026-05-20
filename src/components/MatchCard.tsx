@@ -196,7 +196,7 @@ export function MatchCard({
             onClick={handleLikeClick}
             disabled={isLiked}
             className={`flex-1 h-12 rounded-full transition-all flex items-center justify-center gap-2 font-medium ${
-              isLiked ? 'bg-red-500 text-white cursor-default' : 'bg-parallel-purple text-white hover:bg-parallel-purple/90'
+              isLiked ? 'bg-parallel-purple text-white cursor-default' : 'bg-parallel-purple text-white hover:bg-parallel-purple/90'
             }`}
           >
             <Heart size={18} className={isLiked ? 'fill-current' : ''} />
