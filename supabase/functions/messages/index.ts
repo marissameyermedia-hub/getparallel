@@ -1,8 +1,10 @@
-// Parallel — messages edge function v10
-// v9: adds GET /unsticker — AI-generated conversation starter for 48h-silent threads.
-//     Reads questionnaire/profile overlap only; never reads message content.
+// Parallel — messages edge function v11
 // v10: adds GET /starters — 4 AI-generated initial conversation starters per match.
-//     Generated once, cached forever on conversations.ai_starters (jsonb).
+//      Generated once, cached forever on conversations.ai_starters (jsonb).
+// v11: SMS fallback for new-message notifications.
+//      Push fires if onesignal_player_id exists and push_enabled=true.
+//      If no push, and sms_enabled=true + phone verified + not opted out,
+//      sends an SMS digest via Telnyx with a 4-hour cooldown per user.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -12,6 +14,10 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const ONESIGNAL_API_KEY = Deno.env.get("ONESIGNAL_API_KEY") || "";
 const ONESIGNAL_APP_ID = "ac575970-18c4-4f71-9ff9-aa323baef90f";
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") || "";
+const TELNYX_API_KEY = Deno.env.get("TELNYX_API_KEY") || "";
+const TELNYX_FROM_NUMBER = Deno.env.get("TELNYX_FROM_NUMBER") || "";
+const TELNYX_MESSAGING_PROFILE_ID = Deno.env.get("TELNYX_MESSAGING_PROFILE_ID") || "";
+const SMS_COOLDOWN_MS = 4 * 60 * 60 * 1000; // 4 hours
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,28 +59,114 @@ async function logNotifEvent(admin: ReturnType<typeof adminClient>, userId: stri
 
 async function sendPushToRecipient(recipientId: string, senderName: string, senderId: string) {
   const admin = adminClient();
-  if (!ONESIGNAL_API_KEY) { await logNotifEvent(admin, recipientId, "message", false, "no_api_key"); return; }
   try {
     const [prefRes, profileRes] = await Promise.all([
-      admin.from("notification_preferences").select("push_enabled, messages").eq("user_id", recipientId).maybeSingle(),
-      admin.from("profiles").select("onesignal_player_id").eq("id", recipientId).maybeSingle(),
+      admin.from("notification_preferences")
+        .select("push_enabled, messages, sms_enabled, last_sms_notification_at")
+        .eq("user_id", recipientId).maybeSingle(),
+      admin.from("profiles")
+        .select("onesignal_player_id, phone, phone_verified")
+        .eq("id", recipientId).maybeSingle(),
     ]);
     const prefs = prefRes.data;
     const playerId = profileRes.data?.onesignal_player_id;
-    if (!playerId) { await logNotifEvent(admin, recipientId, "message", false, "no_player_id"); return; }
-    if (prefs?.push_enabled === false) { await logNotifEvent(admin, recipientId, "message", false, "push_disabled"); return; }
-    if (prefs?.messages === false) { await logNotifEvent(admin, recipientId, "message", false, "category_disabled"); return; }
-    const firstName = senderName.split(" ")[0];
-    const collapseId = `msg_${recipientId.slice(0, 8)}_${senderId.slice(0, 8)}`;
-    const res = await fetch("https://onesignal.com/api/v1/notifications", {
+
+    // Push is active when: API key set, player ID registered, neither push nor category disabled.
+    const hasPush = !!(
+      ONESIGNAL_API_KEY &&
+      playerId &&
+      prefs?.push_enabled !== false &&
+      prefs?.messages !== false
+    );
+
+    if (hasPush) {
+      const firstName = senderName.split(" ")[0];
+      const collapseId = `msg_${recipientId.slice(0, 8)}_${senderId.slice(0, 8)}`;
+      const res = await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Basic ${ONESIGNAL_API_KEY}` },
+        body: JSON.stringify({ app_id: ONESIGNAL_APP_ID, include_player_ids: [playerId], headings: { en: "Notification" }, contents: { en: `${firstName} sent you a message` }, url: `https://getparallel.vip/?notify=message&from=${senderId}`, web_push_topic: "new_message", collapse_id: collapseId }),
+      });
+      const responseJson = await res.json().catch(() => null);
+      await logNotifEvent(admin, recipientId, "message", res.ok, res.ok ? undefined : "onesignal_error", responseJson);
+      return; // Push sent — SMS not needed.
+    }
+
+    // Log why push was skipped.
+    const pushSkipReason = !ONESIGNAL_API_KEY ? "no_api_key"
+      : !playerId ? "no_player_id"
+      : prefs?.push_enabled === false ? "push_disabled"
+      : "category_disabled";
+    await logNotifEvent(admin, recipientId, "message", false, pushSkipReason);
+
+    // ── SMS fallback ──────────────────────────────────────────────────────────
+    if (!TELNYX_API_KEY || !TELNYX_FROM_NUMBER) return; // Telnyx not configured
+    if (prefs?.sms_enabled !== true) return;            // User hasn't opted in to SMS
+
+    const phone = profileRes.data?.phone;
+    const phoneVerified = profileRes.data?.phone_verified === true;
+    if (!phone || !phoneVerified) return;
+
+    // Opt-out check.
+    const { data: optOut } = await admin.from("sms_opt_outs").select("phone").eq("phone", phone).maybeSingle();
+    if (optOut) return;
+
+    // 4-hour cooldown — never double-text within a session.
+    const lastSms = prefs?.last_sms_notification_at;
+    if (lastSms && Date.now() - new Date(lastSms).getTime() < SMS_COOLDOWN_MS) {
+      await logNotifEvent(admin, recipientId, "message_sms", false, "cooldown_active");
+      return;
+    }
+
+    // Count unread messages (last 30 days) so the digest is accurate.
+    let unreadCount = 1;
+    const { data: convs } = await admin.from("conversations")
+      .select("id")
+      .or(`user_id_1.eq.${recipientId},user_id_2.eq.${recipientId}`);
+    const convIds = (convs ?? []).map((c: any) => c.id);
+    if (convIds.length > 0) {
+      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: fromOthers } = await admin.from("messages")
+        .select("id")
+        .in("conversation_id", convIds)
+        .neq("sender_id", recipientId)
+        .gte("created_at", since);
+      if (fromOthers && fromOthers.length > 0) {
+        const allIds = fromOthers.map((m: any) => m.id);
+        const { data: reads } = await admin.from("message_reads")
+          .select("message_id")
+          .eq("user_id", recipientId)
+          .in("message_id", allIds);
+        const readSet = new Set((reads ?? []).map((r: any) => r.message_id));
+        const computed = fromOthers.filter((m: any) => !readSet.has(m.id)).length;
+        if (computed > 0) unreadCount = computed;
+      }
+    }
+
+    const msgText = unreadCount === 1
+      ? `You have a new message on Parallel. Open the app: https://getparallel.vip`
+      : `You have ${unreadCount} unread messages on Parallel. Open the app: https://getparallel.vip`;
+
+    const telnyxBody: Record<string, string> = { to: phone, text: msgText, from: TELNYX_FROM_NUMBER };
+    if (TELNYX_MESSAGING_PROFILE_ID) telnyxBody.messaging_profile_id = TELNYX_MESSAGING_PROFILE_ID;
+
+    const telnyxRes = await fetch("https://api.telnyx.com/v2/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Basic ${ONESIGNAL_API_KEY}` },
-      body: JSON.stringify({ app_id: ONESIGNAL_APP_ID, include_player_ids: [playerId], headings: { en: "Notification" }, contents: { en: `${firstName} sent you a message` }, url: `https://getparallel.vip/?notify=message&from=${senderId}`, web_push_topic: "new_message", collapse_id: collapseId }),
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TELNYX_API_KEY}` },
+      body: JSON.stringify(telnyxBody),
     });
-    const responseJson = await res.json().catch(() => null);
-    await logNotifEvent(admin, recipientId, "message", res.ok, res.ok ? undefined : "onesignal_error", responseJson);
+    const telnyxJson = await telnyxRes.json().catch(() => null);
+    await logNotifEvent(admin, recipientId, "message_sms", telnyxRes.ok, telnyxRes.ok ? undefined : "telnyx_error", telnyxJson);
+
+    if (telnyxRes.ok) {
+      // Record cooldown timestamp so next message within 4h is suppressed.
+      await admin.from("notification_preferences").upsert(
+        { user_id: recipientId, last_sms_notification_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+    }
   } catch (err) {
-    console.error("[push] failed:", err);
+    console.error("[push/sms] failed:", err);
     await logNotifEvent(admin, recipientId, "message", false, "exception");
   }
 }
@@ -536,7 +628,7 @@ Deno.serve(async (req) => {
   const url=new URL(req.url);
   const path=url.pathname.replace(/^\/messages\/?/i,"/").replace(/\/$/,"")||"//";
   try {
-    if (path==="/"||path==="/health") return json({ok:true,service:"messages",version:"10"});
+    if (path==="/"||path==="/health") return json({ok:true,service:"messages",version:"11"});
     if (path==="/conversations"&&req.method==="GET") return await handleConversationsList(req);
     if (path==="/mark-read"&&req.method==="POST") return await handleMarkRead(req);
     if (path==="/realtime-config"&&req.method==="GET") return await handleRealtimeConfig(req);
