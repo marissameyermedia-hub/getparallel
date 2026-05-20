@@ -291,6 +291,16 @@ export const parallelQuestionnaire: Section[] = [
       category: "Lifestyle Behaviors",
     },
     {
+      id: "3.10",
+      text: "Do you use recreational drugs beyond cannabis?",
+      type: "MC",
+      options: ["No — I don't use recreational drugs","Occasionally — a few times a year at most","Sometimes — a few times a month","Regularly"],
+      tags: ["Compatibility Score"],
+      weight: 3,
+      privacyNote: "Used for matching only — not shown on your profile",
+      category: "Lifestyle Behaviors",
+    },
+    {
       id: "3.5",
       text: "How often do you exercise?",
       type: "MC",
@@ -354,16 +364,6 @@ export const parallelQuestionnaire: Section[] = [
       weight: 4,
       privacyNote: "Used for matching only — not shown on your profile",
       category: "Social & Shared Life",
-    },
-    {
-      id: "3.10",
-      text: "Do you use recreational drugs beyond cannabis?",
-      type: "MC",
-      options: ["No — I don't use recreational drugs","Occasionally — a few times a year at most","Sometimes — a few times a month","Regularly"],
-      tags: ["Compatibility Score"],
-      weight: 3,
-      privacyNote: "Used for matching only — not shown on your profile",
-      category: "Lifestyle Behaviors",
     },
   ]},
 
