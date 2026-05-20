@@ -1853,7 +1853,12 @@ function App() {
       {/* ── Bottom nav — flex-shrink-0 bottom bar; no longer position:fixed ── */}
       {!isFullscreenView && (
         <BottomNav
-          onNavigate={(view) => setCurrentView(view as any)}
+          onNavigate={(view) => {
+            setCurrentView(view as any);
+            if (view === 'account') {
+              getAccessToken().then(token => { if (token) fetchUserData(token); }).catch(() => {});
+            }
+          }}
           currentView={currentView}
           unreadMessageCount={inboxMessages.filter(m => m.unread).length}
         />
