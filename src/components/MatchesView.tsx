@@ -8,7 +8,6 @@ import { ParallelWordmark } from './ParallelWordmark';
 import { parallelQuestionnaire } from '../data/parallelQuestionnaire_updated';
 import { getAccessToken } from '../utils/auth';
 import { SetupChecklist } from './SetupChecklist';
-import { MatchExplainerSheet } from './matching/MatchExplainerSheet';
 
 // ── PRE_LAUNCH flag ────────────────────────────────────────────
 // Defaults to FALSE. Set VITE_PRE_LAUNCH=true in Netlify env vars
@@ -42,8 +41,6 @@ interface MatchesViewProps {
   emailVerified?: boolean;
   onOpenNotifications?: () => void;
   onOpenFeedback?: () => void;
-  /** When true, score badge on match cards opens the Why This Match explainer. */
-  featureMatchExplainer?: boolean;
 }
 
 export function MatchesView({
@@ -66,10 +63,8 @@ export function MatchesView({
   emailVerified = true,
   onOpenNotifications,
   onOpenFeedback,
-  featureMatchExplainer = false,
 }: MatchesViewProps) {
   const [lastPassedMatchId, setLastPassedMatchId] = useState<string | null>(null);
-  const [explainerMatch, setExplainerMatch] = useState<Match | null>(null);
 
   // Evaluate showIf visibility using the user's actual answers — same logic as OnboardingFlow
   const isQuestionVisible = (question: any, answers: Record<string, any>): boolean => {
@@ -409,12 +404,6 @@ export function MatchesView({
           ) : (
             // Subscribed + has matches → real swipe cards + small invite footer.
             <>
-              {explainerMatch && (
-                <MatchExplainerSheet
-                  match={explainerMatch}
-                  onClose={() => setExplainerMatch(null)}
-                />
-              )}
               <SwipeableMatchView
                 matches={sortedMatches}
                 onMatchInteraction={onMatchInteraction}
@@ -428,7 +417,6 @@ export function MatchesView({
                 likedMatchIds={likedMatchIds}
                 canUndo={!!lastPassedMatchId}
                 onUndo={handleUndo}
-                onOpenExplainer={featureMatchExplainer ? setExplainerMatch : undefined}
               />
               <div className="max-w-md mx-auto px-4 pb-nav">
                 <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">

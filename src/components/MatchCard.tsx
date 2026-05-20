@@ -10,31 +10,7 @@ interface MatchCardProps {
   onUnlock?: () => void;
   isLiked?: boolean;
   hasLikedMe?: boolean;
-  onOpenExplainer?: (match: Match) => void;
 }
-
-// 8-category display order + bar colors. Must match MatchProfileView.
-const CATEGORY_ORDER = [
-  'Attachment & Emotional Health',
-  'Communication & Conflict',
-  'Life Goals',
-  'Values & Beliefs',
-  'Financial & Career',
-  'Intimacy & Connection',
-  'Lifestyle Behaviors',
-  'Social & Shared Life',
-] as const;
-
-const CATEGORY_COLORS: Record<string, string> = {
-  'Attachment & Emotional Health': 'bg-parallel-purple',
-  'Communication & Conflict':      'bg-purple-700',
-  'Life Goals':                    'bg-violet-600',
-  'Values & Beliefs':              'bg-purple-900',
-  'Financial & Career':            'bg-violet-500',
-  'Intimacy & Connection':         'bg-parallel-soft-violet',
-  'Lifestyle Behaviors':           'bg-purple-600',
-  'Social & Shared Life':          'bg-parallel-stone',
-};
 
 export function MatchCard({
   match,
@@ -45,23 +21,13 @@ export function MatchCard({
   onUnlock,
   isLiked = false,
   hasLikedMe = false,
-  onOpenExplainer,
 }: MatchCardProps) {
-  const { user, compatibilityScore, matchDetails, distanceMiles } = match;
+  const { user, compatibilityScore, distanceMiles } = match;
 
   const locationDisplay = (user as any).locationDisplay as string | null | undefined;
   const heightDisplay = (user as any).height as string | null | undefined;
   const photos = user.photos?.length ? user.photos : (user.photoUrl ? [user.photoUrl] : []);
   const primaryPhoto = photos[0];
-
-  // Single photo on the card — photo carousel lives on the profile view
-  // (tap through to see more photos).
-
-  const breakdown = (matchDetails?.breakdown ?? {}) as Record<string, number | undefined>;
-  const categoriesWithData = CATEGORY_ORDER.filter(
-    (label) => typeof breakdown[label] === 'number' && (breakdown[label] as number) > 0
-  );
-  const showBreakdown = categoriesWithData.length > 0;
 
   const formatDistance = (miles?: number) => {
     if (miles === undefined || miles === null) return null;
@@ -93,8 +59,6 @@ export function MatchCard({
     onViewProfile(user.id);
   };
 
-  // Like/Pass must stop propagation so they don't also trigger the card's
-  // navigate-to-profile behavior.
   const handlePassClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onPass(user.id, user.name, primaryPhoto || '');
@@ -108,6 +72,10 @@ export function MatchCard({
   const handleUnlockClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onUnlock?.();
+  };
+  const handleViewProfileClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onViewProfile(user.id);
   };
 
   return (
@@ -123,8 +91,7 @@ export function MatchCard({
       }}
       className="bg-parallel-cream rounded-2xl border-2 border-gray-200 overflow-hidden cursor-pointer transition-all active:scale-[0.99] active:bg-gray-50 hover:border-gray-300"
     >
-      {/* Photo zone — single photo, overlay with name/age/height/location,
-          compatibility badge top right, verified badge top left */}
+      {/* Photo zone */}
       <div className="relative aspect-[3/4] bg-gray-100">
         {!hasActivated ? (
           <div className="w-full h-full relative overflow-hidden">
@@ -163,14 +130,14 @@ export function MatchCard({
               </div>
             )}
 
-            {/* "Interested in you" chip — shown only if the other user liked first */}
+            {/* "Interested in you" chip */}
             {hasLikedMe && !user.isVerified && (
               <div className="absolute top-3 left-3 bg-parallel-cream text-parallel-void text-xs font-medium px-2 py-1 rounded-full z-10">
                 ❤️ Interested in you
               </div>
             )}
 
-            {/* Name, age, height, location overlay at bottom of photo */}
+            {/* Name, age, height, location overlay */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4 z-10">
               <p className="text-parallel-cream text-xl font-semibold leading-tight">
                 {user.name}, {user.age}{heightDisplay ? ` · ${heightDisplay}` : ''}
@@ -185,26 +152,13 @@ export function MatchCard({
           </>
         )}
 
-        {/* Compatibility badge — top right. Tappable when explainer is available. */}
-        {onOpenExplainer && hasActivated ? (
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenExplainer(match); }}
-            aria-label={`View why you matched — ${compatibilityScore}%`}
-            className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-[#7B5EA7] z-20 active:opacity-70 transition-opacity"
-          >
-            <div className="text-center">
-              <div className="text-base font-bold leading-none text-[#7B5EA7]">{compatibilityScore}%</div>
-              <div className="text-xs text-[#7B5EA7] whitespace-nowrap mt-0.5">{getMatchLabel(compatibilityScore)} ›</div>
-            </div>
-          </button>
-        ) : (
-          <div className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-gray-200 z-20">
-            <div className="text-center">
-              <div className="text-base font-bold leading-none">{compatibilityScore}%</div>
-              <div className="text-xs text-gray-500 whitespace-nowrap mt-0.5">{getMatchLabel(compatibilityScore)}</div>
-            </div>
+        {/* Compatibility badge — top right, decorative only */}
+        <div className="absolute top-3 right-3 bg-parallel-cream rounded-full px-3 py-1.5 shadow-lg border-2 border-[#7B5EA7] z-20">
+          <div className="text-center">
+            <div className="text-base font-bold leading-none text-[#7B5EA7]">{compatibilityScore}%</div>
+            <div className="text-xs text-[#7B5EA7] whitespace-nowrap mt-0.5">{getMatchLabel(compatibilityScore)}</div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Card body */}
@@ -220,48 +174,21 @@ export function MatchCard({
       ) : (
         <div className="p-5 space-y-4">
 
-          {/* Bio — full prose, no gray card wrapper */}
+          {/* View full profile — primary affordance, well above Pass/Like */}
+          <button
+            onClick={handleViewProfileClick}
+            aria-label={`View ${user.name}'s full profile`}
+            className="w-full py-2.5 rounded-full border-2 border-[#7B5EA7] text-[#7B5EA7] text-sm font-medium hover:bg-[#7B5EA7]/5 transition-colors"
+          >
+            View full profile →
+          </button>
+
+          {/* Bio */}
           {user.bio && (
-            <p className="text-sm text-gray-700 leading-relaxed">{user.bio}</p>
+            <p className="text-sm text-gray-700 leading-relaxed line-clamp-3">{user.bio}</p>
           )}
 
-          {/* 8-category Compatibility Breakdown — always all 8, same bar colors as profile */}
-          {showBreakdown && (
-            <div>
-              <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-                Compatibility Breakdown
-              </h4>
-              <div className="space-y-2.5">
-                {CATEGORY_ORDER.map((label) => {
-                  const raw = breakdown[label];
-                  const hasScore = typeof raw === 'number' && raw > 0;
-                  const score = hasScore ? (raw as number) : 0;
-                  const barColor = CATEGORY_COLORS[label] || 'bg-parallel-void';
-
-                  return (
-                    <div key={label}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className={`text-xs ${hasScore ? 'text-gray-700' : 'text-gray-500'}`}>{label}</span>
-                        {hasScore ? (
-                          <span className="text-xs font-medium text-gray-800">{score}%</span>
-                        ) : (
-                          <span className="text-[10px] italic text-gray-500">Not enough data yet</span>
-                        )}
-                      </div>
-                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        {hasScore && (
-                          <div className={`h-full ${barColor} rounded-full`} style={{ width: `${score}%` }} />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Action buttons — Pass + Like. Both stop propagation so the card's
-              navigate-to-profile behavior doesn't fire when tapping them. */}
+          {/* Pass + Like */}
           <div className="flex items-center gap-3 pt-1">
             <button
               onClick={handlePassClick}
