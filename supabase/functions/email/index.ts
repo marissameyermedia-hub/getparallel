@@ -1,4 +1,4 @@
-// Parallel — email edge function v8
+// Parallel — email edge function v9
 // v8: Brand palette applied throughout shellHtml.
 //     - Background: White #FFFFFF (Cream per tailwind.config.ts brand tokens)
 //     - Wordmark: PARA//EL. with // in Purple #7B5EA7 (was plain "Parallel" text)
@@ -112,16 +112,14 @@ const B = {
   stone:  "#8A8690",  // Secondary / muted text
 };
 
-// PARA//EL. wordmark: // is Purple on Cream background.
+// PARA//EL. wordmark — hosted PNG, transparent background (works on white email bg).
 const WORDMARK_HTML =
-  `<span style="font-weight:700;letter-spacing:-0.02em;font-size:16px;color:${B.void_};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">PARA</span>` +
-  `<span style="font-weight:700;letter-spacing:-0.02em;font-size:16px;color:${B.purple};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">//</span>` +
-  `<span style="font-weight:700;letter-spacing:-0.02em;font-size:16px;color:${B.void_};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">EL.</span>`;
+  `<img src="https://getparallel.vip/PARA-EL-transparent-dark.png" alt="PARA//EL." width="140" height="auto" style="display:block;border:0;max-width:140px;" />`;
 
 function shellHtml(opts: { heading: string; body: string; ctaUrl?: string; ctaLabel?: string }) {
   const { heading, body, ctaUrl, ctaLabel } = opts;
   const cta = ctaUrl && ctaLabel
-    ? `<tr><td style="padding:8px 0 32px 0;"><a href="${ctaUrl}" style="display:inline-block;background-color:${B.purple};color:${B.cream};text-decoration:none;padding:14px 28px;border-radius:9999px;font-weight:600;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;"><span style="color:${B.cream};">${ctaLabel}</span></a></td></tr>`
+    ? `<tr><td style="padding:8px 32px 32px 32px;text-align:center;"><a href="${ctaUrl}" style="display:inline-block;background-color:${B.purple};color:${B.cream};text-decoration:none;padding:14px 40px;border-radius:9999px;font-weight:600;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;"><span style="color:${B.cream};">${ctaLabel}</span></a></td></tr>`
     : "";
   return (
     `<!doctype html><html lang="en">` +
@@ -476,7 +474,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "8" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "9" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
