@@ -210,8 +210,8 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   }, [config, onCheckout]);
 
   return (
-    <div className="min-h-screen bg-parallel-cream">
-      <div className="sticky top-0 bg-parallel-cream border-b border-gray-100 z-10 px-6 py-3">
+    <div className="flex flex-col bg-parallel-cream" style={{ height: '100dvh' }}>
+      <div className="flex-shrink-0 bg-parallel-cream border-b border-gray-100 z-10 px-6 py-3">
         <button
           onClick={onBack}
           className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -221,7 +221,8 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
         </button>
       </div>
 
-      <div className="max-w-md mx-auto px-6 py-6 pb-16">
+      <div className="flex-1 min-h-0 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="max-w-md mx-auto px-6 py-6" style={{ paddingBottom: 'max(64px, env(safe-area-inset-bottom))' }}>
 
         {/* Headline */}
         <motion.div
@@ -463,6 +464,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
             Test mode — no real charges. Use a PayPal sandbox account.
           </div>
         )}
+      </div>
       </div>
     </div>
   );
