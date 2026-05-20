@@ -1,15 +1,13 @@
-// Parallel — matches edge function v13
+// Parallel — matches edge function v14
+// v14: /list reads user_filter_preferences.max_distance_miles and excludes
+//      matches that exceed it. Written by feedback-processor v3 when a user
+//      has 2+ "too_far_away" passes with snapshot distance data.
 // v13: Extend BREAKDOWN_KEY_MAP to cover all three generations of breakdown
 //      keys found in live DB (Gen 1 short snake, Gen 2 display names, Gen 3
 //      v100 snake). Fixes reweightScore() returning 0 for old matches.
-// v12: feedback/structured now accepts optional `snapshot` field — stores
-//      matched user's compatibility_score, age, distance, dimension_scores,
-//      why_you_matched, shared_hobbies in feedback_snapshot jsonb column.
-// v11: Fix feature_flags query: column is flag_key, not name. All three
-//      flag checks (recovery-signal, explainer, date-outcome) corrected.
+// v12: feedback/structured now accepts optional `snapshot` field.
+// v11: Fix feature_flags query column name.
 // v10: Three-Stage Feedback Loop — POST /date-outcome.
-// v9: Why This Match Explainer — GET /explainer?matchId=X.
-// v8: Match Recovery Signal — POST /recovery-signal.
 // (earlier history omitted for brevity)
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -234,7 +232,7 @@ async function handleMatchesList(req: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  const [matchRowsRes, userWeightsRes] = await Promise.all([
+  const [matchRowsRes, userWeightsRes, filterPrefsRes] = await Promise.all([
     admin
       .from("matches")
       .select("matched_user_id, compatibility_score, individual_score, breakdown, why_you_matched, potential_differences, shared_hobbies, asymmetry_category, asymmetry_gap")
@@ -245,6 +243,11 @@ async function handleMatchesList(req: Request) {
       .select("values_life_goals, relationship_psychology, lifestyle_compatibility, attraction_preferences, life_logistics, attachment_emotional_health, communication_conflict, intimacy_connection")
       .eq("user_id", user.id)
       .maybeSingle(),
+    admin
+      .from("user_filter_preferences")
+      .select("max_distance_miles")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
 
   if (matchRowsRes.error) { console.error("[matches]", matchRowsRes.error); return json({ error: "Failed to load matches" }, 500); }
@@ -253,6 +256,7 @@ async function handleMatchesList(req: Request) {
 
   const userWeights: Record<string, number> = userWeightsRes.data ?? DEFAULT_WEIGHTS;
   const hasPersonalisedWeights = !!userWeightsRes.data;
+  const maxDistanceMiles: number | null = (filterPrefsRes.data as any)?.max_distance_miles ?? null;
 
   const matchedIds = matchRows.map((r) => r.matched_user_id);
 
@@ -284,6 +288,15 @@ async function handleMatchesList(req: Request) {
     if (!p) return false;
     if (p.is_paused || p.is_suspended || p.is_hidden_pending_review) return false;
     if (actedIds.has(row.matched_user_id)) return false;
+    // Distance filter derived from feedback signals
+    if (
+      maxDistanceMiles !== null &&
+      selfProfile?.latitude && selfProfile?.longitude &&
+      p.latitude && p.longitude
+    ) {
+      const dist = haversineMiles(selfProfile.latitude, selfProfile.longitude, p.latitude, p.longitude);
+      if (dist > maxDistanceMiles) return false;
+    }
     return true;
   });
 
@@ -795,7 +808,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/matches\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "13" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "14" });
     if (path === "/list" && req.method === "GET") return await handleMatchesList(req);
     if (path === "/mutual" && req.method === "GET") return await handleMatchesMutual(req);
     if (path === "/mutual-waiting" && req.method === "GET") return await handleMatchesMutualWaiting(req);
