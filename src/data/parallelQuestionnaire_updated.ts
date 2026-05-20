@@ -508,7 +508,7 @@ export const parallelQuestionnaire: Section[] = [
       text: "How actively do you practice your faith or spirituality?",
       subtitle: "This helps us match you with someone whose relationship with faith feels compatible.",
       type: "MC",
-      options: ["Very actively — it's woven into my daily life","Regularly — weekly services, rituals, or practice","Occasionally — holidays, personal moments, or when I need it","Rarely — it's more of a background identity than a practice"],
+      options: ["Very actively — it's woven into my daily life","Regularly — weekly services, rituals, or practice","Occasionally — holidays, personal moments, or when I need it","Rarely — it's more of a background identity than a practice","Never"],
       tags: ["Compatibility Score"],
       weight: 2,
       optional: true,
