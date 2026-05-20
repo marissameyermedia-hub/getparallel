@@ -25,6 +25,7 @@ import { PaymentDetailsView } from './components/account/PaymentDetailsView';
 import { PrivacySafetyView } from './components/account/PrivacySafetyView';
 import { NotificationsView } from './components/account/NotificationsView';
 import { PauseProfileView } from './components/account/PauseProfileView';
+import { CancelSubscriptionView } from './components/account/CancelSubscriptionView';
 import { HelpSupportView } from './components/account/HelpSupportView';
 import { TermsServiceView } from './components/account/TermsServiceView';
 import { RefundPolicyView } from './components/account/RefundPolicyView';
@@ -73,7 +74,7 @@ function App() {
     | 'signin' | 'account-creation' | 'phone-verification' | 'onboarding'
     | 'pricing' | 'payment-confirmation'
     | 'matches' | 'questionnaire' | 'account' | 'profile' | 'my-profile'
-    | 'payment-details' | 'privacy-safety' | 'notifications' | 'pause-profile'
+    | 'payment-details' | 'privacy-safety' | 'notifications' | 'pause-profile' | 'cancel-subscription'
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
     | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
     | 'verification' | 'invite-friends' | 'reset-password'
@@ -1711,6 +1712,9 @@ function App() {
 
         {currentView === 'pause-profile' && (
           <PauseProfileView onBack={() => setCurrentView('account')} hasActivated={hasActivated} />
+        )}
+        {currentView === 'cancel-subscription' && (
+          <CancelSubscriptionView onBack={() => setCurrentView('account')} />
         )}
         {currentView === 'help-support' && (
           <HelpSupportView onBack={() => setCurrentView('account')} onNavigate={(view) => setCurrentView(view as any)} />

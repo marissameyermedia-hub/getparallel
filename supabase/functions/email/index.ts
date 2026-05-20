@@ -1,5 +1,6 @@
-// Parallel — email edge function v9
-// v8: Brand palette applied throughout shellHtml.
+// Parallel — email edge function v10
+// v10: Add /cancellation-confirm — sends cancellation confirmation email.
+// v9: /date-confirmed handler.
 //     - Background: White #FFFFFF (Cream per tailwind.config.ts brand tokens)
 //     - Wordmark: PARA//EL. with // in Purple #7B5EA7 (was plain "Parallel" text)
 //     - CTA button: Purple #7B5EA7 (was black)
@@ -223,6 +224,23 @@ function tplResumeConfirm(name: string | null) {
   const greeting = name ? `Welcome back, ${name}.` : "Welcome back.";
   const html = shellHtml({ heading: greeting, body: `<p style="margin:0 0 12px 0;">Your Parallel account is active again.</p>`, ctaUrl: APP_URL, ctaLabel: "Open Parallel" });
   return { subject: "Welcome back to Parallel", html, text: `${greeting}\n\n${APP_URL}` };
+}
+
+function tplCancellationConfirm(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const html = shellHtml({
+    heading: "Your Parallel subscription has been cancelled",
+    body: `<p style="margin:0 0 12px 0;">${greeting}</p>
+<p style="margin:0 0 12px 0;">Your subscription has been cancelled. You'll keep access through the end of your current billing period.</p>
+<p style="margin:0 0 12px 0;">Your questionnaire answers and match history are saved — you can resubscribe anytime to pick up right where you left off.</p>`,
+    ctaUrl: APP_URL,
+    ctaLabel: "Resubscribe anytime",
+  });
+  return {
+    subject: "Your Parallel subscription has been cancelled",
+    html,
+    text: `${greeting}\n\nYour subscription has been cancelled. You'll keep access through the end of your current billing period.\n\nYour data is saved — resubscribe anytime at ${APP_URL}`,
+  };
 }
 
 function tplDateConfirmed(opts: { recipientName: string | null; matchName: string; dateTime: string; location: string }) {
@@ -451,6 +469,20 @@ async function handleResumeConfirm(req: Request) {
   return json({ ok: true });
 }
 
+async function handleCancellationConfirm(req: Request) {
+  const { user, serviceRole } = await getCaller(req);
+  let body: any = {};
+  try { body = await req.json(); } catch {}
+  const recipientUserId = serviceRole && body.recipientUserId ? String(body.recipientUserId) : user?.id;
+  if (!recipientUserId) return json({ error: "Unauthorized" }, 401);
+  const { send, email, name } = await shouldSendOptional(recipientUserId);
+  if (!send) return json({ ok: true, skipped: true });
+  const tpl = tplCancellationConfirm(name);
+  const sendRes = await resendSend({ to: email!, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 async function handleDateConfirmed(req: Request) {
   const { user, serviceRole } = await getCaller(req);
   let body: any;
@@ -474,7 +506,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "9" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "10" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -483,7 +515,8 @@ Deno.serve(async (req) => {
     if (path === "/renewal-reminder"   && req.method === "POST") return await handleRenewalReminder(req);
     if (path === "/pause-confirm"      && req.method === "POST") return await handlePauseConfirm(req);
     if (path === "/resume-confirm"     && req.method === "POST") return await handleResumeConfirm(req);
-    if (path === "/date-confirmed"     && req.method === "POST") return await handleDateConfirmed(req);
+    if (path === "/date-confirmed"        && req.method === "POST") return await handleDateConfirmed(req);
+    if (path === "/cancellation-confirm"  && req.method === "POST") return await handleCancellationConfirm(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);

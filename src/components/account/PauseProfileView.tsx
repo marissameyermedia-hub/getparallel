@@ -143,26 +143,6 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
           {isPaused ? 'Resume My Profile' : 'Pause My Profile'}
         </button>
 
-        {hasActivated && !cancelSuccess && (
-          <div className="mt-12 pt-8 border-t border-gray-200">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Danger Zone</h3>
-            <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-              Cancelling ends your subscription at the current billing period. You'll lose access to matches and messaging.
-            </p>
-            <button
-              onClick={() => setShowCancelConfirm(true)}
-              className="w-full py-4 px-6 rounded-full border-2 border-red-200 text-red-600 hover:border-red-500 transition-colors text-sm"
-            >
-              Cancel Subscription
-            </button>
-          </div>
-        )}
-
-        {cancelSuccess && (
-          <div className="mt-12 pt-8 border-t border-gray-200">
-            <p className="text-sm text-gray-500 text-center" role="status">Subscription cancelling at period end.</p>
-          </div>
-        )}
 
         {showConfirmation && (
           <div

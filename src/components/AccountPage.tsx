@@ -391,12 +391,7 @@ export function AccountPage({
 
     // Proceed with the actual action
     if (action === 'pause') onNavigate?.('pause-profile');
-    if (action === 'cancel') {
-      // Signal PauseProfileView to open the cancel modal immediately on mount.
-      // PauseProfileView is where the cancel logic actually lives — routing there, not to payment-details.
-      try { sessionStorage.setItem('parallel_auto_open_cancel', '1'); } catch {}
-      onNavigate?.('pause-profile');
-    }
+    if (action === 'cancel') onNavigate?.('cancel-subscription');
     if (action === 'delete') onNavigate?.('delete-account');
   };
 

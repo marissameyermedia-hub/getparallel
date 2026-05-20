@@ -1,4 +1,5 @@
-// Parallel — misc edge function v23
+// Parallel — misc edge function v24
+// v24: /payment/cancel now cancels PayPal subscription via API + sends cancellation confirmation email.
 // v23: Default PERSONA_ENV to "production" (was "sandbox")
 // v22: Add POST /paypal/webhook — handles BILLING.SUBSCRIPTION.* and PAYMENT.SALE.COMPLETED events
 // v21: Persist /paypal/config diagnostics to public._paypal_diag table so we can directly query env-var state.
@@ -565,7 +566,34 @@ async function handlePaymentCancel(req: Request) {
   const { data: sub } = await admin.from("subscriptions").select("paypal_subscription_id").eq("user_id", user.id).maybeSingle();
   const { error } = await admin.from("subscriptions").update({ status: "cancelled", cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("user_id", user.id);
   if (error) { console.error("[payment/cancel]", error); return json({ error: "Failed to cancel" }, 500); }
-  return json({ success: true, paypalSubscriptionId: sub?.paypal_subscription_id ?? null });
+
+  // Cancel the PayPal subscription via PayPal API (fire-and-forget — DB is already updated).
+  const paypalId = sub?.paypal_subscription_id;
+  if (paypalId && IS_LIVE) {
+    (async () => {
+      try {
+        const token = await getPaypalAccessToken();
+        if (token) {
+          await fetch(`${PAYPAL_BASE_URL}/v1/billing/subscriptions/${paypalId}/cancel`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ reason: "User requested cancellation" }),
+          });
+        }
+      } catch (err) {
+        console.error("[payment/cancel] PayPal cancel failed:", err);
+      }
+    })();
+  }
+
+  // Send cancellation confirmation email (fire-and-forget).
+  fetch(`${SUPABASE_URL}/functions/v1/email/cancellation-confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, "apikey": SUPABASE_ANON_KEY },
+    body: JSON.stringify({ recipientUserId: user.id }),
+  }).catch((err) => console.error("[payment/cancel] confirmation email failed:", err));
+
+  return json({ success: true, paypalSubscriptionId: paypalId ?? null });
 }
 
 // ── PayPal Webhook ──────────────────────────────────────────────────────────
@@ -910,7 +938,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "23" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "24" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
