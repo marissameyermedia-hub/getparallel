@@ -147,7 +147,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 Early access · Now open
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
-                Get in before August.
+                Ready to get matched?
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
                 Parallel is launching in every city. Join now, complete the questionnaire, and you'll be matched when your city's pool is ready. Beta members lock in their first year free.
