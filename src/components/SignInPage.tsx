@@ -144,20 +144,20 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 visually sits across from the top edge of the angled cards. */}
             <div className="md:pt-4">
               <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-5 font-medium">
-                Beta · Now accepting testers
+                Early access · Now open
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
-                Ready to get matched?
+                Get in before August.
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
-                We're launching in every city. We're looking for beta testers to try Parallel before our hard launch in August — complete the questionnaire and get your first real matches.
+                Parallel is launching in every city. Join now, complete the questionnaire, and you'll be matched when your city's pool is ready. Beta members lock in their first year free.
               </p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={onShowExplainer}
                   className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
                 >
-                  Apply for beta
+                  Join the beta
                   <ArrowRight size={18} />
                 </button>
                 <button
@@ -305,7 +305,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               onClick={onShowExplainer}
               className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-10 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
             >
-              Apply for beta
+              Join the beta
               <ArrowRight size={18} />
             </button>
             <button
@@ -316,7 +316,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-6">
-            Free during beta · founding member pricing locks in at launch
+            Beta members lock in their first year free.
           </p>
         </div>
       </section>
