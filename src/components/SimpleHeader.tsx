@@ -39,7 +39,7 @@ export function SimpleHeader({
             onClick={() => onNavigate?.('matches')}
             className="hover:opacity-70 transition-opacity"
           >
-            <ParallelWordmark sizeClassName="text-base" />
+            <ParallelWordmark sizeClassName="text-2xl" />
           </button>
         )}
 

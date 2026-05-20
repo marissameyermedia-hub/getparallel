@@ -260,6 +260,37 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
         </div>
       </section>
 
+      {/* ── MATCH CARD PREVIEW ────────────────────────────────────── */}
+      <section className="w-full border-t border-gray-100">
+        <div className="max-w-3xl mx-auto px-6 py-20 md:py-24 flex flex-col items-center text-center">
+          <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-3 font-medium">What a match looks like</p>
+          <h2 className="text-3xl md:text-4xl font-semibold tracking-tight mb-10">
+            Every match comes with a score and a reason why.
+          </h2>
+          <div className="w-full max-w-[300px]">
+            <PreviewMatchCard
+              name="Jordan"
+              age={29}
+              location="Seattle · 2 miles away"
+              score={91}
+              photoUrl=""
+              verified
+              bio="Landscape architect, weekend cyclist, always chasing the perfect pour-over."
+              breakdown={{
+                'Attachment & Emotional Health': 95,
+                'Communication & Conflict': 90,
+                'Life Goals': 94,
+                'Values & Beliefs': 91,
+                'Financial & Career': 88,
+                'Intimacy & Connection': 89,
+                'Lifestyle Behaviors': 92,
+                'Social & Shared Life': 87,
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
       {/* ── WHY PARALLEL IS DIFFERENT ─────────────────────────────── */}
       <section className="w-full border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-6 py-20 md:py-24">
@@ -586,14 +617,14 @@ const CATEGORY_ORDER = [
 ] as const;
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Attachment & Emotional Health': 'bg-purple-500',
-  'Communication & Conflict': 'bg-indigo-500',
-  'Life Goals': 'bg-blue-500',
-  'Values & Beliefs': 'bg-cyan-500',
-  'Financial & Career': 'bg-amber-500',
-  'Intimacy & Connection': 'bg-pink-500',
-  'Lifestyle Behaviors': 'bg-green-500',
-  'Social & Shared Life': 'bg-orange-400',
+  'Attachment & Emotional Health': 'bg-parallel-purple',
+  'Communication & Conflict':      'bg-purple-700',
+  'Life Goals':                    'bg-violet-600',
+  'Values & Beliefs':              'bg-purple-900',
+  'Financial & Career':            'bg-violet-500',
+  'Intimacy & Connection':         'bg-parallel-soft-violet',
+  'Lifestyle Behaviors':           'bg-purple-600',
+  'Social & Shared Life':          'bg-parallel-stone',
 };
 
 function getMatchLabel(score: number) {
@@ -629,7 +660,7 @@ function PreviewMatchCard({
     <div className="bg-parallel-cream rounded-2xl border-2 border-gray-200 overflow-hidden shadow-xl">
       {/* Photo zone — aspect-[3/4] */}
       <div className="relative aspect-[3/4] bg-gray-100">
-        <img src={photoUrl} alt={name} className="w-full h-full object-cover" style={{ filter: 'blur(18px)', transform: 'scale(1.12)' }} />
+        <div className="w-full h-full" style={{ background: 'linear-gradient(160deg, #A98FD0 0%, #7B5EA7 45%, #0D0D0F 100%)' }} />
 
         {/* Verified badge — top left */}
         {verified && (

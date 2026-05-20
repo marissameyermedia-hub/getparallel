@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
+import { ParaelCircle } from '../branding/ParaelCircle';
 
 interface WelcomeScreenProps {
   onContinue: () => void;
@@ -17,32 +18,15 @@ export function WelcomeScreen({ onContinue, userName }: WelcomeScreenProps) {
         <div className="max-w-md w-full">
 
           {/* ── P// circle mark ─────────────────────────────────── */}
-          {/* Brand rule: P// circle is the in-app mark.
-              Void (#0D0D0F) circle, Cream P, Soft Violet // on dark bg. */}
+          {/* Brand rule: P// circle is the in-app mark (locked May 17, 2026).
+              Void #0D0D0F disc · White #FFFFFF P · Soft Violet #A98FD0 // */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
             className="flex justify-center mb-6"
           >
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ background: '#0D0D0F' }}
-              aria-hidden="true"
-            >
-              <span
-                style={{
-                  fontSize: '13px',
-                  fontWeight: 700,
-                  color: '#F5F2EE',
-                  letterSpacing: '0.02em',
-                  lineHeight: 1,
-                  userSelect: 'none',
-                }}
-              >
-                P<span style={{ color: '#A98FD0' }}>//</span>
-              </span>
-            </div>
+            <ParaelCircle size={56} />
           </motion.div>
 
           {/* ── Headline ────────────────────────────────────────── */}

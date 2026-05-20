@@ -1,44 +1,46 @@
-// PARA//EL. wordmark — pre-app brand mark per brand book (April 30, 2026).
-// Used on landing, sign-in, sign-up, phone verification, onboarding,
-// password reset, ads, emails — anywhere a user encounters Parallel
-// before they're inside the app.
-//
-// In-app surfaces (nav bar, etc.) use the P// circle mark instead — never
-// this wordmark.
-//
-// Rules (locked):
-//   - The // is always Parallel Purple #7B5EA7 on light backgrounds and
-//     Soft Violet #A98FD0 on dark/Void backgrounds.
-//   - All other letterforms are Void #0D0D0F on light, Cream #F5F2EE on dark.
-//   - The trailing period . is part of the logo. Never drop it.
-//   - All caps. Never sentence case.
-//   - No taglines, icons, or extra elements appended.
+// PARA//EL. wordmark — uses official brand PNGs from /public.
+// variant='light' → black text on transparent bg (for white/light backgrounds)
+// variant='dark'  → white text on transparent bg (for dark backgrounds)
+// sizeClassName maps Tailwind text-size classes to image height classes.
 
 interface ParallelWordmarkProps {
-  /** Pick the variant that matches the surface this sits on. */
   variant?: 'light' | 'dark';
-  /** Tailwind text-size class. Default: text-xl */
+  /** Tailwind text-size class, e.g. "text-xl". Controls image height. */
   sizeClassName?: string;
   className?: string;
 }
+
+const SIZE_HEIGHT: Record<string, string> = {
+  'text-xs':   'h-3',
+  'text-sm':   'h-3.5',
+  'text-base': 'h-4',
+  'text-lg':   'h-5',
+  'text-xl':   'h-5',
+  'text-2xl':  'h-6',
+  'text-3xl':  'h-8',
+  'text-4xl':  'h-9',
+  'text-5xl':  'h-11',
+};
 
 export function ParallelWordmark({
   variant = 'light',
   sizeClassName = 'text-xl',
   className = '',
 }: ParallelWordmarkProps) {
-  const letterColor = variant === 'dark' ? '#F5F2EE' : '#0D0D0F';
+  // transparent-dark = black text (for light/white backgrounds)
+  // transparent-light = white text (for dark backgrounds)
+  const src = variant === 'dark'
+    ? '/PARA-EL-transparent-light.png'
+    : '/PARA-EL-transparent-dark.png';
+
+  const heightClass = SIZE_HEIGHT[sizeClassName] ?? 'h-5';
 
   return (
-    <span
-      className={`inline-flex items-baseline ${sizeClassName} ${className}`}
-      style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", fontWeight: 800, letterSpacing: '0.08em', color: letterColor }}
-      aria-label="Parallel"
-    >
-      <span aria-hidden="true">PARA</span>
-      <span aria-hidden="true" style={{ color: '#7B5EA7' }}>/</span>
-      <span aria-hidden="true" style={{ color: '#A98FD0' }}>/</span>
-      <span aria-hidden="true">EL.</span>
-    </span>
+    <img
+      src={src}
+      alt="Parallel"
+      className={`${heightClass} w-auto ${className}`}
+      draggable={false}
+    />
   );
 }

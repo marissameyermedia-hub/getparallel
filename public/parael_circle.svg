@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="Parallel">
+  <!-- P// circle mark — locked spec May 17, 2026 -->
+  <!-- Void #0D0D0F disc (90% of canvas) · White P #FFFFFF · Soft Violet // #A98FD0 -->
+  <!-- Inter 900 · -0.04em letter-spacing · P// at 30% of disc diameter -->
+  <circle cx="50" cy="50" r="45" fill="#0D0D0F"/>
+  <text
+    x="50"
+    y="49.19"
+    font-family="Inter,-apple-system,BlinkMacSystemFont,sans-serif"
+    font-weight="900"
+    font-size="27"
+    letter-spacing="-1.08"
+    text-anchor="middle"
+    dominant-baseline="central"
+    fill="#FFFFFF"
+  >P<tspan fill="#A98FD0">//</tspan></text>
+</svg>

@@ -301,7 +301,7 @@ export function InviteView({ onBack }: InviteViewProps) {
         <div className="mt-8">
           {/* Nudge copy */}
           <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
-            "{nudge}"
+            {nudge}
           </div>
 
           {/* Share buttons.
@@ -448,6 +448,9 @@ export function InviteView({ onBack }: InviteViewProps) {
           <div className="text-xs font-medium text-gray-500 uppercase tracking-widest mb-2">What is a ripple?</div>
           <p className="text-sm text-gray-600 leading-relaxed">
             A ripple is someone who joined the matching pool because of you — directly or through someone you referred. Every real person who completes their profile makes the pool better for everyone.
+          </p>
+          <p className="text-sm text-gray-400 mt-2">
+            Your count updates once someone completes their profile.
           </p>
         </div>
 

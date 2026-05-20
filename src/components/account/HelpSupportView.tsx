@@ -35,6 +35,18 @@ export function HelpSupportView({ onBack, onNavigate }: HelpSupportViewProps) {
               </div>
             </a>
           </div>
+          <div className="mt-4 p-4 bg-gray-50 rounded-2xl">
+            <div className="text-sm font-medium text-gray-900">Trust & Safety</div>
+            <a
+              href="mailto:safety@getparallel.vip"
+              className="text-sm text-parallel-purple underline"
+            >
+              safety@getparallel.vip
+            </a>
+            <div className="text-sm text-gray-500 mt-1">
+              Safety reports are reviewed as a priority.
+            </div>
+          </div>
         </div>
 
         {/* Safe Dating Tips */}

@@ -177,9 +177,8 @@ export function InboxView({
   // Waiting mutuals (no messages) live in the row at top, not the list.
   const activeConversations = localMessages
     .filter(m => m.mutualMatch === true && m.hasMessages !== false)
-    .filter(m => m.lastMessage && m.lastMessage !== 'You matched! Say hello 👋');
-  // Secondary safety filter: if hasMessages flag is missing (older clients),
-  // fall back to checking that the placeholder text isn't there.
+    .filter(m => m.lastMessage && m.lastMessage !== 'You matched! Say hello 👋')
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
   const unreadCount = activeConversations.filter(m => m.unread).length;
 
@@ -226,7 +225,7 @@ export function InboxView({
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-nav">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-nav bg-white">
 
         {/* Setup checklist — same card that lives on Home. Auto-hides when all
             actionable items are done (email verified, SMS opted in, PWA done).
@@ -352,6 +351,9 @@ export function InboxView({
             ))}
           </div>
         )}
+
+        {/* Bottom spacer — prevents iOS momentum scroll from clipping the last row */}
+        <div aria-hidden="true" style={{ height: 1 }} />
 
         {/* Empty state — only when neither row nor list has anything */}
         {!hasAnything && (

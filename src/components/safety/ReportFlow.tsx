@@ -25,7 +25,7 @@ const REPORT_CATEGORIES = {
     'Inappropriate photos or content',
     'Fake profile or impersonation',
     'Scam or solicitation',
-    'Underage user',
+    'This person appears to be under 18',
     'Other'
   ],
   chat: [

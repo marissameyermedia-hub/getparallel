@@ -117,6 +117,12 @@ const TIME_OPTIONS: Record<typeof PERIODS[number], number[]> = {
   evening: [17, 18, 19, 20, 21],
 };
 
+// Default hour when the match accepts — avoids asking the user to re-enter a
+// time they've already agreed on in conversation.
+function defaultTimeForPeriod(period: 'afternoon' | 'evening'): number {
+  return period === 'evening' ? 19 : 14;
+}
+
 function getUpcomingDays(count = 7) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -255,11 +261,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
 
   // Expose open() so the compose bar icon can trigger scheduling without a banner
   useImperativeHandle(ref, () => ({
-    open: () => {
-      if (panel === 'trigger' || panel === 'dismissed' || panel === 'confirmed') {
-        setPanel('schedule');
-      }
-    },
+    open: () => setPanel('schedule'),
     dismiss: () => {
       if (['quick-review', 'schedule', 'filter', 'times'].includes(panel)) {
         setPanel('trigger');
@@ -314,19 +316,22 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
     }
   }, [panel, selectedVenue, slots, message, confirmedSlot, confirmedTime, matchId]);
 
-  // When the match picks a day via the proposal card, auto-advance from waiting → time-pick
+  // When the match picks a day via the proposal card, auto-advance from waiting →
+  // confirm-calendar, defaulting the time from the period so users don't have to
+  // re-enter a time they've already agreed on in conversation.
   useEffect(() => {
     if (!dateResponseText || !dateResponseText.startsWith(DATE_RESPONSE_PREFIX)) return;
     try {
       const response = JSON.parse(dateResponseText.slice(DATE_RESPONSE_PREFIX.length)) as DateResponseData;
-      setConfirmedSlot({
+      const slot = {
         date: new Date(response.dateIso),
         period: response.period,
         label: response.label,
         shortLabel: response.shortLabel,
-      });
-      setConfirmedTime(null);
-      setPanel(prev => prev === 'waiting' ? 'time-pick' : prev);
+      };
+      setConfirmedSlot(slot);
+      setConfirmedTime(defaultTimeForPeriod(response.period));
+      setPanel(prev => prev === 'waiting' ? 'confirm-calendar' : prev);
     } catch { /* ignore malformed response */ }
   }, [dateResponseText]);
 
@@ -356,7 +361,7 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
     return () => clearTimeout(timer);
   }, [searchQuery, matchId]);
 
-  if (!flagEnabled || !mutualMatch || messageCount < 10 || panel === 'dismissed') return null;
+  if (!flagEnabled || panel === 'dismissed') return null;
 
   const days = getUpcomingDays(7);
   const initials = getInitials(matchName);
@@ -553,9 +558,9 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
   // ── Render ────────────────────────────────────────────────────────────────────
 
   if (panel === 'trigger') {
-    // Only render a proactive chip when the conversation signals genuine interest.
-    // The compose-bar icon is the primary trigger — always available without friction.
-    if (!detectReadiness(recentMessages)) return null;
+    // Proactive chip only shows when the conversation has enough history and signals.
+    // The compose-bar icon bypasses this — it sets panel directly to 'schedule'.
+    if (!mutualMatch || messageCount < 10 || !detectReadiness(recentMessages)) return null;
     return (
       <button
         onClick={() => setPanel('schedule')}
@@ -656,16 +661,9 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
 
         <button
           onClick={() => fetchVenuesConcierge()}
-          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity mb-2"
+          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
         >
           Find a spot →
-        </button>
-        <button
-          onClick={fetchAutoPick}
-          className="w-full text-[11px] text-[#7B5EA7] py-1.5 rounded-full border border-[#E2D5F5] hover:bg-[#EDE8F8] transition-colors flex items-center justify-center gap-1.5"
-        >
-          <Sparkles size={11} aria-hidden="true" />
-          Just pick for us →
         </button>
       </div>
     );
@@ -1208,76 +1206,55 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
     );
   }
 
-  if (panel === 'time-pick' && confirmedSlot && selectedVenue) {
-    const timeOptions = TIME_OPTIONS[confirmedSlot.period];
+  if (panel === 'confirm-calendar' && confirmedSlot && selectedVenue && confirmedTime !== null) {
     return (
-      <div className="mb-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="flex items-center justify-between mb-2">
+      <div className="mb-2 rounded-2xl border border-[#E2D5F5] bg-[#F8F4FD] px-4 py-3">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5">
             <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
-            <span className="text-[11px] font-medium text-[#7B5EA7] tracking-wide">
-              What time did you agree on?
+            <span className="text-[11px] font-semibold text-[#7B5EA7] tracking-wide">
+              {matchFirstName} said yes!
             </span>
           </div>
-          <button onClick={() => setPanel('waiting')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Back">
+          <button onClick={() => setPanel('dismissed')} className="p-0.5 hover:bg-black/5 rounded-full transition-colors" aria-label="Dismiss">
             <X size={13} className="text-[#8A8690]" aria-hidden="true" />
           </button>
         </div>
 
-        <p className="text-[11px] text-[#8A8690] mb-2.5">
+        <p className="text-[11px] text-[#8A8690] mb-3">
           {dayName(confirmedSlot)} · {selectedVenue.name}
         </p>
 
-        {/* Time chips */}
-        <div className="flex gap-1.5 flex-wrap mb-3">
-          {timeOptions.map(h => (
+        <div className="flex gap-2">
+          {selectedVenue.mapsUrl && (
             <button
-              key={h}
-              onClick={() => setConfirmedTime(h)}
-              className={`text-[11px] font-medium px-3 py-1 rounded-full border transition-colors ${
-                confirmedTime === h
-                  ? 'bg-[#7B5EA7] text-[#F5F2EE] border-[#7B5EA7]'
-                  : 'text-[#8A8690] border-[#E8E4DE] hover:border-[#7B5EA7]'
-              }`}
+              onClick={() => window.open(selectedVenue.mapsUrl, '_blank', 'noopener')}
+              className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E2D5F5] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
             >
-              {formatHour(h)}
+              <ExternalLink size={11} aria-hidden="true" />
+              View on Maps
             </button>
-          ))}
+          )}
+          <button
+            onClick={() => {
+              openCalendar(selectedVenue, confirmedSlot, initials, confirmedTime);
+              const cardData: DateCardData = {
+                venueName: selectedVenue.name,
+                venueAddress: selectedVenue.address,
+                mapsUrl: selectedVenue.mapsUrl,
+                dateIso: confirmedSlot.date.toISOString(),
+                time: confirmedTime,
+                label: `${dayName(confirmedSlot)} at ${formatHour(confirmedTime)}`,
+                period: confirmedSlot.period,
+              };
+              onSendMessage(`${DATE_CARD_PREFIX}${JSON.stringify(cardData)}`);
+              setPanel('dismissed');
+            }}
+            className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
+          >
+            Add to Calendar
+          </button>
         </div>
-
-        {/* Book + Calendar CTAs — appear once a time is chosen */}
-        {confirmedTime !== null && (
-          <div className="flex gap-2">
-            {selectedVenue.mapsUrl && (
-              <button
-                onClick={() => window.open(selectedVenue.mapsUrl, '_blank', 'noopener')}
-                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium text-[#8A8690] border border-[#E8E4DE] py-2 rounded-full hover:border-[#7B5EA7] hover:text-[#7B5EA7] transition-colors"
-              >
-                <ExternalLink size={11} aria-hidden="true" />
-                View on Maps
-              </button>
-            )}
-            <button
-              onClick={() => {
-                openCalendar(selectedVenue, confirmedSlot, initials, confirmedTime);
-                const cardData: DateCardData = {
-                  venueName: selectedVenue.name,
-                  venueAddress: selectedVenue.address,
-                  mapsUrl: selectedVenue.mapsUrl,
-                  dateIso: confirmedSlot.date.toISOString(),
-                  time: confirmedTime,
-                  label: `${dayName(confirmedSlot)} at ${formatHour(confirmedTime)}`,
-                  period: confirmedSlot.period,
-                };
-                onSendMessage(`${DATE_CARD_PREFIX}${JSON.stringify(cardData)}`);
-                setPanel('dismissed');
-              }}
-              className="flex-1 text-xs font-semibold text-[#F5F2EE] bg-[#0D0D0F] py-2 rounded-full hover:opacity-80 transition-opacity"
-            >
-              Add to Calendar
-            </button>
-          </div>
-        )}
       </div>
     );
   }

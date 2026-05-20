@@ -5,6 +5,7 @@ import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../u
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 import { useModalA11y } from '../utils/useModalA11y';
+import { ParallelWordmark } from './ParallelWordmark';
 
 function getAuthHeaders(token: string) {
   return {
@@ -195,7 +196,7 @@ export function MatchProfileView({
   ].filter(Boolean) as { icon: any; label: string; value: string }[];
 
   return (
-    <div className="min-h-screen bg-parallel-cream pt-20 pb-40">
+    <div className="min-h-screen bg-white pt-0 pb-40">
 
       {/* Preview-mode banner — sticky just under the header so it stays
           visible whether the user is on photos, breakdown, or basics.
@@ -211,20 +212,21 @@ export function MatchProfileView({
         </div>
       )}
 
-      {/* Header */}
-      <div className="max-w-2xl mx-auto px-4 mb-4 flex items-center justify-between">
-        <button
-          onClick={onBack}
-          aria-label={isPreview ? 'Back to account' : 'Back to matches'}
-          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors flex items-center gap-1"
-        >
-          <ChevronLeft size={20} aria-hidden="true" />
-          <span className="text-sm text-gray-600">{isPreview ? 'Account' : 'Matches'}</span>
-        </button>
-        {/* Safety menu (block / report / unmatch) is hidden in preview —
-            those actions don't apply to your own profile. */}
-        {!isPreview && (
-        <div className="relative safety-menu-container">
+      {/* Branded header — logo centered, back chevron left, menu right */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between relative">
+          <button
+            onClick={onBack}
+            aria-label={isPreview ? 'Back to account' : 'Back to matches'}
+            className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+          >
+            <ChevronLeft size={24} aria-hidden="true" />
+          </button>
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <ParallelWordmark sizeClassName="text-2xl" />
+          </div>
+          {!isPreview && (
+          <div className="relative safety-menu-container z-10">
           <button
             onClick={() => setShowSafetyMenu(!showSafetyMenu)}
             aria-label="More options"
@@ -238,18 +240,20 @@ export function MatchProfileView({
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowSafetyMenu(false)} aria-hidden="true" />
               <div className="absolute right-0 top-12 w-52 bg-parallel-cream rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden z-50" role="menu">
-                <button
-                  onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
-                  role="menuitem"
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                >
-                  <UserMinus size={18} className="text-gray-600" aria-hidden="true" />
-                  <span>Unmatch</span>
-                </button>
+                {alreadyMatched && (
+                  <button
+                    onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
+                    role="menuitem"
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                  >
+                    <UserMinus size={18} className="text-gray-600" aria-hidden="true" />
+                    <span>Unmatch</span>
+                  </button>
+                )}
                 <button
                   onClick={() => { setShowSafetyMenu(false); setShowReportModal(true); }}
                   role="menuitem"
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-t border-gray-100"
+                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors ${alreadyMatched ? 'border-t border-gray-100' : ''}`}
                 >
                   <Flag size={18} className="text-gray-600" aria-hidden="true" />
                   <span>Report User</span>
@@ -265,8 +269,10 @@ export function MatchProfileView({
               </div>
             </>
           )}
+          </div>
+          )}
+          {isPreview && <div className="w-10 z-10" />}
         </div>
-        )}
       </div>
 
       {/* Unmatch Modal */}
@@ -659,7 +665,7 @@ export function MatchProfileView({
               disabled={isLiked || isLiking}
               aria-label={isLiked ? `Liked ${user.name}` : `Like ${user.name}`}
               className={`flex-1 h-14 rounded-full transition-all flex items-center justify-center gap-2 font-medium shadow-lg ${
-                isLiked ? 'bg-red-500 text-parallel-cream cursor-default'
+                isLiked ? 'bg-parallel-purple text-parallel-cream cursor-default'
                 : isLiking ? 'bg-gray-400 text-parallel-cream cursor-wait'
                 : 'bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90'
               }`}

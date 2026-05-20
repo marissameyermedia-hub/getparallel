@@ -83,7 +83,7 @@ export function SwipeableMatchView({
 
   return (
     <div className="bg-parallel-cream flex flex-col">
-      <div className="px-4 pt-4 pb-2 max-w-md mx-auto w-full">
+      <div className="px-4 pt-2 pb-2 max-w-md mx-auto w-full">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
             Match Suggestions
@@ -113,7 +113,7 @@ export function SwipeableMatchView({
         </div>
       )}
 
-      <div className="flex-1 flex items-start justify-center px-4 pt-2 pb-4">
+      <div className="flex-1 flex items-start justify-center px-4 pt-1 pb-4">
         <div className="w-full max-w-md relative">
           {nextMatch && (
             <div
