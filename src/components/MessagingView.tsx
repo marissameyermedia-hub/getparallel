@@ -208,6 +208,7 @@ export function MessagingView({
   const [showUnmatchModal, setShowUnmatchModal] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showStarters, setShowStarters] = useState(false);
+  const [aiStarters, setAiStarters] = useState<string[] | null>(null);
   const [viewportHeight, setViewportHeight] = useState<number | null>(null);
   const [viewportOffsetTop, setViewportOffsetTop] = useState<number>(0);
   // Initial-load gate. Skeleton shows until the first load completes (success
@@ -344,6 +345,7 @@ export function MessagingView({
 
     // Reset starters so switching conversations always starts fresh
     setShowStarters(false);
+    setAiStarters(null);
 
     let realtimeChannel: any = null;
     let cancelled = false;
@@ -381,14 +383,19 @@ export function MessagingView({
         { headers: getAuthHeaders(token) }
       ).then(r => r.ok ? r.json() : null).catch(() => null);
 
-      // Wait for all four. We only really BLOCK on fetchMessages — that's the
-      // one that determines whether the user sees content. The others can
-      // resolve in their own time without holding up render.
-      const [_, __, realtimeRes, eligData] = await Promise.all([
+      const startersPromise = fetch(
+        `${MESSAGES_FUNCTION_URL}/starters?matchId=${matchId}`,
+        { headers: getAuthHeaders(token) }
+      ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+      // Wait for all five in parallel. fetchMessages is the only one that
+      // blocks — the rest enrich the UI but don't gate initial render.
+      const [_, __, realtimeRes, eligData, startersData] = await Promise.all([
         fetchMessagesPromise,
         markReadPromise,
         realtimeConfigPromise,
         eligibilityPromise,
+        startersPromise,
       ]);
 
       if (cancelled) return;
@@ -426,6 +433,7 @@ export function MessagingView({
       }
 
       if (eligData) setMetBannerEligibility(eligData);
+      if (startersData?.starters) setAiStarters(startersData.starters);
       setIsInitialLoading(false);
       setShowStarters(true);
       progress.done();
@@ -1045,7 +1053,7 @@ export function MessagingView({
               <span className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Conversation starters</span>
             </div>
             <div className="space-y-1.5">
-              {getStartersFor(sharedHobbies).map((starter, i) => (
+              {(aiStarters ?? getStartersFor(sharedHobbies)).map((starter, i) => (
                 <button
                   key={i}
                   onClick={() => handleUseStarter(starter)}
