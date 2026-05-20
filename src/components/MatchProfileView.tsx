@@ -240,18 +240,20 @@ export function MatchProfileView({
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowSafetyMenu(false)} aria-hidden="true" />
               <div className="absolute right-0 top-12 w-52 bg-parallel-cream rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden z-50" role="menu">
-                <button
-                  onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
-                  role="menuitem"
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
-                >
-                  <UserMinus size={18} className="text-gray-600" aria-hidden="true" />
-                  <span>Unmatch</span>
-                </button>
+                {alreadyMatched && (
+                  <button
+                    onClick={() => { setShowSafetyMenu(false); setShowUnmatchModal(true); }}
+                    role="menuitem"
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                  >
+                    <UserMinus size={18} className="text-gray-600" aria-hidden="true" />
+                    <span>Unmatch</span>
+                  </button>
+                )}
                 <button
                   onClick={() => { setShowSafetyMenu(false); setShowReportModal(true); }}
                   role="menuitem"
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors border-t border-gray-100"
+                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-3 transition-colors ${alreadyMatched ? 'border-t border-gray-100' : ''}`}
                 >
                   <Flag size={18} className="text-gray-600" aria-hidden="true" />
                   <span>Report User</span>
