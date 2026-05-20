@@ -144,7 +144,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 visually sits across from the top edge of the angled cards. */}
             <div className="md:pt-4">
               <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-5 font-medium">
-                Early access · Now open
+                Professional matchmaking · Early access
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
                 Ready to get matched?
