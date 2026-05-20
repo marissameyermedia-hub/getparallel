@@ -661,16 +661,9 @@ export const DatePlannerCard = forwardRef<DatePlannerCardHandle, Props>(function
 
         <button
           onClick={() => fetchVenuesConcierge()}
-          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity mb-2"
+          className="w-full text-xs font-semibold text-[#F5F2EE] bg-[#7B5EA7] py-2 rounded-full hover:opacity-90 transition-opacity"
         >
           Find a spot →
-        </button>
-        <button
-          onClick={fetchAutoPick}
-          className="w-full text-[11px] text-[#7B5EA7] py-1.5 rounded-full border border-[#E2D5F5] hover:bg-[#EDE8F8] transition-colors flex items-center justify-center gap-1.5"
-        >
-          <Sparkles size={11} aria-hidden="true" />
-          Just pick for us →
         </button>
       </div>
     );
