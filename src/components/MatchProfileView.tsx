@@ -5,6 +5,7 @@ import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../u
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 import { useModalA11y } from '../utils/useModalA11y';
+import { ParallelWordmark } from './ParallelWordmark';
 
 function getAuthHeaders(token: string) {
   return {
@@ -195,7 +196,7 @@ export function MatchProfileView({
   ].filter(Boolean) as { icon: any; label: string; value: string }[];
 
   return (
-    <div className="min-h-screen bg-parallel-cream pt-20 pb-40">
+    <div className="min-h-screen bg-white pt-0 pb-40">
 
       {/* Preview-mode banner — sticky just under the header so it stays
           visible whether the user is on photos, breakdown, or basics.
@@ -211,20 +212,21 @@ export function MatchProfileView({
         </div>
       )}
 
-      {/* Header */}
-      <div className="max-w-2xl mx-auto px-4 mb-4 flex items-center justify-between">
-        <button
-          onClick={onBack}
-          aria-label={isPreview ? 'Back to account' : 'Back to matches'}
-          className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors flex items-center gap-1"
-        >
-          <ChevronLeft size={20} aria-hidden="true" />
-          <span className="text-sm text-gray-600">{isPreview ? 'Account' : 'Matches'}</span>
-        </button>
-        {/* Safety menu (block / report / unmatch) is hidden in preview —
-            those actions don't apply to your own profile. */}
-        {!isPreview && (
-        <div className="relative safety-menu-container">
+      {/* Branded header — logo centered, back chevron left, menu right */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between relative">
+          <button
+            onClick={onBack}
+            aria-label={isPreview ? 'Back to account' : 'Back to matches'}
+            className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors z-10"
+          >
+            <ChevronLeft size={24} aria-hidden="true" />
+          </button>
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <ParallelWordmark sizeClassName="text-2xl" />
+          </div>
+          {!isPreview && (
+          <div className="relative safety-menu-container z-10">
           <button
             onClick={() => setShowSafetyMenu(!showSafetyMenu)}
             aria-label="More options"
@@ -265,8 +267,10 @@ export function MatchProfileView({
               </div>
             </>
           )}
+          </div>
+          )}
+          {isPreview && <div className="w-10 z-10" />}
         </div>
-        )}
       </div>
 
       {/* Unmatch Modal */}
