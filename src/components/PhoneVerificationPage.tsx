@@ -289,16 +289,6 @@ export function PhoneVerificationPage({ accessToken, phone: initialPhone, onVeri
               )}
             </button>
 
-            {onSkip && (
-              <button
-                onClick={skipVerification}
-                disabled={isSending || isSkipping}
-                className="w-full text-xs text-gray-400 hover:text-gray-600 mt-1 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isSkipping ? 'Skipping…' : 'Skip for now'}
-              </button>
-            )}
-
             {onBack && (
               <button
                 onClick={onBack}

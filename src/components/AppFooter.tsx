@@ -22,8 +22,7 @@ export function AppFooter({ onNavigate }: AppFooterProps) {
       <div className="max-w-2xl mx-auto px-6 py-6">
 
         <p className="text-center mb-4">
-          <ParallelWordmark variant="light" sizeClassName="text-sm" />
-          <span className="block text-xs text-gray-500 mt-1">© {new Date().getFullYear()} PARALLEL VIP LLC · getparallel.vip</span>
+          <span className="block text-xs text-gray-500">© {new Date().getFullYear()} PARALLEL VIP LLC · getparallel.vip</span>
         </p>
 
         <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-500">
