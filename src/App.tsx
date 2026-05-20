@@ -1293,7 +1293,7 @@ function App() {
   ].includes(currentView);
 
   return (
-    <>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <NavigationProgress />
 
       {/* Skip-to-content link for keyboard users — visually hidden until focused */}
@@ -1301,7 +1301,7 @@ function App() {
         Skip to main content
       </a>
 
-      {/* Header — hidden on fullscreen views */}
+      {/* Header — flex-shrink-0 top bar; no longer position:fixed */}
       {!isFullscreenView && (
         <Header
           onNavigate={(view) => setCurrentView(view)}
@@ -1347,8 +1347,8 @@ function App() {
         <AddToHomeScreenBanner accessToken={accessToken} />
       )}
 
-      {/* Main content wrapper. 64px top padding clears the fixed Header. */}
-      <div id="main-content" className={!isFullscreenView ? 'pt-header' : ''}>
+      {/* Main content — scrolls within the flex column; header and nav are stationary */}
+      <div id="main-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden' }}>
         {/* ── Reset Password ── */}
         {currentView === 'reset-password' && (
           <ResetPasswordPage
@@ -1834,9 +1834,19 @@ function App() {
         {currentView === 'invite-friends' && (
           <InviteView onBack={() => setCurrentView('account')} />
         )}
+
+        {/* ── App footer — legal/policy/account views only — inside scroll area ── */}
+        {[
+          'account', 'privacy-policy', 'consumer-health-data-policy', 'terms-service',
+          'refund-policy', 'community-guidelines', 'help-support', 'privacy-safety',
+          'payment-details', 'notifications', 'pause-profile', 'delete-account',
+          'verification',
+        ].includes(currentView) && (
+          <AppFooter onNavigate={(v) => setCurrentView(v as any)} />
+        )}
       </div>
 
-      {/* ── Bottom nav — hidden on fullscreen views ── */}
+      {/* ── Bottom nav — flex-shrink-0 bottom bar; no longer position:fixed ── */}
       {!isFullscreenView && (
         <BottomNav
           onNavigate={(view) => setCurrentView(view as any)}
@@ -1845,22 +1855,7 @@ function App() {
         />
       )}
 
-      {/* ── App footer — legal/policy/account views only ── */}
-      {/* Shown on all public entry points (via SignInPage + AccountCreationPage props)  */}
-      {/* and on account/policy views where users are reading legal documents.           */}
-      {/* NOT shown on matches, messaging, questionnaire, or other core app views.      */}
-      {/* Required: WA MHMDA Consumer Health Data Policy must be linked from app entry  */}
-      {/* points and accessible from within the app.                                    */}
-      {[
-        'account', 'privacy-policy', 'consumer-health-data-policy', 'terms-service',
-        'refund-policy', 'community-guidelines', 'help-support', 'privacy-safety',
-        'payment-details', 'notifications', 'pause-profile', 'delete-account',
-        'verification',
-      ].includes(currentView) && (
-        <AppFooter onNavigate={(v) => setCurrentView(v as any)} />
-      )}
-
-      {/* ── Bottom sheets & overlays ── */}
+      {/* ── Bottom sheets & overlays (position:fixed — unaffected by flex layout) ── */}
       {dateReviewScreen && (
         <DateReviewScreen
           isOpen={dateReviewScreen.isOpen}
@@ -1902,7 +1897,7 @@ function App() {
           onSubmit={handleNPSSubmit}
         />
       )}
-    </>
+    </div>
   );
 }
 
