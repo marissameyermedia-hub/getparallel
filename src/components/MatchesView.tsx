@@ -41,6 +41,8 @@ interface MatchesViewProps {
   emailVerified?: boolean;
   onOpenNotifications?: () => void;
   onOpenFeedback?: () => void;
+  feedbackInsights?: Array<{ type: string; message: string }>;
+  onDismissInsight?: () => void;
 }
 
 export function MatchesView({
@@ -63,6 +65,8 @@ export function MatchesView({
   emailVerified = true,
   onOpenNotifications,
   onOpenFeedback,
+  feedbackInsights = [],
+  onDismissInsight,
 }: MatchesViewProps) {
   const [lastPassedMatchId, setLastPassedMatchId] = useState<string | null>(null);
 
@@ -328,6 +332,14 @@ export function MatchesView({
         onOpenNotifications={onOpenNotifications}
         onOpenSubscribe={onNavigateToPayment}
       />
+
+      {feedbackInsights.length > 0 && (
+        <div className="mx-4 mb-3 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+          <span className="text-amber-500 text-sm mt-0.5">💡</span>
+          <p className="flex-1 text-sm text-amber-800">{feedbackInsights[0].message}</p>
+          <button onClick={onDismissInsight} className="text-amber-400 hover:text-amber-600 text-xs leading-none mt-0.5">✕</button>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-8">
 

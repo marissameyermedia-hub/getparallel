@@ -142,6 +142,8 @@ function App() {
   const [appFeedbackSheet, setAppFeedbackSheet] = useState(false);
   const [npsSheet, setNpsSheet] = useState(false);
   const [featureFlags, setFeatureFlags] = useState<FeatureFlags>({});
+  const [feedbackInsights, setFeedbackInsights] = useState<Array<{ type: string; message: string }>>([]);
+  const [insightDismissed, setInsightDismissed] = useState(false);
 
   // Captured from ?ref=CODE on first load. Persists in localStorage so it
   // survives the trip through SignIn → AccountCreation. Cleared after the
@@ -252,6 +254,20 @@ function App() {
     } catch (err) {
       console.error('Failed to fetch matches:', err);
     }
+  };
+
+  const fetchFeedbackInsights = async (token: string, uid: string) => {
+    try {
+      const res = await fetch(`${FEEDBACK_PROCESSOR_URL}/get-insights?userId=${uid}`, {
+        headers: getHeaders(token),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.insights) && data.insights.length > 0) {
+          setFeedbackInsights(data.insights);
+        }
+      }
+    } catch { /* non-critical, silently skip */ }
   };
 
   const saveAnswersToSupabase = useCallback((answers: Record<string, any>) => {
@@ -530,6 +546,7 @@ function App() {
             setCurrentView('phone-verification');
           } else if (onboardingComplete) {
             await fetchMatches(session.access_token);
+            fetchFeedbackInsights(session.access_token, session.user.id);
             if (notifyType === 'message' && notifyFrom) {
               // Notification deep-link: open directly to the conversation.
               setSelectedMatchId(notifyFrom);
@@ -588,6 +605,7 @@ function App() {
                 setCurrentView('phone-verification');
               } else if (onboardingComplete) {
                 await fetchMatches(storedToken);
+                fetchFeedbackInsights(storedToken, storedUserId);
                 if (notifyType === 'message' && notifyFrom) {
                   setSelectedMatchId(notifyFrom);
                   setCurrentView('messaging');
@@ -1004,6 +1022,20 @@ function App() {
           method: 'POST',
           headers: getHeaders(token),
           body: JSON.stringify({ userId }),
+        }).catch(() => {});
+        // Derive Haiku pattern insights from accumulated snapshots (fire-and-forget)
+        fetch(`${FEEDBACK_PROCESSOR_URL}/analyze-user`, {
+          method: 'POST',
+          headers: getHeaders(token),
+          body: JSON.stringify({ userId }),
+        }).then(async (r) => {
+          if (r.ok) {
+            const data = await r.json();
+            if (Array.isArray(data.insights) && data.insights.length > 0) {
+              setFeedbackInsights(data.insights);
+              setInsightDismissed(false);
+            }
+          }
         }).catch(() => {});
       }
     }
@@ -1476,6 +1508,8 @@ function App() {
             emailVerified={emailConfirmed}
             onOpenNotifications={() => setCurrentView('notifications')}
             onOpenFeedback={() => setAppFeedbackSheet(true)}
+            feedbackInsights={insightDismissed ? [] : feedbackInsights}
+            onDismissInsight={() => setInsightDismissed(true)}
           />
         )}
 

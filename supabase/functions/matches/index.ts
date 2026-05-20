@@ -1,4 +1,7 @@
-// Parallel — matches edge function v14
+// Parallel — matches edge function v15
+// v15: Fix handleFeedbackTier2 — body.respectfulnessRating was accidentally
+//      deployed as body.respectfulnessReason in v14. Local was always correct;
+//      this deploy syncs the live version.
 // v14: /list reads user_filter_preferences.max_distance_miles and excludes
 //      matches that exceed it. Written by feedback-processor v3 when a user
 //      has 2+ "too_far_away" passes with snapshot distance data.
@@ -808,7 +811,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/matches\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "14" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "15" });
     if (path === "/list" && req.method === "GET") return await handleMatchesList(req);
     if (path === "/mutual" && req.method === "GET") return await handleMatchesMutual(req);
     if (path === "/mutual-waiting" && req.method === "GET") return await handleMatchesMutualWaiting(req);

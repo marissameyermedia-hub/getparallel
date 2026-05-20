@@ -1,4 +1,9 @@
-// Parallel — feedback-processor edge function v3
+// Parallel — feedback-processor edge function v4
+// v4: Haiku pattern analysis — /analyze-user reads accumulated feedback
+//     snapshots (requires 5+), calls claude-haiku-4-5-20251001 to derive
+//     pattern insights (max 3, each ≤80 chars), caches in user_feedback_insights
+//     for 24h, logs cost to ai_cost_log.
+//     /get-insights returns cached insights for a userId.
 // v3: Distance filter signals — reads feedback_snapshot.distance_miles from
 //     pass_reason rows where reason is "too_far_away". If a user has 2+
 //     such passes, computes a tighter max_distance_miles (75% of the minimum
@@ -16,6 +21,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") || "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +39,124 @@ function adminClient() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+}
+
+async function logAiCost(admin: ReturnType<typeof adminClient>, userId: string, model: string, inputTokens: number, outputTokens: number, feature = "feedback_analysis") {
+  // Claude Haiku 3.5 pricing: $0.80/1M input, $4.00/1M output
+  const costUsd = (inputTokens * 0.80 / 1_000_000) + (outputTokens * 4.00 / 1_000_000);
+  try {
+    await admin.from("ai_cost_log").insert({ feature, user_id: userId, model, input_tokens: inputTokens, output_tokens: outputTokens, cost_usd: costUsd });
+  } catch (err) { console.error("[ai_cost_log] failed:", err); }
+}
+
+const ANALYSIS_MIN_ROWS = 5;
+const ANALYSIS_CACHE_HOURS = 24;
+
+async function analyzeUser(userId: string): Promise<{ insights: Array<{ type: string; message: string }>; cached?: boolean; reason?: string }> {
+  const admin = adminClient();
+
+  // Check 24h cache
+  const { data: cached } = await admin
+    .from("user_feedback_insights")
+    .select("insights, generated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (cached) {
+    const ageHours = (Date.now() - new Date(cached.generated_at).getTime()) / 3_600_000;
+    if (ageHours < ANALYSIS_CACHE_HOURS) {
+      return { insights: cached.insights ?? [], cached: true };
+    }
+  }
+
+  // Load feedback rows that have snapshots
+  const { data: rows } = await admin
+    .from("structured_feedback")
+    .select("pass_reasons, feedback_snapshot")
+    .eq("user_id", userId)
+    .not("feedback_snapshot", "is", null);
+
+  if (!rows || rows.length < ANALYSIS_MIN_ROWS) {
+    return { insights: [], reason: "insufficient_data" };
+  }
+
+  if (!ANTHROPIC_API_KEY) {
+    return { insights: [], reason: "no_api_key" };
+  }
+
+  const lines = rows.map((r, i) => {
+    const snap = (r.feedback_snapshot as any) ?? {};
+    const reasons = Array.isArray(r.pass_reasons) && r.pass_reasons.length > 0
+      ? r.pass_reasons.join(", ")
+      : "no_reason";
+    const age = typeof snap.matched_age === "number" ? snap.matched_age : "?";
+    const dist = typeof snap.distance_miles === "number" ? `${snap.distance_miles}mi` : "?";
+    const score = typeof snap.compatibility_score === "number" ? snap.compatibility_score : "?";
+    return `${i + 1}. reasons: ${reasons} | age: ${age} | dist: ${dist} | score: ${score}`;
+  });
+
+  const systemPrompt = `You analyze dating app pass decisions to find patterns in what a user consistently rejects. Return ONLY a JSON array of {type: string, message: string}. No explanation, no markdown fences, no extra text.`;
+
+  const userPrompt = `Analyze these ${rows.length} pass decisions:\n\n${lines.join("\n")}\n\nRules:\n- Only report patterns seen in 3+ entries\n- Be specific (mention counts, ages, distances)\n- Each message under 80 characters\n- Max 3 insights\n- If no genuine pattern, return []\n\nValid types: "distance", "age", "score", "lifestyle", "attraction", "values"`;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 256,
+        messages: [{ role: "user", content: userPrompt }],
+        system: systemPrompt,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!aiRes.ok) throw new Error(`Anthropic API error: ${aiRes.status}`);
+
+    const aiData = await aiRes.json();
+    const rawText: string = aiData.content?.[0]?.text?.trim() ?? "";
+    const inputTokens: number = aiData.usage?.input_tokens ?? 0;
+    const outputTokens: number = aiData.usage?.output_tokens ?? 0;
+
+    // Strip markdown fences if Haiku wrapped anyway
+    const cleaned = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+    let insights: Array<{ type: string; message: string }> = [];
+    try {
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed)) {
+        insights = parsed
+          .filter((x: any) => x && typeof x.type === "string" && typeof x.message === "string")
+          .map((x: any) => ({ type: x.type, message: x.message.slice(0, 80) }))
+          .slice(0, 3);
+      }
+    } catch {
+      console.error("[analyze-user] JSON parse failed:", cleaned);
+    }
+
+    await Promise.all([
+      admin.from("user_feedback_insights").upsert(
+        { user_id: userId, insights, generated_at: new Date().toISOString() },
+        { onConflict: "user_id" },
+      ),
+      logAiCost(admin, userId, "claude-haiku-4-5-20251001", inputTokens, outputTokens),
+    ]);
+
+    return { insights };
+  } catch (err) {
+    console.error("[analyze-user] AI call failed:", err);
+    return { insights: [], reason: "ai_error" };
+  }
 }
 
 const CATEGORIES = [
@@ -254,7 +378,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/feedback-processor\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "feedback-processor", version: "3" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "feedback-processor", version: "4" });
 
     if (path === "/process-user" && req.method === "POST") {
       let body: any;
@@ -280,6 +404,27 @@ Deno.serve(async (req) => {
         results[userId] = r.updated;
       }
       return json({ processed: userIds.size, results });
+    }
+
+    if (path === "/analyze-user" && req.method === "POST") {
+      let body: any;
+      try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+      const userId = String(body.userId ?? "").trim();
+      if (!userId) return json({ error: "Missing userId" }, 400);
+      const result = await analyzeUser(userId);
+      return json(result);
+    }
+
+    if (path === "/get-insights" && req.method === "GET") {
+      const userId = url.searchParams.get("userId") ?? "";
+      if (!userId) return json({ error: "Missing userId" }, 400);
+      const admin = adminClient();
+      const { data } = await admin
+        .from("user_feedback_insights")
+        .select("insights")
+        .eq("user_id", userId)
+        .maybeSingle();
+      return json({ insights: data?.insights ?? [] });
     }
 
     return json({ error: "Not found", path, method: req.method }, 404);
