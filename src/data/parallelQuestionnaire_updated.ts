@@ -194,7 +194,7 @@ export const parallelQuestionnaire: Section[] = [
     {
       id: "1.0",
       text: "Where are you based?",
-      subtitle: "We use your location to find compatible people near you.",
+      subtitle: "We use your location to find compatible people.",
       type: "LOCATION",
       tags: ["Profile Information"],
       weight: 0,
