@@ -482,9 +482,10 @@ export function ProfileEditor({
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={e => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
+                  onContextMenu={e => e.preventDefault()}
                   className={`relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 cursor-move border-2 transition-all ${dragIndex === index ? 'border-parallel-void opacity-70 scale-95' : 'border-transparent'} ${index === 0 ? 'ring-2 ring-black ring-offset-1' : ''}`}
                 >
-                  <img src={photo} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                  <img src={photo} alt={`Photo ${index + 1}`} draggable={false} className="w-full h-full object-cover pointer-events-none" />
                   {index === 0 && (
                     <div className="absolute top-1.5 left-1.5 bg-parallel-purple text-parallel-cream text-[10px] font-medium px-1.5 py-0.5 rounded-full">Main</div>
                   )}
