@@ -1,4 +1,8 @@
-// Parallel — matches edge function v15
+// Parallel — matches edge function v16
+// v16: Add "Connection Style" to BREAKDOWN_KEY_MAP (maps to intimacy_connection).
+//      handleFeedbackStructured now saves body.passReasonCategories →
+//      pass_reason_categories column so feedback-processor v5 can apply
+//      category-based weight deltas without chip-ID lookups.
 // v15: Fix handleFeedbackTier2 — body.respectfulnessRating was accidentally
 //      deployed as body.respectfulnessReason in v14. Local was always correct;
 //      this deploy syncs the live version.
@@ -505,6 +509,7 @@ async function handleFeedbackStructured(req: Request) {
   const admin = adminClient();
   const row: Record<string, any> = { user_id: user.id, matched_user_id: matchedUserId, feedback_type: feedbackType };
   if (Array.isArray(body.passReasons)) row.pass_reasons = body.passReasons;
+  if (Array.isArray(body.passReasonCategories)) row.pass_reason_categories = body.passReasonCategories;
   if (typeof body.chatOutcome === "string") row.chat_outcome = body.chatOutcome;
   if (typeof body.dateOutcome === "string") row.date_outcome = body.dateOutcome;
   if (Array.isArray(body.wouldAdjust)) row.would_adjust = body.wouldAdjust;
@@ -812,7 +817,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/matches\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "15" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "matches", version: "16" });
     if (path === "/list" && req.method === "GET") return await handleMatchesList(req);
     if (path === "/mutual" && req.method === "GET") return await handleMatchesMutual(req);
     if (path === "/mutual-waiting" && req.method === "GET") return await handleMatchesMutualWaiting(req);
