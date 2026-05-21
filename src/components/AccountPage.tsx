@@ -426,11 +426,11 @@ export function AccountPage({
         <div className="max-w-2xl mx-auto">
 
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="mb-2">Account</h1>
-            <p className="text-gray-600">
-              {userName ? `Hi, ${userName.split(' ')[0]}` : 'Manage your profile and settings'}
-            </p>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-1">
+              {userName ? `Hi, ${userName.split(' ')[0]}.` : 'Hi there.'}
+            </h1>
+            <p className="text-gray-500 text-sm">Profile &amp; settings</p>
           </div>
 
           {/* Upgrade nudge — only when the user has matches to unlock.
