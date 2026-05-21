@@ -26,40 +26,40 @@ const CATEGORIES = [
     researchNote: "Gottman's research identified how couples fight — not what they fight about — as the primary predictor of divorce.",
   },
   {
-    key: 'life_goals',
-    label: 'Life Goals',
-    defaultTokens: 6,
-    researchNote: 'Misalignment on children and marriage are among the most common causes of relationship dissolution, even when everything else aligns.',
+    key: 'values_life_goals',
+    label: 'Values & Life Goals',
+    defaultTokens: 7,
+    researchNote: 'Misalignment on children, marriage, and core values is among the top reasons couples separate — even when everything else aligns.',
   },
   {
-    key: 'values_beliefs',
-    label: 'Values & Beliefs',
+    key: 'relationship_psychology',
+    label: 'Relationship Psychology',
     defaultTokens: 6,
-    researchNote: 'Shared values predict long-term compatibility more strongly than shared personality or interests. Political and religious differences have become increasingly predictive.',
+    researchNote: 'How you think about love, trust, and vulnerability — your internal relationship model — predicts long-term compatibility more reliably than shared interests.',
   },
   {
-    key: 'financial_career',
-    label: 'Financial & Career',
-    defaultTokens: 3,
-    researchNote: 'Financial arguments are the #1 predictor of divorce when controlling for other factors — more than sex, in-laws, or parenting. Money reveals character.',
+    key: 'lifestyle_compatibility',
+    label: 'Lifestyle Compatibility',
+    defaultTokens: 5,
+    researchNote: 'Daily-life fit — how social you are, how you spend free time, activity levels — shapes whether a relationship feels easy or exhausting day to day.',
+  },
+  {
+    key: 'attraction_preferences',
+    label: 'Attraction',
+    defaultTokens: 4,
+    researchNote: 'Physical and intimate compatibility matters — but attraction is highly subjective. Mismatches here are less predictive of failure than psychological or values gaps.',
+  },
+  {
+    key: 'life_logistics',
+    label: 'Life Logistics',
+    defaultTokens: 2,
+    researchNote: 'Distance, finances, and practical life factors matter — but they tend to be more negotiable than values or emotional patterns.',
   },
   {
     key: 'intimacy_connection',
     label: 'Connection Style',
-    defaultTokens: 3,
-    researchNote: "Physical intimacy alignment is a top-five relationship dissatisfier when mismatched, yet rarely discussed directly. Attraction fades — but intimacy needs don't.",
-  },
-  {
-    key: 'lifestyle_behaviors',
-    label: 'Lifestyle Behaviors',
-    defaultTokens: 4,
-    researchNote: "Lifestyle differences create friction but are more negotiable than values or emotional patterns. Research shows lifestyle conflicts are 'solvable' — most other categories aren't.",
-  },
-  {
-    key: 'social_shared_life',
-    label: 'Social & Shared Life',
-    defaultTokens: 4,
-    researchNote: 'Shared activities bond couples and create positive memories, but they predict relationship enjoyment more than relationship survival.',
+    defaultTokens: 2,
+    researchNote: 'How you connect emotionally and physically. Alignment helps — but couples adapt here more successfully than in psychological or values dimensions.',
   },
 ];
 
@@ -85,27 +85,12 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
         if (res.ok) {
           const data = await res.json();
           if (data.weights) {
-            const keyMap: Record<string, string> = {
-              'Attachment & Emotional Health': 'attachment_emotional_health',
-              'Communication & Conflict': 'communication_conflict',
-              'Life Goals': 'life_goals',
-              'Values & Beliefs': 'values_beliefs',
-              'Financial & Career': 'financial_career',
-              'Connection Style': 'intimacy_connection',
-              'Lifestyle Behaviors': 'lifestyle_behaviors',
-              'Social & Shared Life': 'social_shared_life',
-            };
-            const mapped = Object.fromEntries(
-              Object.entries(data.weights).map(([k, v]) => [keyMap[k] ?? k, v])
-            ) as Record<string, number>;
-
-            // If the stored total doesn't match TOTAL_TOKENS (e.g. legacy 20-token values),
-            // scale proportionally and fix any rounding drift.
-            const storedTotal = Object.values(mapped).reduce((a, b) => a + b, 0);
+            const weights = data.weights as Record<string, number>;
+            const storedTotal = Object.values(weights).reduce((a, b) => a + b, 0);
             if (storedTotal > 0 && storedTotal !== TOTAL_TOKENS) {
               const scale = TOTAL_TOKENS / storedTotal;
               const scaled: Record<string, number> = Object.fromEntries(
-                Object.entries(mapped).map(([k, v]) => [k, Math.max(1, Math.round(v * scale))])
+                Object.entries(weights).map(([k, v]) => [k, Math.max(1, Math.round(v * scale))])
               );
               const scaledTotal = Object.values(scaled).reduce((a, b) => a + b, 0);
               const drift = TOTAL_TOKENS - scaledTotal;
@@ -115,7 +100,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
               }
               setTokens(scaled);
             } else {
-              setTokens(mapped);
+              setTokens(weights);
             }
           }
         }
