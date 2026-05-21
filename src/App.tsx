@@ -1346,8 +1346,8 @@ function App() {
         <EnablePushBanner accessToken={accessToken} />
       )}
 
-      {accessToken && hasCompletedOnboarding && (
-        <AddToHomeScreenBanner accessToken={accessToken} hasBottomActionBar={currentView === 'profile'} />
+      {accessToken && hasCompletedOnboarding && !isFullscreenView && (
+        <AddToHomeScreenBanner accessToken={accessToken} />
       )}
 
       {/* Main content — scrolls within the flex column; header and nav are stationary */}
