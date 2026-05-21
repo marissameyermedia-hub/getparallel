@@ -10,33 +10,23 @@ interface PassFeedbackBottomSheetProps {
 }
 
 const PASS_REASONS = [
-  { id: 'values_felt_off',             label: "Values didn't align",          category: 'values_life_goals' },
-  { id: 'lifestyle_mismatch',          label: 'Lifestyle mismatch',           category: 'lifestyle_compatibility' },
-  { id: 'not_physical_type',           label: 'Not the right physical fit',   category: 'attraction_preferences' },
-  { id: 'too_far_away',                label: 'Too far away',                 category: 'life_logistics' },
-  { id: 'attachment_style_concern',    label: 'Different emotional style',    category: 'attachment_emotional_health' },
-  { id: 'communication_style_felt_off',label: 'Communication felt off',       category: 'communication_conflict' },
-  { id: 'life_stage_mismatch',         label: 'Different life stage',         category: 'life_logistics' },
-  { id: 'just_not_feeling_it',         label: 'Just not feeling it',          category: null },
-];
-
-const WOULD_ADJUST = [
-  { id: 'more_similar_values',       label: 'More similar values' },
-  { id: 'closer_location',           label: 'Closer location' },
-  { id: 'different_lifestyle',       label: 'Different lifestyle' },
-  { id: 'stronger_physical',         label: 'Stronger physical attraction' },
-  { id: 'different_life_stage',      label: 'Different life stage' },
+  { id: 'not_physically_attracted',    label: 'Not physically attracted',          category: 'attraction_preferences' },
+  { id: 'too_far_away',                label: 'Too far away',                      category: 'life_logistics' },
+  { id: 'different_kids_family_views', label: 'Different views on kids or family', category: 'values_life_goals' },
+  { id: 'different_relationship_timeline', label: 'Different relationship timeline', category: 'values_life_goals' },
+  { id: 'different_core_values',       label: 'Different core values or beliefs',  category: 'values_life_goals' },
+  { id: 'emotionally_unavailable',     label: 'Seemed emotionally unavailable',    category: 'attachment_emotional_health' },
+  { id: 'different_emotional_needs',   label: 'Different emotional needs',         category: 'attachment_emotional_health' },
+  { id: 'communication_style_mismatch',label: 'Different communication style',     category: 'communication_conflict' },
+  { id: 'different_social_energy',     label: 'Different social energy',           category: 'social_shared_life' },
+  { id: 'different_daily_habits',      label: 'Different daily habits or lifestyle', category: 'lifestyle_compatibility' },
 ];
 
 export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit }: PassFeedbackBottomSheetProps) {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
-  const [selectedAdjust, setSelectedAdjust] = useState<string[]>([]);
 
   useEffect(() => {
-    if (isOpen) {
-      setSelectedReasons([]);
-      setSelectedAdjust([]);
-    }
+    if (isOpen) setSelectedReasons([]);
   }, [isOpen]);
 
   useModalA11y(isOpen, onClose);
@@ -46,7 +36,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit }: PassFeedb
   const toggle = (id: string, list: string[], setter: (v: string[]) => void) =>
     setter(list.includes(id) ? list.filter(x => x !== id) : [...list, id]);
 
-  const handleSubmit = () => onSubmit(selectedReasons, selectedAdjust);
+  const handleSubmit = () => onSubmit(selectedReasons, []);
 
   const chipClass = (selected: boolean) =>
     `px-4 py-2 rounded-full border-2 transition-all text-sm ${
@@ -79,8 +69,7 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit }: PassFeedb
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 min-h-0 space-y-6">
-          {/* Pass reasons */}
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           <div className="flex flex-wrap gap-2">
             {PASS_REASONS.map(r => (
               <button
@@ -92,23 +81,6 @@ export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit }: PassFeedb
                 {r.label}
               </button>
             ))}
-          </div>
-
-          {/* Would adjust */}
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-3">What would you change about future matches?</p>
-            <div className="flex flex-wrap gap-2">
-              {WOULD_ADJUST.map(a => (
-                <button
-                  key={a.id}
-                  onClick={() => toggle(a.id, selectedAdjust, setSelectedAdjust)}
-                  aria-pressed={selectedAdjust.includes(a.id)}
-                  className={chipClass(selectedAdjust.includes(a.id))}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
 
