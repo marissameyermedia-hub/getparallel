@@ -6,9 +6,10 @@ import { getAccessToken } from '../../utils/auth';
 
 interface CancelSubscriptionViewProps {
   onBack: () => void;
+  onCancelSuccess?: () => void;
 }
 
-export function CancelSubscriptionView({ onBack }: CancelSubscriptionViewProps) {
+export function CancelSubscriptionView({ onBack, onCancelSuccess }: CancelSubscriptionViewProps) {
   const [step, setStep] = useState<'confirm' | 'loading' | 'done' | 'error'>('confirm');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -22,6 +23,7 @@ export function CancelSubscriptionView({ onBack }: CancelSubscriptionViewProps) 
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
       });
       if (res.ok) {
+        onCancelSuccess?.();
         setStep('done');
       } else {
         const data = await res.json().catch(() => ({}));

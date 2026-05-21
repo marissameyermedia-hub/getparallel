@@ -247,6 +247,7 @@ export function AccountPage({
   const [renewalDate, setRenewalDate] = useState<string | null>(null);
   const [isFoundingMember, setIsFoundingMember] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [subscriptionCanceled, setSubscriptionCanceled] = useState(false);
 
   // ── Modal accessibility hooks ────────────────────────────────────────────
   // Each call wires Escape-to-close, body-scroll-lock, and focus-restore for
@@ -305,10 +306,14 @@ export function AccountPage({
           const renewal = data.currentPeriodEnd ?? data.current_period_end ?? data.renewalDate ?? data.renewal_date ?? null;
           const founding = Boolean(data.isFoundingMember ?? data.is_founding_member ?? false);
           const paused = Boolean(data.isPaused ?? data.is_paused ?? false);
+          const cancelAtEnd = Boolean(data.cancelAtPeriodEnd ?? data.cancel_at_period_end ?? false);
+          const subStatus = (data.subscriptionStatus ?? data.subscription_status ?? '').toLowerCase();
+          const canceled = cancelAtEnd || subStatus === 'cancelled' || subStatus === 'canceled';
           if (plan) setSubscriptionPlan(plan);
           if (renewal) setRenewalDate(renewal);
           if (founding) setIsFoundingMember(true);
           setIsPaused(paused);
+          if (canceled) setSubscriptionCanceled(true);
         })
         .catch(() => { /* network failure — keep defaults, don't trigger blank-screen overlay */ });
     })();
@@ -705,8 +710,8 @@ export function AccountPage({
               </div>
             </button>
 
-            {/* Cancel subscription — only shown for active subscribers */}
-            {hasActivated && (
+            {/* Cancel subscription — only shown for active, non-canceled subscribers */}
+            {hasActivated && !subscriptionCanceled && (
               <button
                 onClick={() => setExitFeedbackAction('cancel')}
                 className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-parallel-void transition-colors flex items-start gap-3"
@@ -719,6 +724,21 @@ export function AccountPage({
                   </p>
                 </div>
               </button>
+            )}
+
+            {/* Canceled state — subscription is canceled but still in grace period */}
+            {hasActivated && subscriptionCanceled && (
+              <div className="w-full p-4 rounded-2xl border-2 border-gray-100 flex items-start gap-3">
+                <CreditCard size={20} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 text-left">
+                  <p className="font-medium text-sm text-gray-500">Subscription canceled</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {renewalDate
+                      ? `Access continues until ${formatBillingDate(renewalDate)}`
+                      : 'Access continues until end of billing period'}
+                  </p>
+                </div>
+              </div>
             )}
 
             <button

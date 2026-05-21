@@ -1716,7 +1716,13 @@ function App() {
           <PauseProfileView onBack={() => setCurrentView('account')} hasActivated={hasActivated} />
         )}
         {currentView === 'cancel-subscription' && (
-          <CancelSubscriptionView onBack={() => setCurrentView('account')} />
+          <CancelSubscriptionView
+            onBack={() => setCurrentView('account')}
+            onCancelSuccess={() => {
+              setHasActivated(false);
+              getAccessToken().then(token => { if (token) fetchUserData(token); }).catch(() => {});
+            }}
+          />
         )}
         {currentView === 'help-support' && (
           <HelpSupportView onBack={() => setCurrentView('account')} onNavigate={(view) => setCurrentView(view as any)} />
