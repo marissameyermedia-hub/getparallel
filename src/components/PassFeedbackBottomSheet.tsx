@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useModalA11y } from '../utils/useModalA11y';
+import { PASS_REASONS } from '../data/passFeedbackReasons';
 
 interface PassFeedbackBottomSheetProps {
   isOpen: boolean;
@@ -9,18 +10,6 @@ interface PassFeedbackBottomSheetProps {
   onNavigateToQuestionnaire?: () => void;
 }
 
-const PASS_REASONS = [
-  { id: 'not_physically_attracted',    label: 'Not physically attracted',          category: 'attraction_preferences' },
-  { id: 'too_far_away',                label: 'Too far away',                      category: 'life_logistics' },
-  { id: 'different_kids_family_views', label: 'Different views on kids or family', category: 'values_life_goals' },
-  { id: 'different_relationship_timeline', label: 'Different relationship timeline', category: 'values_life_goals' },
-  { id: 'different_core_values',       label: 'Different core values or beliefs',  category: 'values_life_goals' },
-  { id: 'emotionally_unavailable',     label: 'Seemed emotionally unavailable',    category: 'attachment_emotional_health' },
-  { id: 'different_emotional_needs',   label: 'Different emotional needs',         category: 'attachment_emotional_health' },
-  { id: 'communication_style_mismatch',label: 'Different communication style',     category: 'communication_conflict' },
-  { id: 'different_social_energy',     label: 'Different social energy',           category: 'social_shared_life' },
-  { id: 'different_daily_habits',      label: 'Different daily habits or lifestyle', category: 'lifestyle_compatibility' },
-];
 
 export function PassFeedbackBottomSheet({ isOpen, onClose, onSubmit }: PassFeedbackBottomSheetProps) {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);

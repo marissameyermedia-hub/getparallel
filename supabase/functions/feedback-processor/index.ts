@@ -1,4 +1,9 @@
-// Parallel — feedback-processor edge function v4
+// Parallel — feedback-processor edge function v5
+// v5: Category-based weight deltas — processUser now reads pass_reason_categories
+//     (DB column names sent directly from the frontend) and applies CATEGORY_DELTAS
+//     instead of the chip-ID lookup. Old rows without pass_reason_categories still
+//     fall back to PASS_REASON_DELTAS (now includes all 10 current chip IDs).
+//     This decouples weight adjustment from chip label/ID churn.
 // v4: Haiku pattern analysis — /analyze-user reads accumulated feedback
 //     snapshots (requires 5+), calls claude-haiku-4-5-20251001 to derive
 //     pattern insights (max 3, each ≤80 chars), caches in user_feedback_insights
@@ -193,13 +198,40 @@ const LEGACY_ZERO_COLUMNS: Record<string, number> = {
   social_shared_life:  0,
 };
 
+// Direct category → delta: used when pass_reason_categories is present in the row.
+// These fire regardless of chip label churn — backend receives DB column names.
+const CATEGORY_DELTAS: Record<string, { delta: number }> = {
+  values_life_goals:           { delta: -3 },
+  relationship_psychology:     { delta: -2 },
+  lifestyle_compatibility:     { delta: -3 },
+  attraction_preferences:      { delta: -2 },
+  life_logistics:              { delta: -2 },
+  attachment_emotional_health: { delta: -2 },
+  communication_conflict:      { delta: -2 },
+  intimacy_connection:         { delta: -2 },
+};
+
+// Legacy chip-ID → category mapping: used for rows WITHOUT pass_reason_categories.
+// Includes all historical chip IDs so old feedback still fires correctly.
 const PASS_REASON_DELTAS: Partial<Record<string, { cat: Category; delta: number }>> = {
+  // Legacy IDs (pre-v5 chips)
   values_felt_off:              { cat: "values_life_goals",          delta: -3 },
   lifestyle_mismatch:           { cat: "lifestyle_compatibility",     delta: -3 },
   not_physical_type:            { cat: "attraction_preferences",      delta: -2 },
   attachment_style_concern:     { cat: "attachment_emotional_health", delta: -2 },
   communication_style_felt_off: { cat: "communication_conflict",      delta: -2 },
   life_stage_mismatch:          { cat: "life_logistics",              delta: -2 },
+  // Current chip IDs (v5 chips, sent alongside pass_reason_categories for new rows)
+  not_physically_attracted:         { cat: "attraction_preferences",      delta: -2 },
+  too_far_away:                     { cat: "life_logistics",              delta: -2 },
+  different_kids_family_views:      { cat: "values_life_goals",           delta: -3 },
+  different_relationship_timeline:  { cat: "values_life_goals",           delta: -3 },
+  different_core_values:            { cat: "values_life_goals",           delta: -3 },
+  emotionally_unavailable:          { cat: "attachment_emotional_health", delta: -2 },
+  different_emotional_needs:        { cat: "attachment_emotional_health", delta: -2 },
+  communication_style_mismatch:     { cat: "communication_conflict",      delta: -2 },
+  different_social_energy:          { cat: "lifestyle_compatibility",     delta: -3 },
+  different_daily_habits:           { cat: "lifestyle_compatibility",     delta: -3 },
 };
 
 const WOULD_ADJUST_DELTAS: Record<string, { cat: Category; delta: number }> = {
@@ -250,10 +282,9 @@ function normalizeWeights(weights: Record<Category, number>): Record<Category, n
 async function processUser(userId: string): Promise<{ updated: boolean; weights?: Record<Category, number>; maxDistanceMiles?: number | null }> {
   const admin = adminClient();
 
-  // v3: also select feedback_snapshot for distance signal processing
   const { data: feedbackRows } = await admin
     .from("structured_feedback")
-    .select("feedback_type, pass_reasons, would_adjust, feedback_snapshot")
+    .select("feedback_type, pass_reasons, would_adjust, feedback_snapshot, pass_reason_categories")
     .eq("user_id", userId);
 
   const { data: reviewRows } = await admin
@@ -276,9 +307,21 @@ async function processUser(userId: string): Promise<{ updated: boolean; weights?
   const applyDelta = (cat: Category, delta: number) => { deltas[cat] += delta; };
 
   for (const row of feedbackRows ?? []) {
-    for (const reason of row.pass_reasons ?? []) {
-      const mapping = PASS_REASON_DELTAS[reason];
-      if (mapping) applyDelta(mapping.cat, mapping.delta);
+    const cats = Array.isArray((row as any).pass_reason_categories) ? (row as any).pass_reason_categories as string[] : null;
+    if (cats && cats.length > 0) {
+      // New path: categories sent directly — no chip-ID lookup needed
+      for (const cat of cats) {
+        const mapping = CATEGORY_DELTAS[cat];
+        if (mapping && CATEGORIES.includes(cat as Category)) {
+          applyDelta(cat as Category, mapping.delta);
+        }
+      }
+    } else {
+      // Legacy path: fall back to chip-ID lookup for old rows
+      for (const reason of row.pass_reasons ?? []) {
+        const mapping = PASS_REASON_DELTAS[reason];
+        if (mapping) applyDelta(mapping.cat, mapping.delta);
+      }
     }
     for (const adj of row.would_adjust ?? []) {
       const mapping = WOULD_ADJUST_DELTAS[adj];
@@ -378,7 +421,7 @@ Deno.serve(async (req) => {
   const path = url.pathname.replace(/^\/feedback-processor\/?/i, "/").replace(/\/$/, "") || "/";
 
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "feedback-processor", version: "4" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "feedback-processor", version: "5" });
 
     if (path === "/process-user" && req.method === "POST") {
       let body: any;

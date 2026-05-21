@@ -56,6 +56,7 @@ import { ChevronLeft } from 'lucide-react';
 import { PageLoader } from './components/PageLoader';
 import { loadFlags, FeatureFlags } from './hooks/useFeatureFlags';
 import { ADMIN_FUNCTION_URL } from './utils/supabase/client';
+import { PASS_REASON_CATEGORY_MAP } from './data/passFeedbackReasons';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/json',
@@ -1007,7 +1008,8 @@ function App() {
       headers: getHeaders(token),
       body: JSON.stringify({ matchUserId: matchId, action: 'pass' }),
     }).catch(err => console.error('Pass API failed:', err));
-    if (passReasons.length > 0 || wouldAdjust.length > 0) {
+    if (passReasons.length > 0) {
+      const passReasonCategories = [...new Set(passReasons.map(id => PASS_REASON_CATEGORY_MAP[id]).filter(Boolean))];
       fetch(`${MATCHES_FUNCTION_URL}/feedback/structured`, {
         method: 'POST',
         headers: getHeaders(token),
@@ -1015,7 +1017,7 @@ function App() {
           matchedUserId: matchId,
           feedbackType: 'pass_reason',
           passReasons,
-          wouldAdjust,
+          passReasonCategories,
           ...(snapshot ? { snapshot } : {}),
         }),
       }).catch(err => console.error('Feedback API failed:', err));
