@@ -141,14 +141,14 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-parallel-cream flex items-center justify-center">
+      <div className="h-full bg-parallel-cream flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-parallel-void border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-parallel-cream flex flex-col">
+    <div className="h-full bg-parallel-cream flex flex-col">
       {/* Header */}
       <div className="pt-4 px-6 pb-2 flex-shrink-0 flex items-center justify-between">
         {onBack ? (
@@ -159,7 +159,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
         <div />
       </div>
 
-      <div className="flex-1 px-6 pb-36 overflow-y-auto">
+      <div className="flex-1 px-6 pb-6 overflow-y-auto">
         {/* Title */}
         <div className="mb-6 mt-4">
           <h1 className="text-2xl font-bold mb-2">What matters most to you?</h1>
@@ -169,11 +169,20 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
         </div>
 
         {/* Research note */}
-        <div className="mb-6 bg-gray-50 rounded-2xl px-4 py-3">
+        <div className="mb-4 bg-gray-50 rounded-2xl px-4 py-3">
           <p className="text-xs text-gray-500 leading-relaxed">
             These weights are based on relationship longevity research. Adjust them if your priorities differ.
           </p>
         </div>
+
+        {/* Feedback adapts weights — shown after onboarding */}
+        {!isOnboarding && (
+          <div className="mb-6 bg-gray-50 rounded-2xl px-4 py-3">
+            <p className="text-xs text-gray-500 leading-relaxed">
+              <span className="font-medium text-gray-700">These adapt over time.</span> When you pass and say why, we shift what we look for — prioritizing dimensions where you've seen consistent misalignment.
+            </p>
+          </div>
+        )}
 
         {/* Token counter */}
         <div className={`mb-6 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl ${remaining === 0 ? 'bg-parallel-purple text-parallel-cream' : 'bg-gray-100 text-gray-600'} transition-colors`}>
@@ -233,8 +242,8 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
         </div>
       </div>
 
-      {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-parallel-cream border-t border-gray-100 py-3 px-4 z-50">
+      {/* Bottom CTA */}
+      <div className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 py-3 px-4">
         <div className="max-w-md mx-auto">
           <button
             onClick={handleSave}
