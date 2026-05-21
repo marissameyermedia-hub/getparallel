@@ -138,7 +138,7 @@ function shellHtml(opts: { heading: string; body: string; ctaUrl?: string; ctaLa
     `<tr><td style="padding:0 32px;font-size:15px;line-height:1.6;color:${B.void_};">${body}</td></tr>` +
     `${cta}` +
     `<tr><td style="padding:24px 32px 32px 32px;border-top:1px solid ${B.linen};">` +
-    `<p style="margin:0;font-size:12px;line-height:1.6;color:${B.stone};">Parallel — compatibility-first dating.<br>This email was sent to a verified Parallel account. Need help? Reply to this email.</p>` +
+    `<p style="margin:0;font-size:12px;line-height:1.6;color:${B.stone};">Parallel — professional matchmaking.<br>This email was sent to a verified Parallel account. Need help? Reply to this email.</p>` +
     `</td></tr>` +
     `</table></td></tr></table>` +
     `</body></html>`
