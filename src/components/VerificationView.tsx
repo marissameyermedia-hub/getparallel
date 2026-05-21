@@ -315,13 +315,6 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
               )}
             </button>
 
-            <button
-              onClick={onBack}
-              className="w-full mt-3 py-3 rounded-full border-2 border-gray-200 text-gray-700 hover:border-gray-400 transition-colors text-sm font-medium"
-            >
-              Not right now
-            </button>
-
           </>
         )}
 
