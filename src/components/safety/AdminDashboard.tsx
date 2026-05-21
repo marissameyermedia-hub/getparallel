@@ -9,6 +9,9 @@ import {
   Clock,
   FileText,
   DollarSign,
+  TrendingUp,
+  Users,
+  MessageSquare,
 } from 'lucide-react';
 import { AdminCaseDetail } from './AdminCaseDetail';
 import { AdminCitiesOverview } from './AdminCitiesOverview';
@@ -17,6 +20,9 @@ import { AdminReports } from './AdminReports';
 import { AdminMatchQuality } from './AdminMatchQuality';
 import { AdminReleases } from './AdminReleases';
 import { AdminRevenue } from './AdminRevenue';
+import { AdminGrowthFunnel } from './AdminGrowthFunnel';
+import { AdminUserLookup } from './AdminUserLookup';
+import { AdminEngagement } from './AdminEngagement';
 import { AdminPulsePanel } from './AdminPulsePanel';
 import { projectId, publicAnonKey } from '../../utils/supabase/info';
 
@@ -73,7 +79,7 @@ function apiCaseToSafetyCase(c: any): SafetyCase {
   };
 }
 
-type Tab = 'cities' | 'reports' | 'match-quality' | 'releases' | 'revenue' | 'trust-safety';
+type Tab = 'cities' | 'reports' | 'match-quality' | 'releases' | 'revenue' | 'growth' | 'users' | 'engagement' | 'trust-safety';
 
 export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<Tab>('cities');
@@ -205,6 +211,9 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
               { id: 'match-quality', label: 'Match Quality', Icon: Activity },
               { id: 'releases',      label: 'Releases',      Icon: Clock },
               { id: 'revenue',       label: 'Revenue',       Icon: DollarSign },
+              { id: 'growth',        label: 'Growth',        Icon: TrendingUp },
+              { id: 'users',         label: 'Users',         Icon: Users },
+              { id: 'engagement',    label: 'Engagement',    Icon: MessageSquare },
               { id: 'trust-safety',  label: 'Trust & Safety', Icon: AlertTriangle, badge: !isLoading && statusCounts.open + statusCounts['under-review'] > 0 ? statusCounts.open + statusCounts['under-review'] : 0 },
             ] as const).map(({ id, label, Icon, badge }) => (
               <button
@@ -284,6 +293,12 @@ export function AdminDashboard({ onBack, accessToken }: AdminDashboardProps) {
       {activeTab === 'releases' && <AdminReleases />}
 
       {activeTab === 'revenue' && <AdminRevenue accessToken={accessToken} />}
+
+      {activeTab === 'growth' && <AdminGrowthFunnel accessToken={accessToken} />}
+
+      {activeTab === 'users' && <AdminUserLookup accessToken={accessToken} />}
+
+      {activeTab === 'engagement' && <AdminEngagement accessToken={accessToken} />}
 
       {activeTab === 'trust-safety' && (
         <>
