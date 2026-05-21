@@ -45,7 +45,7 @@ const CATEGORIES = [
   },
   {
     key: 'intimacy_connection',
-    label: 'Intimacy & Connection',
+    label: 'Connection Style',
     defaultTokens: 3,
     researchNote: "Physical intimacy alignment is a top-five relationship dissatisfier when mismatched, yet rarely discussed directly. Attraction fades — but intimacy needs don't.",
   },
@@ -91,7 +91,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
               'Life Goals': 'life_goals',
               'Values & Beliefs': 'values_beliefs',
               'Financial & Career': 'financial_career',
-              'Intimacy & Connection': 'intimacy_connection',
+              'Connection Style': 'intimacy_connection',
               'Lifestyle Behaviors': 'lifestyle_behaviors',
               'Social & Shared Life': 'social_shared_life',
             };

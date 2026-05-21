@@ -55,7 +55,7 @@ export const COMPATIBILITY_CATEGORIES = [
   'Life Goals',
   'Values & Beliefs',
   'Financial & Career',
-  'Intimacy & Connection',
+  'Connection Style',
   'Lifestyle Behaviors',
   'Social & Shared Life',
 ] as const;

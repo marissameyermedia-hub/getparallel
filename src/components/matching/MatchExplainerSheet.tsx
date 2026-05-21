@@ -22,7 +22,7 @@ function toDisplayLabel(key: string): string {
     life_logistics:              'Life Logistics',
     attachment_emotional_health: 'Attachment & Emotional Health',
     communication_conflict:      'Communication & Conflict',
-    intimacy_connection:         'Intimacy & Connection',
+    intimacy_connection:         'Connection Style',
   };
   return map[key] ?? key;
 }

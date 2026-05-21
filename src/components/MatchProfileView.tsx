@@ -58,7 +58,7 @@ const CATEGORY_ORDER = [
   'Life Goals',
   'Values & Beliefs',
   'Financial & Career',
-  'Intimacy & Connection',
+  'Connection Style',
   'Lifestyle Behaviors',
   'Social & Shared Life',
 ] as const;
@@ -69,7 +69,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Life Goals':                    'bg-violet-600',
   'Values & Beliefs':              'bg-purple-900',
   'Financial & Career':            'bg-violet-500',
-  'Intimacy & Connection':         'bg-parallel-soft-violet',
+  'Connection Style':         'bg-parallel-soft-violet',
   'Lifestyle Behaviors':           'bg-purple-600',
   'Social & Shared Life':          'bg-parallel-stone',
 };
@@ -119,7 +119,7 @@ function getCategoryInsight(label: string, score: number): string {
         'Different financial philosophies or career orientations. Worth understanding each other\'s approach.',
         'Meaningfully different views on money and ambition. Neither is wrong — but they\'re different.',
       );
-    case 'Intimacy & Connection':
+    case 'Connection Style':
       return t(
         'Strong compatibility in how you each seek and express closeness.',
         'Good intimacy alignment — similar preferences for how connection is built.',
@@ -551,7 +551,8 @@ export function MatchProfileView({
             )}
             <div className="space-y-1">
               {CATEGORY_ORDER.map((label) => {
-                const raw = breakdown[label];
+                // "Connection Style" was previously stored as "Intimacy & Connection" — fall back for existing match data
+                const raw = breakdown[label] ?? (label === 'Connection Style' ? breakdown['Intimacy & Connection'] : undefined);
                 const hasScore = typeof raw === 'number' && raw > 0;
                 const score = hasScore ? (raw as number) : 0;
                 const barColor = CATEGORY_COLORS[label] || 'bg-parallel-void';

@@ -5,6 +5,7 @@ import { publicAnonKey } from '../utils/supabase/info';
 
 interface Props {
   accessToken: string;
+  hasBottomActionBar?: boolean;
 }
 
 const DISMISSED_KEY = 'parallel_aths_dismissed';
@@ -21,7 +22,7 @@ function shouldShowBanner(): boolean {
   return isIOS && !isStandalone && !dismissed;
 }
 
-export function AddToHomeScreenBanner({ accessToken }: Props) {
+export function AddToHomeScreenBanner({ accessToken, hasBottomActionBar = false }: Props) {
   const [visible, setVisible] = useState(shouldShowBanner);
   const [showInstructions, setShowInstructions] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -98,7 +99,7 @@ export function AddToHomeScreenBanner({ accessToken }: Props) {
   }
 
   return (
-    <div className="fixed bottom-20 left-0 right-0 z-40 px-4 pointer-events-none">
+    <div className={`fixed left-0 right-0 z-40 px-4 pointer-events-none ${hasBottomActionBar ? 'bottom-36' : 'bottom-20'}`}>
       <div className="max-w-sm mx-auto bg-parallel-void text-parallel-cream rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl pointer-events-auto">
         <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
           <Plus size={18} aria-hidden="true" />

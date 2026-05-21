@@ -1345,7 +1345,7 @@ function App() {
       )}
 
       {accessToken && hasCompletedOnboarding && (
-        <AddToHomeScreenBanner accessToken={accessToken} />
+        <AddToHomeScreenBanner accessToken={accessToken} hasBottomActionBar={currentView === 'profile'} />
       )}
 
       {/* Main content — scrolls within the flex column; header and nav are stationary */}
@@ -1674,7 +1674,7 @@ function App() {
                 'Life Goals': 100,
                 'Values & Beliefs': 100,
                 'Financial & Career': 100,
-                'Intimacy & Connection': 100,
+                'Connection Style': 100,
                 'Lifestyle Behaviors': 100,
                 'Social & Shared Life': 100,
               },
