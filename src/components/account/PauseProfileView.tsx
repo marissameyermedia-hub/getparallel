@@ -25,6 +25,8 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelSuccess, setCancelSuccess] = useState(false);
 
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // Wire Escape-to-close + body-scroll-lock + focus restore for both modals.
   useModalA11y(showConfirmation, () => setShowConfirmation(false));
   useModalA11y(showCancelConfirm, () => setShowCancelConfirm(false));
