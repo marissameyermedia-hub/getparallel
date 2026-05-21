@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Briefcase, GraduationCap, Instagram, Heart, X, Flag, Ban, ChevronLeft, MoreVertical, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, UserMinus, Lock, Pencil } from 'lucide-react';
+import { MapPin, Briefcase, GraduationCap, Instagram, Heart, X, Flag, Ban, ChevronLeft, MoreVertical, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, UserMinus, Lock, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { Match } from '../types';
 import { EDGE_FUNCTION_URL, MATCHES_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -74,6 +74,80 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Social & Shared Life':          'bg-parallel-stone',
 };
 
+function getCategoryInsight(label: string, score: number): string {
+  const t = (a: string, b: string, c: string, d: string, e: string) =>
+    score >= 90 ? a : score >= 76 ? b : score >= 56 ? c : score >= 31 ? d : e;
+
+  switch (label) {
+    case 'Attachment & Emotional Health':
+      return t(
+        'Deep emotional alignment — you approach closeness and vulnerability in compatible ways.',
+        'Good emotional fit. Similar approaches to intimacy and emotional connection.',
+        'Some differences in how you handle emotional closeness. Worth exploring early.',
+        'Different attachment styles — you may need each other in ways the other finds challenging.',
+        'Significant differences in emotional needs. The most important category to discuss openly.',
+      );
+    case 'Communication & Conflict':
+      return t(
+        'You handle disagreements the same way — both willing to work through things and repair quickly.',
+        'Good communication fit. Similar approaches to conflict and resolution.',
+        'Some differences in communication style. One of you may go quiet when the other wants to talk it out.',
+        'You process conflict differently. Doesn\'t have to be a dealbreaker — but get this on the table early.',
+        'Very different conflict styles. One tends toward avoidance, the other toward confrontation — be honest about this.',
+      );
+    case 'Life Goals':
+      return t(
+        'Aligned on the big stuff — kids, marriage, timing, and relationship type.',
+        'Strong alignment on major life goals and timeline.',
+        'Mostly aligned on life goals with a few areas worth exploring.',
+        'Some meaningful differences in life direction or timeline. Worth an honest conversation.',
+        'Significant differences in life goals — kids, marriage, or relationship type may not align.',
+      );
+    case 'Values & Beliefs':
+      return t(
+        'Very similar core values and worldview — what matters most to each of you is deeply shared.',
+        'Strong values alignment. You see the world in similar ways.',
+        'Mostly similar values with some differences in beliefs or priorities.',
+        'Some differences in core values. Can work with mutual respect — depends on how central these are to you.',
+        'Different foundational values. Requires genuine openness on both sides.',
+      );
+    case 'Financial & Career':
+      return t(
+        'Aligned on ambition, money philosophy, and what success looks like.',
+        'Good financial and career compatibility — similar outlook on stability and goals.',
+        'Some differences in financial or career priorities. These tend to be more negotiable over time.',
+        'Different financial philosophies or career orientations. Worth understanding each other\'s approach.',
+        'Meaningfully different views on money and ambition. Neither is wrong — but they\'re different.',
+      );
+    case 'Intimacy & Connection':
+      return t(
+        'Strong compatibility in how you each seek and express closeness.',
+        'Good intimacy alignment — similar preferences for how connection is built.',
+        'Some differences in intimacy preferences. Usually bridgeable with good communication.',
+        'Different needs or styles around physical and emotional intimacy.',
+        'Significant differences in intimacy style — an important early conversation.',
+      );
+    case 'Lifestyle Behaviors':
+      return t(
+        'Daily life compatibility is high — similar habits, routines, and lifestyle choices.',
+        'Good lifestyle fit. Similar day-to-day habits and preferences.',
+        'Mostly compatible with a few differences in habits or routines.',
+        'Some lifestyle differences that could create friction — drinking, diet, schedules, or tidiness.',
+        'Different daily habits and lifestyle choices. Requires real accommodation from both.',
+      );
+    case 'Social & Shared Life':
+      return t(
+        'You\'d thrive socially together — similar energy, social needs, and how you recharge.',
+        'Good social fit. Aligned on how you like to spend time and energy.',
+        'Some differences in social pace. One of you may need more solo time than the other.',
+        'Different social rhythms — introvert vs. extrovert tendencies.',
+        'Very different social needs. Can work, but requires intentionality.',
+      );
+    default:
+      return 'Tap any category to learn more about what\'s driving this score.';
+  }
+}
+
 export function MatchProfileView({
   match,
   onBack,
@@ -88,6 +162,7 @@ export function MatchProfileView({
   const [photoIndex, setPhotoIndex] = useState(0);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showUnmatchModal, setShowUnmatchModal] = useState(false);
   const [showReportSuccess, setShowReportSuccess] = useState(false);
@@ -471,39 +546,66 @@ export function MatchProfileView({
                 Sample data — actual scores depend on the person viewing your profile.
               </p>
             )}
-            {!isPreview && <div className="mb-4" />}
-            <div className="space-y-3.5">
+            {!isPreview && (
+              <p className="text-xs text-gray-400 mb-4">Tap any category to learn more.</p>
+            )}
+            <div className="space-y-1">
               {CATEGORY_ORDER.map((label) => {
                 const raw = breakdown[label];
                 const hasScore = typeof raw === 'number' && raw > 0;
                 const score = hasScore ? (raw as number) : 0;
                 const barColor = CATEGORY_COLORS[label] || 'bg-parallel-void';
+                const isExpanded = expandedCategory === label;
 
                 return (
                   <div key={label}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-sm ${hasScore ? 'text-gray-700' : 'text-gray-500'}`}>{label}</span>
-                      {hasScore ? (
-                        <span className="text-sm font-medium text-gray-800">{score}%</span>
-                      ) : (
-                        <span className="text-xs italic text-gray-500">Not enough data yet</span>
-                      )}
-                    </div>
-                    <div
-                      className="w-full h-2 bg-gray-100 rounded-full overflow-hidden"
-                      role="progressbar"
-                      aria-valuenow={score}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`${label}${hasScore ? `: ${score} percent` : ': not enough data yet'}`}
+                    <button
+                      type="button"
+                      onClick={() => hasScore && setExpandedCategory(isExpanded ? null : label)}
+                      className={`w-full text-left rounded-xl px-2 py-2.5 transition-colors ${hasScore ? 'hover:bg-gray-100 active:bg-gray-100' : ''}`}
+                      aria-expanded={isExpanded}
+                      disabled={!hasScore}
                     >
-                      {hasScore && (
-                        <div
-                          className={`h-full ${barColor} rounded-full transition-all`}
-                          style={{ width: `${score}%` }}
-                        />
-                      )}
-                    </div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className={`text-sm ${hasScore ? 'text-gray-700' : 'text-gray-500'}`}>{label}</span>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {hasScore ? (
+                            <>
+                              <span className="text-sm font-medium text-gray-800">{score}%</span>
+                              {isExpanded
+                                ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" />
+                                : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                              }
+                            </>
+                          ) : (
+                            <span className="text-xs italic text-gray-500">Not enough data yet</span>
+                          )}
+                        </div>
+                      </div>
+                      <div
+                        className="w-full h-2 bg-gray-100 rounded-full overflow-hidden"
+                        role="progressbar"
+                        aria-valuenow={score}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${label}${hasScore ? `: ${score} percent` : ': not enough data yet'}`}
+                      >
+                        {hasScore && (
+                          <div
+                            className={`h-full ${barColor} rounded-full transition-all`}
+                            style={{ width: `${score}%` }}
+                          />
+                        )}
+                      </div>
+                    </button>
+
+                    {isExpanded && hasScore && (
+                      <div className="mx-2 mb-2 px-3 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          {getCategoryInsight(label, score)}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
