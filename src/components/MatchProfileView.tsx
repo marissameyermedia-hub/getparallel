@@ -571,10 +571,15 @@ export function MatchProfileView({
               mutual or already-matched. */}
         {isPreview ? (
           user.instagram ? (
-            <div className="flex items-center gap-1.5 text-gray-600 text-sm px-1">
+            <a
+              href={`https://instagram.com/${user.instagram.replace(/^@/, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-gray-600 text-sm px-1 hover:text-parallel-purple transition-colors"
+            >
               <Instagram size={13} aria-hidden="true" />
-              <span>@{user.instagram}</span>
-            </div>
+              <span>@{user.instagram.replace(/^@/, '')}</span>
+            </a>
           ) : (
             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
@@ -600,10 +605,15 @@ export function MatchProfileView({
               </div>
             )}
             {user.instagram && (isMutual || alreadyMatched) && (
-              <div className="flex items-center gap-1.5 text-gray-600 text-sm px-1">
+              <a
+                href={`https://instagram.com/${user.instagram.replace(/^@/, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-gray-600 text-sm px-1 hover:text-parallel-purple transition-colors"
+              >
                 <Instagram size={13} aria-hidden="true" />
-                <span>@{user.instagram}</span>
-              </div>
+                <span>@{user.instagram.replace(/^@/, '')}</span>
+              </a>
             )}
           </>
         )}
