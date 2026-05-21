@@ -51,6 +51,13 @@ interface MatchProfileViewProps {
   myHobbies?: string[];
 }
 
+function normalizePronouns(val: string): string {
+  const trimmed = val.trim().toLowerCase();
+  if (!trimmed) return '';
+  if (trimmed.includes('/')) return trimmed.replace(/\s*\/\s*/g, '/');
+  return trimmed.replace(/\s+/g, '/');
+}
+
 // 8-category display order + bar colors
 const CATEGORY_ORDER = [
   'Attachment & Emotional Health',
@@ -534,10 +541,10 @@ export function MatchProfileView({
                   className="flex items-center gap-1.5 hover:text-parallel-purple transition-colors"
                 >
                   <Instagram size={13} aria-hidden="true" />
-                  <span>@{user.instagram.replace(/^@/, '')}{user.pronouns ? ` · ${user.pronouns}` : ''}</span>
+                  <span>@{user.instagram.replace(/^@/, '')}{user.pronouns ? ` · ${normalizePronouns(user.pronouns)}` : ''}</span>
                 </a>
               ) : (
-                user.pronouns && <span>{user.pronouns}</span>
+                user.pronouns && <span>{normalizePronouns(user.pronouns)}</span>
               )}
             </div>
           )}

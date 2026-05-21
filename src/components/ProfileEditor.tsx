@@ -94,6 +94,15 @@ interface ProfileEditorProps {
   isVerified?: boolean;
 }
 
+function normalizePronouns(val: string): string {
+  const trimmed = val.trim().toLowerCase();
+  if (!trimmed) return '';
+  // Already slash-formatted: clean up whitespace around slashes only
+  if (trimmed.includes('/')) return trimmed.replace(/\s*\/\s*/g, '/');
+  // Space-separated (e.g. "she her") → "she/her"
+  return trimmed.replace(/\s+/g, '/');
+}
+
 export function ProfileEditor({
   isOnboarding,
   onComplete,
@@ -115,7 +124,7 @@ export function ProfileEditor({
   const [career, setCareer] = useState(initialCareer);
   const [education, setEducation] = useState(initialEducation);
   const [instagram, setInstagram] = useState(initialInstagram);
-  const [pronouns, setPronouns] = useState(initialPronouns);
+  const [pronouns, setPronouns] = useState(normalizePronouns(initialPronouns));
   const [location, setLocation] = useState(initialLocation);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -595,6 +604,7 @@ export function ProfileEditor({
             </label>
             <input type="text" value={pronouns}
               onChange={e => { setPronouns(e.target.value); setHasSaved(false); }}
+              onBlur={e => setPronouns(normalizePronouns(e.target.value))}
               placeholder="e.g. she/her, he/him, they/them..."
               className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors"
               style={{ fontSize: '16px' }}
