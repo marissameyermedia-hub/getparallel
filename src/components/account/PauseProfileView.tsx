@@ -111,19 +111,25 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
         <button onClick={onBack} className="mb-6 p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Go back">
           <ChevronLeft size={28} aria-hidden="true" />
         </button>
-        <h1 className="mb-3">Pause My Profile</h1>
-        <p className="text-gray-600 mb-8">Take a break without losing your matches or data</p>
-        <div className={`rounded-2xl p-6 mb-6 ${isPaused ? 'bg-gray-100' : 'bg-parallel-purple text-parallel-cream'}`}>
+        <h1 className="text-3xl font-bold mb-1">Pause My Profile</h1>
+        <p className="text-gray-500 text-sm mb-6">Take a break without losing your matches or data</p>
+
+        <button onClick={handleTogglePause} className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90 transition-colors mb-8">
+          {isPaused ? 'Resume My Profile' : 'Pause My Profile'}
+        </button>
+
+        <div className={`rounded-2xl p-6 mb-6 ${isPaused ? 'bg-gray-100' : 'bg-gray-50'}`}>
           <div className="flex items-center gap-3 mb-3">
-            {isPaused ? <Pause className="w-6 h-6 text-gray-600" aria-hidden="true" /> : <Play className="w-6 h-6 text-parallel-cream" aria-hidden="true" />}
-            <h2 className={isPaused ? 'text-parallel-void' : 'text-parallel-cream'}>{isPaused ? 'Profile is Paused' : 'Profile is Active'}</h2>
+            {isPaused ? <Pause className="w-6 h-6 text-gray-600" aria-hidden="true" /> : <Play className="w-6 h-6 text-gray-600" aria-hidden="true" />}
+            <h2 className="text-parallel-void text-base font-semibold">{isPaused ? 'Profile is Paused' : 'Profile is Active'}</h2>
           </div>
-          <p className={isPaused ? 'text-gray-700' : 'text-gray-300'}>
+          <p className="text-gray-600 text-sm">
             {isPaused ? "Your profile is hidden. Messaging is disabled until you unpause." : 'Your profile is visible and you can receive new matches.'}
           </p>
         </div>
+
         <div className="mb-6">
-          <h3 className="mb-4">What happens when you pause?</h3>
+          <h3 className="mb-4 text-sm font-medium text-gray-500">What happens when you pause?</h3>
           <div className="space-y-3">
             {[
               { title: 'Your profile is hidden', sub: "You won't appear in anyone's match queue" },
@@ -141,9 +147,6 @@ export function PauseProfileView({ onBack, hasActivated = false }: PauseProfileV
             ))}
           </div>
         </div>
-        <button onClick={handleTogglePause} className="w-full py-4 px-6 rounded-full bg-parallel-purple text-parallel-cream hover:bg-parallel-purple/90 transition-colors">
-          {isPaused ? 'Resume My Profile' : 'Pause My Profile'}
-        </button>
 
 
         {showConfirmation && (
