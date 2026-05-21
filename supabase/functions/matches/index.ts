@@ -196,6 +196,7 @@ const BREAKDOWN_KEY_MAP: Record<string, string> = {
   "Communication & Conflict":      "communication_conflict",
   "Attachment & Emotional Health": "attachment_emotional_health",
   "Intimacy & Connection":         "intimacy_connection",
+  "Connection Style":              "intimacy_connection",
   "Financial & Career":            "life_logistics",
   // Gen 1 — early short snake_case keys
   values:        "values_life_goals",

@@ -190,7 +190,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                       'Life Goals': 90,
                       'Values & Beliefs': 84,
                       'Financial & Career': 86,
-                      'Intimacy & Connection': 82,
+                      'Connection Style': 82,
                       'Lifestyle Behaviors': 85,
                       'Social & Shared Life': 89,
                     }}
@@ -215,7 +215,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                       'Life Goals': 94,
                       'Values & Beliefs': 91,
                       'Financial & Career': 88,
-                      'Intimacy & Connection': 89,
+                      'Connection Style': 89,
                       'Lifestyle Behaviors': 92,
                       'Social & Shared Life': 87,
                     }}
@@ -282,7 +282,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
                 'Life Goals': 94,
                 'Values & Beliefs': 91,
                 'Financial & Career': 88,
-                'Intimacy & Connection': 89,
+                'Connection Style': 89,
                 'Lifestyle Behaviors': 92,
                 'Social & Shared Life': 87,
               }}
@@ -611,7 +611,7 @@ const CATEGORY_ORDER = [
   'Life Goals',
   'Values & Beliefs',
   'Financial & Career',
-  'Intimacy & Connection',
+  'Connection Style',
   'Lifestyle Behaviors',
   'Social & Shared Life',
 ] as const;
@@ -622,7 +622,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   'Life Goals':                    'bg-violet-600',
   'Values & Beliefs':              'bg-purple-900',
   'Financial & Career':            'bg-violet-500',
-  'Intimacy & Connection':         'bg-parallel-soft-violet',
+  'Connection Style':         'bg-parallel-soft-violet',
   'Lifestyle Behaviors':           'bg-purple-600',
   'Social & Shared Life':          'bg-parallel-stone',
 };
