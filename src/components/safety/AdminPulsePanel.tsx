@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw } from 'lucide-react';
-import { EDGE_FUNCTION_URL } from '../../utils/supabase/client';
+import { RefreshCw, Play } from 'lucide-react';
+import { EDGE_FUNCTION_URL, ADMIN_FUNCTION_URL } from '../../utils/supabase/client';
 
 interface PulseData {
   signups_24h: number;
@@ -122,11 +122,20 @@ function formatTimestamp(iso: string): string {
   return `${datePart} at ${timePart}`;
 }
 
+interface MatchRunResult {
+  name: string;
+  ok: boolean;
+  matched?: number;
+  error?: string;
+}
+
 export function AdminPulsePanel({ accessToken }: AdminPulsePanelProps) {
   const [data, setData] = useState<PulseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [matchingRunning, setMatchingRunning] = useState(false);
+  const [matchingResults, setMatchingResults] = useState<MatchRunResult[] | null>(null);
 
   const fetchPulse = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -155,6 +164,24 @@ export function AdminPulsePanel({ accessToken }: AdminPulsePanelProps) {
   useEffect(() => {
     fetchPulse();
   }, [fetchPulse]);
+
+  const runMatchingAll = useCallback(async () => {
+    setMatchingRunning(true);
+    setMatchingResults(null);
+    try {
+      const res = await fetch(`${ADMIN_FUNCTION_URL}/run-matching-all`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error('Request failed');
+      const json = await res.json();
+      setMatchingResults(json.results ?? []);
+    } catch {
+      setMatchingResults([{ name: 'Error', ok: false, error: 'Request failed — check logs' }]);
+    } finally {
+      setMatchingRunning(false);
+    }
+  }, [accessToken]);
 
   const redCount = data
     ? [
@@ -216,7 +243,35 @@ export function AdminPulsePanel({ accessToken }: AdminPulsePanelProps) {
         ))}
       </div>
 
-      <div className="px-5 pb-5 flex items-center justify-between">
+      <div className="px-5 pb-4 border-t border-gray-100 pt-4">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+          Beta Matching
+        </div>
+        <button
+          onClick={runMatchingAll}
+          disabled={matchingRunning}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+        >
+          <Play className={`w-3.5 h-3.5 ${matchingRunning ? 'opacity-50' : ''}`} />
+          {matchingRunning ? 'Running matching…' : 'Run matching for all users'}
+        </button>
+        {matchingResults && (
+          <div className="mt-3 space-y-1">
+            {matchingResults.map((r, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span className={r.ok ? 'text-green-600' : 'text-red-500'}>
+                  {r.ok ? '✓' : '✗'}
+                </span>
+                <span className="text-gray-700 font-medium">{r.name}</span>
+                {r.ok && <span className="text-gray-400">{r.matched} match{r.matched !== 1 ? 'es' : ''}</span>}
+                {!r.ok && <span className="text-red-400">{r.error}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="px-5 pb-5 flex items-center justify-between border-t border-gray-100 pt-3">
         <p className="text-xs text-gray-400">
           Last updated: {formatTimestamp(data.generated_at)}
         </p>
