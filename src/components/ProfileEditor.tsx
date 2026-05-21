@@ -189,13 +189,18 @@ export function ProfileEditor({
   const handlePhotoUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     if (uploadedPhotos.length >= 6) { setUploadError('Maximum 6 photos allowed'); return; }
+    const slotsRemaining = 6 - uploadedPhotos.length;
+    if (files.length > slotsRemaining) {
+      setUploadError(`Only ${slotsRemaining} slot${slotsRemaining !== 1 ? 's' : ''} remaining — adding the first ${slotsRemaining} of ${files.length} selected.`);
+    } else {
+      setUploadError('');
+    }
     setIsUploading(true);
-    setUploadError('');
     const token = await getAccessToken();
     if (!token) { setIsUploading(false); return; }
 
     const newPhotos: string[] = [];
-    for (let i = 0; i < Math.min(files.length, 6 - uploadedPhotos.length); i++) {
+    for (let i = 0; i < Math.min(files.length, slotsRemaining); i++) {
       const file = files[i];
       if (file.size > 10 * 1024 * 1024) { setUploadError('Each photo must be under 10MB'); continue; }
       try {
@@ -540,8 +545,10 @@ export function ProfileEditor({
                 );
               })}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic" multiple className="hidden"
-              onChange={e => handlePhotoUpload(e.target.files)}
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+              multiple={6 - uploadedPhotos.length > 1}
+              className="hidden"
+              onChange={e => { handlePhotoUpload(e.target.files); e.target.value = ''; }}
             />
           </div>
 
