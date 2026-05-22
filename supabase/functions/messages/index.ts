@@ -1,6 +1,7 @@
-// Parallel — messages edge function v11
+// Parallel — messages edge function v12
 // v10: adds GET /starters — 4 AI-generated initial conversation starters per match.
 //      Generated once, cached forever on conversations.ai_starters (jsonb).
+// v12: Fix push notification heading "Notification" → "New message".
 // v11: SMS fallback for new-message notifications.
 //      Push fires if onesignal_player_id exists and push_enabled=true.
 //      If no push, and sms_enabled=true + phone verified + not opted out,
@@ -85,7 +86,7 @@ async function sendPushToRecipient(recipientId: string, senderName: string, send
       const res = await fetch("https://onesignal.com/api/v1/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Basic ${ONESIGNAL_API_KEY}` },
-        body: JSON.stringify({ app_id: ONESIGNAL_APP_ID, include_player_ids: [playerId], headings: { en: "Notification" }, contents: { en: `${firstName} sent you a message` }, url: `https://getparallel.vip/?notify=message&from=${senderId}`, web_push_topic: "new_message", collapse_id: collapseId }),
+        body: JSON.stringify({ app_id: ONESIGNAL_APP_ID, include_player_ids: [playerId], headings: { en: "New message" }, contents: { en: `${firstName} sent you a message` }, url: `https://getparallel.vip/?notify=message&from=${senderId}`, web_push_topic: "new_message", collapse_id: collapseId }),
       });
       const responseJson = await res.json().catch(() => null);
       await logNotifEvent(admin, recipientId, "message", res.ok, res.ok ? undefined : "onesignal_error", responseJson);
