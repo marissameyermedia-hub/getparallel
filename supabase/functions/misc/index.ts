@@ -1,12 +1,11 @@
-// Parallel — misc edge function v24
+// Parallel — misc edge function v26
+// v26: Cancel policy — trial cancels (last_payment_amount IS NULL = never charged) immediately
+//      set is_paused=true. BILLING.SUBSCRIPTION.EXPIRED webhook sets is_paused=true (paid period
+//      ended). BILLING.SUBSCRIPTION.ACTIVATED webhook sets is_paused=false (resubscribed).
+// v25: PAYMENT.SALE.COMPLETED now saves last_payment_amount + inserts into payment_events for revenue tracking.
 // v24: /payment/cancel now cancels PayPal subscription via API + sends cancellation confirmation email.
 // v23: Default PERSONA_ENV to "production" (was "sandbox")
 // v22: Add POST /paypal/webhook — handles BILLING.SUBSCRIPTION.* and PAYMENT.SALE.COMPLETED events
-// v21: Persist /paypal/config diagnostics to public._paypal_diag table so we can directly query env-var state.
-// v20: Add diagnostic logging in handlePaypalConfig (env, plan, clientId length/prefix).
-// v19: POST /auth/skip-phone-verification — clears phone/phone_verified so the gate does not re-trigger
-// v18: Annual-only plan, new plan ID P-7PT724153F712010ANIFAOHA (5-day free trial, $79/year)
-// v17: POST /auth/pwa-token/create + POST /auth/pwa-token/exchange
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -78,7 +77,7 @@ async function sendTelnyxSms(to: string, text: string): Promise<{ ok: boolean; s
   }
 }
 
-// ── PWA token ──────────────────────────────────────────────────────────────
+// ── PWA token ──────────────────────────────────────────────────────────────────
 
 async function handlePwaTokenCreate(req: Request) {
   const user = await getUserFromAuth(req);
@@ -119,7 +118,7 @@ async function handlePwaTokenExchange(req: Request) {
   return json({ access_token: verifyData.session.access_token, refresh_token: verifyData.session.refresh_token, expires_in: verifyData.session.expires_in, expires_at: verifyData.session.expires_at });
 }
 
-// ── Referral ────────────────────────────────────────────────────────────────
+// ── Referral ──────────────────────────────────────────────────────────────────────────────
 
 async function handleReferralByCode(req: Request) {
   const url = new URL(req.url);
@@ -133,7 +132,7 @@ async function handleReferralByCode(req: Request) {
   return json({ firstName });
 }
 
-// ── Auth / email / phone ────────────────────────────────────────────────────
+// ── Auth / email / phone ─────────────────────────────────────────────────────
 
 async function handleEmailConfirmed(req: Request) {
   const user = await getUserFromAuth(req);
@@ -301,7 +300,7 @@ async function handleSkipPhoneVerification(req: Request) {
   return json({ success: true });
 }
 
-// ── Persona ─────────────────────────────────────────────────────────────────
+// ── Persona ────────────────────────────────────────────────────────────────────────────────
 
 async function verifyPersonaSignature(rawBody: string, header: string | null): Promise<boolean> {
   if (!PERSONA_WEBHOOK_SECRET) { console.error("[persona/webhook] PERSONA_WEBHOOK_SECRET not set"); return false; }
@@ -401,7 +400,7 @@ async function handlePersonaConfig(_req: Request) {
   return json({ templateId: PERSONA_TEMPLATE_ID, environment: PERSONA_ENV === "production" ? "production" : "sandbox" });
 }
 
-// ── Safety ──────────────────────────────────────────────────────────────────
+// ── Safety ────────────────────────────────────────────────────────────────────────────
 
 async function handleSafetyBlock(req: Request) {
   const user = await getUserFromAuth(req);
@@ -445,7 +444,7 @@ async function handleSafetyReport(req: Request) {
   return json({ success: true });
 }
 
-// ── Notifications ───────────────────────────────────────────────────────────
+// ── Notifications ─────────────────────────────────────────────────────────────────────────────
 
 async function handleNotificationsGet(req: Request) {
   const user = await getUserFromAuth(req);
@@ -487,7 +486,7 @@ async function handleNotificationsPut(req: Request) {
   return json({ success: true });
 }
 
-// ── PayPal ──────────────────────────────────────────────────────────────────
+// ── PayPal ────────────────────────────────────────────────────────────────────────────
 
 async function handlePaypalConfig(req: Request) {
   const annualPlanId = PAYPAL_PLAN_ANNUAL || "P-7PT724153F712010ANIFAOHA";
@@ -526,7 +525,7 @@ async function handlePaypalRecordSub(req: Request) {
   const subscriptionId = String(body.subscriptionId ?? "").trim();
   const plan = String(body.plan ?? "").trim();
   if (!subscriptionId) return json({ error: "Missing subscriptionId" }, 400);
-  if (!["annual_founding"].includes(plan)) return json({ error: "Invalid plan" }, 400);
+  if (!(["annual_founding"].includes(plan))) return json({ error: "Invalid plan" }, 400);
   const now = new Date();
   const periodEnd = new Date(now);
   periodEnd.setFullYear(periodEnd.getFullYear() + 1);
@@ -563,11 +562,16 @@ async function handlePaymentCancel(req: Request) {
   const user = await getUserFromAuth(req);
   if (!user) return json({ error: "Unauthorized" }, 401);
   const admin = adminClient();
-  const { data: sub } = await admin.from("subscriptions").select("paypal_subscription_id").eq("user_id", user.id).maybeSingle();
+  // Fetch before update so we have last_payment_amount to detect trial cancels
+  const { data: sub } = await admin.from("subscriptions").select("paypal_subscription_id, last_payment_amount").eq("user_id", user.id).maybeSingle();
   const { error } = await admin.from("subscriptions").update({ status: "cancelled", cancelled_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("user_id", user.id);
   if (error) { console.error("[payment/cancel]", error); return json({ error: "Failed to cancel" }, 500); }
-
-  // Cancel the PayPal subscription via PayPal API (fire-and-forget — DB is already updated).
+  // Trial cancel (last_payment_amount IS NULL = never charged) — remove from matching pool immediately.
+  // Paid cancels keep pool access until current_period_end (BILLING.SUBSCRIPTION.EXPIRED webhook handles that).
+  if (sub?.last_payment_amount == null) {
+    await admin.from("profiles").update({ is_paused: true, updated_at: new Date().toISOString() }).eq("id", user.id);
+    console.log("[payment/cancel] trial cancel — profile paused:", user.id);
+  }
   const paypalId = sub?.paypal_subscription_id;
   if (paypalId && IS_LIVE) {
     (async () => {
@@ -585,18 +589,15 @@ async function handlePaymentCancel(req: Request) {
       }
     })();
   }
-
-  // Send cancellation confirmation email (fire-and-forget).
   fetch(`${SUPABASE_URL}/functions/v1/email/cancellation-confirm`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`, "apikey": SUPABASE_ANON_KEY },
     body: JSON.stringify({ recipientUserId: user.id }),
   }).catch((err) => console.error("[payment/cancel] confirmation email failed:", err));
-
   return json({ success: true, paypalSubscriptionId: paypalId ?? null });
 }
 
-// ── PayPal Webhook ──────────────────────────────────────────────────────────
+// ── PayPal Webhook ────────────────────────────────────────────────────────────────────────
 
 async function getPaypalAccessToken(): Promise<string | null> {
   if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) return null;
@@ -620,7 +621,6 @@ async function getPaypalAccessToken(): Promise<string | null> {
 
 async function verifyPaypalWebhookSignature(req: Request, rawBody: string): Promise<boolean> {
   if (!PAYPAL_WEBHOOK_ID) {
-    // Webhook ID not yet configured — allow through but log a warning
     console.warn("[paypal/webhook] PAYPAL_WEBHOOK_ID not set — skipping signature verification");
     return true;
   }
@@ -675,13 +675,34 @@ async function handlePaypalWebhook(req: Request): Promise<Response> {
   switch (eventType) {
     case "BILLING.SUBSCRIPTION.ACTIVATED": {
       const sid = resource?.id;
-      if (sid) await admin.from("subscriptions").update({ status: "active", updated_at: now }).eq("paypal_subscription_id", sid);
+      if (sid) {
+        await admin.from("subscriptions").update({ status: "active", updated_at: now }).eq("paypal_subscription_id", sid);
+        // Unpause profile when subscription activates (handles resubscription after trial cancel or expiry).
+        const { data: activatedSub } = await admin.from("subscriptions").select("user_id").eq("paypal_subscription_id", sid).maybeSingle();
+        if (activatedSub?.user_id) {
+          await admin.from("profiles").update({ is_paused: false, updated_at: now }).eq("id", activatedSub.user_id);
+          console.log("[paypal/webhook] ACTIVATED — profile unpaused:", activatedSub.user_id);
+        }
+      }
       break;
     }
-    case "BILLING.SUBSCRIPTION.CANCELLED":
-    case "BILLING.SUBSCRIPTION.EXPIRED": {
+    case "BILLING.SUBSCRIPTION.CANCELLED": {
+      // User cancelled but paid period may still be running — don't pause yet.
       const sid = resource?.id;
       if (sid) await admin.from("subscriptions").update({ status: "cancelled", cancelled_at: now, updated_at: now }).eq("paypal_subscription_id", sid);
+      break;
+    }
+    case "BILLING.SUBSCRIPTION.EXPIRED": {
+      // Paid period has fully ended — remove from matching pool.
+      const sid = resource?.id;
+      if (sid) {
+        await admin.from("subscriptions").update({ status: "cancelled", cancelled_at: now, updated_at: now }).eq("paypal_subscription_id", sid);
+        const { data: expiredSub } = await admin.from("subscriptions").select("user_id").eq("paypal_subscription_id", sid).maybeSingle();
+        if (expiredSub?.user_id) {
+          await admin.from("profiles").update({ is_paused: true, updated_at: now }).eq("id", expiredSub.user_id);
+          console.log("[paypal/webhook] EXPIRED — profile paused:", expiredSub.user_id);
+        }
+      }
       break;
     }
     case "BILLING.SUBSCRIPTION.SUSPENDED":
@@ -691,12 +712,29 @@ async function handlePaypalWebhook(req: Request): Promise<Response> {
       break;
     }
     case "PAYMENT.SALE.COMPLETED": {
-      // Annual renewal — extend period by 1 year from today
       const sid = resource?.billing_agreement_id;
       if (sid) {
+        const amountStr = resource?.amount?.total ?? resource?.amount?.value ?? null;
+        const amountNum = amountStr ? (parseFloat(amountStr) || null) : null;
+        const currency = String(resource?.amount?.currency_code ?? resource?.amount?.currency ?? "USD").toUpperCase();
+        const saleId = resource?.id ?? null;
         const newEnd = new Date();
         newEnd.setFullYear(newEnd.getFullYear() + 1);
-        await admin.from("subscriptions").update({ status: "active", current_period_end: newEnd.toISOString(), last_payment_at: now, updated_at: now }).eq("paypal_subscription_id", sid);
+        const { data: subRow } = await admin.from("subscriptions")
+          .update({ status: "active", current_period_end: newEnd.toISOString(), last_payment_at: now, last_payment_amount: amountNum, updated_at: now })
+          .eq("paypal_subscription_id", sid)
+          .select("user_id")
+          .maybeSingle();
+        if (amountNum && subRow?.user_id) {
+          await admin.from("payment_events").insert({
+            user_id: subRow.user_id,
+            paypal_subscription_id: sid,
+            paypal_sale_id: saleId,
+            amount: amountNum,
+            currency,
+            paid_at: now,
+          }).catch((e: any) => console.error("[paypal/webhook PAYMENT.SALE.COMPLETED] payment_events insert:", e));
+        }
       }
       break;
     }
@@ -706,7 +744,7 @@ async function handlePaypalWebhook(req: Request): Promise<Response> {
   return json({ ok: true });
 }
 
-// ── Promo ───────────────────────────────────────────────────────────────────
+// ── Promo ──────────────────────────────────────────────────────────────────────────────────
 
 async function handlePromoRedeem(req: Request) {
   const user = await getUserFromAuth(req);
@@ -734,7 +772,7 @@ async function handlePromoRedeem(req: Request) {
   return json({ success: true, plan: promo.plan, durationDays: promo.duration_days });
 }
 
-// ── Referral ─────────────────────────────────────────────────────────────────
+// ── Referral ─────────────────────────────────────────────────────────────────────────────────────
 
 function getTierName(ripples: number): string {
   if (ripples >= 50) return "Legend";
@@ -814,7 +852,7 @@ async function handleReferralMyCode(req: Request) {
   return json({ code, friendsInvited: invited ?? 0, friendsSubscribed: subscribed ?? 0 });
 }
 
-// ── Feedback / NPS / Exit ───────────────────────────────────────────────────
+// ── Feedback / NPS / Exit ──────────────────────────────────────────────────────────────────
 
 async function handleExitFeedback(req: Request) {
   const user = await getUserFromAuth(req);
@@ -868,7 +906,7 @@ async function handleSuccessSubmit(req: Request) {
   return json({ success: true });
 }
 
-// ── Account ──────────────────────────────────────────────────────────────────
+// ── Account ────────────────────────────────────────────────────────────────────────────────────
 
 async function handleAccountExport(req: Request) {
   const user = await getUserFromAuth(req);
@@ -915,7 +953,7 @@ async function handleUserDelete(req: Request) {
     ["identity_verifications","user_id"],["agreements","user_id"],["consent_log","user_id"],
     ["nps_responses","user_id"],["app_feedback","user_id"],["structured_feedback","user_id"],
     ["structured_feedback","matched_user_id"],["success_stories","user_id"],["success_stories","match_user_id"],
-    ["promo_redemptions","user_id"],["pwa_install_tokens","user_id"],
+    ["promo_redemptions","user_id"],["pwa_install_tokens","user_id"],["payment_events","user_id"],
   ];
   for (const [table, col] of tables) {
     const { error } = await admin.from(table).delete().eq(col, uid);
@@ -931,14 +969,14 @@ async function handleUserDelete(req: Request) {
   return json({ success: true });
 }
 
-// ── Router ──────────────────────────────────────────────────────────────────
+// ── Router ────────────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "24" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "26" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
