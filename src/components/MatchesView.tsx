@@ -406,13 +406,14 @@ export function MatchesView({
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
-                <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                  Parallel works better when more thoughtful people join. Invite someone you trust.
+              <div className="bg-parallel-purple/10 border border-parallel-purple/20 rounded-2xl p-4 text-center">
+                <p className="text-sm text-parallel-purple font-medium mb-1">Know someone who's a catch?</p>
+                <p className="text-xs text-parallel-purple/70 mb-3 leading-relaxed">
+                  Invite them to join. The more people you invite, the more people they invite — and the better your matches get.
                 </p>
                 <button
                   onClick={onNavigateToInvite || handleShareInvite}
-                  className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-full text-sm font-medium hover:border-gray-400 transition-colors"
+                  className="w-full bg-parallel-purple text-parallel-cream py-2.5 rounded-full text-sm font-medium hover:bg-parallel-purple/90 transition-colors"
                 >
                   Send invite
                 </button>
@@ -479,13 +480,14 @@ export function MatchesView({
                 onUndo={handleUndo}
               />
               <div className="max-w-md mx-auto px-4 pb-nav">
-                <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                    Parallel works better when more thoughtful people join. Invite someone you trust.
+                <div className="bg-parallel-purple/10 border border-parallel-purple/20 rounded-2xl p-4 text-center">
+                  <p className="text-sm text-parallel-purple font-medium mb-1">Know someone who's a catch?</p>
+                  <p className="text-xs text-parallel-purple/70 mb-3 leading-relaxed">
+                    Invite them to join. The more people you invite, the more people they invite — and the better your matches get.
                   </p>
                   <button
                     onClick={onNavigateToInvite || handleShareInvite}
-                    className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-full text-sm font-medium hover:border-gray-400 transition-colors"
+                    className="w-full bg-parallel-purple text-parallel-cream py-2.5 rounded-full text-sm font-medium hover:bg-parallel-purple/90 transition-colors"
                   >
                     Send invite
                   </button>
@@ -536,13 +538,14 @@ export function MatchesView({
               </div>
             </div>
 
-            <div className="bg-gray-200 rounded-2xl p-4 text-center">
-              <p className="text-sm text-gray-600 mb-3 leading-relaxed">
-                Parallel works better when more thoughtful people join. Invite someone you trust.
+            <div className="bg-parallel-purple/10 border border-parallel-purple/20 rounded-2xl p-4 text-center">
+              <p className="text-sm text-parallel-purple font-medium mb-1">Know someone who's a catch?</p>
+              <p className="text-xs text-parallel-purple/70 mb-3 leading-relaxed">
+                Invite them to join. The more people you invite, the more people they invite — and the better your matches get.
               </p>
               <button
                 onClick={onNavigateToInvite || handleShareInvite}
-                className="w-full bg-parallel-purple text-white py-2.5 rounded-full text-sm font-medium hover:bg-parallel-purple/90 transition-colors"
+                className="w-full bg-parallel-purple text-parallel-cream py-2.5 rounded-full text-sm font-medium hover:bg-parallel-purple/90 transition-colors"
               >
                 Send invite
               </button>
@@ -563,14 +566,14 @@ export function MatchesView({
             </p>
 
             {/* Invite — primary CTA in this state */}
-            <div className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-6 mb-4 text-center">
-              <p className="font-semibold mb-1">Grow the pool</p>
-              <p className="text-sm text-gray-600 mb-4 leading-relaxed">
-                Parallel works better when more thoughtful people join. Invite someone you trust.
+            <div className="w-full bg-parallel-purple/10 border border-parallel-purple/20 rounded-2xl p-6 mb-4 text-center">
+              <p className="text-parallel-purple font-semibold mb-1">Know someone who's a catch?</p>
+              <p className="text-sm text-parallel-purple/70 mb-4 leading-relaxed">
+                Invite them to join. The more people you invite, the more people they invite — and the better your matches get.
               </p>
               <button
                 onClick={onNavigateToInvite || handleShareInvite}
-                className="w-full bg-parallel-void text-parallel-cream py-3.5 rounded-full font-medium hover:bg-parallel-void/90 transition-colors"
+                className="w-full bg-parallel-purple text-parallel-cream py-3.5 rounded-full font-medium hover:bg-parallel-purple/90 transition-colors"
               >
                 Send invite
               </button>
