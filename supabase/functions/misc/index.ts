@@ -1,4 +1,7 @@
-// Parallel — misc edge function v26
+// Parallel — misc edge function v27
+// v27: Add POST /re-engagement/run — finds users dormant 7+ days with unacted matches
+//      and sends an SMS nudge via Telnyx. Auth: admin user OR x-cron-secret header.
+//      Respects sms_opt_outs and last_reengagement_sms_at (7-day cooldown).
 // v26: Cancel policy — trial cancels (last_payment_amount IS NULL = never charged) immediately
 //      set is_paused=true. BILLING.SUBSCRIPTION.EXPIRED webhook sets is_paused=true (paid period
 //      ended). BILLING.SUBSCRIPTION.ACTIVATED webhook sets is_paused=false (resubscribed).
@@ -933,6 +936,99 @@ async function handleAccountExport(req: Request) {
   return new Response(JSON.stringify(data, null, 2), { status: 200, headers: { "Content-Type": "application/json", "Content-Disposition": `attachment; filename="parallel-export-${user.id}.json"`, ...corsHeaders } });
 }
 
+async function handleReEngagement(req: Request) {
+  const admin = adminClient();
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") || "";
+  const cronSecret = req.headers.get("x-cron-secret") || "";
+  let authorized = (CRON_SECRET.length > 0 && cronSecret === CRON_SECRET);
+  if (!authorized) {
+    const user = await getUserFromAuth(req);
+    if (user) {
+      const { data: profile } = await admin.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
+      if ((profile as any)?.is_admin) authorized = true;
+    }
+  }
+  if (!authorized) return json({ error: "Unauthorized" }, 401);
+
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Eligible: sms_enabled + last_reengagement_sms_at older than 7 days (or never sent)
+  const { data: candidates } = await admin
+    .from("notification_preferences")
+    .select("user_id, last_reengagement_sms_at")
+    .eq("sms_enabled", true);
+
+  if (!candidates || candidates.length === 0) return json({ sent: 0, skipped: 0 });
+
+  let sent = 0, skipped = 0;
+
+  for (const candidate of candidates) {
+    const userId = (candidate as any).user_id as string;
+    const lastRe = (candidate as any).last_reengagement_sms_at as string | null;
+
+    // Enforce 7-day cooldown
+    if (lastRe && new Date(lastRe) > new Date(sevenDaysAgo)) { skipped++; continue; }
+
+    // Check profile: not paused/suspended, dormant 7+ days
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("phone, is_paused, is_suspended, last_active_at")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const p = profile as any;
+    if (!p?.phone || p.is_paused || p.is_suspended) { skipped++; continue; }
+    if (p.last_active_at && new Date(p.last_active_at) > new Date(sevenDaysAgo)) { skipped++; continue; }
+
+    // Count unacted matches (in matches table but no match_interactions row)
+    const [matchesRes, interactionsRes] = await Promise.all([
+      admin.from("matches").select("matched_user_id").eq("user_id", userId),
+      admin.from("match_interactions").select("matched_user_id").eq("user_id", userId),
+    ]);
+    const matchedIds = new Set(((matchesRes.data ?? []) as any[]).map((m) => m.matched_user_id));
+    const actedIds = new Set(((interactionsRes.data ?? []) as any[]).map((m) => m.matched_user_id));
+    const pendingCount = [...matchedIds].filter((id) => !actedIds.has(id)).length;
+    if (pendingCount === 0) { skipped++; continue; }
+
+    // Check opt-out
+    const { data: optOut } = await admin.from("sms_opt_outs").select("phone").eq("phone", p.phone).maybeSingle();
+    if (optOut) { skipped++; continue; }
+
+    const matchWord = pendingCount === 1 ? "match" : "matches";
+    const msgText = `You have ${pendingCount} ${matchWord} waiting on Parallel — see who: https://getparallel.vip`;
+    const telnyxBody: Record<string, string> = { to: p.phone, text: msgText, from: TELNYX_FROM_NUMBER };
+    if (TELNYX_MESSAGING_PROFILE_ID) telnyxBody.messaging_profile_id = TELNYX_MESSAGING_PROFILE_ID;
+
+    const telnyxRes = await fetch("https://api.telnyx.com/v2/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TELNYX_API_KEY}` },
+      body: JSON.stringify(telnyxBody),
+    });
+    const telnyxJson = await telnyxRes.json().catch(() => null);
+
+    if (telnyxRes.ok) {
+      await admin.from("notification_preferences").update({
+        last_reengagement_sms_at: now.toISOString(),
+        updated_at: now.toISOString(),
+      }).eq("user_id", userId);
+      await admin.from("notification_events").insert({
+        user_id: userId, category: "reengagement_sms", sent: true,
+        skipped_reason: null, onesignal_response: { pending_matches: pendingCount },
+      });
+      sent++;
+    } else {
+      await admin.from("notification_events").insert({
+        user_id: userId, category: "reengagement_sms", sent: false,
+        skipped_reason: "telnyx_error", onesignal_response: telnyxJson,
+      });
+      skipped++;
+    }
+  }
+
+  return json({ sent, skipped, total: sent + skipped });
+}
+
 async function handleUserDelete(req: Request) {
   const user = await getUserFromAuth(req);
   if (!user) return json({ error: "Unauthorized" }, 401);
@@ -976,7 +1072,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "26" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "27" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
@@ -1011,6 +1107,7 @@ Deno.serve(async (req) => {
     if (path === "/success/submit" && req.method === "POST") return await handleSuccessSubmit(req);
     if (path === "/user/feedback" && req.method === "POST") return await handleAppFeedback(req);
     if (path === "/account/export" && req.method === "GET") return await handleAccountExport(req);
+    if (path === "/re-engagement/run" && req.method === "POST") return await handleReEngagement(req);
     if (path === "/user/delete" && req.method === "DELETE") return await handleUserDelete(req);
     if (path === "/auth/skip-phone-verification" && req.method === "POST") return await handleSkipPhoneVerification(req);
     return json({ error: "Not found", path, method: req.method }, 404);

@@ -1,4 +1,7 @@
-// Parallel — matches edge function v17
+// Parallel — matches edge function v18
+// v18: Add SMS fallback for mutual match notifications. When push can't deliver
+//      (no player ID, push disabled), falls back to Telnyx SMS if sms_enabled.
+//      Shared 4h cooldown on last_sms_notification_at with message SMS.
 // v17: Clean up push notifications — remove "Someone likes you" (mutual-only model,
 //      premature reveal), fix match notification copy (drop emoji + exclamation).
 // v16: Add "Connection Style" to BREAKDOWN_KEY_MAP (maps to intimacy_connection).
@@ -27,6 +30,10 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") || "";
 const ONESIGNAL_API_KEY = Deno.env.get("ONESIGNAL_API_KEY") || "";
 const ONESIGNAL_APP_ID = "ac575970-18c4-4f71-9ff9-aa323baef90f";
+const TELNYX_API_KEY = Deno.env.get("TELNYX_API_KEY") || "";
+const TELNYX_FROM_NUMBER = Deno.env.get("TELNYX_PHONE_NUMBER") || Deno.env.get("TELNYX_FROM_NUMBER") || "";
+const TELNYX_MESSAGING_PROFILE_ID = Deno.env.get("TELNYX_MESSAGING_PROFILE_ID") || "";
+const SMS_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 
 const MATCHES_LIMIT = 7;
 
@@ -76,56 +83,81 @@ async function logNotifEvent(
   }
 }
 
-async function sendPush(
+// notifyMatch: try push first, SMS fallback if push can't deliver.
+async function notifyMatch(
   admin: ReturnType<typeof adminClient>,
   recipientId: string,
-  title: string,
-  body: string,
-  category: "match" | "like" | "message",
-  data: Record<string, unknown> = {},
+  partnerFirstName: string,
 ): Promise<void> {
-  if (!ONESIGNAL_API_KEY) {
-    await logNotifEvent(admin, recipientId, category, false, "no_api_key");
+  const [prefRes, profileRes] = await Promise.all([
+    admin.from("notification_preferences").select("push_enabled, new_matches, sms_enabled, last_sms_notification_at").eq("user_id", recipientId).maybeSingle(),
+    admin.from("profiles").select("onesignal_player_id, phone").eq("id", recipientId).maybeSingle(),
+  ]);
+  const prefs = prefRes.data as any;
+  const profile = profileRes.data as any;
+  const playerId = profile?.onesignal_player_id as string | null;
+  let pushSent = false;
+
+  try {
+    if (!ONESIGNAL_API_KEY) {
+      await logNotifEvent(admin, recipientId, "match", false, "no_api_key");
+    } else if (!playerId) {
+      await logNotifEvent(admin, recipientId, "match", false, "no_player_id");
+    } else if (prefs?.push_enabled === false) {
+      await logNotifEvent(admin, recipientId, "match", false, "push_disabled");
+    } else if (prefs?.new_matches === false) {
+      await logNotifEvent(admin, recipientId, "match", false, "category_disabled");
+    } else {
+      const res = await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Basic ${ONESIGNAL_API_KEY}` },
+        body: JSON.stringify({
+          app_id: ONESIGNAL_APP_ID,
+          include_player_ids: [playerId],
+          headings: { en: "New match" },
+          contents: { en: `You and ${partnerFirstName} liked each other` },
+          data: { type: "match" },
+          url: "https://getparallel.vip/",
+          web_push_topic: "parallel_match",
+        }),
+      });
+      const responseJson = await res.json().catch(() => null);
+      await logNotifEvent(admin, recipientId, "match", res.ok, res.ok ? undefined : "onesignal_error", responseJson);
+      if (res.ok) pushSent = true;
+    }
+  } catch (err) {
+    console.error("[notifyMatch] push failed:", err);
+    await logNotifEvent(admin, recipientId, "match", false, "fetch_error");
+  }
+
+  // SMS fallback
+  if (pushSent) return;
+  if (!TELNYX_API_KEY || !TELNYX_FROM_NUMBER) return;
+  if (prefs?.sms_enabled !== true) return;
+  const phone = profile?.phone as string | null;
+  if (!phone) return;
+  const { data: optOut } = await admin.from("sms_opt_outs").select("phone").eq("phone", phone).maybeSingle();
+  if (optOut) return;
+  const lastSms = prefs?.last_sms_notification_at;
+  if (lastSms && Date.now() - new Date(lastSms).getTime() < SMS_COOLDOWN_MS) {
+    await logNotifEvent(admin, recipientId, "match_sms", false, "cooldown_active");
     return;
   }
-  try {
-    const [prefRes, profileRes] = await Promise.all([
-      admin.from("notification_preferences").select("push_enabled, new_matches, likes, messages").eq("user_id", recipientId).maybeSingle(),
-      admin.from("profiles").select("onesignal_player_id").eq("id", recipientId).maybeSingle(),
-    ]);
-    const prefs = prefRes.data as Record<string, unknown> | null;
-    const playerId = (profileRes.data as any)?.onesignal_player_id as string | null;
-    if (!playerId) {
-      await logNotifEvent(admin, recipientId, category, false, "no_player_id");
-      return;
-    }
-    if (prefs?.push_enabled === false) {
-      await logNotifEvent(admin, recipientId, category, false, "push_disabled");
-      return;
-    }
-    const catKey = category === "match" ? "new_matches" : category;
-    if (prefs?.[catKey] === false) {
-      await logNotifEvent(admin, recipientId, category, false, "category_disabled");
-      return;
-    }
-    const res = await fetch("https://onesignal.com/api/v1/notifications", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Basic ${ONESIGNAL_API_KEY}` },
-      body: JSON.stringify({
-        app_id: ONESIGNAL_APP_ID,
-        include_player_ids: [playerId],
-        headings: { en: title },
-        contents: { en: body },
-        data,
-        url: "https://getparallel.vip/",
-        web_push_topic: `parallel_${category}`,
-      }),
-    });
-    const responseJson = await res.json().catch(() => null);
-    await logNotifEvent(admin, recipientId, category, res.ok, res.ok ? undefined : "onesignal_error", responseJson);
-  } catch (err) {
-    console.error(`[push/${category}] failed:`, err);
-    await logNotifEvent(admin, recipientId, category, false, "fetch_error");
+  const msgText = `You matched with ${partnerFirstName} on Parallel — start the conversation: https://getparallel.vip`;
+  const telnyxBody: Record<string, string> = { to: phone, text: msgText, from: TELNYX_FROM_NUMBER };
+  if (TELNYX_MESSAGING_PROFILE_ID) telnyxBody.messaging_profile_id = TELNYX_MESSAGING_PROFILE_ID;
+  const telnyxRes = await fetch("https://api.telnyx.com/v2/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${TELNYX_API_KEY}` },
+    body: JSON.stringify(telnyxBody),
+  });
+  const telnyxJson = await telnyxRes.json().catch(() => null);
+  await logNotifEvent(admin, recipientId, "match_sms", telnyxRes.ok, telnyxRes.ok ? undefined : "telnyx_error", telnyxJson);
+  if (telnyxRes.ok) {
+    await admin.from("notification_preferences").upsert(
+      { user_id: recipientId, last_sms_notification_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
   }
 }
 
@@ -487,8 +519,8 @@ async function handleMatchesAction(req: Request) {
     ]).then(([senderRes, receiverRes]) => {
       const senderFirst = ((senderRes.data as any)?.name ?? "Someone").split(" ")[0];
       const receiverFirst = ((receiverRes.data as any)?.name ?? "Someone").split(" ")[0];
-      sendPush(admin, matchUserId, "New match", `You and ${senderFirst} liked each other`, "match", { type: "match", from: user.id });
-      sendPush(admin, user.id, "New match", `You and ${receiverFirst} liked each other`, "match", { type: "match", from: matchUserId });
+      notifyMatch(admin, matchUserId, senderFirst);
+      notifyMatch(admin, user.id, receiverFirst);
     }).catch((err) => console.error("[matches/action] push error:", err));
   }
 
