@@ -99,7 +99,10 @@ export function AddToHomeScreenBanner({ accessToken, hasBottomActionBar = false 
   }
 
   return (
-    <div className={`fixed left-0 right-0 z-40 px-4 pointer-events-none ${hasBottomActionBar ? 'bottom-36' : 'bottom-20'}`}>
+    <div
+      className="fixed left-0 right-0 z-[55] px-4 pointer-events-none"
+      style={{ bottom: `calc(${hasBottomActionBar ? '9rem' : '5rem'} + env(safe-area-inset-bottom, 0px))` }}
+    >
       <div className="max-w-sm mx-auto bg-parallel-void text-parallel-cream rounded-2xl px-4 py-3 flex items-center gap-3 shadow-xl pointer-events-auto">
         <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
           <Plus size={18} aria-hidden="true" />
