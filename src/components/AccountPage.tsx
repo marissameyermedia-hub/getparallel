@@ -694,7 +694,8 @@ export function AccountPage({
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-gray-500 px-2 mb-2">Account Actions</h3>
 
-            {/* Pause — label and description update based on current isPaused state */}
+            {/* Pause — only for active subscribers */}
+            {hasActivated && (
             <button
               onClick={() => setExitFeedbackAction('pause')}
               className="w-full p-4 rounded-2xl border-2 border-gray-200 hover:border-parallel-void transition-colors flex items-start gap-3"
@@ -709,6 +710,7 @@ export function AccountPage({
                 </p>
               </div>
             </button>
+            )}
 
             {/* Cancel subscription — only shown for active, non-canceled subscribers */}
             {hasActivated && !subscriptionCanceled && (
