@@ -24,7 +24,6 @@ function shouldShowBanner(): boolean {
 
 export function AddToHomeScreenBanner({ accessToken, hasBottomActionBar = false }: Props) {
   const [visible, setVisible] = useState(shouldShowBanner);
-  const [showInstructions, setShowInstructions] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
   if (!visible) return null;
@@ -56,47 +55,11 @@ export function AddToHomeScreenBanner({ accessToken, hasBottomActionBar = false 
       console.warn('[pwa-banner] token generation failed:', err);
     }
     setIsGenerating(false);
-    setShowInstructions(true);
+    // Open the shared InstallPromptBanner (same design as the checklist flow)
+    // and dismiss this floating pill so they don't stack.
+    try { window.dispatchEvent(new CustomEvent('parallel:open-install-prompt')); } catch { /* noop */ }
+    handleDismiss();
   };
-
-  if (showInstructions) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50">
-        <div className="w-full max-w-sm bg-white rounded-t-3xl px-6 pt-6 pb-10">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold text-lg">Add Parallel to your home screen</h3>
-            <button
-              onClick={() => {
-                window.history.replaceState({}, '', window.location.pathname);
-                setShowInstructions(false);
-              }}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100"
-              aria-label="Close"
-            >
-              <X size={16} />
-            </button>
-          </div>
-
-          <ol className="space-y-5">
-            {[
-              { icon: '⬆️', text: 'Tap the Share button at the bottom of Safari' },
-              { icon: '📲', text: "Scroll down and tap 'Add to Home Screen'" },
-              { icon: '✅', text: "Tap 'Add' in the top right" },
-            ].map((step, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="text-2xl w-9 text-center flex-shrink-0">{step.icon}</span>
-                <span className="text-sm text-gray-700 leading-relaxed pt-1">{step.text}</span>
-              </li>
-            ))}
-          </ol>
-
-          <p className="text-xs text-gray-500 mt-6 text-center leading-relaxed">
-            You'll stay signed in automatically once it's added.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
