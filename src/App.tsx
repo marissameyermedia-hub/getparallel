@@ -228,6 +228,9 @@ function App() {
         setHasCompletedOnboarding(!!data.has_completed_onboarding);
         setHasActivated(data.hasActivated || false);
         setHasVerified(data.is_verified || false);
+        // Persist email so AccountPage can display it even on PWA cold starts
+        // where localStorage hasn't been written by the email-update flow yet.
+        if (data.email) localStorage.setItem('parallel_user_email', data.email);
         // Sync email-verification state from the server. The profile row's
         // email_verified flag is the source of truth — this keeps the soft
         // banner accurate even for users who signed up before this flow
