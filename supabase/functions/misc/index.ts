@@ -1,4 +1,7 @@
-// Parallel — misc edge function v27
+// Parallel — misc edge function v28
+// v28: Re-engagement SMS: fix cron to 5pm UTC (10am PDT), add "Reply STOP to
+//      unsubscribe" to copy. Inbound SMS catch-all now auto-replies instead
+//      of silently ignoring non-keyword replies.
 // v27: Add POST /re-engagement/run — finds users dormant 7+ days with unacted matches
 //      and sends an SMS nudge via Telnyx. Auth: admin user OR x-cron-secret header.
 //      Respects sms_opt_outs and last_reengagement_sms_at (7-day cooldown).
@@ -291,7 +294,8 @@ async function handleSmsInbound(req: Request) {
     await sendTelnyxSms(fromPhone, "Parallel: For help, visit getparallel.vip/support or email support@getparallel.vip. Msg & data rates may apply. Reply STOP to opt out.");
     return json({ ok: true, action: "help" });
   }
-  return json({ ok: true, action: "ignored_keyword", text });
+  await sendTelnyxSms(fromPhone, "This is an automated message from Parallel. To manage your notifications, open the app at getparallel.vip. Reply STOP to unsubscribe.");
+  return json({ ok: true, action: "auto_replied" });
 }
 
 async function handleSkipPhoneVerification(req: Request) {
@@ -996,7 +1000,7 @@ async function handleReEngagement(req: Request) {
     if (optOut) { skipped++; continue; }
 
     const matchWord = pendingCount === 1 ? "match" : "matches";
-    const msgText = `You have ${pendingCount} ${matchWord} waiting on Parallel — see who: https://getparallel.vip`;
+    const msgText = `You have ${pendingCount} ${matchWord} waiting on Parallel — see who: https://getparallel.vip\n\nReply STOP to unsubscribe.`;
     const telnyxBody: Record<string, string> = { to: p.phone, text: msgText, from: TELNYX_FROM_NUMBER };
     if (TELNYX_MESSAGING_PROFILE_ID) telnyxBody.messaging_profile_id = TELNYX_MESSAGING_PROFILE_ID;
 
@@ -1072,7 +1076,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "27" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "28" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
