@@ -603,16 +603,47 @@ export function AccountPage({
             <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">
               <h3 className="mb-4 text-sm font-medium text-gray-500">Verification Status</h3>
               <div className="flex items-center gap-3">
-                <ShieldCheck size={20} className="text-blue-500" />
+                <ShieldCheck size={20} className="text-parallel-purple" />
                 <div className="flex-1">
                   <p className="text-sm font-medium">Identity Verified ✓</p>
                   <p className="text-sm text-gray-500">
-                    Your blue checkmark is live on your profile
+                    Your verified badge is live on your profile
                   </p>
                 </div>
               </div>
             </div>
           )}
+
+          {/* Feedback — right after Verification */}
+          <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">
+            <h3 className="mb-4 text-sm font-medium text-gray-500">Feedback</h3>
+            <div className="space-y-1">
+              <button onClick={() => setShowStoryModal(true)} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
+                <Heart size={20} className="text-gray-600" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm">Share your story</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tell us how Parallel worked for you</p>
+                </div>
+                <ChevronRight size={16} className="text-gray-500" />
+              </button>
+              <button onClick={() => setFeedbackModal('bug')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
+                <FileText size={20} className="text-gray-600" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm">Send feedback</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Report a bug or share a thought</p>
+                </div>
+                <ChevronRight size={16} className="text-gray-500" />
+              </button>
+              <button onClick={() => setFeedbackModal('feature')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
+                <FileText size={20} className="text-gray-600" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm">Feature request</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Tell us what you'd like to see</p>
+                </div>
+                <ChevronRight size={16} className="text-gray-500" />
+              </button>
+            </div>
+          </div>
 
           {/* Admin Panel — only visible to admins */}
           {isAdmin && (
@@ -655,37 +686,6 @@ export function AccountPage({
               </button>
               <button onClick={() => onNavigate?.('consumer-health-data-policy')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
                 <FileTextAlt size={20} className="text-gray-600" /><span className="flex-1 text-left">Consumer Health Data Policy (WA)</span><ChevronRight size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          {/* Feedback */}
-          <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">
-            <h3 className="mb-4 text-sm font-medium text-gray-500">Feedback</h3>
-            <div className="space-y-1">
-              <button onClick={() => setShowStoryModal(true)} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <Heart size={20} className="text-gray-600" />
-                <div className="flex-1 text-left">
-                  <p className="text-sm">Share your story</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Tell us how Parallel worked for you</p>
-                </div>
-                <ChevronRight size={16} className="text-gray-500" />
-              </button>
-              <button onClick={() => setFeedbackModal('bug')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <FileText size={20} className="text-gray-600" />
-                <div className="flex-1 text-left">
-                  <p className="text-sm">Send feedback</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Report a bug or share a thought</p>
-                </div>
-                <ChevronRight size={16} className="text-gray-500" />
-              </button>
-              <button onClick={() => setFeedbackModal('feature')} className="w-full p-3 rounded-xl hover:bg-gray-50 flex items-center gap-3 transition-colors">
-                <FileText size={20} className="text-gray-600" />
-                <div className="flex-1 text-left">
-                  <p className="text-sm">Feature request</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Tell us what you'd like to see</p>
-                </div>
-                <ChevronRight size={16} className="text-gray-500" />
               </button>
             </div>
           </div>
