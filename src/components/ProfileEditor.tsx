@@ -204,18 +204,22 @@ export function ProfileEditor({
     if (!files || files.length === 0) return;
     if (uploadedPhotos.length >= 6) { setUploadError('Maximum 6 photos allowed'); return; }
     const slotsRemaining = 6 - uploadedPhotos.length;
-    if (files.length > slotsRemaining) {
-      setUploadError(`Only ${slotsRemaining} slot${slotsRemaining !== 1 ? 's' : ''} remaining — adding the first ${slotsRemaining} of ${files.length} selected.`);
+    // iOS Safari: FileList is a live DOM object — resetting e.target.value = ''
+    // (called right after this function) clears it before the async loop runs.
+    // Snapshot into a plain array before the first await.
+    const fileArray = Array.from(files);
+    if (fileArray.length > slotsRemaining) {
+      setUploadError(`Only ${slotsRemaining} slot${slotsRemaining !== 1 ? 's' : ''} remaining — adding the first ${slotsRemaining} of ${fileArray.length} selected.`);
     } else {
       setUploadError('');
     }
     setIsUploading(true);
     const token = await getAccessToken();
-    if (!token) { setIsUploading(false); return; }
+    if (!token) { setIsUploading(false); setUploadError('Session expired — please reload and try again.'); return; }
 
     const newPhotos: string[] = [];
-    for (let i = 0; i < Math.min(files.length, slotsRemaining); i++) {
-      const file = files[i];
+    for (let i = 0; i < Math.min(fileArray.length, slotsRemaining); i++) {
+      const file = fileArray[i];
       if (file.size > 10 * 1024 * 1024) { setUploadError('Each photo must be under 10MB'); continue; }
       try {
         const strippedFile = await stripExifMetadata(file);
@@ -559,9 +563,9 @@ export function ProfileEditor({
                 );
               })}
             </div>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+            <input ref={fileInputRef} type="file" accept="image/*"
               multiple={6 - uploadedPhotos.length > 1}
-              className="hidden"
+              className="sr-only"
               onChange={e => { handlePhotoUpload(e.target.files); e.target.value = ''; }}
             />
           </div>
