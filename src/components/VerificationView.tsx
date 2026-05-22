@@ -232,7 +232,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
 
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: '#1D9BF0' }}>
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-parallel-purple">
             <ShieldCheck size={36} className="text-white" />
           </div>
           <h1 className="text-3xl mb-3">Get verified</h1>
@@ -333,7 +333,7 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
             <div className="bg-[#F8F4FD] border border-[#E2D5F5] rounded-3xl p-6 text-center mb-8">
               <CheckCircle size={40} className="text-parallel-purple mx-auto mb-3" aria-hidden="true" />
               <h2 className="text-xl font-semibold text-parallel-void mb-2">You're verified! ✓</h2>
-              <p className="text-parallel-stone text-sm">Your profile now shows a blue verified checkmark to all your matches.</p>
+              <p className="text-parallel-stone text-sm">Your profile now shows a verified checkmark to all your matches.</p>
             </div>
             <button
               onClick={onBack}
