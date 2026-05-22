@@ -267,14 +267,16 @@ export function MatchProfileView({
     onBack();
   };
 
+  const fv = user.fieldVisibility ?? {};
+  const fvVisible = (key: string) => fv[key] !== false;
   const profileDetails = [
-    user.education ? { icon: GraduationCap, label: 'Education', value: user.education } : null,
-    user.career ? { icon: Briefcase, label: 'Career', value: user.career } : null,
-    religion ? { icon: Church, label: 'Religion', value: religion } : null,
-    politics ? { icon: Vote, label: 'Politics', value: politics } : null,
-    user.drinking ? { icon: Wine, label: 'Drinking', value: user.drinking } : null,
-    user.smoking ? { icon: Cigarette, label: 'Smoking', value: user.smoking } : null,
-    user.pets ? { icon: PawPrint, label: 'Pets', value: user.pets } : null,
+    (user.education && fvVisible('education')) ? { icon: GraduationCap, label: 'Education', value: user.education } : null,
+    (user.career && fvVisible('career')) ? { icon: Briefcase, label: 'Career', value: user.career } : null,
+    (religion && fvVisible('religion')) ? { icon: Church, label: 'Religion', value: religion } : null,
+    (politics && fvVisible('politics')) ? { icon: Vote, label: 'Politics', value: politics } : null,
+    (user.drinking && fvVisible('drinking')) ? { icon: Wine, label: 'Drinking', value: user.drinking } : null,
+    (user.smoking && fvVisible('smoking')) ? { icon: Cigarette, label: 'Smoking', value: user.smoking } : null,
+    (user.pets && fvVisible('pets')) ? { icon: PawPrint, label: 'Pets', value: user.pets } : null,
   ].filter(Boolean) as { icon: any; label: string; value: string }[];
 
   return (
@@ -528,7 +530,7 @@ export function MatchProfileView({
           <h1 className="text-2xl font-bold">
             {user.name}, {user.age}{(user as any).height ? ` · ${(user as any).height}` : ''}
           </h1>
-          {(locationDisplay || user.pronouns || ((isPreview || isMutual || alreadyMatched) && user.instagram)) && (
+          {(locationDisplay || (user.pronouns && fvVisible('pronouns')) || ((isPreview || isMutual || alreadyMatched) && user.instagram)) && (
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-gray-500 text-sm">
               {locationDisplay && (
                 <div className="flex items-center gap-1"><MapPin size={13} aria-hidden="true" /><span>{locationDisplay}</span></div>
@@ -541,17 +543,17 @@ export function MatchProfileView({
                   className="flex items-center gap-1.5 hover:text-parallel-purple transition-colors"
                 >
                   <Instagram size={13} aria-hidden="true" />
-                  <span>@{user.instagram.replace(/^@/, '')}{user.pronouns ? ` · ${normalizePronouns(user.pronouns)}` : ''}</span>
+                  <span>@{user.instagram.replace(/^@/, '')}{(user.pronouns && fvVisible('pronouns')) ? ` · ${normalizePronouns(user.pronouns)}` : ''}</span>
                 </a>
               ) : (
-                user.pronouns && <span>{normalizePronouns(user.pronouns)}</span>
+                (user.pronouns && fvVisible('pronouns')) && <span>{normalizePronouns(user.pronouns)}</span>
               )}
             </div>
           )}
         </div>
 
         {/* Bio as prose (no gray card wrapper) */}
-        {user.bio && (
+        {user.bio && fvVisible('bio') && (
           <p className="text-[15px] text-gray-700 leading-relaxed">{user.bio}</p>
         )}
 

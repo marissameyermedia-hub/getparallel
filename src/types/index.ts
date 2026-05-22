@@ -39,6 +39,7 @@ export interface User {
   hobbies?: string[];
   relationshipIntention?: string;
   isVerified?: boolean; // Verified via Persona
+  fieldVisibility?: Record<string, boolean>; // keys: career, education, bio, pronouns, religion, politics, drinking, smoking, pets
   answers: UserAnswers;
   preferences: PreferenceAnswers;
   attachmentStyle?: {

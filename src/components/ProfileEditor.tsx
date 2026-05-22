@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, GripVertical, ChevronLeft, Briefcase, GraduationCap, Instagram, MapPin, Plus, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, Lock } from 'lucide-react';
+import { Upload, X, GripVertical, ChevronLeft, Briefcase, GraduationCap, Instagram, MapPin, Plus, Wine, Cigarette, PawPrint, Church, Vote, ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { LocationPicker } from './LocationPicker';
@@ -49,6 +49,14 @@ async function stripExifMetadata(file: File): Promise<File> {
 }
 
 
+type FieldVisibility = Record<string, boolean>;
+
+const ALL_VISIBILITY_KEYS = ['career', 'education', 'bio', 'pronouns', 'religion', 'politics', 'drinking', 'smoking', 'pets'] as const;
+
+function isVisible(visibility: FieldVisibility, key: string): boolean {
+  return visibility[key] !== false; // absent = visible
+}
+
 interface ProfileEditorProps {
   isOnboarding: boolean;
   onComplete: (data: {
@@ -58,6 +66,7 @@ interface ProfileEditorProps {
     education: string;
     instagram: string;
     pronouns: string;
+    fieldVisibility: FieldVisibility;
     location?: {
       latitude: number;
       longitude: number;
@@ -92,6 +101,7 @@ interface ProfileEditorProps {
   userAnswers?: Record<string, any>;
   userDateOfBirth?: string;
   isVerified?: boolean;
+  initialFieldVisibility?: FieldVisibility;
 }
 
 function normalizePronouns(val: string): string {
@@ -118,7 +128,11 @@ export function ProfileEditor({
   userAnswers,
   userDateOfBirth,
   isVerified = false,
+  initialFieldVisibility = {},
 }: ProfileEditorProps) {
+  const [fieldVisibility, setFieldVisibility] = useState<FieldVisibility>(initialFieldVisibility);
+  const toggleVisibility = (key: string) =>
+    setFieldVisibility(prev => ({ ...prev, [key]: !isVisible(prev, key) }));
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>(initialPhotos);
   const [bio, setBio] = useState(initialBio);
   const [career, setCareer] = useState(initialCareer);
@@ -272,7 +286,7 @@ export function ProfileEditor({
   const handleComplete = async () => {
     setIsSaving(true);
     setHasSaved(true);
-    await onComplete({ photos: uploadedPhotos, bio, career, education, instagram, pronouns, location });
+    await onComplete({ photos: uploadedPhotos, bio, career, education, instagram, pronouns, fieldVisibility, location });
     setIsSaving(false);
   };
 
@@ -554,9 +568,14 @@ export function ProfileEditor({
 
           {/* Career */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Career <span className="text-gray-500 font-normal">— shown on your profile</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                Career <span className="text-gray-500 font-normal">— shown on your profile</span>
+              </label>
+              <button type="button" onClick={() => toggleVisibility('career')} className="p-1 text-gray-400 hover:text-gray-600" aria-label={isVisible(fieldVisibility, 'career') ? 'Hide career' : 'Show career'}>
+                {isVisible(fieldVisibility, 'career') ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+            </div>
             <div className="relative">
               <Briefcase size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
               <input type="text" value={career}
@@ -571,9 +590,14 @@ export function ProfileEditor({
 
           {/* Education */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Education <span className="text-gray-500 font-normal">— shown on your profile</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                Education <span className="text-gray-500 font-normal">— shown on your profile</span>
+              </label>
+              <button type="button" onClick={() => toggleVisibility('education')} className="p-1 text-gray-400 hover:text-gray-600" aria-label={isVisible(fieldVisibility, 'education') ? 'Hide education' : 'Show education'}>
+                {isVisible(fieldVisibility, 'education') ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+            </div>
             <div className="relative">
               <GraduationCap size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
               <input type="text" value={education}
@@ -587,9 +611,14 @@ export function ProfileEditor({
 
           {/* Bio */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              About Me <span className="text-gray-500 font-normal">— shown on your profile</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                About Me <span className="text-gray-500 font-normal">— shown on your profile</span>
+              </label>
+              <button type="button" onClick={() => toggleVisibility('bio')} className="p-1 text-gray-400 hover:text-gray-600" aria-label={isVisible(fieldVisibility, 'bio') ? 'Hide bio' : 'Show bio'}>
+                {isVisible(fieldVisibility, 'bio') ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+            </div>
             <textarea
               value={bio}
               onChange={e => { setBio(e.target.value.slice(0, 300)); setHasSaved(false); }}
@@ -606,9 +635,14 @@ export function ProfileEditor({
 
           {/* Pronouns */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Pronouns <span className="text-gray-500 font-normal">— optional</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                Pronouns <span className="text-gray-500 font-normal">— optional</span>
+              </label>
+              <button type="button" onClick={() => toggleVisibility('pronouns')} className="p-1 text-gray-400 hover:text-gray-600" aria-label={isVisible(fieldVisibility, 'pronouns') ? 'Hide pronouns' : 'Show pronouns'}>
+                {isVisible(fieldVisibility, 'pronouns') ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+            </div>
             <input type="text" value={pronouns}
               onChange={e => { setPronouns(e.target.value); setHasSaved(false); }}
               onBlur={e => setPronouns(normalizePronouns(e.target.value))}
@@ -677,6 +711,37 @@ export function ProfileEditor({
               }}
             />
           </div>
+
+          {/* Profile Basics — read-only, from questionnaire answers */}
+          {(drinking || smoking || pets || politics || religion) && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-gray-700">Profile Basics</p>
+                <p className="text-xs text-gray-500">from your questionnaire</p>
+              </div>
+              <div className="rounded-2xl border-2 border-gray-200 overflow-hidden">
+                {([
+                  { key: 'religion', label: 'Religion', icon: Church, value: religion },
+                  { key: 'politics', label: 'Politics', icon: Vote, value: politics },
+                  { key: 'drinking', label: 'Drinking', icon: Wine, value: drinking },
+                  { key: 'smoking', label: 'Smoking', icon: Cigarette, value: smoking },
+                  { key: 'pets', label: 'Pets', icon: PawPrint, value: pets },
+                ] as const).filter(item => item.value).map((item, idx, arr) => (
+                  <div key={item.key} className={`flex items-center justify-between px-4 py-3 ${idx < arr.length - 1 ? 'border-b border-gray-100' : ''}`}>
+                    <div className="flex items-center gap-2">
+                      <item.icon size={14} className="text-gray-400 flex-shrink-0" />
+                      <span className="text-sm text-gray-500">{item.label}</span>
+                      <span className="text-sm text-gray-800">{item.value}</span>
+                    </div>
+                    <button type="button" onClick={() => toggleVisibility(item.key)} className="p-1 ml-2 text-gray-400 hover:text-gray-600 flex-shrink-0" aria-label={isVisible(fieldVisibility, item.key) ? `Hide ${item.label}` : `Show ${item.label}`}>
+                      {isVisible(fieldVisibility, item.key) ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1.5 ml-1">To edit these, update your questionnaire answers.</p>
+            </div>
+          )}
 
         </div>
 

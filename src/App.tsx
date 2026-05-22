@@ -96,8 +96,9 @@ function App() {
     education: string;
     instagram: string;
     pronouns: string;
+    fieldVisibility: Record<string, boolean>;
     location?: { latitude: number; longitude: number; city: string; state: string; country: string; locationDisplay: string; };
-  }>({ photos: [], bio: '', career: '', education: '', instagram: '', pronouns: '' });
+  }>({ photos: [], bio: '', career: '', education: '', instagram: '', pronouns: '', fieldVisibility: {} });
 
   const [acceptedMatchIds, setAcceptedMatchIds] = useState<string[]>([]);
   const [declinedMatchIds, setDeclinedMatchIds] = useState<string[]>([]);
@@ -214,6 +215,7 @@ function App() {
           education: data.education || '',
           instagram: data.instagram || '',
           pronouns: data.pronouns || '',
+          fieldVisibility: data.field_visibility || {},
           ...(data.latitude && data.longitude ? {
             location: {
               latitude: data.latitude,
@@ -1567,9 +1569,9 @@ function App() {
           <ProfileEditor
             isOnboarding={false}
             onComplete={async (data) => {
-              setUserProfile(data);
+              setUserProfile({ ...data, fieldVisibility: data.fieldVisibility });
               localStorage.setItem('parallel_user_profile', JSON.stringify(data));
-              // Save bio/career/education/instagram/pronouns to DB
+              // Save bio/career/education/instagram/pronouns/field_visibility to DB
               // (photos are already saved to DB individually on upload)
               const token = await getAccessToken();
               if (token) {
@@ -1583,6 +1585,7 @@ function App() {
                       education: data.education,
                       instagram: data.instagram,
                       pronouns: data.pronouns || '',
+                      field_visibility: data.fieldVisibility,
                     }),
                   });
                 } catch (err) {
@@ -1600,6 +1603,7 @@ function App() {
             initialInstagram={userProfile.instagram}
             initialPronouns={userProfile.pronouns}
             initialLocation={userProfile.location}
+            initialFieldVisibility={userProfile.fieldVisibility}
             initialName={userName}
             userAnswers={userAnswers}
             userDateOfBirth={userDateOfBirth}
@@ -1658,6 +1662,7 @@ function App() {
               career: userProfile.career || undefined,
               instagram: userProfile.instagram || undefined,
               isVerified: hasVerified,
+              fieldVisibility: userProfile.fieldVisibility,
               // Profile Basics fields — pulled from questionnaire answers,
               // matching what the matches edge function returns for other users
               drinking: unwrap(userAnswers['3.1']),
