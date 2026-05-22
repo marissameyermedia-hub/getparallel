@@ -295,6 +295,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
               checked={smsEnabled}
               onChange={handleSmsToggle}
               disabled={isSmsLoading || !phoneNumber}
+              loading={isSmsLoading}
               ariaLabelledBy="sms-label"
               ariaDescribedBy="sms-sublabel"
             />
@@ -314,6 +315,7 @@ export function NotificationsView({ userId, onBack }: NotificationsViewProps) {
               checked={pushEnabled}
               onChange={handlePushToggle}
               disabled={pushRegistering}
+              loading={pushRegistering}
               ariaLabelledBy="push-label"
               ariaDescribedBy="push-sublabel"
             />
@@ -498,15 +500,24 @@ function Switch({
   checked,
   onChange,
   disabled,
+  loading,
   ariaLabelledBy,
   ariaDescribedBy,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  loading?: boolean;
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
 }) {
+  if (loading) {
+    return (
+      <div className="w-11 h-6 flex items-center justify-center" aria-busy="true">
+        <Loader2 className="w-5 h-5 animate-spin text-gray-400" aria-hidden="true" />
+      </div>
+    );
+  }
   return (
     <button
       role="switch"
