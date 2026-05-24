@@ -1,0 +1,26 @@
+name: Deploy parallel-planner to Netlify
+
+on:
+  push:
+    branches:
+      - claude/deploy-parallel-planner-netlify-VPPuI
+    paths:
+      - 'parallel-planner/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Deploy to Netlify
+        run: |
+          netlify deploy --prod \
+            --dir=parallel-planner \
+            --functions=parallel-planner/netlify/functions \
+            --site=7766d345-1d67-44c3-9d7e-745367778aad \
+            --auth=nfp_Ke92QTDFngu3ZUdSpR59csoiwzUdzSTR2b19
