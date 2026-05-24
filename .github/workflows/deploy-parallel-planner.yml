@@ -21,10 +21,10 @@ jobs:
         run: |
           cd parallel-planner
           zip -j /tmp/deploy.zip index.html netlify.toml
-          HTTP_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-            -H "Content-Type: application/zip" \
-            --data-binary @/tmp/deploy.zip \
+          HTTP_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \\
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \\
+            -H "Content-Type: application/zip" \\
+            --data-binary @/tmp/deploy.zip \\
             "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys")
           cat /tmp/response.json
           if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
