@@ -19,9 +19,8 @@ jobs:
 
       - name: Deploy to Netlify with functions
         env:
-          NETLIFY_AUTH_TOKEN: nfp_Ke92QTDFngu3ZUdSpR59csoiwzUdzSTR2b19
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: 7766d345-1d67-44c3-9d7e-745367778aad
         run: |
-          netlify deploy --prod \
-            --dir=parallel-planner \
-            --functions=parallel-planner/netlify/functions
+          cd parallel-planner
+          netlify deploy --prod --functions=netlify/functions
