@@ -14,24 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Zip and deploy to Netlify
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Deploy to Netlify with functions
         env:
           NETLIFY_AUTH_TOKEN: nfp_Ke92QTDFngu3ZUdSpR59csoiwzUdzSTR2b19
           NETLIFY_SITE_ID: 7766d345-1d67-44c3-9d7e-745367778aad
         run: |
-          cd parallel-planner
-          zip -j /tmp/deploy.zip index.html netlify.toml README.md
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-            -H "Content-Type: application/zip" \
-            --data-binary @/tmp/deploy.zip \
-            "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys")
-          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-          BODY=$(echo "$RESPONSE" | head -1)
-          echo "HTTP $HTTP_CODE"
-          echo "$BODY"
-          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
-            echo "Deploy failed with HTTP $HTTP_CODE"
-            exit 1
-          fi
-          echo "Deploy succeeded"
+          netlify deploy --prod \
+            --dir=parallel-planner \
+            --functions=parallel-planner/netlify/functions

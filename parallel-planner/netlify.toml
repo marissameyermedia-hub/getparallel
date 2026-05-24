@@ -1,3 +1,5 @@
+# Parallel Planner — Netlify configuration
+
 [build]
   publish = "."
   functions = "netlify/functions"
