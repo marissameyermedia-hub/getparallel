@@ -14,13 +14,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy to Netlify with functions
+      - name: Deploy static files to Netlify
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: 7766d345-1d67-44c3-9d7e-745367778aad
         run: |
           cd parallel-planner
-          netlify deploy --prod --functions=netlify/functions
+          zip -j /tmp/deploy.zip index.html netlify.toml
+          HTTP_CODE=$(curl -s -o /tmp/response.json -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
+            -H "Content-Type: application/zip" \
+            --data-binary @/tmp/deploy.zip \
+            "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys")
+          cat /tmp/response.json
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+            echo "Deploy failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+          echo "Deploy succeeded with HTTP $HTTP_CODE"
