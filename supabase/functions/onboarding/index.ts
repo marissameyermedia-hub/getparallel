@@ -1,4 +1,6 @@
-// Parallel — onboarding edge function v13
+// Parallel — onboarding edge function v14
+// v14: Fire-and-forget run-matching after /complete-onboarding so newly onboarded
+//      users get matches immediately instead of waiting for the next scheduled run.
 // v13: Stamp last_active_at on every GET /user/profile call (= every app open).
 //      Used by re-engagement SMS job to find dormant users with pending matches.
 // v12: Add field_visibility to PROFILE_FIELDS in handleUserProfilePut so
@@ -393,6 +395,16 @@ async function handleCompleteOnboarding(req: Request) {
   }).catch(err => console.error("[complete-onboarding] shadow-match trigger failed:", err));
   try { (globalThis as any).EdgeRuntime?.waitUntil(shadowTask); } catch (_) {}
 
+  const matchTask = fetch(`${SUPABASE_URL}/functions/v1/run-matching`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({ userId: user.id }),
+  }).catch(err => console.error("[complete-onboarding] run-matching trigger failed:", err));
+  try { (globalThis as any).EdgeRuntime?.waitUntil(matchTask); } catch (_) {}
+
   return json({ success: true, mergedAnswerCount: Object.keys(merged).length, finalAnswerCount: finalCount });
 }
 
@@ -554,7 +566,7 @@ Deno.serve(async (req) => {
   try {
     if (path === "/" || path === "/health") {
       await loadCanonical();
-      return json({ ok: true, service: "onboarding", version: "13", photodna: Boolean(PHOTODNA_API_KEY), canonical_loaded: !!CANONICAL, canonical_hash: CANONICAL_HASH });
+      return json({ ok: true, service: "onboarding", version: "14", photodna: Boolean(PHOTODNA_API_KEY), canonical_loaded: !!CANONICAL, canonical_hash: CANONICAL_HASH });
     }
     if (path === "/progress" && req.method === "GET") return await handleOnboardingProgressGet(req);
     if (path === "/progress" && req.method === "POST") return await handleOnboardingProgressPost(req);

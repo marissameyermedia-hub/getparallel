@@ -151,7 +151,7 @@ export function AdminMatchQuality({ accessToken }: Props) {
   if (data) {
     const activeUsers = data.active_users_total ?? 0;
     if (data.users_with_zero_matches > 0 && activeUsers > 10) {
-      flags.push({ severity: 'red', message: `${data.users_with_zero_matches.toLocaleString()} active user${data.users_with_zero_matches !== 1 ? 's have' : ' has'} zero matches — run matching to generate pairs` });
+      flags.push({ severity: 'yellow', message: `${data.users_with_zero_matches.toLocaleString()} active user${data.users_with_zero_matches !== 1 ? 's have' : ' has'} zero matches — matching runs automatically after onboarding` });
     }
     const isStale = !data.last_match_inserted_at || daysAgo(data.last_match_inserted_at) > 7;
     if (isStale) {
