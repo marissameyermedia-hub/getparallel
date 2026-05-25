@@ -1,4 +1,6 @@
-// Parallel — onboarding edge function v15
+// Parallel — onboarding edge function v16
+// v16: /accept-tos now reads tosVersion from request body and stores that exact
+//      value so tos_version_accepted matches CURRENT_TOS_VERSION on the frontend.
 // v15: Add /accept-tos — records tos_version_accepted + tos_accepted_at for the
 //      authenticated user. Called when the ToS gate modal is accepted in-app.
 // v14: Fire-and-forget run-matching after /complete-onboarding so newly onboarded
@@ -564,11 +566,13 @@ async function handleAttachmentScore(req: Request) {
 async function handleAcceptTos(req: Request) {
   const user = await getUserFromAuth(req);
   if (!user) return json({ error: "Unauthorized" }, 401);
+  const body = await req.json().catch(() => ({}));
+  const tosVersion = typeof body.tosVersion === "string" ? body.tosVersion : new Date().toISOString().slice(0, 10);
   const admin = adminClient();
   const { error } = await admin
     .from("profiles")
     .update({
-      tos_version_accepted: new Date().toISOString().slice(0, 10),
+      tos_version_accepted: tosVersion,
       tos_accepted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -585,7 +589,7 @@ Deno.serve(async (req) => {
   try {
     if (path === "/" || path === "/health") {
       await loadCanonical();
-      return json({ ok: true, service: "onboarding", version: "15", photodna: Boolean(PHOTODNA_API_KEY), canonical_loaded: !!CANONICAL, canonical_hash: CANONICAL_HASH });
+      return json({ ok: true, service: "onboarding", version: "16", photodna: Boolean(PHOTODNA_API_KEY), canonical_loaded: !!CANONICAL, canonical_hash: CANONICAL_HASH });
     }
     if (path === "/progress" && req.method === "GET") return await handleOnboardingProgressGet(req);
     if (path === "/progress" && req.method === "POST") return await handleOnboardingProgressPost(req);

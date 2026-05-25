@@ -1311,6 +1311,7 @@ function App() {
       {tosGateRequired && accessToken && (
         <TosGateModal
           accessToken={accessToken}
+          tosVersion={CURRENT_TOS_VERSION}
           onAccepted={() => setTosGateRequired(false)}
           onNavigateTerms={() => setCurrentView('terms-service')}
         />

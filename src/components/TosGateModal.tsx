@@ -4,11 +4,12 @@ import { ONBOARDING_FUNCTION_URL } from '../utils/supabase/client';
 
 interface TosGateModalProps {
   accessToken: string;
+  tosVersion: string;
   onAccepted: () => void;
   onNavigateTerms: () => void;
 }
 
-export function TosGateModal({ accessToken, onAccepted, onNavigateTerms }: TosGateModalProps) {
+export function TosGateModal({ accessToken, tosVersion, onAccepted, onNavigateTerms }: TosGateModalProps) {
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +25,7 @@ export function TosGateModal({ accessToken, onAccepted, onNavigateTerms }: TosGa
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ tosVersion }),
       });
       if (!res.ok) throw new Error('Failed to record acceptance');
       onAccepted();
