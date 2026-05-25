@@ -57,6 +57,8 @@ import { PageLoader } from './components/PageLoader';
 import { loadFlags, FeatureFlags } from './hooks/useFeatureFlags';
 import { ADMIN_FUNCTION_URL } from './utils/supabase/client';
 import { PASS_REASON_CATEGORY_MAP } from './data/passFeedbackReasons';
+import { TosGateModal } from './components/TosGateModal';
+import { CURRENT_TOS_VERSION } from './utils/constants';
 
 const getHeaders = (token: string) => ({
   'Content-Type': 'application/json',
@@ -109,6 +111,7 @@ function App() {
   const [hasActivated, setHasActivated] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [tosGateRequired, setTosGateRequired] = useState(false);
   const [userDateOfBirth, setUserDateOfBirth] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
   const [inboxMessages, setInboxMessages] = useState<Array<{
@@ -230,6 +233,9 @@ function App() {
         setHasCompletedOnboarding(!!data.has_completed_onboarding);
         setHasActivated(data.hasActivated || false);
         setHasVerified(data.is_verified || false);
+        if (data.has_completed_onboarding && data.tos_version_accepted !== CURRENT_TOS_VERSION) {
+          setTosGateRequired(true);
+        }
         // Persist email so AccountPage can display it even on PWA cold starts
         // where localStorage hasn't been written by the email-update flow yet.
         if (data.email) localStorage.setItem('parallel_user_email', data.email);
@@ -1302,6 +1308,13 @@ function App() {
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {tosGateRequired && accessToken && (
+        <TosGateModal
+          accessToken={accessToken}
+          onAccepted={() => setTosGateRequired(false)}
+          onNavigateTerms={() => setCurrentView('terms-service')}
+        />
+      )}
       <NavigationProgress />
 
       {/* Skip-to-content link for keyboard users — visually hidden until focused */}

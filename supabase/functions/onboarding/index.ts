@@ -1,4 +1,6 @@
-// Parallel — onboarding edge function v14
+// Parallel — onboarding edge function v15
+// v15: Add /accept-tos — records tos_version_accepted + tos_accepted_at for the
+//      authenticated user. Called when the ToS gate modal is accepted in-app.
 // v14: Fire-and-forget run-matching after /complete-onboarding so newly onboarded
 //      users get matches immediately instead of waiting for the next scheduled run.
 // v13: Stamp last_active_at on every GET /user/profile call (= every app open).
@@ -559,6 +561,23 @@ async function handleAttachmentScore(req: Request) {
   return json({ style });
 }
 
+async function handleAcceptTos(req: Request) {
+  const user = await getUserFromAuth(req);
+  if (!user) return json({ error: "Unauthorized" }, 401);
+  const admin = adminClient();
+  const { error } = await admin
+    .from("profiles")
+    .update({
+      tos_version_accepted: new Date().toISOString().slice(0, 10),
+      tos_accepted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+  if (error) { console.error("[accept-tos]", error); return json({ error: "Failed to record acceptance" }, 500); }
+  console.log(`[accept-tos] user ${user.id} accepted ToS`);
+  return json({ ok: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   const url = new URL(req.url);
@@ -566,7 +585,7 @@ Deno.serve(async (req) => {
   try {
     if (path === "/" || path === "/health") {
       await loadCanonical();
-      return json({ ok: true, service: "onboarding", version: "14", photodna: Boolean(PHOTODNA_API_KEY), canonical_loaded: !!CANONICAL, canonical_hash: CANONICAL_HASH });
+      return json({ ok: true, service: "onboarding", version: "15", photodna: Boolean(PHOTODNA_API_KEY), canonical_loaded: !!CANONICAL, canonical_hash: CANONICAL_HASH });
     }
     if (path === "/progress" && req.method === "GET") return await handleOnboardingProgressGet(req);
     if (path === "/progress" && req.method === "POST") return await handleOnboardingProgressPost(req);
@@ -580,6 +599,7 @@ Deno.serve(async (req) => {
     if (path === "/location/reverse" && req.method === "GET") return await handleLocationReverse(req);
     if (path === "/photos/upload" && req.method === "POST") return await handlePhotoUpload(req);
     if (path === "/attachment/score" && req.method === "POST") return await handleAttachmentScore(req);
+    if (path === "/accept-tos" && req.method === "POST") return await handleAcceptTos(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) { console.error("[onboarding] unhandled:", err); return json({ error: "Internal server error" }, 500); }
 });

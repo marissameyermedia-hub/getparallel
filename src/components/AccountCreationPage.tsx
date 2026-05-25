@@ -3,9 +3,7 @@ import { Eye, EyeOff, ChevronLeft, Mail, Phone, ArrowRight, CheckCircle, Circle 
 import { EDGE_FUNCTION_URL, AUTH_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { AppFooter } from './AppFooter';
-
-const TOS_VERSION = '2026-04-16';
-const PRIVACY_VERSION = '2026-04-09';
+import { CURRENT_TOS_VERSION as TOS_VERSION, CURRENT_PRIVACY_VERSION as PRIVACY_VERSION } from '../utils/constants';
 // NOTE: SMS consent is captured on PhoneVerificationPage, not here. This keeps
 // account creation friction low and matches Telnyx's requirement that SMS
 // opt-in be separate/optional/unchecked.
