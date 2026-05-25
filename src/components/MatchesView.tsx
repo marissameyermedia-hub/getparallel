@@ -516,8 +516,8 @@ export function MatchesView({
                   </span>
                 </div>
               </div>
-              <h2 className="text-3xl font-bold mb-2">We're building your city's matching pool now.</h2>
-              <p className="text-parallel-purple font-medium mb-5">We'll notify you when it's ready.</p>
+              <h2 className="text-3xl font-bold mb-2">We're building your matching pool now.</h2>
+              <p className="text-parallel-purple font-medium mb-5">We'll notify you when you have a match. Thank you for beta testing!</p>
               <div className="w-full max-w-xs mb-6">
                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
