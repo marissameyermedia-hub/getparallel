@@ -16,7 +16,9 @@ interface DailySignup {
 
 interface FunnelData {
   steps: FunnelStep[];
-  trend_30d: DailySignup[];
+  trend: DailySignup[];
+  signups_7d: number;
+  signups_30d: number;
   generated_at: string;
 }
 
@@ -69,7 +71,7 @@ export function AdminGrowthFunnel({ accessToken }: Props) {
     );
   }
 
-  const maxDaily = Math.max(...(data?.trend_30d ?? []).map(d => d.count), 1);
+  const maxDaily = Math.max(...(data?.trend ?? []).map(d => d.count), 1);
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto">
@@ -141,24 +143,24 @@ export function AdminGrowthFunnel({ accessToken }: Props) {
             </div>
           </div>
 
-          {data.trend_30d.length > 0 && (
+          {data.trend.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Daily Signups — Last 30 Days</h3>
               <div className="flex items-end gap-0.5 h-16">
-                {data.trend_30d.map(d => (
+                {data.trend.map(d => (
                   <SparkBar key={d.date} value={d.count} max={maxDaily} />
                 ))}
               </div>
               <div className="flex justify-between mt-1">
                 <span className="text-[10px] text-gray-400">
-                  {new Date(data.trend_30d[0]?.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(data.trend[0]?.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
                 <span className="text-[10px] text-gray-400">
-                  {new Date(data.trend_30d[data.trend_30d.length - 1]?.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(data.trend[data.trend.length - 1]?.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               </div>
               <p className="text-[11px] text-gray-400 mt-2">
-                Total last 30 days: <span className="font-semibold text-gray-700">{data.trend_30d.reduce((s, d) => s + d.count, 0)}</span> signups
+                Total last 30 days: <span className="font-semibold text-gray-700">{data.trend.reduce((s, d) => s + d.count, 0)}</span> signups
               </p>
             </div>
           )}
