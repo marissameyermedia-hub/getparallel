@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, Play } from 'lucide-react';
-import { EDGE_FUNCTION_URL, ADMIN_FUNCTION_URL } from '../../utils/supabase/client';
+import { ADMIN_FUNCTION_URL, getAuthHeaders } from '../../utils/supabase/client';
 
 interface PulseData {
   signups_24h: number;
@@ -146,8 +146,8 @@ export function AdminPulsePanel({ accessToken }: AdminPulsePanelProps) {
     }
 
     try {
-      const res = await fetch(`${EDGE_FUNCTION_URL}/admin-api/pulse`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+      const res = await fetch(`${ADMIN_FUNCTION_URL}/pulse`, {
+        headers: getAuthHeaders(accessToken),
       });
       if (!res.ok) throw new Error('fetch failed');
       const json = await res.json();
