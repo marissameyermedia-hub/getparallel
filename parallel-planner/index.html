@@ -39,7 +39,7 @@
     overflow-x: hidden;
   }
 
-  /* ââ HEADER ââ */
+  /* ── HEADER ── */
   header {
     background: var(--void);
     padding: 0 32px;
@@ -99,13 +99,13 @@
 
   .btn-sm { padding: 5px 10px; font-size: 12px; }
 
-  /* ââ LAYOUT ââ */
+  /* ── LAYOUT ── */
   .layout {
     display: flex;
     height: calc(100vh - 60px);
   }
 
-  /* ââ SIDEBAR ââ */
+  /* ── SIDEBAR ── */
   aside {
     width: 260px;
     flex-shrink: 0;
@@ -217,7 +217,7 @@
 
   .hashtag-actions { display: flex; gap: 4px; margin-top: 6px; }
 
-  /* ââ MAIN ââ */
+  /* ── MAIN ── */
   main {
     flex: 1;
     overflow-y: auto;
@@ -228,7 +228,7 @@
     min-width: 0;
   }
 
-  /* ââ TOOLBAR ââ */
+  /* ── TOOLBAR ── */
   .toolbar {
     display: flex;
     align-items: center;
@@ -271,14 +271,14 @@
 
   .platform-dot { width: 6px; height: 6px; border-radius: 50%; }
 
-  /* ââ FEED GRID ââ */
+  /* ── FEED GRID ── */
   .feed-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
   }
 
-  /* ââ POST CARD ââ */
+  /* ── POST CARD ── */
   .post-card {
     background: var(--white);
     aspect-ratio: 4/5;
@@ -341,6 +341,13 @@
     border-color: var(--purple);
     color: white;
   }
+
+  .post-card.post-archived { cursor: default; }
+  .post-card.post-archived .post-thumb { opacity: 0.52; filter: grayscale(30%); }
+  .post-card.post-archived:hover { transform: none; box-shadow: var(--shadow-sm); }
+  .badge-archived { background: rgba(34,197,94,0.88); color: white; }
+  .status-dot.archived { background: #22C55E; }
+  .status-dot.published { background: #22C55E; }
 
   /* Card drag-to-reorder styles */
   .post-card.card-dragging {
@@ -407,6 +414,21 @@
   .badge-day { background: var(--purple); color: white; }
   .badge-slides { background: rgba(255,255,255,0.9); color: var(--text-secondary); }
 
+  .post-date-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(13,13,15,0.72);
+    color: rgba(255,255,255,0.92);
+    backdrop-filter: blur(4px);
+    letter-spacing: 0.04em;
+  }
+
   .post-status {
     position: absolute;
     top: 6px;
@@ -423,7 +445,7 @@
   .status-dot.ready { background: #22C55E; }
   .status-dot.scheduled { background: var(--purple); }
 
-  /* ââ POST MODAL ââ */
+  /* ── POST MODAL ── */
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -727,7 +749,7 @@
   .status-btn.active-ready { border-color: #22C55E; color: #22C55E; background: rgba(34,197,94,0.08); }
   .status-btn.active-scheduled { border-color: var(--purple); color: var(--purple); background: rgba(123,94,167,0.08); }
 
-  /* ââ HASHTAG MANAGER ââ */
+  /* ── HASHTAG MANAGER ── */
   .hashtag-modal {
     background: var(--white);
     border-radius: 16px;
@@ -771,7 +793,7 @@
   .icon-btn:hover { background: var(--surface-2); color: var(--text-primary); }
   .icon-btn.danger:hover { background: rgba(220,53,69,0.08); color: #DC3545; }
 
-  /* ââ POSTING TIME INSIGHT ââ */
+  /* ── POSTING TIME INSIGHT ── */
   .time-insight {
     background: linear-gradient(135deg, var(--void) 0%, #1a1228 100%);
     border-radius: 12px;
@@ -798,7 +820,7 @@
   .time-insight-body { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.5; }
   .time-insight-body strong { color: var(--soft-violet); }
 
-  /* ââ TOAST ââ */
+  /* ── TOAST ── */
   .toast {
     position: fixed;
     bottom: 24px;
@@ -820,13 +842,13 @@
   }
   .toast.show { transform: translateY(0); opacity: 1; }
 
-  /* ââ SCROLLBAR ââ */
+  /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-  /* ââ LOADING SPINNER ââ */
+  /* ── LOADING SPINNER ── */
   .spinner {
     width: 16px;
     height: 16px;
@@ -922,7 +944,7 @@
     color: white;
   }
   .canva-thumb-item.selected .canva-thumb-check { display: flex; }
-  /* ââ MEDIA REPO PANEL ââ */
+  /* ── MEDIA REPO PANEL ── */
   .repo-panel {
     width: 220px;
     flex-shrink: 0;
@@ -1118,7 +1140,7 @@
     line-height: 1.6;
   }
 
-  /* ââ SLIDE LIGHTBOX ââ */
+  /* ── SLIDE LIGHTBOX ── */
   .slide-lightbox {
     position: fixed;
     inset: 0;
@@ -1140,7 +1162,7 @@
   .slide-lightbox-bar { display: flex; gap: 10px; }
   .slide-slot.filled { cursor: zoom-in; }
 
-  /* ââ CROP MODAL ââ */
+  /* ── CROP MODAL ── */
   .crop-modal {
     background: var(--white);
     border-radius: 16px;
@@ -1176,10 +1198,10 @@
       <div class="backup-dot"></div>
       <span>synced</span>
     </div>
-    <button class="btn btn-ghost" onclick="exportToGoogleDrive()">â Save to Drive</button>
-    <button class="btn btn-ghost" onclick="importFromDrive()">â Load from Drive</button>
-    <button class="btn btn-ghost" onclick="openCaptionBank()" id="captionBankBtn">â Caption Bank <span id="bankCount" style="background:var(--purple);color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;display:none;">0</span></button>
-    <button class="btn btn-primary" onclick="openHashtagManager()">â¯ Hashtag Sets</button>
+    <button class="btn btn-ghost" onclick="exportToGoogleDrive()">↑ Save to Drive</button>
+    <button class="btn btn-ghost" onclick="importFromDrive()">↓ Load from Drive</button>
+    <button class="btn btn-ghost" onclick="openCaptionBank()" id="captionBankBtn">✎ Caption Bank <span id="bankCount" style="background:var(--purple);color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:4px;display:none;">0</span></button>
+    <button class="btn btn-primary" onclick="openHashtagManager()">⋯ Hashtag Sets</button>
   </div>
 </header>
 
@@ -1190,9 +1212,9 @@
     <div class="sidebar-section">
       <div class="sidebar-label">4-Week View</div>
       <div class="week-nav">
-        <button class="week-btn" onclick="prevMonth()">â¹</button>
+        <button class="week-btn" onclick="prevMonth()">‹</button>
         <div class="week-title" id="monthLabel">June 2026</div>
-        <button class="week-btn" onclick="nextMonth()">âº</button>
+        <button class="week-btn" onclick="nextMonth()">›</button>
       </div>
     </div>
 
@@ -1215,15 +1237,15 @@
 
     <!-- posting insight -->
     <div class="time-insight">
-      <div class="time-insight-icon">â¡</div>
+      <div class="time-insight-icon">⚡</div>
       <div class="time-insight-text">
-        <div class="time-insight-title">BEST TIMES TO POST â INSTAGRAM</div>
+        <div class="time-insight-title">BEST TIMES TO POST — INSTAGRAM</div>
         <div class="time-insight-body">
-          Peak engagement for dating/lifestyle apps: <strong>TueâThu 7â9am</strong> (morning scroll) + <strong>6â8pm</strong> (post-work). TikTok: <strong>FriâSun 7â9pm</strong>. Avoid Mondays before noon. <strong>Consistency beats timing</strong> â aim for same slots each week.
+          Peak engagement for dating/lifestyle apps: <strong>Tue–Thu 7–9am</strong> (morning scroll) + <strong>6–8pm</strong> (post-work). TikTok: <strong>Fri–Sun 7–9pm</strong>. Avoid Mondays before noon. <strong>Consistency beats timing</strong> — aim for same slots each week.
         </div>
       </div>
       <div style="flex-shrink:0;">
-        <button class="btn btn-ghost btn-sm" onclick="cyclePlatformTip()" style="color:rgba(255,255,255,0.5);">Switch platform âº</button>
+        <button class="btn btn-ghost btn-sm" onclick="cyclePlatformTip()" style="color:rgba(255,255,255,0.5);">Switch platform ›</button>
       </div>
     </div>
 
@@ -1257,7 +1279,7 @@
   <div class="repo-panel" id="repoPanel">
     <div class="repo-header">
       <div class="repo-title">Media Repo</div>
-      <button class="repo-collapse-btn" onclick="toggleRepo()" title="Collapse">â¹</button>
+      <button class="repo-collapse-btn" onclick="toggleRepo()" title="Collapse">‹</button>
     </div>
     <div class="repo-collapsed-icon" onclick="toggleRepo()">
       <span>Media</span>
@@ -1290,7 +1312,7 @@
           <button class="status-btn" onclick="setStatus('ready',this)">Ready</button>
           <button class="status-btn" onclick="setStatus('scheduled',this)">Scheduled</button>
         </div>
-        <button class="close-btn" onclick="closeModal()">Ã</button>
+        <button class="close-btn" onclick="closeModal()">×</button>
       </div>
     </div>
     <div class="modal-body">
@@ -1300,7 +1322,7 @@
         <div class="slides-header">
           <span class="slides-label">Slides</span>
           <div class="slide-count-selector">
-            <button class="slide-count-btn" onclick="changeSlideCount(-1)">â</button>
+            <button class="slide-count-btn" onclick="changeSlideCount(-1)">−</button>
             <span class="slide-count-num" id="slideCountNum">3</span>
             <button class="slide-count-btn" onclick="changeSlideCount(1)">+</button>
           </div>
@@ -1320,17 +1342,17 @@
           <div class="ai-assist">
             <div style="display:flex;align-items:center;justify-content:space-between;">
               <div class="ai-assist-header" style="margin:0;">
-                <span>â¦</span>
+                <span>✦</span>
                 <span>Caption + Hashtag Assist</span>
               </div>
               <button class="btn btn-primary btn-sm" onclick="generateCaption()" id="aiBtn">Generate</button>
             </div>
             <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-top:6px;">Reads your slides and writes 3 captions with trending hashtags. Hit Generate, then redirect below if needed.</div>
             <div class="ai-result" id="aiResult"></div>
-            <!-- Follow-up prompt â shown after first generation -->
+            <!-- Follow-up prompt — shown after first generation -->
             <div id="aiFollowUp" style="display:none;margin-top:8px;display:none;">
               <div class="ai-prompt">
-                <input type="text" id="aiPromptField" placeholder="Redirect Claude â e.g. 'make it funnier' or 'focus on the algorithm angle'..." style="font-size:12px;" />
+                <input type="text" id="aiPromptField" placeholder="Redirect Claude — e.g. 'make it funnier' or 'focus on the algorithm angle'..." style="font-size:12px;" />
                 <button class="btn btn-primary btn-sm" onclick="generateCaption(true)" id="aiFollowBtn">Refine</button>
               </div>
             </div>
@@ -1340,7 +1362,7 @@
             <div class="form-label">
               <span>Caption</span>
               <div style="display:flex;gap:8px;align-items:center;">
-                <button onclick="openCaptionBank('insert')" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text-secondary);font-family:'DM Sans',sans-serif;">â From Bank</button>
+                <button onclick="openCaptionBank('insert')" style="font-size:11px;padding:2px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text-secondary);font-family:'DM Sans',sans-serif;">✎ From Bank</button>
                 <span id="captionCount" style="font-weight:400;">0 / 2200</span>
               </div>
             </div>
@@ -1352,7 +1374,7 @@
               <span>Hashtags</span>
               <span style="font-weight:400;font-size:10px;color:var(--text-muted);">auto-filled on Generate</span>
             </div>
-            <textarea id="hashtagField" placeholder="Generated hashtags will appear here â or type your own..." style="min-height:60px;font-size:11px;font-family:'DM Mono',monospace;"></textarea>
+            <textarea id="hashtagField" placeholder="Generated hashtags will appear here — or type your own..." style="min-height:60px;font-size:11px;font-family:'DM Mono',monospace;"></textarea>
           </div>
 
           <div class="schedule-row">
@@ -1369,8 +1391,8 @@
           <div class="form-group">
             <div class="form-label">Platforms</div>
             <div class="platform-toggles">
-              <div class="platform-toggle" onclick="togglePlatform(this,'ig')" data-platform="ig">ð· Instagram</div>
-              <div class="platform-toggle" onclick="togglePlatform(this,'tiktok')" data-platform="tiktok">âª TikTok</div>
+              <div class="platform-toggle" onclick="togglePlatform(this,'ig')" data-platform="ig">📷 Instagram</div>
+              <div class="platform-toggle" onclick="togglePlatform(this,'tiktok')" data-platform="tiktok">♪ TikTok</div>
               <div class="platform-toggle" onclick="togglePlatform(this,'fb')" data-platform="fb">f Facebook</div>
             </div>
           </div>
@@ -1391,7 +1413,7 @@
 
           <!-- Quick auto-fill for time/location/audio -->
           <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;">
-            <div style="font-size:11px;color:var(--text-muted);">â¡ Auto-fill best time, location + trending audio</div>
+            <div style="font-size:11px;color:var(--text-muted);">⚡ Auto-fill best time, location + trending audio</div>
             <button class="btn btn-primary btn-sm" onclick="autoFillMeta()" id="metaFillBtn">Fill</button>
           </div>
           <div class="ai-result" id="metaFillResult"></div>
@@ -1405,13 +1427,14 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn" id="archiveBtn" onclick="archivePost()" style="background:var(--surface);color:#22C55E;border:1px solid #22C55E;">✓ Archive</button>
       <button class="btn" style="background:var(--surface);color:var(--text-secondary);border:1px solid var(--border);" onclick="deletePost()">Delete post</button>
       <div style="display:flex;gap:8px;">
         <button class="btn" style="background:var(--surface);color:var(--text-secondary);border:1px solid var(--border);" onclick="closeModal()">Cancel</button>
-        <button class="btn" id="tiktokBtn" onclick="copyForTikTok()" style="background:#010101;color:white;border:none;">âª Copy for TikTok</button>
-        <button class="btn" id="threadsBtn" onclick="copyForThreads()" style="background:#000000;color:white;border:none;">â Copy for Threads</button>
-        <button class="btn" id="scheduleBtn" onclick="schedulePost()" style="background:#7B5EA7;color:white;border:none;">ð Schedule</button>
-        <button class="btn btn-primary" id="publishBtn" onclick="publishToInstagram()" style="background:linear-gradient(135deg,#833AB4,#E1306C);border:none;">ð· Publish to Instagram</button>
+        <button class="btn" id="tiktokBtn" onclick="copyForTikTok()" style="background:#010101;color:white;border:none;">♪ Copy for TikTok</button>
+        <button class="btn" id="threadsBtn" onclick="copyForThreads()" style="background:#000000;color:white;border:none;">⊕ Copy for Threads</button>
+        <button class="btn" id="scheduleBtn" onclick="schedulePost()" style="background:#7B5EA7;color:white;border:none;">🗓 Schedule</button>
+        <button class="btn btn-primary" id="publishBtn" onclick="publishToInstagram()" style="background:linear-gradient(135deg,#833AB4,#E1306C);border:none;">📷 Publish to Instagram</button>
         <button class="btn btn-primary" onclick="savePost()">Save post</button>
       </div>
     </div>
@@ -1425,7 +1448,7 @@
       <div class="modal-title">Add Slides</div>
       <div style="display:flex;gap:8px;align-items:center;">
         <span style="font-size:12px;color:var(--text-muted);" id="canvaPickerCount">0 selected</span>
-        <button class="close-btn" onclick="closeCanvaPicker()">Ã</button>
+        <button class="close-btn" onclick="closeCanvaPicker()">×</button>
       </div>
     </div>
     <div style="padding:20px;border-bottom:1px solid var(--border);">
@@ -1442,9 +1465,9 @@
          ondragover="event.preventDefault();this.style.borderColor='var(--purple)';this.style.background='var(--surface-2)'"
          ondragleave="this.style.borderColor='var(--border-strong)';this.style.background='var(--surface)'"
          ondrop="handleDropZone(event)">
-        <div style="font-size:28px;margin-bottom:8px;">ð</div>
+        <div style="font-size:28px;margin-bottom:8px;">📁</div>
         <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Drop PNG files here</div>
-        <div style="font-size:12px;color:var(--text-muted);">or click to browse â select multiple at once</div>
+        <div style="font-size:12px;color:var(--text-muted);">or click to browse — select multiple at once</div>
       </div>
       <input type="file" id="multiFileInput" accept="image/*" multiple style="display:none" onchange="handleMultiFileSelect(event)" />
     </div>
@@ -1457,7 +1480,7 @@
       overflow-y:auto;
     "></div>
     <div class="modal-footer">
-      <div style="font-size:12px;color:var(--text-muted);">Will be added as slides <span id="slideStartNum">1</span>â<span id="slideEndNum">3</span></div>
+      <div style="font-size:12px;color:var(--text-muted);">Will be added as slides <span id="slideStartNum">1</span>–<span id="slideEndNum">3</span></div>
       <div style="display:flex;gap:8px;">
         <button class="btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text-secondary);" onclick="closeCanvaPicker()">Cancel</button>
         <button class="btn btn-primary" onclick="applyUploadedSlides()" id="applyUploadsBtn" disabled style="opacity:0.5;">Add Slides</button>
@@ -1471,7 +1494,7 @@
   <div class="hashtag-modal">
     <div class="modal-header">
       <div class="modal-title">Hashtag Sets</div>
-      <button class="close-btn" onclick="closeHashtagManager()">Ã</button>
+      <button class="close-btn" onclick="closeHashtagManager()">×</button>
     </div>
     <div class="hashtag-form">
       <div style="font-size:12px;font-weight:600;color:var(--text-secondary);">Create New Set</div>
@@ -1492,8 +1515,8 @@
 <div class="modal-backdrop" id="captionBankModal">
   <div class="hashtag-modal" style="max-width:600px;">
     <div class="modal-header">
-      <div class="modal-title">â Caption Bank</div>
-      <button class="close-btn" onclick="closeCaptionBank()">Ã</button>
+      <div class="modal-title">✎ Caption Bank</div>
+      <button class="close-btn" onclick="closeCaptionBank()">×</button>
     </div>
     <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;">
       <input type="text" id="bankSearchField" placeholder="Search captions..." oninput="renderCaptionBank()" style="flex:1;font-size:12px;" />
@@ -1510,9 +1533,9 @@
 <div id="slideLightbox" class="slide-lightbox" style="display:none" onclick="if(event.target===this)closeLightbox()">
   <img id="lightboxImg" class="slide-lightbox-img" />
   <div class="slide-lightbox-bar">
-    <button class="btn btn-ghost" onclick="openCropTool()" style="border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);">â Crop</button>
-    <button class="btn btn-ghost" onclick="triggerLightboxReplace()" style="border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);">â Replace</button>
-    <button class="btn btn-ghost" onclick="closeLightbox()" style="border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);">â Close</button>
+    <button class="btn btn-ghost" onclick="openCropTool()" style="border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);">✂ Crop</button>
+    <button class="btn btn-ghost" onclick="triggerLightboxReplace()" style="border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);">↑ Replace</button>
+    <button class="btn btn-ghost" onclick="closeLightbox()" style="border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.75);">✕ Close</button>
   </div>
 </div>
 
@@ -1520,14 +1543,14 @@
 <div class="modal-backdrop" id="cropModal" style="z-index:500;">
   <div class="crop-modal">
     <div class="modal-header">
-      <div class="modal-title">â Crop Slide</div>
-      <button class="close-btn" onclick="closeCropTool()">Ã</button>
+      <div class="modal-title">✂ Crop Slide</div>
+      <button class="close-btn" onclick="closeCropTool()">×</button>
     </div>
     <div class="crop-canvas-wrap" id="cropCanvasWrap">
       <canvas id="cropCanvas"></canvas>
     </div>
     <div style="padding:8px 16px;background:var(--surface);border-top:1px solid var(--border);font-size:11px;color:var(--text-muted);text-align:center;flex-shrink:0;">
-      Drag to select crop area Â· Default is 4:5 (Instagram portrait)
+      Drag to select crop area · Default is 4:5 (Instagram portrait)
     </div>
     <div class="modal-footer" style="flex-shrink:0;">
       <button class="btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text-secondary);" onclick="resetCrop()">Reset to 4:5</button>
@@ -1546,15 +1569,15 @@
 <input type="file" id="fileInput" accept="image/*" onchange="handleFileUpload(event)" />
 
 <script>
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // DATA MODEL
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 // API calls proxied through Supabase Edge Function (key stored server-side)
 
-// âââââââââââââââââââââââââââââââââââââââââââ
-// INDEXED DB â MEDIA REPOSITORY
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
+// INDEXED DB — MEDIA REPOSITORY
+// ═══════════════════════════════════════════
 
 let db = null;
 let repoImages = []; // in-memory cache [{id, name, dataUrl, uploadedAt}]
@@ -1610,7 +1633,7 @@ async function loadRepoFromDB() {
   renderRepo();
 }
 
-// ââ REPO UPLOAD ââ
+// ── REPO UPLOAD ──
 
 function handleRepoDrop(event) {
   event.preventDefault();
@@ -1640,7 +1663,7 @@ async function addFilesToRepo(files) {
   }
   repoImages.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   renderRepo();
-  showToast(`â ${added} image${added > 1 ? 's' : ''} added to repo`);
+  showToast(`✓ ${added} image${added > 1 ? 's' : ''} added to repo`);
 }
 
 function readFileAsDataUrl(file) {
@@ -1651,7 +1674,7 @@ function readFileAsDataUrl(file) {
   });
 }
 
-// ââ REPO RENDER ââ
+// ── REPO RENDER ──
 
 function renderRepo() {
   const grid = document.getElementById('repoGrid');
@@ -1676,7 +1699,7 @@ function renderRepo() {
       <img src="${img.dataUrl}" alt="${img.name}" />
       <div class="repo-thumb-num">${idx + 1}</div>
       <div class="repo-thumb-name">${img.name.replace(/\.[^.]+$/, '')}</div>
-      <button class="repo-thumb-del" onclick="deleteRepoImage('${img.id}',event)" title="Remove">Ã</button>
+      <button class="repo-thumb-del" onclick="deleteRepoImage('${img.id}',event)" title="Remove">×</button>
     `;
     div.addEventListener('dragstart', (e) => {
       currentDragItem = { dataUrl: img.dataUrl, name: img.name };
@@ -1701,20 +1724,20 @@ async function deleteRepoImage(id, event) {
   renderRepo();
 }
 
-// ââ REPO COLLAPSE ââ
+// ── REPO COLLAPSE ──
 
 function toggleRepo() {
   repoCollapsed = !repoCollapsed;
   const panel = document.getElementById('repoPanel');
   const btn = panel.querySelector('.repo-collapse-btn');
   panel.classList.toggle('collapsed', repoCollapsed);
-  btn.textContent = repoCollapsed ? 'âº' : 'â¹';
+  btn.textContent = repoCollapsed ? '›' : '‹';
 }
 
 const PLATFORM_TIPS = [
-  { platform: 'INSTAGRAM', tip: 'Peak engagement for dating/lifestyle apps: <strong>TueâThu 7â9am</strong> (morning scroll) + <strong>6â8pm</strong> (post-work). Aim for 3-4x per week. Reels get 2x reach of carousels right now.' },
-  { platform: 'TIKTOK', tip: '<strong>FriâSun 7â9pm</strong> is peak. Post at least 3x/week to stay in the algorithm. Sound-on content outperforms static. Hook in the first <strong>1.5 seconds</strong> is non-negotiable.' },
-  { platform: 'FACEBOOK', tip: '<strong>Wed 11amâ1pm</strong> and <strong>ThuâFri 1â3pm</strong> see highest engagement. Facebook still rewards video. Carousel posts outperform single images. Link posts get penalized â keep links in comments.' },
+  { platform: 'INSTAGRAM', tip: 'Peak engagement for dating/lifestyle apps: <strong>Tue–Thu 7–9am</strong> (morning scroll) + <strong>6–8pm</strong> (post-work). Aim for 3-4x per week. Reels get 2x reach of carousels right now.' },
+  { platform: 'TIKTOK', tip: '<strong>Fri–Sun 7–9pm</strong> is peak. Post at least 3x/week to stay in the algorithm. Sound-on content outperforms static. Hook in the first <strong>1.5 seconds</strong> is non-negotiable.' },
+  { platform: 'FACEBOOK', tip: '<strong>Wed 11am–1pm</strong> and <strong>Thu–Fri 1–3pm</strong> see highest engagement. Facebook still rewards video. Carousel posts outperform single images. Link posts get penalized — keep links in comments.' },
 ];
 let tipIndex = 0;
 
@@ -1727,7 +1750,7 @@ let state = {
     { id: 'niche', name: 'Niche / Deep', tags: '#attachmentstyle #secureattachment #emotionalintelligence #consciousdating #intentionaldating #qualityoverquantity' },
   ],
   captionBank: [], // [{id, text, savedAt, note}]
-  currentMonth: new Date(2026, 5, 1),
+  currentMonth: new Date(2026, 4, 24),
   activePost: null,
   currentSlideCount: 3,
   selectedPlatform: 'all',
@@ -1736,9 +1759,9 @@ let state = {
   captionBankMode: null, // 'insert' or null (browse)
 };
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // INIT
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 async function init() {
   await loadFromStorage();
@@ -1751,13 +1774,13 @@ async function init() {
   initDB().then(() => loadRepoFromDB()).catch(e => console.warn('IndexedDB init failed', e));
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // STORAGE
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // SUPABASE (single source of truth)
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 const SUPABASE_URL = 'https://qnnjtmhwcpsmpzlxdxex.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_lF-dL9dqM8xrBlcPXTp6uw_pXGw3FEM';
 const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
@@ -1783,7 +1806,7 @@ function loadLocalPrefs() {
   } catch(e) { console.warn('Local prefs load failed', e); }
 }
 
-// Convert DB row â in-memory post object
+// Convert DB row → in-memory post object
 function rowToPost(row) {
   return {
     slides: row.slide_urls || [],
@@ -1800,19 +1823,17 @@ function rowToPost(row) {
   };
 }
 
-// Convert in-memory post â DB upsert payload
+// Convert in-memory post → DB upsert payload
 function postToRow(planner_key, post) {
   // Compute scheduled_at from planner_key date if not already set
   let scheduled_at = post._scheduled_at;
   if (!scheduled_at) {
     const [week, slot] = planner_key.split('-').map(Number);
     const dayIndex = (week - 1) * 7 + slot;
-    const gridStart = new Date(2026, 5, 1); // June 1, 2026
-    const d = new Date(gridStart);
-    d.setDate(d.getDate() + dayIndex);
-    // Default to 9:00 AM if no time set
-    d.setHours(9, 0, 0, 0);
-    scheduled_at = d.toISOString();
+    const gridStart = new Date(2026, 4, 24); // May 24, 2026
+    gridStart.setDate(gridStart.getDate() + dayIndex);
+    gridStart.setHours(9, 0, 0, 0);
+    scheduled_at = gridStart.toISOString();
   }
   return {
     planner_key,
@@ -1830,7 +1851,7 @@ async function loadFromStorage() {
   loadLocalPrefs(); // hashtag sets and caption bank stay local
   if (!sb) { console.warn('Supabase SDK not loaded'); return; }
   try {
-    updateBackupStatus('loadingâ¦');
+    updateBackupStatus('loading…');
     const { data, error } = await sb.from('scheduled_posts').select('*').order('planner_key');
     if (error) throw error;
     state.posts = {};
@@ -1849,7 +1870,7 @@ async function saveToStorage() {
   if (!sb) return;
   // Save ALL posts to Supabase (upsert)
   try {
-    updateBackupStatus('savingâ¦');
+    updateBackupStatus('saving…');
     const rows = Object.entries(state.posts)
       .filter(([k, p]) => p && p.slides && p.slides.some(Boolean))
       .map(([k, p]) => postToRow(k, p));
@@ -1868,9 +1889,9 @@ async function savePostToDB(planner_key) {
   if (!sb) return;
   const post = state.posts[planner_key];
   try {
-    updateBackupStatus('savingâ¦');
+    updateBackupStatus('saving…');
     if (!post || !post.slides || !post.slides.some(Boolean)) {
-      // Empty post â delete from DB
+      // Empty post — delete from DB
       await sb.from('scheduled_posts').delete().eq('planner_key', planner_key);
     } else {
       await sb.from('scheduled_posts').upsert(postToRow(planner_key, post), { onConflict: 'planner_key' });
@@ -1886,7 +1907,7 @@ async function savePostToDB(planner_key) {
 async function swapPostsInDB(keyA, keyB) {
   if (!sb) return;
   try {
-    updateBackupStatus('savingâ¦');
+    updateBackupStatus('saving…');
     // Delete both rows then re-insert with swapped keys
     const postA = state.posts[keyA];
     const postB = state.posts[keyB];
@@ -1906,17 +1927,15 @@ function updateBackupStatus(msg) {
   document.getElementById('backupStatus').querySelector('span').textContent = msg;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // CALENDAR / WEEK HELPERS
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function getWeekDays() {
-  // Generate 4 weeks of days starting from current month's first Monday
+  // Generate 4 weeks of days starting from the anchor date (no Monday alignment)
   const days = [];
   const start = new Date(state.currentMonth);
-  // Find Monday on or before start
-  const day = start.getDay();
-  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+  start.setHours(0, 0, 0, 0);
   for (let i = 0; i < 28; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
@@ -1931,23 +1950,28 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 function formatDate(d) { return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`; }
 
 function prevMonth() {
-  state.currentMonth.setMonth(state.currentMonth.getMonth() - 1);
+  state.currentMonth.setDate(state.currentMonth.getDate() - 28);
   renderDayList();
+  renderFeedGrid();
   updateMonthLabel();
 }
 function nextMonth() {
-  state.currentMonth.setMonth(state.currentMonth.getMonth() + 1);
+  state.currentMonth.setDate(state.currentMonth.getDate() + 28);
   renderDayList();
+  renderFeedGrid();
   updateMonthLabel();
 }
 function updateMonthLabel() {
+  const days = getWeekDays();
+  const s = days[0], e = days[days.length - 1];
+  const fmt = d => `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`;
   document.getElementById('monthLabel').textContent =
-    `${['January','February','March','April','May','June','July','August','September','October','November','December'][state.currentMonth.getMonth()]} ${state.currentMonth.getFullYear()}`;
+    `${fmt(s)} – ${fmt(e)}, ${e.getFullYear()}`;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // RENDER: DAY LIST
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function renderDayList() {
   updateMonthLabel();
@@ -1966,7 +1990,7 @@ function renderDayList() {
       <div class="day-left">
         <div class="day-dot ${hasPost ? 'has-post' : ''}"></div>
         <div>
-          <div class="day-name">${DAY_NAMES[dayOfWeek]}</div>
+          <div class="day-name">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
           <div class="day-date">${formatDate(d)}</div>
         </div>
       </div>
@@ -1976,9 +2000,9 @@ function renderDayList() {
   });
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // RENDER: FEED GRID
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function renderFeedGrid() {
   const grid = document.getElementById('feedGrid');
@@ -1996,33 +2020,39 @@ function renderFeedGrid() {
 
     if (post && post.slides && post.slides.some(Boolean)) {
       const firstSlide = post.slides.find(Boolean);
+      const isArchived = post.status === 'archived' || post.status === 'published';
+      if (isArchived) card.classList.add('post-archived');
       card.innerHTML = `
         <img class="post-thumb" src="${firstSlide}" alt="" onerror="this.style.display='none'" />
         <div class="post-badge">
-          <span class="badge badge-week">W${week}</span>
-          <span class="badge badge-day">${DAY_NAMES[dayOfWeek]}</span>
-          ${post.slides.filter(Boolean).length > 1 ? `<span class="badge badge-slides">${post.slides.filter(Boolean).length} slides</span>` : ''}
+          ${isArchived
+            ? `<span class="badge badge-archived">✓ posted</span>`
+            : `<span class="badge badge-week">W${week}</span>
+               <span class="badge badge-day">${d.toLocaleDateString('en-US',{weekday:'short'})}</span>
+               ${post.slides.filter(Boolean).length > 1 ? `<span class="badge badge-slides">${post.slides.filter(Boolean).length} slides</span>` : ''}`
+          }
         </div>
         <div class="post-status">
           <div class="status-dot ${post.status || 'draft'}"></div>
         </div>
-        <div class="post-overlay">
+        ${post.date ? `<div class="post-date-badge">${post.date}</div>` : ''}
+        ${!isArchived ? `<div class="post-overlay">
           <button class="post-overlay-btn post-overlay-edit">Edit post</button>
-        </div>
+        </div>` : ''}
       `;
     } else {
       card.innerHTML = `
         <div class="post-empty">
-          <div class="post-empty-week">W${week} Â· ${DAY_NAMES[dayOfWeek]}<br>${formatDate(d)}</div>
+          <div class="post-empty-week">W${week} · ${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
           <div class="add-post-icon" style="width:44px;height:44px;font-size:22px;">+</div>
           <span style="font-size:12px;">Add post</span>
         </div>
       `;
     }
 
-    // ââ CARD DRAG-TO-REORDER ââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── CARD DRAG-TO-REORDER ──────────────────────────────────────────────────
     // Filled cards can be dragged to swap post content with another slot.
-    // Dates stay fixed â only the post data moves.
+    // Dates stay fixed — only the post data moves.
     if (post && post.slides && post.slides.some(Boolean)) {
       card.draggable = true;
       card.addEventListener('dragstart', (e) => {
@@ -2067,13 +2097,13 @@ function renderFeedGrid() {
         cardDrag = null;
         swapPostsInDB(fromKey, toKey);
         renderFeedGrid(); renderDayList();
-        showToast('â Posts swapped');
+        showToast('✓ Posts swapped');
       } else if (!cardDrag && currentDragItem) {
         // Repo slide drop
         if (!state.posts[postKey]) state.posts[postKey] = { slides: [], status: 'draft', platforms: [] };
         state.posts[postKey].slides.push(currentDragItem.dataUrl);
         saveToStorage(); renderFeedGrid(); renderDayList();
-        showToast(`â Slide added to W${week} ${DAY_NAMES[dayOfWeek]}`);
+        showToast(`✓ Slide added to W${week} ${DAY_NAMES[dayOfWeek]}`);
       }
     });
 
@@ -2087,9 +2117,9 @@ function renderFeedGrid() {
   });
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // RENDER: SIDEBAR HASHTAGS
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function renderSidebarHashtags() {
   const el = document.getElementById('sidebarHashtagSets');
@@ -2109,9 +2139,9 @@ function renderSidebarHashtags() {
   });
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // POST MODAL
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function openPost(week, slot) {
   state.activePost = { week, slot };
@@ -2121,7 +2151,7 @@ function openPost(week, slot) {
   const dayIndex = (week - 1) * 7 + slot;
   const d = days[dayIndex];
 
-  document.getElementById('modalTitle').textContent = `W${week} Â· ${DAY_NAMES[slot]} ${formatDate(d)}`;
+  document.getElementById('modalTitle').textContent = `W${week} · ${DAY_NAMES[slot]} ${formatDate(d)}`;
   document.getElementById('captionField').value = post.caption || '';
   document.getElementById('hashtagField').value = post.hashtags || '';
   document.getElementById('postDate').value = post.date || formatDate(d);
@@ -2178,7 +2208,7 @@ function renderSlides(slides) {
     if (slides[i]) {
       slot.innerHTML = `
         <img class="slide-img" src="${slides[i]}" alt="" onerror="this.src=''" />
-        <button class="slide-remove" onclick="removeSlide(${i})">Ã</button>
+        <button class="slide-remove" onclick="removeSlide(${i})">×</button>
         <div class="slide-num">${i + 1}</div>
       `;
     } else {
@@ -2281,7 +2311,7 @@ function savePost() {
   renderFeedGrid();
   renderDayList();
   closeModal();
-  showToast('â Post saved');
+  showToast('✓ Post saved');
 }
 
 async function deletePost() {
@@ -2299,6 +2329,70 @@ async function deletePost() {
   renderDayList();
   closeModal();
   showToast('Post deleted');
+}
+
+async function archivePost() {
+  if (!state.activePost) return;
+  const postKey = `${state.activePost.week}-${state.activePost.slot}`;
+  const post = state.posts[postKey];
+  if (!post) { closeModal(); return; }
+
+  const btn = document.getElementById('archiveBtn');
+  btn.innerHTML = '<div class="spinner"></div>';
+  btn.disabled = true;
+
+  try {
+    const archivedAt = post._scheduled_at;
+
+    // Mark as archived
+    post.status = 'archived';
+    if (sb) {
+      await sb.from('scheduled_posts')
+        .update({ status: 'archived', updated_at: new Date().toISOString() })
+        .eq('planner_key', postKey);
+    }
+
+    // Queue shift: each future active post slides back one slot in time
+    if (archivedAt && sb) {
+      const { data: futurePosts } = await sb
+        .from('scheduled_posts')
+        .select('id, planner_key, scheduled_at')
+        .in('status', ['scheduled', 'draft', 'ready'])
+        .gt('scheduled_at', archivedAt)
+        .order('scheduled_at', { ascending: true });
+
+      if (futurePosts && futurePosts.length > 0) {
+        // Each post gets the scheduled_at of the post before it (index 0 gets archived post's time)
+        const times = [archivedAt, ...futurePosts.map(p => p.scheduled_at)];
+        for (let i = 0; i < futurePosts.length; i++) {
+          const newTime = times[i];
+          await sb.from('scheduled_posts')
+            .update({ scheduled_at: newTime, updated_at: new Date().toISOString() })
+            .eq('id', futurePosts[i].id);
+          const key = futurePosts[i].planner_key;
+          if (state.posts[key]) {
+            state.posts[key]._scheduled_at = newTime;
+            const dt = new Date(newTime);
+            state.posts[key].date = dt.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+            state.posts[key].time = dt.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+          }
+        }
+        showToast(`✓ Archived — ${futurePosts.length} post${futurePosts.length > 1 ? 's' : ''} shifted forward`);
+      } else {
+        showToast('✓ Post archived');
+      }
+    } else {
+      showToast('✓ Post archived');
+    }
+
+    renderFeedGrid();
+    renderDayList();
+    closeModal();
+  } catch(e) {
+    showToast(`Archive failed: ${e.message}`);
+    btn.innerHTML = '✓ Archive';
+    btn.disabled = false;
+  }
 }
 
 function setStatus(status, btn) {
@@ -2322,9 +2416,9 @@ function togglePlatform(el, platform) {
   el.classList.toggle(activeClass);
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // HASHTAGS
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 
 function applyHashtagSet(set, chipEl) {
@@ -2360,7 +2454,7 @@ function renderHashtagManager() {
         <div class="hashtag-item-name">${set.name}</div>
         <div class="hashtag-item-tags">${set.tags}</div>
       </div>
-      <button class="icon-btn danger" onclick="deleteHashtagSet('${set.id}')">â</button>
+      <button class="icon-btn danger" onclick="deleteHashtagSet('${set.id}')">✕</button>
     `;
     el.appendChild(div);
   });
@@ -2384,13 +2478,13 @@ function deleteHashtagSet(id) {
   renderHashtagManager();
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // CANVA PICKER
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // SLIDE UPLOAD PICKER
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 let pendingUploadFiles = []; // [{name, dataUrl}]
 
@@ -2453,7 +2547,7 @@ function renderUploadPreviews() {
     item.innerHTML = `
       <img src="${file.dataUrl}" style="width:100%;height:100%;object-fit:cover;" />
       <div style="position:absolute;bottom:3px;left:3px;font-family:'DM Mono',monospace;font-size:9px;background:rgba(13,13,15,0.7);color:white;padding:1px 4px;border-radius:3px;">${i + 1}</div>
-      <button onclick="removePendingFile(${i})" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(13,13,15,0.7);border:none;color:white;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">Ã</button>
+      <button onclick="removePendingFile(${i})" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(13,13,15,0.7);border:none;color:white;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
     `;
     grid.appendChild(item);
   });
@@ -2482,20 +2576,20 @@ function applyUploadedSlides() {
   renderSlides(state.posts[postKey].slides);
   saveToStorage();
   closeCanvaPicker();
-  showToast(`â ${pendingUploadFiles.length} slide${pendingUploadFiles.length !== 1 ? 's' : ''} added`);
+  showToast(`✓ ${pendingUploadFiles.length} slide${pendingUploadFiles.length !== 1 ? 's' : ''} added`);
 }
 
 function toggleCanvaSelection(index, el) {
-  // No longer used â kept as stub
+  // No longer used — kept as stub
 }
 
-// autoPopulateFromCanva removed â use "Browse Slides" per-post instead
+// autoPopulateFromCanva removed — use "Browse Slides" per-post instead
 
-// bulk populate removed â slides added per-post via upload picker
+// bulk populate removed — slides added per-post via upload picker
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // AI CAPTION ASSIST
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 async function generateCaption(refine = false) {
   const btn = refine ? document.getElementById('aiFollowBtn') : document.getElementById('aiBtn');
@@ -2517,9 +2611,13 @@ async function generateCaption(refine = false) {
   const contentBlocks = [];
 
   for (const slide of slides.slice(0, 3)) {
-    const [meta, b64] = slide.split(',');
-    const mediaType = meta.match(/:(.*?);/)?.[1] || 'image/png';
-    contentBlocks.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } });
+    if (slide.startsWith('data:')) {
+      const [meta, b64] = slide.split(',');
+      const mediaType = meta.match(/:(.*?);/)?.[1] || 'image/png';
+      contentBlocks.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } });
+    } else if (slide.startsWith('http')) {
+      contentBlocks.push({ type: 'image', source: { type: 'url', url: slide } });
+    }
   }
 
   const hasImages = contentBlocks.length > 0;
@@ -2537,7 +2635,7 @@ Output EXACTLY this format, no extra text:
 CAPTION 1: [caption]
 CAPTION 2: [caption]
 CAPTION 3: [caption]
-HASHTAGS: [exactly 5 hashtags â mix: 1 high-volume (#dating or #relationship), 2 mid-tier (#intentionaldating #compatibilitymatters), 2 branded (#parallelvip #getparallel) â all on one line]`
+HASHTAGS: [exactly 5 hashtags — mix: 1 high-volume (#dating or #relationship), 2 mid-tier (#intentionaldating #compatibilitymatters), 2 branded (#parallelvip #getparallel) — all on one line]`
     : `You are a social media strategist for Parallel, a premium dating app. Voice: dry, confident, deadpan. No hype. No exclamation points.
 ${refine && followPrompt ? `\nCREATOR DIRECTION (follow this exactly, it overrides defaults): "${followPrompt}"` : ''}
 
@@ -2599,18 +2697,18 @@ HASHTAGS: [exactly 5 hashtags on one line]`;
     }
 
     resultEl.innerHTML = `
-      ${hasImages ? `<div style="font-size:10px;color:var(--purple);font-family:'DM Mono',monospace;margin-bottom:10px;letter-spacing:0.04em;">â¦ FROM ${slides.length} SLIDE${slides.length > 1 ? 'S' : ''}${refine && followPrompt ? ' Â· REFINED' : ''}</div>` : ''}
+      ${hasImages ? `<div style="font-size:10px;color:var(--purple);font-family:'DM Mono',monospace;margin-bottom:10px;letter-spacing:0.04em;">✦ FROM ${slides.length} SLIDE${slides.length > 1 ? 'S' : ''}${refine && followPrompt ? ' · REFINED' : ''}</div>` : ''}
       ${captionLines.length > 0 ? captionLines.map((caption, i) => `
         <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border);">
           <div style="color:var(--text-muted);font-size:10px;font-family:'DM Mono',monospace;margin-bottom:4px;">OPTION ${i + 1}</div>
           <div style="font-size:13px;line-height:1.5;color:var(--text-primary);margin-bottom:6px;">${caption}</div>
           <div style="display:flex;gap:6px;">
-            <button onclick="useCaption(this)" data-caption="${caption.replace(/"/g, '&quot;')}" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text-secondary);">Use this â</button>
+            <button onclick="useCaption(this)" data-caption="${caption.replace(/"/g, '&quot;')}" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text-secondary);">Use this →</button>
             <button onclick="saveCaptionToBank(this)" data-caption="${caption.replace(/"/g, '&quot;')}" style="font-size:11px;padding:3px 8px;border-radius:4px;border:1px solid var(--purple);background:transparent;cursor:pointer;color:var(--purple);">+ Bank</button>
           </div>
         </div>
       `).join('') : `<div style="font-size:12px;color:var(--text-secondary);">${text}</div>`}
-      ${hashtags ? `<div style="font-size:10px;color:var(--soft-violet);font-family:'DM Mono',monospace;margin-top:4px;">â Hashtags auto-filled below</div>` : ''}
+      ${hashtags ? `<div style="font-size:10px;color:var(--soft-violet);font-family:'DM Mono',monospace;margin-top:4px;">↑ Hashtags auto-filled below</div>` : ''}
     `;
 
     // Show follow-up prompt after first generation
@@ -2676,8 +2774,8 @@ Return ONLY valid JSON, no markdown:
 
     resultEl.innerHTML = `
       <div style="font-size:11px;color:var(--text-secondary);line-height:1.6;">
-        ${rec.audio ? `<div>ðµ <strong>${rec.audio}</strong>${rec.audioWhy ? ` â ${rec.audioWhy}` : ''}</div>` : ''}
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Fields filled above â</div>
+        ${rec.audio ? `<div>🎵 <strong>${rec.audio}</strong>${rec.audioWhy ? ` — ${rec.audioWhy}` : ''}</div>` : ''}
+        <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">Fields filled above ↑</div>
       </div>
     `;
   } catch(e) {
@@ -2688,9 +2786,9 @@ Return ONLY valid JSON, no markdown:
   btn.disabled = false;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // SMART AUTO-FILL
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 
 
@@ -2709,9 +2807,9 @@ function useHashtags(btn) {
   showToast('Hashtags added to caption');
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // CAPTION BANK
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function updateBankCount() {
   const badge = document.getElementById('bankCount');
@@ -2730,7 +2828,7 @@ function saveCaptionToBank(btn) {
   state.captionBank.unshift({ id: Date.now().toString(), text, savedAt: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}), note: '' });
   saveToStorage();
   updateBankCount();
-  btn.textContent = 'â Saved';
+  btn.textContent = '✓ Saved';
   btn.style.color = '#22C55E';
   btn.style.borderColor = '#22C55E';
   btn.disabled = true;
@@ -2751,7 +2849,7 @@ function openCaptionBank(mode) {
   state.captionBankMode = mode || null;
   document.getElementById('bankSearchField').value = '';
   const title = document.querySelector('#captionBankModal .modal-title');
-  title.textContent = mode === 'insert' ? 'â Insert from Caption Bank' : 'â Caption Bank';
+  title.textContent = mode === 'insert' ? '✎ Insert from Caption Bank' : '✎ Caption Bank';
   renderCaptionBank();
   document.getElementById('captionBankModal').classList.add('open');
 }
@@ -2783,11 +2881,11 @@ function renderCaptionBank() {
         <span style="font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;">Saved ${cap.savedAt}</span>
         <div style="display:flex;gap:6px;">
           ${state.captionBankMode === 'insert' ? `
-            <button onclick="insertCaptionFromBank('${cap.id}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:var(--purple);color:white;cursor:pointer;font-weight:600;">Insert â</button>
+            <button onclick="insertCaptionFromBank('${cap.id}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:none;background:var(--purple);color:white;cursor:pointer;font-weight:600;">Insert →</button>
           ` : `
             <button onclick="copyBankCaption('${cap.id}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);cursor:pointer;">Copy</button>
           `}
-          <button onclick="deleteBankCaption('${cap.id}')" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">â</button>
+          <button onclick="deleteBankCaption('${cap.id}')" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;">✕</button>
         </div>
       </div>
     `;
@@ -2817,9 +2915,9 @@ function deleteBankCaption(id) {
   renderCaptionBank();
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // COPY FOR TIKTOK
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function copyForTikTok() {
   const caption = document.getElementById('captionField').value.trim();
@@ -2832,7 +2930,7 @@ function copyForTikTok() {
     text = caption ? `${caption}\n\n${hashtags}` : hashtags;
   }
 
-  copyText(text, 'tiktokBtn', 'âª Copy for TikTok', 'â Copied â open TikTok, upload your 3 PNGs, paste');
+  copyText(text, 'tiktokBtn', '♪ Copy for TikTok', '✓ Copied — open TikTok, upload your 3 PNGs, paste');
 }
 
 async function copyForThreads() {
@@ -2844,7 +2942,7 @@ async function copyForThreads() {
   btn.disabled = true;
 
   try {
-    // Threads works best with conversational, no-hashtag text â rewrite with AI
+    // Threads works best with conversational, no-hashtag text — rewrite with AI
     const response = await fetch('https://qnnjtmhwcpsmpzlxdxex.supabase.co/functions/v1/claude-proxy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2853,7 +2951,7 @@ async function copyForThreads() {
         max_tokens: 300,
         messages: [{
           role: 'user',
-          content: `Rewrite this Instagram caption for Threads. Threads is conversational â no hashtags, shorter, more like a thought or observation someone would post. Keep Parallel's dry, confident voice. Max 3 sentences. No hashtags. End with getparallel.vip if it fits naturally.
+          content: `Rewrite this Instagram caption for Threads. Threads is conversational — no hashtags, shorter, more like a thought or observation someone would post. Keep Parallel's dry, confident voice. Max 3 sentences. No hashtags. End with getparallel.vip if it fits naturally.
 
 Original caption: "${caption}"
 
@@ -2867,12 +2965,12 @@ Return ONLY the rewritten Threads caption, nothing else.`
 
     if (!threadsCaption) throw new Error('No response');
 
-    copyText(threadsCaption, 'threadsBtn', 'â Copy for Threads', 'â Copied for Threads â open Threads, attach your images, paste');
+    copyText(threadsCaption, 'threadsBtn', '⊕ Copy for Threads', '✓ Copied for Threads — open Threads, attach your images, paste');
 
   } catch(e) {
-    // Fallback â just use original caption without hashtags
+    // Fallback — just use original caption without hashtags
     const stripped = caption.split('\n').filter(l => !l.trim().startsWith('#')).join('\n').trim();
-    copyText(stripped, 'threadsBtn', 'â Copy for Threads', 'â Copied for Threads');
+    copyText(stripped, 'threadsBtn', '⊕ Copy for Threads', '✓ Copied for Threads');
   }
 
   btn.disabled = false;
@@ -2886,15 +2984,15 @@ function copyText(text, btnId, originalLabel, toastMsg) {
     document.execCommand('copy'); document.body.removeChild(ta);
   });
   const originalBg = btn.style.background;
-  btn.textContent = 'â Copied';
+  btn.textContent = '✓ Copied';
   btn.style.background = '#22C55E';
   showToast(toastMsg);
   setTimeout(() => { btn.textContent = originalLabel; btn.style.background = originalBg; }, 2500);
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // SCHEDULE POST
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 async function schedulePost() {
   if (!state.activePost) return;
@@ -2909,7 +3007,7 @@ async function schedulePost() {
   if (!caption) { showToast('Add a caption before scheduling'); return; }
   if (!postDate || !postTime) { showToast('Set a post date and time first'); return; }
 
-  // Parse date + time into ISO string â always PST (America/Los_Angeles)
+  // Parse date + time into ISO string — always PST (America/Los_Angeles)
   const dateStr = `${postDate} ${postTime} 2026`;
   // Build a PST-aware date by appending offset
   // PST = UTC-8, PDT = UTC-7. Use Intl to determine current offset for LA
@@ -2963,15 +3061,15 @@ async function schedulePost() {
     document.querySelectorAll('.status-btn').forEach(b => b.className = 'status-btn');
     document.querySelector('.status-btn:last-of-type') && setStatus('scheduled', document.querySelectorAll('.status-btn')[2]);
 
-    showToast(`â Scheduled for ${postDate} at ${postTime} â will post automatically`);
+    showToast(`✓ Scheduled for ${postDate} at ${postTime} — will post automatically`);
 
     // Show confirmation in modal
     const resultEl = document.getElementById('aiResult');
     resultEl.className = 'ai-result visible';
     resultEl.innerHTML = `
       <div style="padding:10px;background:rgba(123,94,167,0.08);border:1px solid rgba(123,94,167,0.3);border-radius:8px;margin-top:4px;">
-        <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:4px;">ð Scheduled for ${postDate} at ${postTime}</div>
-        <div style="font-size:11px;color:var(--text-muted);">Will publish automatically to @parallel_vip â no action needed.</div>
+        <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:4px;">🗓 Scheduled for ${postDate} at ${postTime}</div>
+        <div style="font-size:11px;color:var(--text-muted);">Will publish automatically to @parallel_vip — no action needed.</div>
       </div>
     `;
 
@@ -2979,13 +3077,13 @@ async function schedulePost() {
     showToast(`Schedule failed: ${err.message}`);
   }
 
-  btn.innerHTML = 'ð Schedule';
+  btn.innerHTML = '🗓 Schedule';
   btn.disabled = false;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // PUBLISH TO INSTAGRAM
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 
 async function publishToInstagram() {
@@ -3001,18 +3099,15 @@ async function publishToInstagram() {
   }
 
   const caption = document.getElementById('captionField').value.trim();
-  const hashtags = document.getElementById('hashtagField').value.trim();
+  const rawHashtags = document.getElementById('hashtagField').value.trim();
+  // Limit to 5 hashtags
+  const top5 = rawHashtags ? rawHashtags.split(/\s+/).filter(t => t.startsWith('#')).slice(0, 5).join(' ') : '';
+  const fullCaption = top5 ? `${caption}\n\n${top5}` : caption;
 
   if (!caption) {
     showToast('Add a caption before publishing');
     return;
   }
-
-  const rawHashtags = document.getElementById('hashtagField').value.trim();
-
-  const top5 = rawHashtags ? rawHashtags.split(/\s+/).filter(t => t.startsWith('#')).slice(0, 5).join(' ') : '';
-
-  const fullCaption = top5 ? `${caption}\n\n${top5}` : caption;
 
   const btn = document.getElementById('publishBtn');
   btn.innerHTML = '<div class="spinner"></div> Publishing...';
@@ -3036,19 +3131,27 @@ async function publishToInstagram() {
 
     // Save the post with published status and permalink
     if (!state.posts[postKey]) state.posts[postKey] = { slides: [], platforms: [] };
-    state.posts[postKey].status = 'scheduled';
-    state.posts[postKey].instagramUrl = data.permalink;
-    saveToStorage();
+    state.posts[postKey].status = 'published';
+    state.posts[postKey]._permalink = data.permalink;
+    if (sb) {
+      await sb.from('scheduled_posts').update({
+        status: 'published',
+        instagram_post_id: data.instagram_post_id,
+        permalink: data.permalink,
+        updated_at: new Date().toISOString()
+      }).eq('planner_key', postKey);
+    }
+    saveLocalPrefs();
     renderFeedGrid();
 
-    showToast('â Published to Instagram');
+    showToast('✓ Published to Instagram');
 
     // Show the link in the modal
     const resultEl = document.getElementById('aiResult');
     resultEl.className = 'ai-result visible';
     resultEl.innerHTML = `
       <div style="padding:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:8px;margin-top:4px;">
-        <div style="font-size:12px;font-weight:600;color:#22C55E;margin-bottom:4px;">â Published to @parallel_vip</div>
+        <div style="font-size:12px;font-weight:600;color:#22C55E;margin-bottom:4px;">✓ Published to @parallel_vip</div>
         <a href="${data.permalink}" target="_blank" style="font-size:11px;color:var(--purple);text-decoration:underline;">${data.permalink}</a>
       </div>
     `;
@@ -3058,13 +3161,13 @@ async function publishToInstagram() {
     console.error(err);
   }
 
-  btn.innerHTML = 'ð· Publish to Instagram';
+  btn.innerHTML = '📷 Publish to Instagram';
   btn.disabled = false;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // PLATFORM & TIPS
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function setPlatform(platform, btn) {
   state.selectedPlatform = platform;
@@ -3077,12 +3180,12 @@ function cyclePlatformTip() {
   const tip = PLATFORM_TIPS[tipIndex];
   const insight = document.querySelector('.time-insight-body');
   insight.innerHTML = tip.tip;
-  document.querySelector('.time-insight-title').textContent = `BEST TIMES TO POST â ${tip.platform}`;
+  document.querySelector('.time-insight-title').textContent = `BEST TIMES TO POST — ${tip.platform}`;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // GOOGLE DRIVE BACKUP
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 function exportToGoogleDrive() {
   const data = JSON.stringify({ posts: state.posts, hashtagSets: state.hashtagSets }, null, 2);
@@ -3093,7 +3196,7 @@ function exportToGoogleDrive() {
   a.download = `parallel-planner-backup-${new Date().toISOString().slice(0,10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('â Backup downloaded â upload to Google Drive');
+  showToast('✓ Backup downloaded — upload to Google Drive');
   updateBackupStatus('backup downloaded');
 }
 
@@ -3114,7 +3217,7 @@ function importFromDrive() {
         renderFeedGrid();
         renderDayList();
         renderSidebarHashtags();
-        showToast('â Backup loaded');
+        showToast('✓ Backup loaded');
       } catch { showToast('Invalid backup file'); }
     };
     reader.readAsText(file);
@@ -3122,9 +3225,9 @@ function importFromDrive() {
   input.click();
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // TOAST
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 let toastTimer;
 function showToast(msg) {
@@ -3135,9 +3238,9 @@ function showToast(msg) {
   toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // KEYBOARD
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
@@ -3167,9 +3270,9 @@ document.getElementById('captionBankModal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeCaptionBank();
 });
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // SLIDE LIGHTBOX
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 let lightboxSlideIndex = null;
 
@@ -3194,9 +3297,9 @@ function triggerLightboxReplace() {
   if (idx !== null) triggerSlideUpload(idx);
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // CROP TOOL
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 
 let cropImg = null;
 let cropDisplayScale = 1;
@@ -3344,7 +3447,7 @@ function applyCrop() {
   renderSlides(state.posts[postKey].slides);
   saveToStorage();
   closeCropTool();
-  showToast('â Crop applied');
+  showToast('✓ Crop applied');
 }
 
 function closeCropTool() {
@@ -3353,9 +3456,9 @@ function closeCropTool() {
   cropSlideIndex = null;
 }
 
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 // START
-// âââââââââââââââââââââââââââââââââââââââââââ
+// ═══════════════════════════════════════════
 init();
 </script>
 </body>
