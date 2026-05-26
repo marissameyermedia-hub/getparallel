@@ -33,6 +33,18 @@ The old logic scored Q6.2 (actual beliefs) and Q12.2 (preference for partner's b
 
 ---
 
+## v102 — 2026-05-26
+
+**What changed:**
+- Fixed a dangerous delete pattern that could cause asymmetric match disappearances at scale. Previously, the algorithm deleted ALL rows where `matched_user_id = userId` before re-inserting — this wipe included rows created by OTHER users' own matching runs. For example: Steve's run creates a row `user_id=Steve, matched_user_id=Danielle`. When Danielle's run fires later, it would delete that row, leaving Steve visible to Danielle but Danielle invisible to Steve. The fix: only delete a user's own outbound rows (`user_id = userId`), then INSERT fresh outbound rows and UPSERT the reciprocal rows — so we update if they already exist, insert if they don't, and never blow away work that the other person's run already did.
+
+**Why:**
+This was discovered when two beta testers (Danielle and Steve, both in NYC, both released) couldn't see each other. One match row existed but the reciprocal was missing. Root cause was exactly this delete pattern. With multiple users running matching concurrently at scale, this would cause systematic one-sided match disappearances. The upsert approach is safe because the `matches` table has a `UNIQUE(user_id, matched_user_id)` constraint, and `shadow_matches` was updated with the same constraint in the same release.
+
+**Deployed by:** Claude (Anthropic) for Marissa Meyer / PARALLEL VIP LLC
+
+---
+
 <!-- Template for future entries:
 
 ## v101 — YYYY-MM-DD
