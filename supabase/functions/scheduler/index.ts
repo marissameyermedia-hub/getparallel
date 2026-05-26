@@ -198,6 +198,34 @@ Deno.serve(async (req: Request) => {
         await supabase.from('scheduled_posts').update({ threads_error: thMsg }).eq('id', post.id);
       }
 
+      // Facebook dual-post (best-effort)
+      try {
+        const fbRes = await fetch(
+          `${SUPABASE_URL}/functions/v1/publish-facebook`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({
+              slide_urls: post.slide_urls,
+              caption: post.caption,
+              hashtags: post.hashtags,
+            }),
+          }
+        );
+        const fbData = await fbRes.json();
+        if (fbData.ok) {
+          await supabase.from('scheduled_posts').update({ facebook_post_id: fbData.post_id }).eq('id', post.id);
+        } else {
+          await supabase.from('scheduled_posts').update({ facebook_error: fbData.error }).eq('id', post.id);
+        }
+      } catch (fbErr) {
+        const fbMsg = fbErr instanceof Error ? fbErr.message : String(fbErr);
+        await supabase.from('scheduled_posts').update({ facebook_error: fbMsg }).eq('id', post.id);
+      }
+
       results.push({ planner_key: post.planner_key, status: 'published', permalink });
 
     } catch (err) {
