@@ -170,6 +170,34 @@ Deno.serve(async (req: Request) => {
         await supabase.from('scheduled_posts').update({ tiktok_error: ttMsg }).eq('id', post.id);
       }
 
+      // Threads dual-post (best-effort)
+      try {
+        const thRes = await fetch(
+          `${SUPABASE_URL}/functions/v1/publish-threads`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({
+              slide_urls: post.slide_urls,
+              caption: post.caption,
+              hashtags: post.hashtags,
+            }),
+          }
+        );
+        const thData = await thRes.json();
+        if (thData.ok) {
+          await supabase.from('scheduled_posts').update({ threads_post_id: thData.thread_id }).eq('id', post.id);
+        } else {
+          await supabase.from('scheduled_posts').update({ threads_error: thData.error }).eq('id', post.id);
+        }
+      } catch (thErr) {
+        const thMsg = thErr instanceof Error ? thErr.message : String(thErr);
+        await supabase.from('scheduled_posts').update({ threads_error: thMsg }).eq('id', post.id);
+      }
+
       results.push({ planner_key: post.planner_key, status: 'published', permalink });
 
     } catch (err) {
