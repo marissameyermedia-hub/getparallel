@@ -1,4 +1,6 @@
-// Parallel — matches edge function v16
+// Parallel — matches edge function v17
+// v17: Remove "Someone likes you" push notification — non-mutual likes are silent.
+//      Only mutual likes ("It's a match!") trigger push notifications.
 // v16: Add "Connection Style" to BREAKDOWN_KEY_MAP (maps to intimacy_connection).
 //      handleFeedbackStructured now saves body.passReasonCategories →
 //      pass_reason_categories column so feedback-processor v5 can apply
@@ -488,8 +490,6 @@ async function handleMatchesAction(req: Request) {
       sendPush(admin, matchUserId, "It's a match! 🎉", `You and ${senderFirst} liked each other`, "match", { type: "match", from: user.id });
       sendPush(admin, user.id, "It's a match! 🎉", `You and ${receiverFirst} liked each other`, "match", { type: "match", from: matchUserId });
     }).catch((err) => console.error("[matches/action] push error:", err));
-  } else {
-    sendPush(admin, matchUserId, "Someone likes you 👀", "Open Parallel to see who", "like", { type: "like" });
   }
 
   return json({ success: true, isMutual });
