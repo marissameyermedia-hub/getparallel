@@ -44,7 +44,7 @@ async function getConnectedChannels(apiKey: string) {
 // Look up a Facebook/Instagram location ID from a text string using the Graph API
 async function resolveLocationId(locationText: string): Promise<string | null> {
   try {
-    const fbPageToken = Deno.env.get('FACEBOOK_PAGE_ACCESS_TOKEN');
+    const fbPageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN');
     if (!fbPageToken || !locationText) return null;
 
     const url = new URL('https://graph.facebook.com/v25.0/search');
