@@ -1,4 +1,5 @@
 # Parallel Planner — Netlify configuration
+# Platforms: Instagram, Facebook, TikTok (via Buffer), Threads
 
 [build]
   publish = "."
