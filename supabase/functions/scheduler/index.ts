@@ -1,32 +1,14 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const META_PAGE_ACCESS_TOKEN = Deno.env.get('META_PAGE_ACCESS_TOKEN')!;
-const META_IG_ACCOUNT_ID = Deno.env.get('META_IG_ACCOUNT_ID')!;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-const GRAPH = 'https://graph.facebook.com/v19.0';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-function top5Hashtags(raw: string): string {
-  if (!raw) return '';
-  return raw.split(/\s+/).filter(t => t.startsWith('#')).slice(0, 5).join(' ');
-}
-
-async function metaPost(path: string, params: Record<string, string>) {
-  const url = new URL(`${GRAPH}${path}`);
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  url.searchParams.set('access_token', META_PAGE_ACCESS_TOKEN);
-  const res = await fetch(url.toString(), { method: 'POST' });
-  const data = await res.json();
-  if (data.error) throw new Error(`Meta API: ${JSON.stringify(data.error)}`);
-  return data;
-}
-
+// Convert a base64 data URL to a Supabase Storage public URL
 async function uploadBase64(supabase: any, dataUrl: string, name: string): Promise<string> {
   const commaIdx = dataUrl.indexOf(',');
   const meta = dataUrl.substring(0, commaIdx);
@@ -36,12 +18,15 @@ async function uploadBase64(supabase: any, dataUrl: string, name: string): Promi
   const ext = mime.split('/')[1] || 'jpg';
   const path = `auto-publish/${name}.${ext}`;
   const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-  const { error } = await supabase.storage.from('social-media').upload(path, bytes, { contentType: mime, upsert: true });
+  const { error } = await supabase.storage
+    .from('social-media')
+    .upload(path, bytes, { contentType: mime, upsert: true });
   if (error) throw new Error(`Storage upload failed: ${error.message}`);
   const { data } = supabase.storage.from('social-media').getPublicUrl(path);
   return data.publicUrl;
 }
 
+// Ensure all slide URLs are public https:// URLs (upload base64 if needed)
 async function resolveUrls(supabase: any, slideUrls: string[], plannerKey: string): Promise<string[]> {
   const result: string[] = [];
   for (let i = 0; i < slideUrls.length; i++) {
@@ -54,52 +39,6 @@ async function resolveUrls(supabase: any, slideUrls: string[], plannerKey: strin
     }
   }
   return result;
-}
-
-async function publishPost(supabase: any, post: any) {
-  const slideUrls = await resolveUrls(supabase, post.slide_urls, post.planner_key);
-  if (slideUrls.length === 0) throw new Error('No valid slide URLs');
-
-  const hashtags5 = top5Hashtags(post.hashtags || '');
-  const fullCaption = hashtags5
-    ? `${post.caption}\n\n${hashtags5}`
-    : post.caption;
-
-  let publishedId: string;
-
-  if (slideUrls.length === 1) {
-    const media = await metaPost(`/${META_IG_ACCOUNT_ID}/media`, {
-      image_url: slideUrls[0], caption: fullCaption,
-    });
-    const published = await metaPost(`/${META_IG_ACCOUNT_ID}/media_publish`, {
-      creation_id: media.id,
-    });
-    publishedId = published.id;
-  } else {
-    const childIds: string[] = [];
-    for (const url of slideUrls) {
-      const child = await metaPost(`/${META_IG_ACCOUNT_ID}/media`, {
-        image_url: url, is_carousel_item: 'true',
-      });
-      childIds.push(child.id);
-    }
-    const carousel = await metaPost(`/${META_IG_ACCOUNT_ID}/media`, {
-      media_type: 'CAROUSEL', children: childIds.join(','), caption: fullCaption,
-    });
-    const published = await metaPost(`/${META_IG_ACCOUNT_ID}/media_publish`, {
-      creation_id: carousel.id,
-    });
-    publishedId = published.id;
-  }
-
-  const permalinkRes = await fetch(
-    `${GRAPH}/${publishedId}?fields=permalink&access_token=${META_PAGE_ACCESS_TOKEN}`
-  );
-  const permalinkData = await permalinkRes.json();
-  return {
-    publishedId,
-    permalink: permalinkData.permalink ?? `https://www.instagram.com/p/${publishedId}/`,
-  };
 }
 
 Deno.serve(async (req: Request) => {
@@ -127,106 +66,55 @@ Deno.serve(async (req: Request) => {
   }
 
   const results = [];
+
   for (const post of duePosts) {
     try {
       await supabase.from('scheduled_posts').update({ status: 'publishing' }).eq('id', post.id);
 
-      const { publishedId, permalink } = await publishPost(supabase, post);
+      // Ensure all images are public https URLs (uploads base64 to Storage if needed)
+      const slideUrls = await resolveUrls(supabase, post.slide_urls, post.planner_key);
+      if (slideUrls.length === 0) throw new Error('No valid slide URLs after resolving');
+
+      // Push to Buffer — it handles Instagram, Facebook, and TikTok in one shot
+      const bufferRes = await fetch(`${SUPABASE_URL}/functions/v1/publish-buffer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          slide_urls: slideUrls,
+          caption: post.caption,
+          hashtags: post.hashtags,
+        }),
+      });
+
+      const bufferData = await bufferRes.json();
+      if (!bufferData.ok) throw new Error(bufferData.error ?? 'Buffer returned ok: false');
+
+      // Map Buffer results to per-platform IDs for the DB record
+      const bufferPostIds: Record<string, string> = {};
+      let igPostId: string | null = null;
+
+      for (const r of bufferData.results ?? []) {
+        if (r.post_id) {
+          bufferPostIds[r.service] = r.post_id;
+          if (r.service === 'instagram') igPostId = r.post_id;
+        } else if (r.error) {
+          bufferPostIds[`${r.service}_error`] = r.error;
+        }
+      }
 
       await supabase.from('scheduled_posts').update({
         status: 'published',
-        instagram_post_id: publishedId,
-        permalink,
+        buffer_post_ids: bufferPostIds,
+        instagram_post_id: igPostId,
         updated_at: new Date().toISOString(),
       }).eq('id', post.id);
 
-      console.log(`Published ${post.planner_key} → ${permalink}`);
-
-      // TikTok dual-post (best-effort — don't fail if TikTok errors)
-      try {
-        const ttRes = await fetch(
-          `${SUPABASE_URL}/functions/v1/publish-tiktok`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({
-              slide_urls: post.slide_urls,
-              caption: post.caption,
-              hashtags: post.hashtags,
-            }),
-          }
-        );
-        const ttData = await ttRes.json();
-        if (ttData.ok) {
-          await supabase.from('scheduled_posts').update({ tiktok_post_id: ttData.publish_id }).eq('id', post.id);
-        } else {
-          await supabase.from('scheduled_posts').update({ tiktok_error: ttData.error }).eq('id', post.id);
-        }
-      } catch (ttErr) {
-        const ttMsg = ttErr instanceof Error ? ttErr.message : String(ttErr);
-        await supabase.from('scheduled_posts').update({ tiktok_error: ttMsg }).eq('id', post.id);
-      }
-
-      // Threads dual-post (best-effort)
-      try {
-        const thRes = await fetch(
-          `${SUPABASE_URL}/functions/v1/publish-threads`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({
-              slide_urls: post.slide_urls,
-              caption: post.caption,
-              hashtags: post.hashtags,
-            }),
-          }
-        );
-        const thData = await thRes.json();
-        if (thData.ok) {
-          await supabase.from('scheduled_posts').update({ threads_post_id: thData.thread_id }).eq('id', post.id);
-        } else {
-          await supabase.from('scheduled_posts').update({ threads_error: thData.error }).eq('id', post.id);
-        }
-      } catch (thErr) {
-        const thMsg = thErr instanceof Error ? thErr.message : String(thErr);
-        await supabase.from('scheduled_posts').update({ threads_error: thMsg }).eq('id', post.id);
-      }
-
-      // Facebook dual-post (best-effort)
-      try {
-        const fbRes = await fetch(
-          `${SUPABASE_URL}/functions/v1/publish-facebook`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify({
-              slide_urls: post.slide_urls,
-              caption: post.caption,
-              hashtags: post.hashtags,
-            }),
-          }
-        );
-        const fbData = await fbRes.json();
-        if (fbData.ok) {
-          await supabase.from('scheduled_posts').update({ facebook_post_id: fbData.post_id }).eq('id', post.id);
-        } else {
-          await supabase.from('scheduled_posts').update({ facebook_error: fbData.error }).eq('id', post.id);
-        }
-      } catch (fbErr) {
-        const fbMsg = fbErr instanceof Error ? fbErr.message : String(fbErr);
-        await supabase.from('scheduled_posts').update({ facebook_error: fbMsg }).eq('id', post.id);
-      }
-
-      results.push({ planner_key: post.planner_key, status: 'published', permalink });
+      const platforms = Object.keys(bufferPostIds).filter(k => !k.endsWith('_error')).join(', ');
+      console.log(`Published ${post.planner_key} via Buffer → ${platforms}`);
+      results.push({ planner_key: post.planner_key, status: 'published', platforms: bufferData.results });
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
