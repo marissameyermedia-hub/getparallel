@@ -1,5 +1,6 @@
 # Parallel Planner — Netlify configuration
 # Platforms: Instagram, Facebook, TikTok (via Buffer), Threads
+# Deploy trigger: audio/location persistence + META_PAGE_ACCESS_TOKEN fix
 
 [build]
   publish = "."
