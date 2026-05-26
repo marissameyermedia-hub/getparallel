@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: duePosts, error } = await supabase
     .from('scheduled_posts')
-    .select('id, planner_key, caption, hashtags, slide_urls, status')
+    .select('id, planner_key, caption, hashtags, slide_urls, status, location, audio')
     .eq('status', 'scheduled')
     .lte('scheduled_at', now)
     .limit(5);
@@ -86,6 +86,8 @@ Deno.serve(async (req: Request) => {
           slide_urls: slideUrls,
           caption: post.caption,
           hashtags: post.hashtags,
+          location: post.location ?? null,
+          audio: post.audio ?? null,
         }),
       });
 

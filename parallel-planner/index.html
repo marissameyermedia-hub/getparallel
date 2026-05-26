@@ -1816,7 +1816,9 @@ function rowToPost(row) {
     hashtags: row.hashtags || '',
     date: row.scheduled_at ? new Date(row.scheduled_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '',
     time: row.scheduled_at ? new Date(row.scheduled_at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}) : '',
-    location: '', audio: '', notes: '',
+    location: row.location || '',
+    audio: row.audio || '',
+    notes: row.notes || '',
     _scheduled_at: row.scheduled_at,
     _id: row.id,
     _permalink: row.permalink || '',
@@ -1843,6 +1845,9 @@ function postToRow(planner_key, post) {
     scheduled_at,
     platform: 'instagram',
     status: post.status || 'draft',
+    location: post.location || null,
+    audio: post.audio || null,
+    notes: post.notes || null,
     updated_at: new Date().toISOString()
   };
 }

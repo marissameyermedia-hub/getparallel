@@ -41,13 +41,63 @@ async function getConnectedChannels(apiKey: string) {
   );
 }
 
+// Look up a Facebook/Instagram location ID from a text string using the Graph API
+async function resolveLocationId(locationText: string): Promise<string | null> {
+  try {
+    const fbPageToken = Deno.env.get('FACEBOOK_PAGE_ACCESS_TOKEN');
+    if (!fbPageToken || !locationText) return null;
+
+    const url = new URL('https://graph.facebook.com/v25.0/search');
+    url.searchParams.set('type', 'place');
+    url.searchParams.set('q', locationText);
+    url.searchParams.set('limit', '1');
+    url.searchParams.set('fields', 'id,name,location');
+    url.searchParams.set('access_token', fbPageToken);
+
+    const res = await fetch(url.toString());
+    const data = await res.json();
+    if (data.error || !data.data?.length) return null;
+    return data.data[0].id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function createPost(
   apiKey: string,
   channelId: string,
+  service: string,
   text: string,
-  imageUrls: string[]
+  imageUrls: string[],
+  locationId: string | null,
+  hasAudio: boolean
 ): Promise<string> {
   const assets = imageUrls.map(url => ({ image: { url } }));
+
+  // Build service-specific attributes
+  const serviceAttributes: Record<string, any> = {};
+
+  if (service === 'instagram' && locationId) {
+    serviceAttributes.instagramServiceAttributes = { locationId };
+  }
+
+  if (service === 'tiktok' && hasAudio) {
+    // auto_add_music tells TikTok to pick today's trending sound automatically
+    serviceAttributes.tiktokServiceAttributes = { autoAddMusic: true };
+  }
+
+  const input: Record<string, any> = {
+    channelId,
+    text,
+    assets,
+    schedulingType: 'automatic',
+    mode: 'shareNow',
+  };
+
+  if (Object.keys(serviceAttributes).length > 0) {
+    input.serviceAttributes = serviceAttributes;
+  }
+
   const data = await gql(apiKey, `
     mutation CreatePost($input: CreatePostInput!) {
       createPost(input: $input) {
@@ -59,15 +109,7 @@ async function createPost(
         }
       }
     }
-  `, {
-    input: {
-      channelId,
-      text,
-      assets,
-      schedulingType: 'automatic',
-      mode: 'shareNow',
-    },
-  });
+  `, { input });
 
   if (data.errors) throw new Error(`Buffer mutation error: ${JSON.stringify(data.errors)}`);
 
@@ -81,7 +123,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { slide_urls, caption, hashtags } = await req.json();
+    const { slide_urls, caption, hashtags, location, audio } = await req.json();
 
     const apiKey = Deno.env.get('BUFFER_API_KEY');
     if (!apiKey) throw new Error('BUFFER_API_KEY secret not set');
@@ -99,18 +141,51 @@ Deno.serve(async (req: Request) => {
     const channels = await getConnectedChannels(apiKey);
     if (channels.length === 0) throw new Error('No connected Instagram/Facebook/TikTok channels found in Buffer');
 
-    const results: { service: string; channel: string; post_id?: string; error?: string }[] = [];
+    // Resolve location text → Facebook Place ID (best-effort, used for Instagram)
+    const locationId = location ? await resolveLocationId(location) : null;
+    if (location && locationId) console.log(`Location resolved: "${location}" → ${locationId}`);
+    if (location && !locationId) console.log(`Location "${location}" could not be resolved to a Place ID — posting without location`);
+
+    const hasAudio = Boolean(audio && audio.trim());
+
+    const results: { service: string; channel: string; post_id?: string; error?: string; location_applied?: boolean; auto_music?: boolean }[] = [];
 
     for (const ch of channels) {
       const service = ch.service.toLowerCase();
       try {
-        const postId = await createPost(apiKey, ch.id, fullText, validUrls);
-        results.push({ service, channel: ch.handle ?? ch.name, post_id: postId });
+        const postId = await createPost(
+          apiKey,
+          ch.id,
+          service,
+          fullText,
+          validUrls,
+          service === 'instagram' ? locationId : null,
+          hasAudio
+        );
+        results.push({
+          service,
+          channel: ch.handle ?? ch.name,
+          post_id: postId,
+          ...(service === 'instagram' && locationId ? { location_applied: true } : {}),
+          ...(service === 'tiktok' && hasAudio ? { auto_music: true } : {}),
+        });
         console.log(`Buffer: posted to ${service} (${ch.handle ?? ch.name}) → ${postId}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        results.push({ service, channel: ch.handle ?? ch.name, error: msg });
-        console.error(`Buffer: failed ${service} — ${msg}`);
+        // If location/music caused rejection, retry without those attributes
+        if ((msg.includes('locationId') || msg.includes('autoAddMusic') || msg.includes('serviceAttributes')) && (locationId || hasAudio)) {
+          try {
+            console.log(`Buffer: retrying ${service} without service attributes`);
+            const postId = await createPost(apiKey, ch.id, service, fullText, validUrls, null, false);
+            results.push({ service, channel: ch.handle ?? ch.name, post_id: postId });
+          } catch (retryErr) {
+            const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+            results.push({ service, channel: ch.handle ?? ch.name, error: retryMsg });
+          }
+        } else {
+          results.push({ service, channel: ch.handle ?? ch.name, error: msg });
+          console.error(`Buffer: failed ${service} — ${msg}`);
+        }
       }
     }
 
