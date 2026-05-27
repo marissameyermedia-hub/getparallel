@@ -1,4 +1,5 @@
-// Parallel — misc edge function v28
+// Parallel — misc edge function v29
+// v29: Persona webhook handles affiliate reference IDs (aff_{application_id})
 // v28: Re-engagement SMS: fix cron to 5pm UTC (10am PDT), add "Reply STOP to
 //      unsubscribe" to copy. Inbound SMS catch-all now auto-replies instead
 //      of silently ignoring non-keyword replies.
@@ -367,9 +368,24 @@ async function handlePersonaWebhook(req: Request) {
     else if (typeof attrs["failure-reason"] === "string") declineReason = String(attrs["failure-reason"]).slice(0, 500);
   }
   const admin = adminClient();
+  const now = new Date().toISOString();
+
+  // Affiliate applications use reference IDs prefixed with "aff_"
+  if (referenceId.startsWith("aff_")) {
+    const appId = referenceId.slice(4);
+    const personaStatus = verified ? "approved" : (status === "declined" ? "declined" : "pending");
+    const { error: affErr } = await admin.from("affiliate_applications").update({
+      persona_inquiry_id: inquiryId,
+      persona_status: personaStatus,
+      persona_completed_at: verified ? now : null,
+    }).eq("id", appId);
+    if (affErr) { console.error("[persona/webhook] affiliate update failed:", affErr); return json({ error: "db error" }, 500); }
+    console.log("[persona/webhook] affiliate application updated:", { appId, personaStatus, verified });
+    return json({ ok: true, status, verified, affiliate: true });
+  }
+
   const { data: profile } = await admin.from("profiles").select("id").eq("id", referenceId).maybeSingle();
   if (!profile) { console.warn("[persona/webhook] unknown reference_id:", referenceId); return json({ ok: true, ignored: "unknown_user" }); }
-  const now = new Date().toISOString();
   const { error: ivErr } = await admin.from("identity_verifications").upsert({ user_id: referenceId, persona_inquiry_id: inquiryId, reference_id: referenceId, status, decline_reason: declineReason, persona_payload: body, verified_at: verified ? now : null, updated_at: now }, { onConflict: "user_id" });
   if (ivErr) { console.error("[persona/webhook] upsert failed:", ivErr); return json({ error: "db error" }, 500); }
   if (verified) await admin.from("profiles").update({ is_verified: true, updated_at: now }).eq("id", referenceId);

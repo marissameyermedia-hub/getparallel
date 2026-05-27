@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, Copy, Check, Users, Star, Mic, Anchor, Clock, CheckCircle2, AlertCircle, DollarSign } from 'lucide-react';
+import { ChevronLeft, Copy, Check, Users, Star, Mic, Anchor, Clock, CheckCircle2, AlertCircle, DollarSign, ShieldCheck } from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
+
+const PERSONA_TEMPLATE_ID = 'itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG';
+const PERSONA_ENV = 'production';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -12,6 +15,7 @@ interface AffiliateApplication {
   id: string;
   tier_applied_for: AffiliateTier;
   audit_status: AppAuditStatus;
+  persona_status: string;
   created_at: string;
 }
 
@@ -280,10 +284,36 @@ function ApplyForm({ onSubmitted }: { onSubmitted: () => void }) {
 // ── Pending Screen ────────────────────────────────────────────────────────────
 
 function PendingScreen({ app }: { app: AffiliateApplication }) {
+  const needsVerification = app.audit_status === 'approved' && app.persona_status !== 'approved';
+  const redirectUri = typeof window !== 'undefined'
+    ? `${window.location.origin}${window.location.pathname}?affiliate_verified=1`
+    : '';
+  const personaUrl = `https://withpersona.com/verify?inquiry-template-id=${encodeURIComponent(PERSONA_TEMPLATE_ID)}&reference-id=${encodeURIComponent(`aff_${app.id}`)}&environment=${PERSONA_ENV}&redirect-uri=${encodeURIComponent(redirectUri)}`;
+
+  if (needsVerification) {
+    return (
+      <div className="px-5 pb-8 text-center">
+        <ShieldCheck size={40} className="text-[#7B5EA7] mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-gray-900 mb-2">One last step</h2>
+        <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto mb-6">
+          Your application was approved! Complete a quick identity verification to activate your affiliate account.
+        </p>
+        <a
+          href={personaUrl}
+          className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white"
+        >
+          <ShieldCheck size={16} />
+          Verify Identity
+        </a>
+        <p className="text-xs text-gray-400 mt-4">Powered by Persona · Takes ~2 minutes</p>
+      </div>
+    );
+  }
+
   const statusMessages: Record<AppAuditStatus, { icon: typeof Clock; color: string; title: string; body: string }> = {
     pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',   body: "We're reviewing your application. You'll hear from us within a few business days." },
     in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',           body: "We're actively reviewing your application — hang tight!" },
-    approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Approved!',              body: "Your account is being set up. Refresh in a moment to access your dashboard." },
+    approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Verified!',              body: "Identity confirmed. Your affiliate dashboard is being activated — check back shortly." },
     needs_info: { icon: AlertCircle,   color: 'text-orange-500', title: 'More info needed',       body: "Check your email — we need a bit more information to process your application." },
     rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved',body: "Thank you for your interest. This tier may not be the right fit right now. You're welcome to reapply in the future." },
   };
@@ -415,7 +445,7 @@ export function AffiliatePortalView({ onBack }: Props) {
           .maybeSingle(),
         supabase
           .from('affiliate_applications')
-          .select('id,tier_applied_for,audit_status,created_at')
+          .select('id,tier_applied_for,audit_status,persona_status,created_at')
           .eq('email', user.email ?? '')
           .order('created_at', { ascending: false })
           .limit(1),
