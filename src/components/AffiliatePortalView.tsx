@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, Copy, Check, Users, Star, Mic, Anchor, Clock, CheckCircle2, AlertCircle, DollarSign, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, Copy, Check, Users, Star, Mic, Anchor, Clock, CheckCircle2, AlertCircle, DollarSign, ShieldCheck, Link2, Tag } from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
 
 const PERSONA_TEMPLATE_ID = 'itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG';
@@ -40,6 +40,15 @@ interface Payout {
   mercury_status: string;
   paid_at: string | null;
   created_at: string;
+}
+
+interface Attribution {
+  id: string;
+  attribution_method: 'cookie' | 'promo_code' | 'manual';
+  promo_code_used: string | null;
+  signed_up_at: string;
+  commission_amount: number;
+  commission_status: 'pending' | 'approved' | 'paid' | 'clawed_back' | 'cancelled';
 }
 
 type PortalState = 'loading' | 'apply' | 'submitted' | 'dashboard';
@@ -336,8 +345,17 @@ function PendingScreen({ app }: { app: AffiliateApplication }) {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
+const COMMISSION_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  pending:     { label: 'Pending',     color: 'text-yellow-600' },
+  approved:    { label: 'Approved',    color: 'text-blue-600' },
+  paid:        { label: 'Paid',        color: 'text-emerald-600' },
+  clawed_back: { label: 'Clawed back', color: 'text-red-500' },
+  cancelled:   { label: 'Cancelled',  color: 'text-gray-400' },
+};
+
 function AffiliateDashboard({ affiliate }: { affiliate: AffiliateRow }) {
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [attributions, setAttributions] = useState<Attribution[]>([]);
   const trackedLink = affiliate.tracked_link_slug ? `${TRACKED_LINK_BASE}/${affiliate.tracked_link_slug}` : null;
   const colors = TIER_COLORS[affiliate.tier];
 
@@ -349,6 +367,14 @@ function AffiliateDashboard({ affiliate }: { affiliate: AffiliateRow }) {
       .order('created_at', { ascending: false })
       .limit(10)
       .then(({ data }) => setPayouts(data ?? []));
+
+    supabase
+      .from('affiliate_attributions')
+      .select('id,attribution_method,promo_code_used,signed_up_at,commission_amount,commission_status')
+      .eq('affiliate_id', affiliate.id)
+      .order('signed_up_at', { ascending: false })
+      .limit(20)
+      .then(({ data }) => setAttributions((data ?? []) as Attribution[]));
   }, [affiliate.id]);
 
   return (
@@ -390,6 +416,52 @@ function AffiliateDashboard({ affiliate }: { affiliate: AffiliateRow }) {
         </div>
       </div>
 
+      {/* Recent referrals */}
+      <div className="mb-5">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Recent referrals</h3>
+        {attributions.length === 0 ? (
+          <div className="bg-gray-50 rounded-2xl p-5 text-center">
+            <Users size={20} className="text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">No referrals yet — share your link or promo code to get started!</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {attributions.map(attr => {
+              const statusInfo = COMMISSION_STATUS_LABELS[attr.commission_status] ?? { label: attr.commission_status, color: 'text-gray-500' };
+              return (
+                <div key={attr.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {attr.attribution_method === 'promo_code'
+                      ? <Tag size={14} className="text-[#7B5EA7] flex-shrink-0" />
+                      : <Link2 size={14} className="text-gray-400 flex-shrink-0" />
+                    }
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {attr.attribution_method === 'promo_code' ? 'Promo code' : 'Tracked link'}
+                        {attr.promo_code_used ? ` · ${attr.promo_code_used}` : ''}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(attr.signed_up_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <p className={`text-xs font-medium ${statusInfo.color}`}>{statusInfo.label}</p>
+                    <p className="text-sm font-bold text-gray-900 tabular-nums">
+                      {Number(attr.commission_amount) > 0
+                        ? `$${Number(attr.commission_amount).toFixed(2)}`
+                        : '—'
+                      }
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Payout history */}
       <div>
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Payout history</h3>
         {payouts.length === 0 ? (
