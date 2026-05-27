@@ -1,6 +1,6 @@
 # Parallel Planner — Netlify configuration
 # Platforms: Instagram, Facebook, TikTok (via Buffer), Threads
-# Deploy trigger: audio/location persistence + META_PAGE_ACCESS_TOKEN fix
+# Deploy trigger: scheduler failed-status fix + Buffer GraphQL field cleanup
 
 [build]
   publish = "."
