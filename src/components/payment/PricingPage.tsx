@@ -399,6 +399,77 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
           </div>
         </motion.div>
 
+        {/* ── Order summary (cart) — always above the pay buttons ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
+          className="mb-4"
+        >
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            {/* Line items */}
+            <div className="px-4 pt-4 pb-3 space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Order summary</p>
+
+              {/* Product */}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Parallel Annual Membership</p>
+                  <p className="text-xs text-gray-500 mt-0.5">5-day free trial · renews annually</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  {hasDiscount && (
+                    <p className="text-xs text-gray-400 line-through">${BASE_PRICE.toFixed(2)}</p>
+                  )}
+                  <p className="text-sm font-bold text-gray-900">${annualPrice.toFixed(2)}<span className="text-xs font-normal text-gray-500">/yr</span></p>
+                </div>
+              </div>
+
+              {/* Promo code — inline in cart */}
+              {affiliatePromo ? (
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-100 rounded-xl">
+                  <Tag size={13} className="text-green-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-green-800">
+                      {affiliatePromo.display_name
+                        ? `Code applied via ${affiliatePromo.display_name}`
+                        : 'Promo code applied'}
+                    </p>
+                    {hasDiscount && (
+                      <p className="text-xs text-green-700">Save ${savings.toFixed(2)} ({discountPct}% off)</p>
+                    )}
+                    {!hasDiscount && (
+                      <p className="text-xs text-green-700">You're on our best founding rate</p>
+                    )}
+                  </div>
+                  {hasDiscount && (
+                    <p className="text-sm font-bold text-green-700 flex-shrink-0">−${savings.toFixed(2)}</p>
+                  )}
+                </div>
+              ) : (
+                <PromoCodeInput
+                  onAffiliateApplied={(promo) => {
+                    setAffiliatePromo(promo);
+                    affiliatePromoRef.current = promo;
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Totals */}
+            <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Due today (trial)</span>
+                <span className="text-base font-bold text-gray-900">$0.00</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Due {firstChargeDate}</span>
+                <span className="text-sm font-semibold text-gray-700">${annualPrice.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-3 text-sm text-red-700">
@@ -406,7 +477,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
           </div>
         )}
 
-        {/* PayPal buttons */}
+        {/* ── PayPal buttons ── */}
         {loadingConfig ? (
           <div className="flex items-center justify-center py-6 text-gray-500 gap-2">
             <Loader size={18} className="animate-spin" />
@@ -428,39 +499,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               </div>
             )}
             <div ref={buttonContainerRef} id="paypal-button-container" />
-            {affiliatePromo ? (
-              <div className="flex items-start gap-2 mt-4 px-3 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
-                <Tag size={14} className="flex-shrink-0 text-green-600 mt-0.5" />
-                <div>
-                  {hasDiscount ? (
-                    <>
-                      <p className="font-semibold">
-                        {affiliatePromo.subscription_discount_pct}% off applied
-                        {affiliatePromo.display_name ? ` via ${affiliatePromo.display_name}` : ''}
-                      </p>
-                      <p className="text-xs text-green-700 mt-0.5">
-                        You'll pay <strong>${annualPrice.toFixed(2)}/year</strong> instead of ${BASE_PRICE} — saving you ${savings.toFixed(2)}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-semibold">Promo code applied</p>
-                      <p className="text-xs text-green-700 mt-0.5">
-                        {affiliatePromo.display_name ? `Referred by ${affiliatePromo.display_name} · ` : ''}
-                        You're already on our best founding member rate (${BASE_PRICE}/year)
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <PromoCodeInput
-                onAffiliateApplied={(promo) => {
-                  setAffiliatePromo(promo);
-                  affiliatePromoRef.current = promo;
-                }}
-              />
-            )}
           </motion.div>
         )}
 
