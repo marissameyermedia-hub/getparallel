@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { publicAnonKey } from '../../utils/supabase/info';
-import { MISC_FUNCTION_URL } from '../../utils/supabase/client';
+import { MISC_FUNCTION_URL, AFFILIATE_FUNCTION_URL } from '../../utils/supabase/client';
 import { PromoCodeInput } from "./PromoCodeInput";
 import { getAccessToken } from '../../utils/auth';
+
+interface AffiliatePromo {
+  affiliate_id: string;
+  display_name: string;
+  subscription_discount_pct: number;
+}
 
 interface PricingPageProps {
   onBack: () => void;
@@ -77,6 +83,16 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [showDetails, setShowDetails] = useState(false);
+  const [affiliatePromo, setAffiliatePromo] = useState<AffiliatePromo | null>(() => {
+    // Restore from localStorage if the user already applied a code this session
+    try {
+      const id = localStorage.getItem('affiliate_id');
+      const code = localStorage.getItem('affiliate_promo_code');
+      if (id && code) return { affiliate_id: id, display_name: '', subscription_discount_pct: 0 };
+    } catch { /* noop */ }
+    return null;
+  });
+  const affiliatePromoRef = useRef<AffiliatePromo | null>(affiliatePromo);
 
   const buttonContainerRef = useRef<HTMLDivElement | null>(null);
   const buttonsInstanceRef = useRef<any>(null);
@@ -84,6 +100,9 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   const trialEndDate = getTrialEndDate();
   const firstChargeDate = getFirstChargeDate();
   const nextRenewalDate = getNextRenewalDate();
+
+  // Keep ref in sync so the PayPal onApprove closure can read the latest value
+  useEffect(() => { affiliatePromoRef.current = affiliatePromo; }, [affiliatePromo]);
 
   // Load PayPal config once on mount
   useEffect(() => {
@@ -170,6 +189,36 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               const body = await res.json();
               if (!res.ok) {
                 throw new Error(body.error || 'Could not confirm your subscription. Please contact support.');
+              }
+              // Fire affiliate attribution if promo code was used or cookie tracked
+              const promo = affiliatePromoRef.current;
+              const cookieAffId = (() => { try { return localStorage.getItem('affiliate_id'); } catch { return null; } })();
+              const affId = promo?.affiliate_id || cookieAffId;
+              const promoCode = (() => { try { return localStorage.getItem('affiliate_promo_code'); } catch { return null; } })();
+              if (affId) {
+                fetch(`${AFFILIATE_FUNCTION_URL}/attribute`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'apikey': publicAnonKey,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    affiliate_id: affId,
+                    method: promoCode ? 'promo_code' : 'cookie',
+                    ...(promoCode ? { promo_code_used: promoCode } : {}),
+                    ...((() => { try { return localStorage.getItem('affiliate_click_id'); } catch { return null; } })()
+                      ? { click_id: localStorage.getItem('affiliate_click_id') }
+                      : {}),
+                  }),
+                }).then(() => {
+                  try {
+                    localStorage.removeItem('affiliate_id');
+                    localStorage.removeItem('affiliate_click_id');
+                    localStorage.removeItem('affiliate_slug');
+                    localStorage.removeItem('affiliate_promo_code');
+                  } catch { /* noop */ }
+                }).catch(() => { /* non-critical */ });
               }
               onCheckout('annual');
             } catch (e: any) {
@@ -331,7 +380,22 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               </div>
             )}
             <div ref={buttonContainerRef} id="paypal-button-container" />
-            <PromoCodeInput />
+            {affiliatePromo && affiliatePromo.subscription_discount_pct > 0 ? (
+              <div className="flex items-center gap-2 mt-4 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
+                <Tag size={14} className="flex-shrink-0 text-green-600" />
+                <span>
+                  <span className="font-semibold">{affiliatePromo.subscription_discount_pct}% off</span> applied
+                  {affiliatePromo.display_name ? ` via ${affiliatePromo.display_name}` : ''}
+                </span>
+              </div>
+            ) : (
+              <PromoCodeInput
+                onAffiliateApplied={(promo) => {
+                  setAffiliatePromo(promo);
+                  affiliatePromoRef.current = promo;
+                }}
+              />
+            )}
           </motion.div>
         )}
 

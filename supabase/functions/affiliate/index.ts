@@ -124,9 +124,9 @@ Deno.serve(async (req: Request) => {
     const user = await getUserFromAuth(req);
     if (!user) return json({ error: "unauthorized" }, 401);
 
-    let body: { affiliate_id?: string; click_id?: string; method?: string } = {};
+    let body: { affiliate_id?: string; click_id?: string; method?: string; promo_code_used?: string } = {};
     try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-    const { affiliate_id, click_id, method = "cookie" } = body;
+    const { affiliate_id, click_id, method = "cookie", promo_code_used } = body;
     if (!affiliate_id) return json({ error: "affiliate_id required" }, 400);
 
     const { data: affiliate, error: affErr } = await admin
@@ -164,6 +164,7 @@ Deno.serve(async (req: Request) => {
         affiliate_id,
         referred_user_id: user.id,
         attribution_method: method,
+        ...(promo_code_used ? { promo_code_used } : {}),
         clicked_at,
         clawback_deadline,
         commission_amount: 0,
