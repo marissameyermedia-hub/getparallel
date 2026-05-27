@@ -609,6 +609,9 @@ function App() {
               // Notification deep-link: open directly to the conversation.
               setSelectedMatchId(notifyFrom);
               setCurrentView('messaging');
+            } else if (params.get('view') === 'affiliate-portal') {
+              window.history.replaceState({}, '', window.location.pathname);
+              setCurrentView('affiliate-portal');
             } else {
               const lastView = localStorage.getItem('parallel_last_view') as any;
               const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
@@ -667,6 +670,9 @@ function App() {
                 if (notifyType === 'message' && notifyFrom) {
                   setSelectedMatchId(notifyFrom);
                   setCurrentView('messaging');
+                } else if (params.get('view') === 'affiliate-portal') {
+                  window.history.replaceState({}, '', window.location.pathname);
+                  setCurrentView('affiliate-portal');
                 } else {
                   const lastView = localStorage.getItem('parallel_last_view') as any;
                   const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';

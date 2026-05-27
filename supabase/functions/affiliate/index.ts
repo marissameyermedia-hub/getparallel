@@ -441,18 +441,30 @@ Deno.serve(async (req: Request) => {
     const userId = profile?.id ?? null;
     const displayName: string = (profile?.name as string | null) ?? app.email.split("@")[0];
 
-    // Generate unique promo code and slug via DB functions
-    const { data: promoCode, error: promoErr } = await admin.rpc("generate_promo_code", { p_display_name: displayName });
-    if (promoErr) return json({ error: "failed to generate promo code: " + promoErr.message }, 500);
-    const { data: slug, error: slugErr } = await admin.rpc("generate_tracked_link_slug");
-    if (slugErr) return json({ error: "failed to generate slug: " + slugErr.message }, 500);
-
     const TIER_CONFIG: Record<string, { commission_rate: number; subscription_discount_pct: number }> = {
       seeds:   { commission_rate: 0.10, subscription_discount_pct: 20 },
       voices:  { commission_rate: 0.15, subscription_discount_pct: 25 },
       anchors: { commission_rate: 0.20, subscription_discount_pct: 30 },
     };
     const tierCfg = TIER_CONFIG[app.tier_applied_for] ?? TIER_CONFIG.seeds;
+
+    // Generate promo code: [CLEANEDNAME][DISCOUNTPCT] — e.g. MARISSA20
+    // Try progressively shorter name prefixes to avoid collisions.
+    const discountSuffix = String(tierCfg.subscription_discount_pct);
+    const nameClean = displayName.replace(/[^a-zA-Z]/g, "").toUpperCase() || "AFF";
+    let promoCode: string | null = null;
+    for (let len = Math.min(6, nameClean.length); len >= 2; len--) {
+      const candidate = nameClean.slice(0, len) + discountSuffix;
+      const { count: taken } = await admin.from("affiliates").select("id", { count: "exact", head: true }).eq("promo_code", candidate);
+      if (!taken) { promoCode = candidate; break; }
+    }
+    if (!promoCode) {
+      // Ultimate fallback: 3-char prefix + discount + last 3 digits of timestamp
+      promoCode = nameClean.slice(0, 3) + discountSuffix + Date.now().toString().slice(-3);
+    }
+
+    const { data: slug, error: slugErr } = await admin.rpc("generate_tracked_link_slug");
+    if (slugErr) return json({ error: "failed to generate slug: " + slugErr.message }, 500);
 
     const now = new Date().toISOString();
     const { data: newAffiliate, error: createErr } = await admin
