@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`Failed ${post.planner_key}:`, msg);
       await supabase.from('scheduled_posts').update({
-        status: 'scheduled',
+        status: 'failed',
         error_message: msg,
         updated_at: new Date().toISOString(),
       }).eq('id', post.id);
