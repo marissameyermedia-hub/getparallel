@@ -1,4 +1,7 @@
-// Parallel — misc edge function v29
+// Parallel — misc edge function v30
+// v30: PAYMENT.SALE.COMPLETED releases affiliate commission — finds pending
+//      attribution for the subscriber, sets commission_amount + status=approved,
+//      marks subscribed_at, increments affiliates.total_conversions.
 // v29: Persona webhook handles affiliate reference IDs (aff_{application_id})
 // v28: Re-engagement SMS: fix cron to 5pm UTC (10am PDT), add "Reply STOP to
 //      unsubscribe" to copy. Inbound SMS catch-all now auto-replies instead
@@ -757,6 +760,37 @@ async function handlePaypalWebhook(req: Request): Promise<Response> {
             currency,
             paid_at: now,
           }).catch((e: any) => console.error("[paypal/webhook PAYMENT.SALE.COMPLETED] payment_events insert:", e));
+
+          // Release affiliate commission for this subscriber if one is pending
+          try {
+            const { data: attr } = await admin
+              .from("affiliate_attributions")
+              .select("id, affiliate_id")
+              .eq("referred_user_id", subRow.user_id)
+              .eq("commission_status", "pending")
+              .maybeSingle();
+            if (attr) {
+              const { data: aff } = await admin
+                .from("affiliates")
+                .select("id, commission_rate, total_conversions")
+                .eq("id", attr.affiliate_id)
+                .maybeSingle();
+              if (aff) {
+                const commission = parseFloat((amountNum * aff.commission_rate).toFixed(2));
+                await admin.from("affiliate_attributions").update({
+                  commission_amount: commission,
+                  commission_status: "approved",
+                  subscribed_at: now,
+                }).eq("id", attr.id);
+                await admin.from("affiliates").update({
+                  total_conversions: (aff.total_conversions ?? 0) + 1,
+                }).eq("id", aff.id);
+                console.log("[paypal/webhook] affiliate commission approved:", { attrId: attr.id, affId: aff.id, commission });
+              }
+            }
+          } catch (affErr: any) {
+            console.error("[paypal/webhook] affiliate commission release error:", affErr);
+          }
         }
       }
       break;

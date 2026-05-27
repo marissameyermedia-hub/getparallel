@@ -1,4 +1,5 @@
-// Parallel — affiliate edge function v1
+// Parallel — affiliate edge function v2
+// v2: POST /payout/preview, POST /payout/release — admin Mercury ACH payouts
 // v1: POST /click, POST /attribute, GET /validate/:slug, POST /validate-promo
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -6,6 +7,14 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+const MERCURY_IS_SANDBOX = (Deno.env.get("MERCURY_IS_SANDBOX") ?? "true") !== "false";
+const MERCURY_BASE = MERCURY_IS_SANDBOX
+  ? "https://api-sandbox.mercury.com/api/v1"
+  : "https://api.mercury.com/api/v1";
+const MERCURY_TOKEN = MERCURY_IS_SANDBOX
+  ? (Deno.env.get("MERCURY_API_TOKEN_SANDBOX") ?? "")
+  : (Deno.env.get("MERCURY_API_TOKEN") ?? "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,6 +55,32 @@ function getClientIp(req: Request): string {
     req.headers.get("x-real-ip") ||
     "unknown"
   );
+}
+
+async function checkIsAdmin(req: Request): Promise<boolean> {
+  const authHeader = req.headers.get("authorization") ?? "";
+  const token = authHeader.replace(/^bearer\s+/i, "").trim();
+  if (!token) return false;
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data?.user) return false;
+  const { data: adminCheck } = await adminClient()
+    .rpc("is_admin", { check_user_id: data.user.id })
+    .maybeSingle();
+  return adminCheck === true;
+}
+
+async function getMercuryAccountId(): Promise<string | null> {
+  try {
+    const res = await fetch(`${MERCURY_BASE}/accounts`, {
+      headers: { Authorization: `Basic ${btoa(`${MERCURY_TOKEN}:`)}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const accounts: any[] = data.accounts ?? [];
+    const checking = accounts.find((a: any) => a.kind === "checking") ?? accounts[0];
+    return checking?.id ?? null;
+  } catch { return null; }
 }
 
 Deno.serve(async (req: Request) => {
@@ -211,6 +246,157 @@ Deno.serve(async (req: Request) => {
       subscription_discount_pct: affiliate.subscription_discount_pct,
       tier: affiliate.tier,
     });
+  }
+
+  // ── POST /payout/preview ─────────────────────────────────────────
+  // Returns approved commissions grouped by affiliate, ready to pay out.
+  if (req.method === "POST" && endpoint === "payout" && segments[1] === "preview") {
+    if (!(await checkIsAdmin(req))) return json({ error: "forbidden" }, 403);
+
+    let body: { affiliate_id?: string } = {};
+    try { body = await req.json(); } catch { /* optional body */ }
+
+    let q = admin
+      .from("affiliate_attributions")
+      .select("id, affiliate_id, commission_amount, commission_status, signed_up_at, affiliates(id, display_name, email, mercury_recipient_id, total_paid_lifetime)")
+      .eq("commission_status", "approved");
+    if (body.affiliate_id) q = q.eq("affiliate_id", body.affiliate_id);
+    const { data: attrs, error: attrsErr } = await q;
+    if (attrsErr) return json({ error: "db error" }, 500);
+
+    // Group by affiliate
+    const byAffiliate: Record<string, {
+      affiliate: any;
+      attributions: any[];
+      gross: number;
+    }> = {};
+    for (const a of (attrs ?? [])) {
+      const affId = a.affiliate_id;
+      if (!byAffiliate[affId]) {
+        byAffiliate[affId] = { affiliate: (a as any).affiliates, attributions: [], gross: 0 };
+      }
+      byAffiliate[affId].attributions.push({ id: a.id, commission_amount: a.commission_amount, signed_up_at: a.signed_up_at });
+      byAffiliate[affId].gross += Number(a.commission_amount ?? 0);
+    }
+
+    const previews = Object.values(byAffiliate).map(g => ({
+      affiliate_id: (g.affiliate as any)?.id,
+      display_name: (g.affiliate as any)?.display_name,
+      email: (g.affiliate as any)?.email,
+      mercury_recipient_id: (g.affiliate as any)?.mercury_recipient_id,
+      total_paid_lifetime: (g.affiliate as any)?.total_paid_lifetime,
+      attribution_ids: g.attributions.map((a: any) => a.id),
+      attribution_count: g.attributions.length,
+      gross_amount: parseFloat(g.gross.toFixed(2)),
+    }));
+
+    return json({ ok: true, previews, total_payable: previews.reduce((s, p) => s + p.gross_amount, 0) });
+  }
+
+  // ── POST /payout/release ─────────────────────────────────────────
+  // Send a Mercury ACH payment to one affiliate and mark attributions paid.
+  if (req.method === "POST" && endpoint === "payout" && segments[1] === "release") {
+    if (!(await checkIsAdmin(req))) return json({ error: "forbidden" }, 403);
+
+    let body: { affiliate_id?: string } = {};
+    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+    const { affiliate_id } = body;
+    if (!affiliate_id) return json({ error: "affiliate_id required" }, 400);
+
+    // Fetch affiliate
+    const { data: aff, error: affErr } = await admin
+      .from("affiliates")
+      .select("id, display_name, email, mercury_recipient_id, total_paid_lifetime")
+      .eq("id", affiliate_id)
+      .maybeSingle();
+    if (affErr || !aff) return json({ error: "affiliate not found" }, 404);
+    if (!aff.mercury_recipient_id) return json({ error: "affiliate has no mercury_recipient_id — add bank account first" }, 400);
+
+    // Fetch approved attributions
+    const { data: attrs, error: attrsErr } = await admin
+      .from("affiliate_attributions")
+      .select("id, commission_amount, signed_up_at")
+      .eq("affiliate_id", affiliate_id)
+      .eq("commission_status", "approved");
+    if (attrsErr) return json({ error: "db error" }, 500);
+    if (!attrs || attrs.length === 0) return json({ error: "no approved commissions to pay" }, 400);
+
+    const gross = parseFloat(attrs.reduce((s, a) => s + Number(a.commission_amount ?? 0), 0).toFixed(2));
+    if (gross <= 0) return json({ error: "gross amount is zero" }, 400);
+
+    const periodStart = attrs.reduce((min: string, a: any) => a.signed_up_at < min ? a.signed_up_at : min, attrs[0].signed_up_at);
+    const periodEnd = attrs.reduce((max: string, a: any) => a.signed_up_at > max ? a.signed_up_at : max, attrs[0].signed_up_at);
+
+    // Create payout record first so we have an ID
+    const { data: payout, error: payoutErr } = await admin
+      .from("affiliate_payouts")
+      .insert({
+        affiliate_id,
+        period_start: periodStart.slice(0, 10),
+        period_end: periodEnd.slice(0, 10),
+        gross_amount: gross,
+        net_amount: gross,
+        mercury_status: "pending_approval",
+      })
+      .select("id")
+      .single();
+    if (payoutErr || !payout) return json({ error: "failed to create payout record" }, 500);
+
+    // Call Mercury
+    const accountId = await getMercuryAccountId();
+    if (!accountId) {
+      await admin.from("affiliate_payouts").update({ mercury_status: "failed", failure_reason: "could not fetch mercury account" }).eq("id", payout.id);
+      return json({ error: "mercury account unavailable" }, 502);
+    }
+
+    const mercuryRes = await fetch(`${MERCURY_BASE}/account/${accountId}/transactions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${MERCURY_TOKEN}:`)}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        externalMemo: `Parallel affiliate commission — ${aff.display_name}`,
+        amount: gross,
+        paymentMethod: "ach",
+        recipientId: aff.mercury_recipient_id,
+      }),
+    });
+
+    const mercuryBody = await mercuryRes.json();
+    if (!mercuryRes.ok) {
+      await admin.from("affiliate_payouts").update({
+        mercury_status: "failed",
+        failure_reason: JSON.stringify(mercuryBody).slice(0, 500),
+      }).eq("id", payout.id);
+      console.error("[affiliate/payout] mercury error:", mercuryBody);
+      return json({ error: "mercury payment failed", detail: mercuryBody }, 502);
+    }
+
+    const mercuryTxId = mercuryBody.id ?? null;
+    const now = new Date().toISOString();
+
+    // Update payout record
+    await admin.from("affiliate_payouts").update({
+      mercury_transaction_id: mercuryTxId,
+      mercury_status: "sent",
+      paid_at: now,
+    }).eq("id", payout.id);
+
+    // Mark attributions paid
+    const attrIds = attrs.map((a: any) => a.id);
+    await admin.from("affiliate_attributions").update({
+      commission_status: "paid",
+      payout_id: payout.id,
+    }).in("id", attrIds);
+
+    // Increment total_paid_lifetime
+    await admin.from("affiliates").update({
+      total_paid_lifetime: parseFloat(((aff.total_paid_lifetime ?? 0) + gross).toFixed(2)),
+    }).eq("id", affiliate_id);
+
+    console.log("[affiliate/payout] released:", { affiliate_id, gross, attributions: attrIds.length, mercuryTxId });
+    return json({ ok: true, payout_id: payout.id, gross_amount: gross, mercury_transaction_id: mercuryTxId, attribution_count: attrIds.length });
   }
 
   return json({ error: "not found" }, 404);
