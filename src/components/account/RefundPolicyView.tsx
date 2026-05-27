@@ -22,7 +22,7 @@ export function RefundPolicyView({ onBack }: RefundPolicyViewProps) {
         </div>
 
         <div className="prose prose-gray max-w-none">
-          <p className="text-sm text-gray-600 mb-8">Last updated: April 16, 2026</p>
+          <p className="text-sm text-gray-600 mb-8">Last updated: May 26, 2026</p>
 
           <div className="space-y-6 text-gray-700 leading-relaxed">
             <section>
@@ -43,10 +43,9 @@ export function RefundPolicyView({ onBack }: RefundPolicyViewProps) {
 
             <section>
               <h2 className="mb-3 font-semibold">Subscription Types</h2>
-              <p className="mb-3">Parallel offers the following subscription options:</p>
+              <p className="mb-3">Parallel offers the following subscription option:</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li><strong>Monthly Subscription:</strong> $24.99/month, billed monthly</li>
-                <li><strong>Annual Subscription:</strong> $149.00/year, billed annually (save over 50%)</li>
+                <li><strong>Annual Subscription:</strong> $79.00/year, billed annually</li>
               </ul>
               <p className="mt-3">
                 All subscriptions automatically renew at the end of each billing period unless canceled before the renewal date.

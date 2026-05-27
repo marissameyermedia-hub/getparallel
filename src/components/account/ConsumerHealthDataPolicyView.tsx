@@ -22,7 +22,8 @@ export function ConsumerHealthDataPolicyView({ onBack }: ConsumerHealthDataPolic
         </div>
 
         <div className="prose prose-gray max-w-none">
-          <p className="text-sm text-gray-600 mb-2"><strong>Effective date: April 17, 2026</strong></p>
+          <p className="text-sm text-gray-600 mb-1"><strong>Effective date: April 17, 2026</strong></p>
+          <p className="text-sm text-gray-600 mb-2">Last updated: May 26, 2026</p>
           <p className="text-sm text-gray-600 mb-8 leading-relaxed">
             This is a standalone privacy policy required under the Washington My Health MY Data Act (Chapter 19.373 RCW). It covers only consumer health data collected by Parallel. For all other privacy practices, see our Privacy Policy.
           </p>

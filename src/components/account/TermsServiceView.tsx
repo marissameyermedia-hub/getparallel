@@ -22,7 +22,7 @@ export function TermsServiceView({ onBack }: TermsServiceViewProps) {
         </div>
 
         <div className="prose prose-gray max-w-none">
-          <p className="text-sm text-gray-600 mb-8">Last updated: April 27, 2026</p>
+          <p className="text-sm text-gray-600 mb-8">Last updated: May 26, 2026</p>
 
           <div className="space-y-6 text-gray-700 leading-relaxed">
 
@@ -135,7 +135,7 @@ export function TermsServiceView({ onBack }: TermsServiceViewProps) {
             <section>
               <h2 className="mb-3 font-semibold">8. Subscription and Billing</h2>
               <p>
-                Parallel offers paid membership plans billed monthly or annually. By subscribing, you authorize us to charge your payment method on a recurring basis at the then-current rate for your selected plan. Prices are displayed at checkout and may change with 30 days' notice to active subscribers.
+                Parallel offers annual paid membership plans. By subscribing, you authorize us to charge your payment method on a recurring basis at the then-current rate for your selected plan. Prices are displayed at checkout and may change with 30 days' notice to active subscribers.
               </p>
               <p className="mt-3 font-medium">
                 AUTO-RENEWAL DISCLOSURE (ROSCA): YOUR SUBSCRIPTION WILL AUTOMATICALLY RENEW AT THE END OF EACH BILLING PERIOD AT THE THEN-CURRENT RATE UNLESS YOU CANCEL BEFORE THE RENEWAL DATE. For annual subscriptions, we will send you a renewal reminder no fewer than 7 days before your renewal date. We retain a timestamped record of your subscription consent, including the date, plan selected, and price agreed to.
@@ -288,7 +288,7 @@ export function TermsServiceView({ onBack }: TermsServiceViewProps) {
             <section>
               <h2 className="mb-3 font-semibold">17. Accessibility</h2>
               <p>
-                Parallel is committed to making the Service accessible to users with disabilities. We are working to conform to the Web Content Accessibility Guidelines (WCAG) 2.1 Level AA as an ongoing effort.
+                Parallel is committed to making the Service accessible to users with disabilities. We are working to conform to the Web Content Accessibility Guidelines (WCAG) 2.2 Level AA as an ongoing effort.
               </p>
               <p className="mt-3">
                 <strong>Accessibility contact.</strong> If you experience difficulty accessing any part of the Service due to a disability, or if you need content in an alternative format, please contact us at legal@getparallel.vip with the subject line "Accessibility Request." We will make reasonable efforts to accommodate your needs and respond within 5 business days.

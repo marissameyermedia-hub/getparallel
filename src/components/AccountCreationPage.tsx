@@ -4,8 +4,8 @@ import { EDGE_FUNCTION_URL, AUTH_FUNCTION_URL, MISC_FUNCTION_URL } from '../util
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { AppFooter } from './AppFooter';
 
-const TOS_VERSION = '2026-04-16';
-const PRIVACY_VERSION = '2026-04-09';
+const TOS_VERSION = '2026-05-26';
+const PRIVACY_VERSION = '2026-05-26';
 // NOTE: SMS consent is captured on PhoneVerificationPage, not here. This keeps
 // account creation friction low and matches Telnyx's requirement that SMS
 // opt-in be separate/optional/unchecked.
