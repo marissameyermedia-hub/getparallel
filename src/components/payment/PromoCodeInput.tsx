@@ -48,13 +48,18 @@ export function PromoCodeInput({ onSuccess, onAffiliateApplied }: PromoCodeInput
           try {
             localStorage.setItem("affiliate_id", affData.affiliate_id);
             localStorage.setItem("affiliate_promo_code", trimmedCode);
+            localStorage.setItem("affiliate_discount_pct", String(affData.subscription_discount_pct ?? 0));
           } catch { /* noop */ }
           onAffiliateApplied?.({
             affiliate_id: affData.affiliate_id,
             display_name: affData.display_name,
             subscription_discount_pct: affData.subscription_discount_pct,
           });
-          setSuccess(`${affData.subscription_discount_pct}% discount applied!`);
+          setSuccess(
+            affData.subscription_discount_pct > 0
+              ? `${affData.subscription_discount_pct}% discount applied!`
+              : "Promo code applied!"
+          );
           setCode("");
           setLoading(false);
           return;

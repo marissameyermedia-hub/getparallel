@@ -88,7 +88,8 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
     try {
       const id = localStorage.getItem('affiliate_id');
       const code = localStorage.getItem('affiliate_promo_code');
-      if (id && code) return { affiliate_id: id, display_name: '', subscription_discount_pct: 0 };
+      const pct = localStorage.getItem('affiliate_discount_pct');
+      if (id && code) return { affiliate_id: id, display_name: '', subscription_discount_pct: pct ? parseInt(pct, 10) : 0 };
     } catch { /* noop */ }
     return null;
   });
@@ -217,6 +218,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                     localStorage.removeItem('affiliate_click_id');
                     localStorage.removeItem('affiliate_slug');
                     localStorage.removeItem('affiliate_promo_code');
+                    localStorage.removeItem('affiliate_discount_pct');
                   } catch { /* noop */ }
                 }).catch(() => { /* non-critical */ });
               }

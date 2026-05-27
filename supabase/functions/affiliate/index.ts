@@ -1,4 +1,5 @@
-// Parallel — affiliate edge function v2
+// Parallel — affiliate edge function v3
+// v3: (deployed as Supabase version 3 — same code as v2 with bug fixes)
 // v2: POST /payout/preview, POST /payout/release — admin Mercury ACH payouts
 // v1: POST /click, POST /attribute, GET /validate/:slug, POST /validate-promo
 
