@@ -1,15 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, Copy, Check, Share2, Users, Star, Mic, Anchor, Clock, CheckCircle2, AlertCircle, DollarSign, ShieldCheck, Link2, Tag } from 'lucide-react';
+import {
+  ChevronLeft, Copy, Check, Share2, Users, Star, Mic, Anchor,
+  Clock, CheckCircle2, AlertCircle, ShieldCheck, Link2, Tag,
+  ChevronDown, ChevronUp, History, CreditCard,
+} from 'lucide-react';
 import { supabase } from '../utils/supabase/client';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const PERSONA_TEMPLATE_ID = 'itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG';
 const PERSONA_ENV = 'production';
+const AFFILIATE_FN_URL = `https://${projectId}.supabase.co/functions/v1/affiliate`;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type AffiliateTier = 'seeds' | 'voices' | 'anchors';
 type AppAuditStatus = 'pending' | 'in_review' | 'approved' | 'rejected' | 'needs_info';
-type AffiliateStatus = 'pending' | 'approved' | 'active' | 'paused' | 'banned';
+type DashboardTab = 'overview' | 'earnings' | 'payouts';
+type PortalState = 'loading' | 'apply' | 'submitted' | 'dashboard';
 
 interface AffiliateApplication {
   id: string;
@@ -19,39 +26,73 @@ interface AffiliateApplication {
   created_at: string;
 }
 
-interface AffiliateRow {
-  id: string;
-  display_name: string;
-  tier: AffiliateTier;
-  status: AffiliateStatus;
-  commission_rate: number;
-  subscription_discount_pct: number;
-  promo_code: string | null;
-  tracked_link_slug: string | null;
-  total_conversions: number;
-  total_paid_lifetime: number;
+interface ProgramInfo {
+  payout_cadence: string;
+  minimum_payout_usd: number;
+  clawback_window_days: number;
+  attribution_window_days: number;
+  payout_method: string;
+  tax_note: string;
 }
 
-interface Payout {
+interface AffiliateProfile {
+  id: string;
+  display_name: string;
+  email: string | null;
+  tier: AffiliateTier;
+  status: string;
+  promo_code: string | null;
+  affiliate_link: string | null;
+  commission_rate: number;
+  commission_rate_pct: number;
+  subscription_discount_pct: number;
+  total_conversions: number;
+  total_paid_lifetime: number;
+  legal_name: string | null;
+  tax_address: string | null;
+  tax_country: string;
+  tax_info_collected: boolean;
+  bank_account_connected: boolean;
+  program: ProgramInfo;
+}
+
+interface EarningAttribution {
+  id: string;
+  commission_amount: number;
+  commission_status: string;
+  clawback_deadline: string | null;
+  days_until_eligible: number | null;
+  subscribed_at: string | null;
+  signed_up_at: string | null;
+  promo_code_used: string | null;
+}
+
+interface EarningsData {
+  by_year: Record<string, {
+    total_earned: number;
+    total_paid: number;
+    attributions: EarningAttribution[];
+  }>;
+  lifetime: {
+    total_earned: number;
+    total_paid: number;
+    pending_count: number;
+    in_window_count: number;
+    eligible_count: number;
+    released_count: number;
+  };
+}
+
+interface PayoutRecord {
   id: string;
   period_start: string;
   period_end: string;
+  gross_amount: number;
   net_amount: number;
   mercury_status: string;
   paid_at: string | null;
   created_at: string;
 }
-
-interface Attribution {
-  id: string;
-  attribution_method: 'cookie' | 'promo_code' | 'manual';
-  promo_code_used: string | null;
-  signed_up_at: string;
-  commission_amount: number;
-  commission_status: 'pending' | 'approved' | 'paid' | 'clawed_back' | 'cancelled';
-}
-
-type PortalState = 'loading' | 'apply' | 'submitted' | 'dashboard';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -89,14 +130,12 @@ const TIERS: Array<{
   },
 ];
 
-// Tailwind classes for apply form tier cards
 const TIER_COLORS: Record<AffiliateTier, { bg: string; text: string; border: string }> = {
   seeds:   { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
   voices:  { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
   anchors: { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-200' },
 };
 
-// Hex values for dynamic dashboard elements (progress bar, hero, buttons, badge)
 const TIER_HEX: Record<AffiliateTier, {
   accent: string; btn: string;
   badgeBg: string; badgeText: string;
@@ -126,15 +165,13 @@ const SHARE_NUDGES = [
   "At this point you're basically a matchmaker.",
 ];
 
-const TRACKED_LINK_BASE = 'https://getparallel.vip/r';
-const AFFILIATE_FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/affiliate`;
-
+// Matches the actual commission_status DB enum values
 const COMMISSION_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending:     { label: 'Pending',     color: 'text-yellow-600' },
-  approved:    { label: 'Approved',    color: 'text-blue-600' },
-  paid:        { label: 'Paid',        color: 'text-emerald-600' },
-  clawed_back: { label: 'Clawed back', color: 'text-red-500' },
-  cancelled:   { label: 'Cancelled',  color: 'text-gray-400' },
+  pending:     { label: 'Awaiting payment', color: 'text-yellow-600' },
+  releasable:  { label: 'Eligible',         color: 'text-emerald-600' },
+  released:    { label: 'Paid',             color: 'text-emerald-600' },
+  clawed_back: { label: 'Reversed',         color: 'text-red-500' },
+  fraud:       { label: 'Flagged',          color: 'text-red-500' },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -162,6 +199,31 @@ function useCopy(text: string) {
   return { copied, copy };
 }
 
+async function affiliateApi<T = any>(
+  path: string,
+  opts: { method?: string; body?: unknown } = {}
+): Promise<{ data: T | null; error: string | null }> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { data: null, error: 'Not signed in' };
+    const fetchOpts: RequestInit = {
+      method: opts.method ?? 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': publicAnonKey,
+      },
+    };
+    if (opts.body !== undefined) fetchOpts.body = JSON.stringify(opts.body);
+    const res = await fetch(`${AFFILIATE_FN_URL}/${path}`, fetchOpts);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { data: null, error: (data as any)?.error ?? `HTTP ${res.status}` };
+    return { data: data as T, error: null };
+  } catch (e: any) {
+    return { data: null, error: e.message ?? 'Network error' };
+  }
+}
+
 // ── Apply Form ────────────────────────────────────────────────────────────────
 
 function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) => void }) {
@@ -171,42 +233,30 @@ function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) =
   const [tiktok, setTiktok] = useState('');
   const [youtube, setYoutube] = useState('');
   const [whyParallel, setWhyParallel] = useState('');
-  const [audienceDesc, setAudienceDesc] = useState('');
   const [phase1City, setPhase1City] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit() {
-    if (!tier) return;
+    if (!tier || !termsAccepted) return;
     setIsSubmitting(true);
     setError(null);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Not signed in');
-      const res = await fetch(`${AFFILIATE_FN_URL}/apply`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
-        },
-        body: JSON.stringify({
-          tier,
-          instagram: instagram || null,
-          tiktok:    tiktok    || null,
-          youtube:   youtube   || null,
-          why_parallel:         whyParallel || null,
-          audience_description: audienceDesc || null,
-          phase1_city_audience: phase1City,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Something went wrong. Please try again.');
-      onSubmitted(data.application as AffiliateApplication);
-    } catch (e: any) {
-      setError(e.message ?? 'Something went wrong. Please try again.');
-    }
+    const { data, error: err } = await affiliateApi<{ application: AffiliateApplication }>('apply', {
+      method: 'POST',
+      body: {
+        tier,
+        terms_accepted: true,
+        instagram: instagram || null,
+        tiktok: tiktok || null,
+        youtube: youtube || null,
+        why_parallel: whyParallel || null,
+        phase1_city_audience: phase1City,
+      },
+    });
     setIsSubmitting(false);
+    if (err) { setError(err); return; }
+    if (data?.application) onSubmitted(data.application);
   }
 
   const hasHandle = instagram.trim() || tiktok.trim() || youtube.trim();
@@ -302,6 +352,28 @@ function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) =
               />
               <span className="text-sm text-gray-700">My audience is primarily in a Phase 1 launch city (NYC, LA, Chicago, SF, Austin, Miami)</span>
             </label>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={e => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded accent-[#7B5EA7]"
+              />
+              <span className="text-sm text-gray-700">
+                I agree to the{' '}
+                <a
+                  href="https://getparallel.vip/affiliate-terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-[#7B5EA7]"
+                  onClick={e => e.stopPropagation()}
+                >
+                  Affiliate Program Terms
+                </a>
+                {' '}and understand that commissions are subject to a 30-day clawback window.
+              </span>
+            </label>
           </div>
 
           {error && (
@@ -319,7 +391,7 @@ function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) =
             </button>
             <button
               onClick={submit}
-              disabled={isSubmitting || !hasHandle}
+              disabled={isSubmitting || !hasHandle || !termsAccepted}
               className="flex-1 py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white disabled:opacity-40 transition-opacity"
             >
               {isSubmitting ? 'Submitting…' : 'Submit Application'}
@@ -384,51 +456,440 @@ function PendingScreen({ app }: { app: AffiliateApplication }) {
   );
 }
 
+// ── Payout Setup Form ─────────────────────────────────────────────────────────
+
+function PayoutSetupForm({
+  profile,
+  onSuccess,
+}: {
+  profile: AffiliateProfile;
+  onSuccess: (updates: { tax_info_collected: boolean; bank_account_connected: boolean }) => void;
+}) {
+  const [legalName, setLegalName] = useState(profile.legal_name ?? '');
+  const [taxAddress, setTaxAddress] = useState(profile.tax_address ?? '');
+  const [accountType, setAccountType] = useState('personalChecking');
+  const [routingNumber, setRoutingNumber] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit() {
+    setSubmitting(true);
+    setError(null);
+    const body: Record<string, any> = {
+      legal_name: legalName.trim(),
+      tax_address: taxAddress.trim(),
+    };
+    if (routingNumber.trim() || accountNumber.trim()) {
+      body.routing_number = routingNumber.trim();
+      body.account_number = accountNumber.trim();
+      body.account_type = accountType;
+    }
+    const { data, error: err } = await affiliateApi<{ ok: boolean; bank_account_connected: boolean }>(
+      'payout/setup',
+      { method: 'POST', body }
+    );
+    setSubmitting(false);
+    if (err) { setError(err); return; }
+    onSuccess({ tax_info_collected: true, bank_account_connected: data?.bank_account_connected ?? false });
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Legal Name</label>
+        <input
+          type="text"
+          value={legalName}
+          onChange={e => setLegalName(e.target.value)}
+          placeholder="Full legal name (as on tax documents)"
+          className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7]"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Mailing Address</label>
+        <textarea
+          value={taxAddress}
+          onChange={e => setTaxAddress(e.target.value)}
+          placeholder={'Street address, City, State ZIP'}
+          rows={2}
+          className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none resize-none border border-gray-100 focus:border-[#7B5EA7]"
+        />
+      </div>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
+        <div className="relative flex justify-center">
+          <span className="bg-parallel-cream px-3 text-xs text-gray-400">Bank account for ACH payouts</span>
+        </div>
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Account Type</label>
+        <select
+          value={accountType}
+          onChange={e => setAccountType(e.target.value)}
+          className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 outline-none border border-gray-100 focus:border-[#7B5EA7]"
+        >
+          <option value="personalChecking">Personal Checking</option>
+          <option value="personalSavings">Personal Savings</option>
+          <option value="businessChecking">Business Checking</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Routing Number</label>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={routingNumber}
+          onChange={e => setRoutingNumber(e.target.value.replace(/\D/g, '').slice(0, 9))}
+          placeholder="9-digit routing number"
+          className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none font-mono border border-gray-100 focus:border-[#7B5EA7]"
+        />
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Account Number</label>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={accountNumber}
+          onChange={e => setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 17))}
+          placeholder="Bank account number"
+          className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none font-mono border border-gray-100 focus:border-[#7B5EA7]"
+        />
+      </div>
+
+      {error && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-sm text-red-600">
+          <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={submitting || !legalName.trim() || !taxAddress.trim()}
+        className="w-full py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white disabled:opacity-40 transition-opacity"
+      >
+        {submitting ? 'Saving…' : 'Save Payout Info'}
+      </button>
+
+      <p className="text-xs text-gray-400 text-center leading-relaxed">
+        Bank details go directly to our payment processor and are never stored on Parallel's servers.
+      </p>
+    </div>
+  );
+}
+
+// ── Earnings Tab ──────────────────────────────────────────────────────────────
+
+function EarningsTab() {
+  const [data, setData] = useState<EarningsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    affiliateApi<EarningsData>('earnings').then(({ data, error }) => {
+      if (error) { setError(error); setLoading(false); return; }
+      if (data) {
+        setData(data);
+        const currentYear = new Date().getFullYear().toString();
+        if (data.by_year[currentYear]) setExpandedYears(new Set([currentYear]));
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  function toggleYear(year: string) {
+    setExpandedYears(prev => {
+      const next = new Set(prev);
+      if (next.has(year)) next.delete(year); else next.add(year);
+      return next;
+    });
+  }
+
+  function getStatusDisplay(attr: EarningAttribution): { label: string; color: string } {
+    if (attr.commission_status === 'releasable') {
+      if (attr.days_until_eligible && attr.days_until_eligible > 0) {
+        return { label: `${attr.days_until_eligible}d until eligible`, color: 'text-yellow-600' };
+      }
+      return { label: 'Eligible', color: 'text-emerald-600' };
+    }
+    return COMMISSION_STATUS_LABELS[attr.commission_status] ?? { label: attr.commission_status, color: 'text-gray-500' };
+  }
+
+  if (loading) return (
+    <div className="space-y-3 pt-2 pb-8">
+      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-2xl animate-pulse" />)}
+    </div>
+  );
+
+  if (error) return (
+    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-600 my-4">{error}</div>
+  );
+
+  if (!data) return null;
+
+  const { lifetime, by_year } = data;
+  const years = Object.keys(by_year).sort((a, b) => Number(b) - Number(a));
+
+  return (
+    <div className="pb-8">
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="bg-white border border-gray-100 rounded-2xl p-4">
+          <p className="text-xs text-gray-400 mb-1">Total earned</p>
+          <p className="text-xl font-bold text-gray-900 tabular-nums">${lifetime.total_earned.toFixed(2)}</p>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-2xl p-4">
+          <p className="text-xs text-gray-400 mb-1">Total paid</p>
+          <p className="text-xl font-bold text-gray-900 tabular-nums">${lifetime.total_paid.toFixed(2)}</p>
+        </div>
+      </div>
+
+      {(lifetime.pending_count > 0 || lifetime.in_window_count > 0 || lifetime.eligible_count > 0) && (
+        <div className="flex flex-wrap gap-2 mb-5">
+          {lifetime.pending_count > 0 && (
+            <span className="text-xs px-2.5 py-1 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-100">
+              {lifetime.pending_count} awaiting payment
+            </span>
+          )}
+          {lifetime.in_window_count > 0 && (
+            <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+              {lifetime.in_window_count} in clawback window
+            </span>
+          )}
+          {lifetime.eligible_count > 0 && (
+            <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+              {lifetime.eligible_count} eligible for payout
+            </span>
+          )}
+        </div>
+      )}
+
+      {years.length === 0 ? (
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center">
+          <Users size={20} className="text-gray-300 mx-auto mb-2" />
+          <p className="text-sm text-gray-400">No earnings yet — share your link or promo code to start earning.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {years.map(year => {
+            const yr = by_year[year];
+            const isExpanded = expandedYears.has(year);
+            return (
+              <div key={year} className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                <button
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-left"
+                  onClick={() => toggleYear(year)}
+                >
+                  <div>
+                    <span className="font-medium text-gray-900">{year}</span>
+                    <span className="text-xs text-gray-400 ml-2">
+                      {yr.attributions.length} referral{yr.attributions.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-gray-900 tabular-nums">${yr.total_earned.toFixed(2)}</span>
+                    {isExpanded
+                      ? <ChevronUp size={14} className="text-gray-400" />
+                      : <ChevronDown size={14} className="text-gray-400" />
+                    }
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="divide-y divide-gray-50 border-t border-gray-100">
+                    {yr.attributions.map(attr => {
+                      const statusDisplay = getStatusDisplay(attr);
+                      const date = attr.subscribed_at ?? attr.signed_up_at;
+                      return (
+                        <div key={attr.id} className="flex items-center justify-between px-4 py-2.5 gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-400">
+                              {date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                              {attr.promo_code_used ? ` · ${attr.promo_code_used}` : ''}
+                            </p>
+                            <p className={`text-xs font-medium ${statusDisplay.color}`}>{statusDisplay.label}</p>
+                          </div>
+                          <span className="text-sm font-bold text-gray-900 tabular-nums flex-shrink-0">
+                            {attr.commission_amount > 0 ? `$${attr.commission_amount.toFixed(2)}` : '—'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Payouts Tab ───────────────────────────────────────────────────────────────
+
+function PayoutsTab({
+  profile,
+  onProfileUpdate,
+}: {
+  profile: AffiliateProfile;
+  onProfileUpdate: (updates: Partial<AffiliateProfile>) => void;
+}) {
+  const [payouts, setPayouts] = useState<PayoutRecord[] | null>(null);
+  const [loadingPayouts, setLoadingPayouts] = useState(true);
+  const [showSetupForm, setShowSetupForm] = useState(!profile.bank_account_connected);
+
+  useEffect(() => {
+    affiliateApi<{ payouts: PayoutRecord[] }>('payout/history').then(({ data }) => {
+      setPayouts(data?.payouts ?? []);
+      setLoadingPayouts(false);
+    });
+  }, []);
+
+  const prog = profile.program;
+
+  return (
+    <div className="pb-8 space-y-6">
+      {/* Bank account section */}
+      {profile.bank_account_connected && !showSetupForm ? (
+        <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3.5">
+          <CheckCircle2 size={18} className="text-emerald-500 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-emerald-800">Bank account connected</p>
+            <p className="text-xs text-emerald-600">Payouts are sent via ACH on the 1st of each month.</p>
+          </div>
+          <button
+            onClick={() => setShowSetupForm(true)}
+            className="text-xs text-emerald-700 underline flex-shrink-0"
+          >
+            Update
+          </button>
+        </div>
+      ) : (
+        <div>
+          {!profile.bank_account_connected && (
+            <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5 mb-4">
+              <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Set up payouts to get paid</p>
+                <p className="text-xs text-amber-600">Add your bank account and legal info to receive ACH payouts when commissions are released.</p>
+              </div>
+            </div>
+          )}
+          <PayoutSetupForm
+            profile={profile}
+            onSuccess={(updates) => {
+              onProfileUpdate(updates);
+              setShowSetupForm(false);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Payout history */}
+      <div>
+        <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Payout history</div>
+        {loadingPayouts ? (
+          <div className="space-y-2">
+            {[...Array(2)].map((_, i) => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}
+          </div>
+        ) : payouts && payouts.length > 0 ? (
+          <div className="space-y-2">
+            {payouts.map(p => (
+              <div key={p.id} className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3 gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    {new Date(p.period_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {' – '}
+                    {new Date(p.period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-gray-400 capitalize">
+                    {p.mercury_status.replace(/_/g, ' ')}
+                    {p.paid_at
+                      ? ` · ${new Date(p.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                      : ''
+                    }
+                  </p>
+                </div>
+                <span className="text-sm font-bold text-gray-900 tabular-nums flex-shrink-0">
+                  ${Number(p.net_amount).toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center">
+            <History size={20} className="text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">No payouts yet.</p>
+            {!profile.bank_account_connected && (
+              <p className="text-xs text-gray-400 mt-1">Connect your bank account above to start receiving payouts.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Program details */}
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-50">
+          <p className="text-xs uppercase tracking-widest text-gray-500">Program details</p>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {([
+            ['Payout schedule', prog.payout_cadence],
+            ['Minimum payout', `$${prog.minimum_payout_usd}`],
+            ['Payout method', prog.payout_method],
+            ['Clawback window', `${prog.clawback_window_days} days from payment`],
+            ['Attribution window', `${prog.attribution_window_days}-day cookie`],
+          ] as [string, string][]).map(([label, value]) => (
+            <div key={label} className="flex items-start justify-between px-4 py-2.5 gap-3">
+              <span className="text-xs text-gray-400 flex-shrink-0">{label}</span>
+              <span className="text-xs text-gray-700 text-right">{value}</span>
+            </div>
+          ))}
+        </div>
+        <div className="px-4 py-3 border-t border-gray-100">
+          <p className="text-xs text-gray-400 leading-relaxed">{prog.tax_note}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
-function AffiliateDashboard({ affiliate }: { affiliate: AffiliateRow }) {
-  const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [attributions, setAttributions] = useState<Attribution[]>([]);
+function AffiliateDashboard({
+  profile: initialProfile,
+}: {
+  profile: AffiliateProfile;
+}) {
+  const [profile, setProfile] = useState<AffiliateProfile>(initialProfile);
+  const [tab, setTab] = useState<DashboardTab>('overview');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
 
-  const trackedLink = affiliate.tracked_link_slug ? `${TRACKED_LINK_BASE}/${affiliate.tracked_link_slug}` : null;
-  const hex = TIER_HEX[affiliate.tier];
-  const conversions = affiliate.total_conversions;
+  const hex = TIER_HEX[profile.tier];
+  const conversions = profile.total_conversions;
   const challenge = getChallenge(conversions);
   const progressPct = getProgressPct(conversions, challenge);
   const nudge = SHARE_NUDGES[Math.min(Math.floor(conversions / 20), SHARE_NUDGES.length - 1)];
   const tierOrder: Record<AffiliateTier, number> = { seeds: 0, voices: 1, anchors: 2 };
 
-  useEffect(() => {
-    supabase
-      .from('affiliate_payouts')
-      .select('id,period_start,period_end,net_amount,mercury_status,paid_at,created_at')
-      .eq('affiliate_id', affiliate.id)
-      .order('created_at', { ascending: false })
-      .limit(10)
-      .then(({ data }) => setPayouts(data ?? []));
-
-    supabase
-      .from('affiliate_attributions')
-      .select('id,attribution_method,promo_code_used,signed_up_at,commission_amount,commission_status')
-      .eq('affiliate_id', affiliate.id)
-      .order('signed_up_at', { ascending: false })
-      .limit(20)
-      .then(({ data }) => setAttributions((data ?? []) as Attribution[]));
-  }, [affiliate.id]);
-
   const handleCopyLink = () => {
-    if (!trackedLink) return;
-    navigator.clipboard.writeText(trackedLink).then(() => {
+    if (!profile.affiliate_link) return;
+    navigator.clipboard.writeText(profile.affiliate_link).then(() => {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2000);
     });
   };
 
   const handleCopyCode = () => {
-    if (!affiliate.promo_code) return;
-    navigator.clipboard.writeText(affiliate.promo_code).then(() => {
+    if (!profile.promo_code) return;
+    navigator.clipboard.writeText(profile.promo_code).then(() => {
       setCopiedCode(true);
       setTimeout(() => setCopiedCode(false), 2000);
     });
@@ -437,10 +898,10 @@ function AffiliateDashboard({ affiliate }: { affiliate: AffiliateRow }) {
   const handleShare = async () => {
     const shareData = {
       title: 'Join Parallel',
-      text: affiliate.promo_code
-        ? `Use code ${affiliate.promo_code} for ${affiliate.subscription_discount_pct}% off your first month on Parallel!`
+      text: profile.promo_code
+        ? `Use code ${profile.promo_code} for ${profile.subscription_discount_pct}% off your first month on Parallel!`
         : 'Join Parallel — real compatibility, real matches.',
-      url: trackedLink ?? 'https://getparallel.vip',
+      url: profile.affiliate_link ?? 'https://getparallel.vip',
     };
     try {
       if (navigator.share) await navigator.share(shareData);
@@ -449,219 +910,219 @@ function AffiliateDashboard({ affiliate }: { affiliate: AffiliateRow }) {
   };
 
   return (
-    <div className="pt-16 max-w-lg mx-auto px-5 pb-8">
+    <div className="pt-14 max-w-lg mx-auto">
 
-      {/* ── Hero: referral count ── */}
-      <div className="text-center pt-8 pb-2">
-        <div
-          className="text-8xl font-medium leading-none mb-2 transition-colors duration-500"
-          style={{ color: hex.accent }}
-        >
-          {conversions}
-        </div>
-        <div className="text-xs uppercase tracking-widest text-gray-500">members referred</div>
-        {Number(affiliate.total_paid_lifetime) > 0 && (
-          <div className="text-sm text-gray-400 mt-1">
-            ${Number(affiliate.total_paid_lifetime).toFixed(2)} earned total
-          </div>
-        )}
-      </div>
-
-      {/* ── Progress bar ── */}
-      <div className="mt-6">
-        <div className="flex justify-between items-baseline mb-2">
-          <div className="text-sm font-medium text-gray-900">{challenge.text}</div>
-          {challenge.to && (
-            <div className="text-xs text-gray-500">{conversions} / {challenge.to}</div>
-          )}
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${progressPct}%`, background: hex.accent }}
-          />
-        </div>
-        <div className="flex justify-between mt-2">
-          {MILESTONES.map(m => (
-            <div key={m} className="text-center">
-              <div
-                className="w-1.5 h-1.5 rounded-full mx-auto mb-1 transition-colors duration-300"
-                style={{ background: conversions >= m ? hex.accent : '#E8E4DE' }}
-              />
-              <div
-                className="text-[10px] transition-colors duration-300"
-                style={{ color: conversions >= m ? '#888780' : '#D3D1C7' }}
-              >
-                {m}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Share section ── */}
-      <div className="mt-8">
-        <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
-          {nudge}
-        </div>
-
-        {trackedLink ? (
-          <>
-            <div className="flex gap-3 mb-3">
-              <button
-                onClick={handleCopyLink}
-                className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-              >
-                {copiedLink
-                  ? <><Check size={16} aria-hidden="true" />Copied!</>
-                  : <><Copy size={16} aria-hidden="true" />Copy link</>
-                }
-              </button>
-              <button
-                onClick={handleShare}
-                className="flex-1 text-white px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                style={{ background: hex.btn }}
-              >
-                <Share2 size={16} aria-hidden="true" />
-                Share
-              </button>
-            </div>
-            <div className="text-center text-xs text-gray-300 font-mono break-all mb-4">
-              {trackedLink}
-            </div>
-          </>
-        ) : (
-          <div className="bg-white border border-gray-100 rounded-2xl p-4 text-sm text-gray-500 text-center mb-4">
-            Your tracked link is being set up — check back soon.
-          </div>
-        )}
-
-        {affiliate.promo_code && (
+      {/* ── Tab bar ── */}
+      <div className="flex border-b border-gray-100 sticky top-14 bg-parallel-cream z-10">
+        {(['overview', 'earnings', 'payouts'] as DashboardTab[]).map(t => (
           <button
-            onClick={handleCopyCode}
-            className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3.5 hover:bg-gray-50 transition-colors"
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 py-3 text-sm font-medium capitalize transition-colors ${
+              tab === t
+                ? 'text-gray-900 border-b-2 border-[#7B5EA7]'
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
           >
-            <div className="flex items-center gap-2.5">
-              <Tag size={14} className="text-gray-400 flex-shrink-0" />
-              <span className="text-xs text-gray-500 mr-1">Promo code</span>
-              <span className="font-mono text-sm font-semibold text-gray-900">{affiliate.promo_code}</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
-              {copiedCode
-                ? <><Check size={13} />Copied</>
-                : <><Copy size={13} />Copy</>
-              }
-            </div>
+            {t === 'payouts' && !profile.bank_account_connected
+              ? <span className="flex items-center justify-center gap-1.5">
+                  Payouts <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                </span>
+              : t
+            }
           </button>
-        )}
+        ))}
       </div>
 
-      {/* ── Tier ladder ── */}
-      <div className="mt-8">
-        <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Affiliate tiers</div>
-        <div className="border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100 bg-white">
-          {TIERS.map((t, i) => {
-            const isCurrent = affiliate.tier === t.id;
-            const isPast = tierOrder[affiliate.tier] > i;
-            const isActive = isCurrent || isPast;
-            const tHex = TIER_HEX[t.id];
-            return (
+      <div className="px-5">
+
+        {/* ── Overview tab ── */}
+        {tab === 'overview' && (
+          <div className="pb-8">
+
+            {/* Hero */}
+            <div className="text-center pt-8 pb-2">
               <div
-                key={t.id}
-                className="flex items-center gap-3 px-4 py-3"
-                style={{ opacity: isActive ? 1 : 0.35 }}
+                className="text-8xl font-medium leading-none mb-2 transition-colors duration-500"
+                style={{ color: hex.accent }}
               >
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
-                  style={{
-                    background: isActive ? tHex.dotBg : '#F1EFE8',
-                    color: isActive ? tHex.dotText : '#B4B2A9',
-                  }}
-                >
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900">{t.label}</div>
-                  <div className="text-xs text-gray-500 truncate">{t.requirement} · {t.commission}</div>
-                </div>
-                <div className="text-sm font-medium w-5 text-right flex-shrink-0" style={{ color: isActive ? tHex.accent : '#D3D1C7' }}>
-                  {isPast ? '✓' : isCurrent ? '→' : ''}
-                </div>
+                {conversions}
               </div>
-            );
-          })}
-        </div>
-      </div>
+              <div className="text-xs uppercase tracking-widest text-gray-500">members referred</div>
+              {Number(profile.total_paid_lifetime) > 0 && (
+                <div className="text-sm text-gray-400 mt-1">
+                  ${Number(profile.total_paid_lifetime).toFixed(2)} earned total
+                </div>
+              )}
+            </div>
 
-      {/* ── Recent referrals ── */}
-      <div className="mt-8">
-        <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Recent referrals</div>
-        {attributions.length === 0 ? (
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center">
-            <Users size={20} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No referrals yet — share your link or promo code to get started!</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {attributions.map(attr => {
-              const statusInfo = COMMISSION_STATUS_LABELS[attr.commission_status] ?? { label: attr.commission_status, color: 'text-gray-500' };
-              return (
-                <div key={attr.id} className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3 gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {attr.attribution_method === 'promo_code'
-                      ? <Tag size={14} className="text-[#7B5EA7] flex-shrink-0" />
-                      : <Link2 size={14} className="text-gray-400 flex-shrink-0" />
-                    }
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900">
-                        {attr.attribution_method === 'promo_code' ? 'Promo code' : 'Tracked link'}
-                        {attr.promo_code_used ? ` · ${attr.promo_code_used}` : ''}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(attr.signed_up_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
+            {/* Progress bar */}
+            <div className="mt-6">
+              <div className="flex justify-between items-baseline mb-2">
+                <div className="text-sm font-medium text-gray-900">{challenge.text}</div>
+                {challenge.to && (
+                  <div className="text-xs text-gray-500">{conversions} / {challenge.to}</div>
+                )}
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${progressPct}%`, background: hex.accent }}
+                />
+              </div>
+              <div className="flex justify-between mt-2">
+                {MILESTONES.map(m => (
+                  <div key={m} className="text-center">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full mx-auto mb-1 transition-colors duration-300"
+                      style={{ background: conversions >= m ? hex.accent : '#E8E4DE' }}
+                    />
+                    <div
+                      className="text-[10px] transition-colors duration-300"
+                      style={{ color: conversions >= m ? '#888780' : '#D3D1C7' }}
+                    >
+                      {m}
                     </div>
                   </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className={`text-xs font-medium ${statusInfo.color}`}>{statusInfo.label}</p>
-                    <p className="text-sm font-bold text-gray-900 tabular-nums">
-                      {Number(attr.commission_amount) > 0
-                        ? `$${Number(attr.commission_amount).toFixed(2)}`
-                        : '—'
+                ))}
+              </div>
+            </div>
+
+            {/* At a glance */}
+            <div className="mt-8 grid grid-cols-3 gap-2">
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
+                <p className="text-xs text-gray-400 mb-1">Commission</p>
+                <p className="text-base font-bold tabular-nums" style={{ color: hex.accent }}>
+                  {profile.commission_rate_pct}%
+                </p>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
+                <p className="text-xs text-gray-400 mb-1">Your discount</p>
+                <p className="text-base font-bold tabular-nums text-gray-900">
+                  {profile.subscription_discount_pct}% off
+                </p>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
+                <p className="text-xs text-gray-400 mb-1">Attribution</p>
+                <p className="text-base font-bold tabular-nums text-gray-900">
+                  {profile.program.attribution_window_days}d
+                </p>
+              </div>
+            </div>
+
+            {/* Share section */}
+            <div className="mt-8">
+              <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
+                {nudge}
+              </div>
+
+              {profile.affiliate_link ? (
+                <>
+                  <div className="flex gap-3 mb-3">
+                    <button
+                      onClick={handleCopyLink}
+                      className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                    >
+                      {copiedLink
+                        ? <><Check size={16} aria-hidden="true" />Copied!</>
+                        : <><Copy size={16} aria-hidden="true" />Copy link</>
                       }
-                    </p>
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="flex-1 text-white px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      style={{ background: hex.btn }}
+                    >
+                      <Share2 size={16} aria-hidden="true" />
+                      Share
+                    </button>
                   </div>
+                  <div className="text-center text-xs text-gray-300 font-mono break-all mb-4">
+                    {profile.affiliate_link}
+                  </div>
+                </>
+              ) : (
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 text-sm text-gray-500 text-center mb-4">
+                  Your tracked link is being set up — check back soon.
                 </div>
-              );
-            })}
+              )}
+
+              {profile.promo_code && (
+                <button
+                  onClick={handleCopyCode}
+                  className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3.5 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Tag size={14} className="text-gray-400 flex-shrink-0" />
+                    <span className="text-xs text-gray-500 mr-1">Promo code</span>
+                    <span className="font-mono text-sm font-semibold text-gray-900">{profile.promo_code}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
+                    {copiedCode
+                      ? <><Check size={13} />Copied</>
+                      : <><Copy size={13} />Copy</>
+                    }
+                  </div>
+                </button>
+              )}
+            </div>
+
+            {/* Tier ladder */}
+            <div className="mt-8">
+              <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Affiliate tiers</div>
+              <div className="border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100 bg-white">
+                {TIERS.map((t, i) => {
+                  const isCurrent = profile.tier === t.id;
+                  const isPast = tierOrder[profile.tier] > i;
+                  const isActive = isCurrent || isPast;
+                  const tHex = TIER_HEX[t.id];
+                  return (
+                    <div
+                      key={t.id}
+                      className="flex items-center gap-3 px-4 py-3"
+                      style={{ opacity: isActive ? 1 : 0.35 }}
+                    >
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+                        style={{
+                          background: isActive ? tHex.dotBg : '#F1EFE8',
+                          color: isActive ? tHex.dotText : '#B4B2A9',
+                        }}
+                      >
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900">{t.label}</div>
+                        <div className="text-xs text-gray-500 truncate">{t.requirement} · {t.commission}</div>
+                      </div>
+                      <div className="text-sm font-medium w-5 text-right flex-shrink-0" style={{ color: isActive ? tHex.accent : '#D3D1C7' }}>
+                        {isPast ? '✓' : isCurrent ? '→' : ''}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Earnings tab ── */}
+        {tab === 'earnings' && (
+          <div className="pt-5">
+            <EarningsTab />
+          </div>
+        )}
+
+        {/* ── Payouts tab ── */}
+        {tab === 'payouts' && (
+          <div className="pt-5">
+            <PayoutsTab
+              profile={profile}
+              onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+            />
           </div>
         )}
       </div>
-
-      {/* ── Payout history ── */}
-      {payouts.length > 0 && (
-        <div className="mt-8">
-          <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Payout history</div>
-          <div className="space-y-2">
-            {payouts.map(p => (
-              <div key={p.id} className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {new Date(p.period_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    {' – '}
-                    {new Date(p.period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </p>
-                  <p className="text-xs text-gray-400 capitalize">{p.mercury_status.replace('_', ' ')}</p>
-                </div>
-                <span className="text-sm font-bold text-gray-900 tabular-nums">
-                  ${p.net_amount.toFixed(2)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
@@ -674,34 +1135,22 @@ interface Props {
 
 export function AffiliatePortalView({ onBack }: Props) {
   const [state, setState] = useState<PortalState>('loading');
-  const [affiliate, setAffiliate] = useState<AffiliateRow | null>(null);
+  const [profile, setProfile] = useState<AffiliateProfile | null>(null);
   const [application, setApplication] = useState<AffiliateApplication | null>(null);
 
   useEffect(() => {
     async function load() {
+      // Try profile API first — succeeds only for active affiliates
+      const { data: prof } = await affiliateApi<AffiliateProfile>('profile');
+      if (prof) {
+        setProfile(prof);
+        setState('dashboard');
+        return;
+      }
+
+      // Not yet an affiliate — check for pending application
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setState('apply'); return; }
-
-      const selectFields = 'id,display_name,tier,status,commission_rate,subscription_discount_pct,promo_code,tracked_link_slug,total_conversions,total_paid_lifetime';
-
-      // Query by user_id first; if the affiliates row was created before user_id was set,
-      // fall back to email so the dashboard isn't gated on user_id being populated.
-      const { data: affById } = await supabase
-        .from('affiliates')
-        .select(selectFields)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      let aff: AffiliateRow | null = affById;
-
-      if (!aff && user.email) {
-        const { data: affByEmail } = await supabase
-          .from('affiliates')
-          .select(selectFields)
-          .eq('email', user.email)
-          .maybeSingle();
-        aff = affByEmail;
-      }
 
       const { data: apps } = await supabase
         .from('affiliate_applications')
@@ -710,11 +1159,8 @@ export function AffiliatePortalView({ onBack }: Props) {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      if (aff && (aff.status === 'active' || aff.status === 'approved')) {
-        setAffiliate(aff);
-        setState('dashboard');
-      } else if (apps && apps.length > 0) {
-        setApplication(apps[0]);
+      if (apps && apps.length > 0) {
+        setApplication(apps[0] as AffiliateApplication);
         setState('submitted');
       } else {
         setState('apply');
@@ -723,8 +1169,8 @@ export function AffiliatePortalView({ onBack }: Props) {
     load();
   }, []);
 
-  const hex = affiliate ? TIER_HEX[affiliate.tier] : null;
-  const tierLabel = affiliate ? TIERS.find(t => t.id === affiliate.tier)?.label : null;
+  const hex = profile ? TIER_HEX[profile.tier] : null;
+  const tierLabel = profile ? TIERS.find(t => t.id === profile.tier)?.label : null;
 
   return (
     <div className="min-h-screen bg-parallel-cream">
@@ -769,8 +1215,8 @@ export function AffiliatePortalView({ onBack }: Props) {
             <PendingScreen app={application} />
           </div>
         )}
-        {state === 'dashboard' && affiliate && (
-          <AffiliateDashboard affiliate={affiliate} />
+        {state === 'dashboard' && profile && (
+          <AffiliateDashboard profile={profile} />
         )}
       </div>
     </div>
