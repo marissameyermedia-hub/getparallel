@@ -1,4 +1,5 @@
-// Parallel — misc edge function v32
+// Parallel — misc edge function v33
+// v33: PAYMENT.SALE.COMPLETED — use commission_status 'releasable' (enum fix; 'approved' doesn't exist).
 // v32: Launch at $149 — plan validation accepts annual_standard alongside
 //      annual_founding (backwards compat); receipt email shows $149.00.
 // v31: /paypal/config now returns annualDiscount20/25/30 plan IDs so
@@ -796,7 +797,7 @@ async function handlePaypalWebhook(req: Request): Promise<Response> {
                 const commission = parseFloat((amountNum * aff.commission_rate).toFixed(2));
                 await admin.from("affiliate_attributions").update({
                   commission_amount: commission,
-                  commission_status: "approved",
+                  commission_status: "releasable",
                   subscribed_at: now,
                 }).eq("id", attr.id);
                 await admin.from("affiliates").update({
@@ -1143,7 +1144,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "32" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "33" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);

@@ -1,4 +1,5 @@
-// Parallel — affiliate edge function v7
+// Parallel — affiliate edge function v8
+// v8: Fix commission_status enum — use 'releasable' (not 'approved') and 'released' (not 'paid')
 // v7: /admin/approve — fall back to get_user_id_by_email RPC when profiles row missing
 // v6: promo code format [NAME][DISCOUNTPCT] — e.g. MARISSA20
 // v5: POST /admin/approve — creates affiliates row, sends approval email
@@ -264,10 +265,10 @@ Deno.serve(async (req: Request) => {
     let q = admin
       .from("affiliate_attributions")
       .select("id, affiliate_id, commission_amount, commission_status, signed_up_at, affiliates(id, display_name, email, mercury_recipient_id, total_paid_lifetime)")
-      .eq("commission_status", "approved");
+      .eq("commission_status", "releasable");
     if (body.affiliate_id) q = q.eq("affiliate_id", body.affiliate_id);
     const { data: attrs, error: attrsErr } = await q;
-    if (attrsErr) return json({ error: "db error" }, 500);
+    if (attrsErr) return json({ error: "db error", detail: attrsErr.message }, 500);
 
     // Group by affiliate
     const byAffiliate: Record<string, {
@@ -322,9 +323,9 @@ Deno.serve(async (req: Request) => {
       .from("affiliate_attributions")
       .select("id, commission_amount, signed_up_at")
       .eq("affiliate_id", affiliate_id)
-      .eq("commission_status", "approved");
-    if (attrsErr) return json({ error: "db error" }, 500);
-    if (!attrs || attrs.length === 0) return json({ error: "no approved commissions to pay" }, 400);
+      .eq("commission_status", "releasable");
+    if (attrsErr) return json({ error: "db error", detail: attrsErr.message }, 500);
+    if (!attrs || attrs.length === 0) return json({ error: "no releasable commissions to pay" }, 400);
 
     const gross = parseFloat(attrs.reduce((s, a) => s + Number(a.commission_amount ?? 0), 0).toFixed(2));
     if (gross <= 0) return json({ error: "gross amount is zero" }, 400);
@@ -388,10 +389,10 @@ Deno.serve(async (req: Request) => {
       paid_at: now,
     }).eq("id", payout.id);
 
-    // Mark attributions paid
+    // Mark attributions released
     const attrIds = attrs.map((a: any) => a.id);
     await admin.from("affiliate_attributions").update({
-      commission_status: "paid",
+      commission_status: "released",
       payout_id: payout.id,
     }).in("id", attrIds);
 
