@@ -1,4 +1,6 @@
-// Parallel — email edge function v10
+// Parallel — email edge function v12
+// v12: Add /affiliate-approved — sends approval email with promo code + tracked link.
+// v11: Add /affiliate-application — sends application received confirmation.
 // v10: Add /cancellation-confirm — sends cancellation confirmation email.
 // v9: /date-confirmed handler.
 //     - Background: White #FFFFFF (Cream per tailwind.config.ts brand tokens)
@@ -501,6 +503,49 @@ function tplAffiliateAppReceived(name: string | null, tier: string) {
   };
 }
 
+function tplAffiliateApproved(opts: { name: string | null; tier: string; promoCode: string; trackedLinkSlug: string; commissionRate: number }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const tierLabels: Record<string, string> = { seeds: "Seeds", voices: "Voices", anchors: "Anchors" };
+  const tierLabel = tierLabels[opts.tier] ?? opts.tier;
+  const commissionPct = Math.round(opts.commissionRate * 100);
+  const trackedLink = `https://getparallel.vip/r/${opts.trackedLinkSlug}`;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 16px 0;">You've been approved as a <strong>${tierLabel}</strong> affiliate — welcome to the Parallel Affiliate Army!</p>`,
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;background:${B.linen};border-radius:10px;padding:16px 20px;width:100%;">`,
+    `  <tr><td style="font-size:13px;color:${B.stone};padding-bottom:8px;">Your promo code</td></tr>`,
+    `  <tr><td style="font-size:22px;font-weight:700;color:${B.purple};letter-spacing:0.05em;font-family:monospace;">${opts.promoCode}</td></tr>`,
+    `  <tr><td style="font-size:13px;color:${B.stone};padding-top:12px;padding-bottom:4px;">Your tracked link</td></tr>`,
+    `  <tr><td style="font-size:13px;color:${B.void_};word-break:break-all;">${trackedLink}</td></tr>`,
+    `  <tr><td style="font-size:13px;color:${B.stone};padding-top:12px;padding-bottom:4px;">Your commission</td></tr>`,
+    `  <tr><td style="font-size:13px;font-weight:600;color:${B.void_};">${commissionPct}% of every membership you refer</td></tr>`,
+    `</table>`,
+    `<p style="margin:0 0 12px 0;font-size:14px;color:${B.stone};">Share your link or promo code on social. Every time someone signs up and subscribes, you earn ${commissionPct}%. Open the app to see your full dashboard.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "You're in — welcome to the Affiliate Army!", body, ctaUrl: APP_URL, ctaLabel: "Open your dashboard" });
+  return {
+    subject: "You're approved — Parallel Affiliate Army",
+    html,
+    text: `${greeting}\n\nYou're approved as a ${tierLabel} affiliate!\n\nPromo code: ${opts.promoCode}\nTracked link: ${trackedLink}\nCommission: ${commissionPct}% per referral\n\nOpen the app to see your full dashboard.\n\n${APP_URL}`,
+  };
+}
+
+async function handleAffiliateApproved(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email         = String(body.email         ?? "").trim();
+  const tier          = String(body.tier          ?? "").trim();
+  const promoCode     = String(body.promo_code    ?? "").trim();
+  const trackedLinkSlug = String(body.tracked_link_slug ?? "").trim();
+  const commissionRate  = typeof body.commission_rate === "number" ? body.commission_rate : 0.10;
+  const name          = body.name ? String(body.name).trim() : null;
+  if (!email || !tier || !promoCode || !trackedLinkSlug) return json({ error: "email, tier, promo_code, tracked_link_slug required" }, 400);
+  const tpl = tplAffiliateApproved({ name, tier, promoCode, trackedLinkSlug, commissionRate });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 async function handleAffiliateAppReceived(req: Request) {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
@@ -537,7 +582,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "10" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "12" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -549,6 +594,7 @@ Deno.serve(async (req) => {
     if (path === "/date-confirmed"        && req.method === "POST") return await handleDateConfirmed(req);
     if (path === "/cancellation-confirm"  && req.method === "POST") return await handleCancellationConfirm(req);
     if (path === "/affiliate-application" && req.method === "POST") return await handleAffiliateAppReceived(req);
+    if (path === "/affiliate-approved"    && req.method === "POST") return await handleAffiliateApproved(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);

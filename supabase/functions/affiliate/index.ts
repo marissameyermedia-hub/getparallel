@@ -1,4 +1,5 @@
-// Parallel — affiliate edge function v4
+// Parallel — affiliate edge function v5
+// v5: POST /admin/approve — creates affiliates row, sends approval email
 // v4: POST /apply — submit application + fire confirmation email
 // v3: (deployed as Supabase version 3 — same code as v2 with bug fixes)
 // v2: POST /payout/preview, POST /payout/release — admin Mercury ACH payouts
@@ -399,6 +400,104 @@ Deno.serve(async (req: Request) => {
 
     console.log("[affiliate/payout] released:", { affiliate_id, gross, attributions: attrIds.length, mercuryTxId });
     return json({ ok: true, payout_id: payout.id, gross_amount: gross, mercury_transaction_id: mercuryTxId, attribution_count: attrIds.length });
+  }
+
+  // ── POST /admin/approve ──────────────────────────────────────────
+  // Creates the affiliates row, sends approval email, updates application status.
+  if (req.method === "POST" && endpoint === "admin" && segments[1] === "approve") {
+    if (!(await checkIsAdmin(req))) return json({ error: "forbidden" }, 403);
+
+    let body: any;
+    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+    const { application_id } = body;
+    if (!application_id) return json({ error: "application_id required" }, 400);
+
+    const { data: app, error: appErr } = await admin
+      .from("affiliate_applications")
+      .select("*")
+      .eq("id", application_id)
+      .maybeSingle();
+    if (appErr || !app) return json({ error: "application not found" }, 404);
+
+    // Idempotent — if affiliate row already exists just update the application
+    const { data: existing } = await admin
+      .from("affiliates")
+      .select("id, promo_code, tracked_link_slug")
+      .eq("email", app.email)
+      .maybeSingle();
+    if (existing) {
+      await admin.from("affiliate_applications")
+        .update({ audit_status: "approved", reviewed_at: new Date().toISOString() })
+        .eq("id", application_id);
+      return json({ ok: true, affiliate: existing, already_existed: true });
+    }
+
+    // Look up user profile for display_name + user_id
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id, name")
+      .eq("email", app.email)
+      .maybeSingle();
+    const userId = profile?.id ?? null;
+    const displayName: string = (profile?.name as string | null) ?? app.email.split("@")[0];
+
+    // Generate unique promo code and slug via DB functions
+    const { data: promoCode, error: promoErr } = await admin.rpc("generate_promo_code", { p_display_name: displayName });
+    if (promoErr) return json({ error: "failed to generate promo code: " + promoErr.message }, 500);
+    const { data: slug, error: slugErr } = await admin.rpc("generate_tracked_link_slug");
+    if (slugErr) return json({ error: "failed to generate slug: " + slugErr.message }, 500);
+
+    const TIER_CONFIG: Record<string, { commission_rate: number; subscription_discount_pct: number }> = {
+      seeds:   { commission_rate: 0.10, subscription_discount_pct: 20 },
+      voices:  { commission_rate: 0.15, subscription_discount_pct: 25 },
+      anchors: { commission_rate: 0.20, subscription_discount_pct: 30 },
+    };
+    const tierCfg = TIER_CONFIG[app.tier_applied_for] ?? TIER_CONFIG.seeds;
+
+    const now = new Date().toISOString();
+    const { data: newAffiliate, error: createErr } = await admin
+      .from("affiliates")
+      .insert({
+        user_id:                  userId,
+        display_name:             displayName,
+        email:                    app.email,
+        tier:                     app.tier_applied_for,
+        status:                   "active",
+        commission_rate:          tierCfg.commission_rate,
+        subscription_discount_pct: tierCfg.subscription_discount_pct,
+        promo_code:               promoCode,
+        tracked_link_slug:        slug,
+        total_conversions:        0,
+        total_paid_lifetime:      0,
+        approved_at:              now,
+      })
+      .select()
+      .single();
+    if (createErr) return json({ error: createErr.message }, 500);
+
+    await admin.from("affiliate_applications")
+      .update({ audit_status: "approved", reviewed_at: now })
+      .eq("id", application_id);
+
+    // Send approval email — fire and forget
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-approved`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        email:              app.email,
+        name:               displayName,
+        tier:               app.tier_applied_for,
+        promo_code:         promoCode,
+        tracked_link_slug:  slug,
+        commission_rate:    tierCfg.commission_rate,
+      }),
+    }).catch((err) => console.error("[affiliate/admin/approve] email failed:", err));
+
+    return json({ ok: true, affiliate: newAffiliate });
   }
 
   // ── POST /apply ─────────────────────────────────────────────────
