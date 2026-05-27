@@ -1,4 +1,5 @@
-// Parallel — email edge function v13
+// Parallel — email edge function v14
+// v14: Add /affiliate-commission-clawback and /affiliate-payout-released.
 // v13: Affiliate approval email CTA links to ?view=affiliate-portal deep link.
 // v12: Add /affiliate-approved — sends approval email with promo code + tracked link.
 // v11: Add /affiliate-application — sends application received confirmation.
@@ -578,12 +579,76 @@ async function handleDateConfirmed(req: Request) {
   return json({ ok: true });
 }
 
+function tplAffiliateCommissionClawback(opts: { name: string | null; commission_amount: number }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const amount = `$${opts.commission_amount.toFixed(2)}`;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We're writing to let you know that a commission of <strong>${amount}</strong> has been reversed on your affiliate account.</p>`,
+    `<p style="margin:0 0 12px 0;">This happens when the subscriber who signed up using your promo code or link cancels or disputes their payment within the 30-day clawback window. The commission has been removed from your pending balance.</p>`,
+    `<p style="margin:0 0 4px 0;">If you have questions, reply to this email and we'll look into it.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "A commission has been reversed", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "View your dashboard" });
+  return {
+    subject: "Affiliate commission reversal — Parallel",
+    html,
+    text: `${greeting}\n\nA commission of ${amount} has been reversed on your affiliate account.\n\nThis happens when a subscriber cancels within the 30-day clawback window.\n\nQuestions? Reply to this email.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+function tplAffiliatePayoutReleased(opts: { name: string | null; amount: number }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const amountStr = `$${opts.amount.toFixed(2)}`;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 16px 0;">Good news — your affiliate payout of <strong>${amountStr}</strong> has been sent via ACH to the bank account on file.</p>`,
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;background:${B.linen};border-radius:10px;padding:16px 20px;width:100%;">`,
+    `  <tr><td style="font-size:14px;color:${B.stone};padding-bottom:4px;">Amount</td><td style="font-size:14px;font-weight:600;color:${B.void_};text-align:right;">${amountStr}</td></tr>`,
+    `  <tr><td style="font-size:14px;color:${B.stone};padding-top:8px;padding-bottom:4px;">Method</td><td style="font-size:14px;color:${B.void_};text-align:right;">ACH bank transfer</td></tr>`,
+    `  <tr><td style="font-size:14px;color:${B.stone};padding-top:8px;">Arrival</td><td style="font-size:14px;color:${B.void_};text-align:right;">3–5 business days</td></tr>`,
+    `</table>`,
+    `<p style="margin:0 0 4px 0;font-size:13px;color:${B.stone};">Open your affiliate dashboard to see your updated payout history.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: `Your payout of ${amountStr} is on the way`, body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "View your dashboard" });
+  return {
+    subject: `Your Parallel affiliate payout of ${amountStr} has been sent`,
+    html,
+    text: `${greeting}\n\nYour affiliate payout of ${amountStr} has been sent via ACH.\n\nExpected arrival: 3–5 business days.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateCommissionClawback(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  const commission_amount = typeof body.commission_amount === "number" ? body.commission_amount : 0;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliateCommissionClawback({ name, commission_amount });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+async function handleAffiliatePayoutReleased(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  const amount = typeof body.amount === "number" ? body.amount : 0;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliatePayoutReleased({ name, amount });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "13" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "14" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -594,8 +659,10 @@ Deno.serve(async (req) => {
     if (path === "/resume-confirm"     && req.method === "POST") return await handleResumeConfirm(req);
     if (path === "/date-confirmed"        && req.method === "POST") return await handleDateConfirmed(req);
     if (path === "/cancellation-confirm"  && req.method === "POST") return await handleCancellationConfirm(req);
-    if (path === "/affiliate-application" && req.method === "POST") return await handleAffiliateAppReceived(req);
-    if (path === "/affiliate-approved"    && req.method === "POST") return await handleAffiliateApproved(req);
+    if (path === "/affiliate-application"        && req.method === "POST") return await handleAffiliateAppReceived(req);
+    if (path === "/affiliate-approved"           && req.method === "POST") return await handleAffiliateApproved(req);
+    if (path === "/affiliate-commission-clawback" && req.method === "POST") return await handleAffiliateCommissionClawback(req);
+    if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);
