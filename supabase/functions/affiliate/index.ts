@@ -1,4 +1,6 @@
-// Parallel — affiliate edge function v5
+// Parallel — affiliate edge function v7
+// v7: /admin/approve — fall back to get_user_id_by_email RPC when profiles row missing
+// v6: promo code format [NAME][DISCOUNTPCT] — e.g. MARISSA20
 // v5: POST /admin/approve — creates affiliates row, sends approval email
 // v4: POST /apply — submit application + fire confirmation email
 // v3: (deployed as Supabase version 3 — same code as v2 with bug fixes)
@@ -438,7 +440,14 @@ Deno.serve(async (req: Request) => {
       .select("id, name")
       .eq("email", app.email)
       .maybeSingle();
-    const userId = profile?.id ?? null;
+
+    // If no profile row, fall back to auth.users (e.g. accounts created without profile)
+    let userId: string | null = profile?.id ?? null;
+    if (!userId) {
+      const { data: authUserId } = await admin.rpc("get_user_id_by_email", { p_email: app.email });
+      if (authUserId) userId = authUserId as string;
+    }
+
     const displayName: string = (profile?.name as string | null) ?? app.email.split("@")[0];
 
     const TIER_CONFIG: Record<string, { commission_rate: number; subscription_discount_pct: number }> = {
