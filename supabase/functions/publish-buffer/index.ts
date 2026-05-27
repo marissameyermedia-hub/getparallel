@@ -29,15 +29,13 @@ async function getConnectedChannels(apiKey: string) {
         id
         service
         name
-        handle
-        isConnected
       }
     }
   `);
   if (data.errors) throw new Error(`Buffer channels error: ${JSON.stringify(data.errors)}`);
   const all: any[] = data.data?.channels ?? [];
   return all.filter(c =>
-    c.isConnected && TARGET_SERVICES.includes((c.service ?? '').toLowerCase())
+    TARGET_SERVICES.includes((c.service ?? '').toLowerCase())
   );
 }
 
@@ -164,12 +162,12 @@ Deno.serve(async (req: Request) => {
         );
         results.push({
           service,
-          channel: ch.handle ?? ch.name,
+          channel: ch.name,
           post_id: postId,
           ...(service === 'instagram' && locationId ? { location_applied: true } : {}),
           ...(service === 'tiktok' && hasAudio ? { auto_music: true } : {}),
         });
-        console.log(`Buffer: posted to ${service} (${ch.handle ?? ch.name}) → ${postId}`);
+        console.log(`Buffer: posted to ${service} (${ch.name}) → ${postId}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         // If location/music caused rejection, retry without those attributes
@@ -177,13 +175,13 @@ Deno.serve(async (req: Request) => {
           try {
             console.log(`Buffer: retrying ${service} without service attributes`);
             const postId = await createPost(apiKey, ch.id, service, fullText, validUrls, null, false);
-            results.push({ service, channel: ch.handle ?? ch.name, post_id: postId });
+            results.push({ service, channel: ch.name, post_id: postId });
           } catch (retryErr) {
             const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            results.push({ service, channel: ch.handle ?? ch.name, error: retryMsg });
+            results.push({ service, channel: ch.name, error: retryMsg });
           }
         } else {
-          results.push({ service, channel: ch.handle ?? ch.name, error: msg });
+          results.push({ service, channel: ch.name, error: msg });
           console.error(`Buffer: failed ${service} — ${msg}`);
         }
       }
