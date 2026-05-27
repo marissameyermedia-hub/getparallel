@@ -168,10 +168,12 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
             label: 'subscribe',
           },
           createSubscription: (_data: any, actions: any) => {
-            // Pick the discounted plan at click time so we always read the
-            // latest affiliatePromoRef value even if the promo was applied
-            // after the buttons first rendered.
-            const discountPct = affiliatePromoRef.current?.subscription_discount_pct ?? 0;
+            // Pick the plan at click time so we read the latest affiliatePromoRef
+            // value even if the promo was applied after the buttons rendered.
+            // Affiliate discounts are priced off the post-launch $149 rate, so
+            // during founding the $79 plan already beats every discount — keep
+            // everyone on founding until launch.
+            const discountPct = PRE_LAUNCH ? 0 : (affiliatePromoRef.current?.subscription_discount_pct ?? 0);
             const planKey = discountPct === 30 ? 'annualDiscount30'
                           : discountPct === 25 ? 'annualDiscount25'
                           : discountPct === 20 ? 'annualDiscount20'
@@ -399,12 +401,21 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               </div>
             )}
             <div ref={buttonContainerRef} id="paypal-button-container" />
-            {affiliatePromo && affiliatePromo.subscription_discount_pct > 0 ? (
+            {affiliatePromo ? (
               <div className="flex items-center gap-2 mt-4 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
                 <Tag size={14} className="flex-shrink-0 text-green-600" />
                 <span>
-                  <span className="font-semibold">{affiliatePromo.subscription_discount_pct}% off</span> applied
-                  {affiliatePromo.display_name ? ` via ${affiliatePromo.display_name}` : ''}
+                  {!PRE_LAUNCH && affiliatePromo.subscription_discount_pct > 0 ? (
+                    <>
+                      <span className="font-semibold">{affiliatePromo.subscription_discount_pct}% off</span> applied
+                      {affiliatePromo.display_name ? ` via ${affiliatePromo.display_name}` : ''}
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-semibold">Promo code applied</span>
+                      {affiliatePromo.display_name ? ` — referred by ${affiliatePromo.display_name}` : ''}
+                    </>
+                  )}
                 </span>
               </div>
             ) : (
