@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { publicAnonKey } from '../../utils/supabase/info';
-import { MISC_FUNCTION_URL } from '../../utils/supabase/client';
+import { MISC_FUNCTION_URL, AFFILIATE_FUNCTION_URL } from '../../utils/supabase/client';
 import { PromoCodeInput } from "./PromoCodeInput";
 import { getAccessToken } from '../../utils/auth';
+
+interface AffiliatePromo {
+  affiliate_id: string;
+  display_name: string;
+  subscription_discount_pct: number;
+}
 
 interface PricingPageProps {
   onBack: () => void;
@@ -15,11 +21,23 @@ interface PricingPageProps {
   onNavigate?: (view: string) => void;
 }
 
+interface PayPalPlan {
+  planId: string;
+  price: string;
+  currency: string;
+  interval: string;
+  label: string;
+  trialDays?: number;
+}
+
 interface PayPalConfig {
   clientId: string;
   env: 'sandbox' | 'live';
   plans: {
-    annualFounding: { planId: string; price: string; currency: string; interval: string; label: string; trialDays?: number };
+    annualFounding: PayPalPlan;
+    annualDiscount20?: PayPalPlan;
+    annualDiscount25?: PayPalPlan;
+    annualDiscount30?: PayPalPlan;
   };
   annualPlanId?: string;
 }
@@ -77,6 +95,17 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [showDetails, setShowDetails] = useState(false);
+  const [affiliatePromo, setAffiliatePromo] = useState<AffiliatePromo | null>(() => {
+    // Restore from localStorage if the user already applied a code this session
+    try {
+      const id = localStorage.getItem('affiliate_id');
+      const code = localStorage.getItem('affiliate_promo_code');
+      const pct = localStorage.getItem('affiliate_discount_pct');
+      if (id && code) return { affiliate_id: id, display_name: '', subscription_discount_pct: pct ? parseInt(pct, 10) : 0 };
+    } catch { /* noop */ }
+    return null;
+  });
+  const affiliatePromoRef = useRef<AffiliatePromo | null>(affiliatePromo);
 
   const buttonContainerRef = useRef<HTMLDivElement | null>(null);
   const buttonsInstanceRef = useRef<any>(null);
@@ -84,6 +113,9 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   const trialEndDate = getTrialEndDate();
   const firstChargeDate = getFirstChargeDate();
   const nextRenewalDate = getNextRenewalDate();
+
+  // Keep ref in sync so the PayPal onApprove closure can read the latest value
+  useEffect(() => { affiliatePromoRef.current = affiliatePromo; }, [affiliatePromo]);
 
   // Load PayPal config once on mount
   useEffect(() => {
@@ -122,13 +154,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
         const paypal = await loadPayPalSdk(config.clientId);
         if (cancelled || !buttonContainerRef.current) return;
 
-        const planId = config.plans.annualFounding?.planId || config.annualPlanId || 'P-7PT724153F712010ANIFAOHA';
-
-        if (!planId) {
-          setError('This plan is not available right now. Please contact support.');
-          return;
-        }
-
         if (buttonsInstanceRef.current) {
           try { buttonsInstanceRef.current.close(); } catch {}
           buttonsInstanceRef.current = null;
@@ -143,6 +168,20 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
             label: 'subscribe',
           },
           createSubscription: (_data: any, actions: any) => {
+            // Pick the plan at click time so we read the latest affiliatePromoRef
+            // value even if the promo was applied after the buttons rendered.
+            // Affiliate discounts are priced off the post-launch $149 rate, so
+            // during founding the $79 plan already beats every discount — keep
+            // everyone on founding until launch.
+            const discountPct = PRE_LAUNCH ? 0 : (affiliatePromoRef.current?.subscription_discount_pct ?? 0);
+            const planKey = discountPct === 30 ? 'annualDiscount30'
+                          : discountPct === 25 ? 'annualDiscount25'
+                          : discountPct === 20 ? 'annualDiscount20'
+                          : 'annualFounding';
+            const planId = config.plans[planKey]?.planId
+                        || config.plans.annualFounding?.planId
+                        || config.annualPlanId
+                        || 'P-7PT724153F712010ANIFAOHA';
             return actions.subscription.create({ plan_id: planId });
           },
           onApprove: async (data: any) => {
@@ -170,6 +209,37 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               const body = await res.json();
               if (!res.ok) {
                 throw new Error(body.error || 'Could not confirm your subscription. Please contact support.');
+              }
+              // Fire affiliate attribution if promo code was used or cookie tracked
+              const promo = affiliatePromoRef.current;
+              const cookieAffId = (() => { try { return localStorage.getItem('affiliate_id'); } catch { return null; } })();
+              const affId = promo?.affiliate_id || cookieAffId;
+              const promoCode = (() => { try { return localStorage.getItem('affiliate_promo_code'); } catch { return null; } })();
+              if (affId) {
+                fetch(`${AFFILIATE_FUNCTION_URL}/attribute`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'apikey': publicAnonKey,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    affiliate_id: affId,
+                    method: promoCode ? 'promo_code' : 'cookie',
+                    ...(promoCode ? { promo_code_used: promoCode } : {}),
+                    ...((() => { try { return localStorage.getItem('affiliate_click_id'); } catch { return null; } })()
+                      ? { click_id: localStorage.getItem('affiliate_click_id') }
+                      : {}),
+                  }),
+                }).then(() => {
+                  try {
+                    localStorage.removeItem('affiliate_id');
+                    localStorage.removeItem('affiliate_click_id');
+                    localStorage.removeItem('affiliate_slug');
+                    localStorage.removeItem('affiliate_promo_code');
+                    localStorage.removeItem('affiliate_discount_pct');
+                  } catch { /* noop */ }
+                }).catch(() => { /* non-critical */ });
               }
               onCheckout('annual');
             } catch (e: any) {
@@ -331,7 +401,31 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               </div>
             )}
             <div ref={buttonContainerRef} id="paypal-button-container" />
-            <PromoCodeInput />
+            {affiliatePromo ? (
+              <div className="flex items-center gap-2 mt-4 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
+                <Tag size={14} className="flex-shrink-0 text-green-600" />
+                <span>
+                  {!PRE_LAUNCH && affiliatePromo.subscription_discount_pct > 0 ? (
+                    <>
+                      <span className="font-semibold">{affiliatePromo.subscription_discount_pct}% off</span> applied
+                      {affiliatePromo.display_name ? ` via ${affiliatePromo.display_name}` : ''}
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-semibold">Promo code applied</span>
+                      {affiliatePromo.display_name ? ` — referred by ${affiliatePromo.display_name}` : ''}
+                    </>
+                  )}
+                </span>
+              </div>
+            ) : (
+              <PromoCodeInput
+                onAffiliateApplied={(promo) => {
+                  setAffiliatePromo(promo);
+                  affiliatePromoRef.current = promo;
+                }}
+              />
+            )}
           </motion.div>
         )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, FileText, ShieldCheck, CreditCard, Bell, Lock, HelpCircle, FileText as FileTextAlt, LogOut, ChevronRight, Pause, Trash2, Eye, BarChart2, Heart, ExternalLink, Settings2 } from 'lucide-react';
+import { User, FileText, ShieldCheck, CreditCard, Bell, Lock, HelpCircle, FileText as FileTextAlt, LogOut, ChevronRight, Pause, Trash2, Eye, BarChart2, Heart, ExternalLink, Settings2, Users } from 'lucide-react';
 import { MatchWeightsScreen } from './MatchWeightsScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -661,6 +661,21 @@ export function AccountPage({
               </button>
             </div>
           )}
+
+          {/* Affiliate Program */}
+          <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-4 mb-6">
+            <button
+              onClick={() => onNavigate?.('affiliate-portal')}
+              className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <Users size={20} className="text-[#7B5EA7]" />
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium">Affiliate Program</p>
+                <p className="text-xs text-gray-500">Earn commission for every member you refer</p>
+              </div>
+              <ChevronRight size={16} className="text-gray-400" />
+            </button>
+          </div>
 
           {/* Support & Legal */}
           <div className="bg-parallel-cream border-2 border-gray-200 rounded-3xl p-6 mb-6">

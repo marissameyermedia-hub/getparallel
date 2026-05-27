@@ -1,4 +1,11 @@
-// Parallel — misc edge function v28
+// Parallel — misc edge function v31
+// v31: /paypal/config now returns annualDiscount20/25/30 plan IDs so
+//      PricingPage can route affiliate promo subscribers to the correct
+//      discounted PayPal plan. Sandbox falls back to the founding plan.
+// v30: PAYMENT.SALE.COMPLETED releases affiliate commission — finds pending
+//      attribution for the subscriber, sets commission_amount + status=approved,
+//      marks subscribed_at, increments affiliates.total_conversions.
+// v29: Persona webhook handles affiliate reference IDs (aff_{application_id})
 // v28: Re-engagement SMS: fix cron to 5pm UTC (10am PDT), add "Reply STOP to
 //      unsubscribe" to copy. Inbound SMS catch-all now auto-replies instead
 //      of silently ignoring non-keyword replies.
@@ -367,9 +374,24 @@ async function handlePersonaWebhook(req: Request) {
     else if (typeof attrs["failure-reason"] === "string") declineReason = String(attrs["failure-reason"]).slice(0, 500);
   }
   const admin = adminClient();
+  const now = new Date().toISOString();
+
+  // Affiliate applications use reference IDs prefixed with "aff_"
+  if (referenceId.startsWith("aff_")) {
+    const appId = referenceId.slice(4);
+    const personaStatus = verified ? "approved" : (status === "declined" ? "declined" : "pending");
+    const { error: affErr } = await admin.from("affiliate_applications").update({
+      persona_inquiry_id: inquiryId,
+      persona_status: personaStatus,
+      persona_completed_at: verified ? now : null,
+    }).eq("id", appId);
+    if (affErr) { console.error("[persona/webhook] affiliate update failed:", affErr); return json({ error: "db error" }, 500); }
+    console.log("[persona/webhook] affiliate application updated:", { appId, personaStatus, verified });
+    return json({ ok: true, status, verified, affiliate: true });
+  }
+
   const { data: profile } = await admin.from("profiles").select("id").eq("id", referenceId).maybeSingle();
   if (!profile) { console.warn("[persona/webhook] unknown reference_id:", referenceId); return json({ ok: true, ignored: "unknown_user" }); }
-  const now = new Date().toISOString();
   const { error: ivErr } = await admin.from("identity_verifications").upsert({ user_id: referenceId, persona_inquiry_id: inquiryId, reference_id: referenceId, status, decline_reason: declineReason, persona_payload: body, verified_at: verified ? now : null, updated_at: now }, { onConflict: "user_id" });
   if (ivErr) { console.error("[persona/webhook] upsert failed:", ivErr); return json({ error: "db error" }, 500); }
   if (verified) await admin.from("profiles").update({ is_verified: true, updated_at: now }).eq("id", referenceId);
@@ -497,6 +519,12 @@ async function handleNotificationsPut(req: Request) {
 
 async function handlePaypalConfig(req: Request) {
   const annualPlanId = PAYPAL_PLAN_ANNUAL || "P-7PT724153F712010ANIFAOHA";
+  // Discounted plans for affiliate promo subscribers — live IDs only.
+  // Sandbox falls back to the founding plan so testing is unaffected.
+  const sandboxFallback = annualPlanId;
+  const plan20 = IS_LIVE ? "P-2WW2378748769882DNILPOYQ" : sandboxFallback;
+  const plan25 = IS_LIVE ? "P-46751643HY100592XNILPRBQ" : sandboxFallback;
+  const plan30 = IS_LIVE ? "P-0MM8954177110162FNILPSIA" : sandboxFallback;
   const clientIdPrefix = PAYPAL_CLIENT_ID ? PAYPAL_CLIENT_ID.slice(0, 6) : "EMPTY";
   try {
     const admin = adminClient();
@@ -519,7 +547,12 @@ async function handlePaypalConfig(req: Request) {
   return json({
     clientId: PAYPAL_CLIENT_ID,
     env: IS_LIVE ? "live" : "sandbox",
-    plans: { annualFounding: { planId: annualPlanId, price: "79.00", currency: "USD", interval: "year", label: "Annual — 5-day free trial", trialDays: 5 } },
+    plans: {
+      annualFounding:   { planId: annualPlanId, price: "79.00",  currency: "USD", interval: "year", label: "Annual — 5-day free trial", trialDays: 5 },
+      annualDiscount20: { planId: plan20,        price: "119.20", currency: "USD", interval: "year", label: "Annual 20% off ($149 → $119.20)" },
+      annualDiscount25: { planId: plan25,        price: "111.75", currency: "USD", interval: "year", label: "Annual 25% off ($149 → $111.75)" },
+      annualDiscount30: { planId: plan30,        price: "104.30", currency: "USD", interval: "year", label: "Annual 30% off ($149 → $104.30)" },
+    },
     annualPlanId,
   });
 }
@@ -741,6 +774,37 @@ async function handlePaypalWebhook(req: Request): Promise<Response> {
             currency,
             paid_at: now,
           }).catch((e: any) => console.error("[paypal/webhook PAYMENT.SALE.COMPLETED] payment_events insert:", e));
+
+          // Release affiliate commission for this subscriber if one is pending
+          try {
+            const { data: attr } = await admin
+              .from("affiliate_attributions")
+              .select("id, affiliate_id")
+              .eq("referred_user_id", subRow.user_id)
+              .eq("commission_status", "pending")
+              .maybeSingle();
+            if (attr) {
+              const { data: aff } = await admin
+                .from("affiliates")
+                .select("id, commission_rate, total_conversions")
+                .eq("id", attr.affiliate_id)
+                .maybeSingle();
+              if (aff) {
+                const commission = parseFloat((amountNum * aff.commission_rate).toFixed(2));
+                await admin.from("affiliate_attributions").update({
+                  commission_amount: commission,
+                  commission_status: "approved",
+                  subscribed_at: now,
+                }).eq("id", attr.id);
+                await admin.from("affiliates").update({
+                  total_conversions: (aff.total_conversions ?? 0) + 1,
+                }).eq("id", aff.id);
+                console.log("[paypal/webhook] affiliate commission approved:", { attrId: attr.id, affId: aff.id, commission });
+              }
+            }
+          } catch (affErr: any) {
+            console.error("[paypal/webhook] affiliate commission release error:", affErr);
+          }
         }
       }
       break;
@@ -1076,7 +1140,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "28" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "31" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
