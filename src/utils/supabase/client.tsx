@@ -172,6 +172,9 @@ export const ADMIN_FUNCTION_URL = `${supabaseUrl}/functions/v1/admin-api`;
 // Release-city edge function — flips a city from ready → live.
 export const RELEASE_CITY_FUNCTION_URL = `${supabaseUrl}/functions/v1/release-city`;
 
+// Affiliate function — tracked link clicks, signup attribution, promo code validation.
+export const AFFILIATE_FUNCTION_URL = `${supabaseUrl}/functions/v1/affiliate`;
+
 export function getAuthHeaders(accessToken: string) {
   return {
     'Authorization': `Bearer ${accessToken}`,

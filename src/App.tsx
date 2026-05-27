@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 // Guard so the email-confirmed welcome endpoint fires at most once per page load
 // even if both the pre-session and in-session code paths both trigger.
 let emailConfirmedNotified = false;
-import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from './utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL, AFFILIATE_FUNCTION_URL } from './utils/supabase/client';
 import { WaitlistPage } from './components/WaitlistPage';
 import { publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
@@ -171,6 +171,18 @@ function App() {
     } catch { return null; }
   });
 
+  // Captured from /r/{slug} tracked links. Stored in localStorage so it survives
+  // SignIn → AccountCreation. Cleared after attribution is recorded.
+  const [affiliateSlug, setAffiliateSlug] = useState<string | null>(() => {
+    try { return localStorage.getItem('affiliate_slug'); } catch { return null; }
+  });
+  const [affiliateClickId, setAffiliateClickId] = useState<string | null>(() => {
+    try { return localStorage.getItem('affiliate_click_id'); } catch { return null; }
+  });
+  const [affiliateId, setAffiliateId] = useState<string | null>(() => {
+    try { return localStorage.getItem('affiliate_id'); } catch { return null; }
+  });
+
   const answerSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Data fetchers ─────────────────────────────────────────────
@@ -325,6 +337,36 @@ function App() {
         params.delete('from');
         const newSearch = params.toString();
         window.history.replaceState({}, '', window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash);
+      }
+
+      // Detect affiliate tracked link /r/{slug} — capture slug, fire click event,
+      // store IDs in localStorage, then rewrite URL to / so signup flow loads cleanly.
+      const affiliateLinkMatch = window.location.pathname.match(/^\/r\/([A-Za-z0-9_-]+)/);
+      if (affiliateLinkMatch) {
+        const slug = affiliateLinkMatch[1];
+        window.history.replaceState({}, '', '/');
+        try {
+          localStorage.setItem('affiliate_slug', slug);
+          setAffiliateSlug(slug);
+          // Fire click tracking — don't block init on this
+          fetch(`${AFFILIATE_FUNCTION_URL}/click`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': publicAnonKey },
+            body: JSON.stringify({ slug }),
+          }).then(async (r) => {
+            if (r.ok) {
+              const d = await r.json();
+              if (d.click_id) {
+                try { localStorage.setItem('affiliate_click_id', d.click_id); } catch { /* noop */ }
+                setAffiliateClickId(d.click_id);
+              }
+              if (d.affiliate_id) {
+                try { localStorage.setItem('affiliate_id', d.affiliate_id); } catch { /* noop */ }
+                setAffiliateId(d.affiliate_id);
+              }
+            }
+          }).catch(() => { /* non-critical */ });
+        } catch { /* localStorage unavailable */ }
       }
       
       try {
@@ -1429,6 +1471,32 @@ function App() {
                 }
                 if (userData.emailConfirmed === false) {
                   setEmailConfirmed(false);
+                }
+
+                // Fire-and-forget: record affiliate attribution if the user arrived
+                // via a tracked link or cookie from a previous session.
+                const storedAffId = affiliateId || ((() => { try { return localStorage.getItem('affiliate_id'); } catch { return null; } })());
+                const storedClickId = affiliateClickId || ((() => { try { return localStorage.getItem('affiliate_click_id'); } catch { return null; } })());
+                if (storedAffId) {
+                  fetch(`${AFFILIATE_FUNCTION_URL}/attribute`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${userData.accessToken}`,
+                      'apikey': publicAnonKey,
+                    },
+                    body: JSON.stringify({ affiliate_id: storedAffId, click_id: storedClickId, method: 'cookie' }),
+                  }).then(() => {
+                    // Clear affiliate tracking data now that attribution is recorded
+                    try {
+                      localStorage.removeItem('affiliate_slug');
+                      localStorage.removeItem('affiliate_click_id');
+                      localStorage.removeItem('affiliate_id');
+                    } catch { /* noop */ }
+                    setAffiliateSlug(null);
+                    setAffiliateClickId(null);
+                    setAffiliateId(null);
+                  }).catch(() => { /* non-critical */ });
                 }
 
                 // Fire-and-forget: send the initial verification email so the
