@@ -43,6 +43,7 @@ import { AppFeedbackBottomSheet } from './components/AppFeedbackBottomSheet';
 import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
+import { AffiliatePortalView } from './components/AffiliatePortalView';
 import { AdminDashboard } from './components/safety/AdminDashboard';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
@@ -79,7 +80,7 @@ function App() {
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
     | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
     | 'verification' | 'invite-friends' | 'reset-password'
-    | 'preview-profile' | 'waitlist' | 'admin'
+    | 'preview-profile' | 'waitlist' | 'admin' | 'affiliate-portal'
   >(() => window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -1853,6 +1854,11 @@ function App() {
         {/* ── Invite friends ── */}
         {currentView === 'invite-friends' && (
           <InviteView onBack={() => setCurrentView('account')} />
+        )}
+
+        {/* ── Affiliate portal ── */}
+        {currentView === 'affiliate-portal' && (
+          <AffiliatePortalView onBack={() => setCurrentView('account')} />
         )}
 
         {/* ── App footer — legal/policy/account views only — inside scroll area ── */}
