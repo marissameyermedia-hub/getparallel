@@ -1,4 +1,7 @@
-// Parallel — misc edge function v30
+// Parallel — misc edge function v31
+// v31: /paypal/config now returns annualDiscount20/25/30 plan IDs so
+//      PricingPage can route affiliate promo subscribers to the correct
+//      discounted PayPal plan. Sandbox falls back to the founding plan.
 // v30: PAYMENT.SALE.COMPLETED releases affiliate commission — finds pending
 //      attribution for the subscriber, sets commission_amount + status=approved,
 //      marks subscribed_at, increments affiliates.total_conversions.
@@ -516,6 +519,12 @@ async function handleNotificationsPut(req: Request) {
 
 async function handlePaypalConfig(req: Request) {
   const annualPlanId = PAYPAL_PLAN_ANNUAL || "P-7PT724153F712010ANIFAOHA";
+  // Discounted plans for affiliate promo subscribers — live IDs only.
+  // Sandbox falls back to the founding plan so testing is unaffected.
+  const sandboxFallback = annualPlanId;
+  const plan20 = IS_LIVE ? "P-2WW2378748769882DNILPOYQ" : sandboxFallback;
+  const plan25 = IS_LIVE ? "P-46751643HY100592XNILPRBQ" : sandboxFallback;
+  const plan30 = IS_LIVE ? "P-0MM8954177110162FNILPSIA" : sandboxFallback;
   const clientIdPrefix = PAYPAL_CLIENT_ID ? PAYPAL_CLIENT_ID.slice(0, 6) : "EMPTY";
   try {
     const admin = adminClient();
@@ -538,7 +547,12 @@ async function handlePaypalConfig(req: Request) {
   return json({
     clientId: PAYPAL_CLIENT_ID,
     env: IS_LIVE ? "live" : "sandbox",
-    plans: { annualFounding: { planId: annualPlanId, price: "79.00", currency: "USD", interval: "year", label: "Annual — 5-day free trial", trialDays: 5 } },
+    plans: {
+      annualFounding:   { planId: annualPlanId, price: "79.00",  currency: "USD", interval: "year", label: "Annual — 5-day free trial", trialDays: 5 },
+      annualDiscount20: { planId: plan20,        price: "119.20", currency: "USD", interval: "year", label: "Annual 20% off ($149 → $119.20)" },
+      annualDiscount25: { planId: plan25,        price: "111.75", currency: "USD", interval: "year", label: "Annual 25% off ($149 → $111.75)" },
+      annualDiscount30: { planId: plan30,        price: "104.30", currency: "USD", interval: "year", label: "Annual 30% off ($149 → $104.30)" },
+    },
     annualPlanId,
   });
 }
@@ -1126,7 +1140,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "28" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "31" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);

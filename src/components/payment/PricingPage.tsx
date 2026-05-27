@@ -21,11 +21,23 @@ interface PricingPageProps {
   onNavigate?: (view: string) => void;
 }
 
+interface PayPalPlan {
+  planId: string;
+  price: string;
+  currency: string;
+  interval: string;
+  label: string;
+  trialDays?: number;
+}
+
 interface PayPalConfig {
   clientId: string;
   env: 'sandbox' | 'live';
   plans: {
-    annualFounding: { planId: string; price: string; currency: string; interval: string; label: string; trialDays?: number };
+    annualFounding: PayPalPlan;
+    annualDiscount20?: PayPalPlan;
+    annualDiscount25?: PayPalPlan;
+    annualDiscount30?: PayPalPlan;
   };
   annualPlanId?: string;
 }
@@ -142,13 +154,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
         const paypal = await loadPayPalSdk(config.clientId);
         if (cancelled || !buttonContainerRef.current) return;
 
-        const planId = config.plans.annualFounding?.planId || config.annualPlanId || 'P-7PT724153F712010ANIFAOHA';
-
-        if (!planId) {
-          setError('This plan is not available right now. Please contact support.');
-          return;
-        }
-
         if (buttonsInstanceRef.current) {
           try { buttonsInstanceRef.current.close(); } catch {}
           buttonsInstanceRef.current = null;
@@ -163,6 +168,18 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
             label: 'subscribe',
           },
           createSubscription: (_data: any, actions: any) => {
+            // Pick the discounted plan at click time so we always read the
+            // latest affiliatePromoRef value even if the promo was applied
+            // after the buttons first rendered.
+            const discountPct = affiliatePromoRef.current?.subscription_discount_pct ?? 0;
+            const planKey = discountPct === 30 ? 'annualDiscount30'
+                          : discountPct === 25 ? 'annualDiscount25'
+                          : discountPct === 20 ? 'annualDiscount20'
+                          : 'annualFounding';
+            const planId = config.plans[planKey]?.planId
+                        || config.plans.annualFounding?.planId
+                        || config.annualPlanId
+                        || 'P-7PT724153F712010ANIFAOHA';
             return actions.subscription.create({ plan_id: planId });
           },
           onApprove: async (data: any) => {
