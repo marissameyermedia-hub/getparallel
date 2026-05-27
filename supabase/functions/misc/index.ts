@@ -1,4 +1,5 @@
-// Parallel — misc edge function v33
+// Parallel — misc edge function v34
+// v34: PAYMENT.SALE.COMPLETED — set clawback_deadline = payment_time + 30 days (was missing).
 // v33: PAYMENT.SALE.COMPLETED — use commission_status 'releasable' (enum fix; 'approved' doesn't exist).
 // v32: Launch at $149 — plan validation accepts annual_standard alongside
 //      annual_founding (backwards compat); receipt email shows $149.00.
@@ -795,10 +796,12 @@ async function handlePaypalWebhook(req: Request): Promise<Response> {
                 .maybeSingle();
               if (aff) {
                 const commission = parseFloat((amountNum * aff.commission_rate).toFixed(2));
+                const clawbackDeadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
                 await admin.from("affiliate_attributions").update({
                   commission_amount: commission,
                   commission_status: "releasable",
                   subscribed_at: now,
+                  clawback_deadline: clawbackDeadline,
                 }).eq("id", attr.id);
                 await admin.from("affiliates").update({
                   total_conversions: (aff.total_conversions ?? 0) + 1,
@@ -1144,7 +1147,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "33" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "34" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
