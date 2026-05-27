@@ -1,4 +1,5 @@
-// Parallel — affiliate edge function v3
+// Parallel — affiliate edge function v4
+// v4: POST /apply — submit application + fire confirmation email
 // v3: (deployed as Supabase version 3 — same code as v2 with bug fixes)
 // v2: POST /payout/preview, POST /payout/release — admin Mercury ACH payouts
 // v1: POST /click, POST /attribute, GET /validate/:slug, POST /validate-promo
@@ -398,6 +399,62 @@ Deno.serve(async (req: Request) => {
 
     console.log("[affiliate/payout] released:", { affiliate_id, gross, attributions: attrIds.length, mercuryTxId });
     return json({ ok: true, payout_id: payout.id, gross_amount: gross, mercury_transaction_id: mercuryTxId, attribution_count: attrIds.length });
+  }
+
+  // ── POST /apply ─────────────────────────────────────────────────
+  // Submit an affiliate application. Inserts the row and fires a
+  // confirmation email. Returns the inserted application.
+  if (req.method === "POST" && endpoint === "apply") {
+    const user = await getUserFromAuth(req);
+    if (!user?.email) return json({ error: "Unauthorized" }, 401);
+
+    let body: any;
+    try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+    const { tier, instagram, tiktok, youtube, why_parallel, audience_description, phase1_city_audience } = body;
+    if (!tier) return json({ error: "tier required" }, 400);
+
+    const { data: existing } = await admin
+      .from("affiliate_applications")
+      .select("id")
+      .eq("email", user.email)
+      .maybeSingle();
+    if (existing) return json({ error: "Application already submitted" }, 409);
+
+    const { data: app, error: insertErr } = await admin
+      .from("affiliate_applications")
+      .insert({
+        email: user.email,
+        tier_applied_for: tier,
+        instagram_handle: instagram ? String(instagram).replace("@", "") : null,
+        tiktok_handle:    tiktok    ? String(tiktok).replace("@", "")    : null,
+        youtube_handle:   youtube   ? String(youtube).replace("@", "")   : null,
+        why_parallel:         why_parallel         || null,
+        audience_description: audience_description || null,
+        phase1_city_audience: phase1_city_audience ?? false,
+      })
+      .select()
+      .single();
+    if (insertErr) return json({ error: insertErr.message }, 500);
+
+    // Fetch display name for the email greeting (best-effort)
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    // Fire confirmation email — don't fail the request if it errors
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-application`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({ email: user.email, name: profile?.name ?? null, tier }),
+    }).catch((err) => console.error("[affiliate/apply] email send failed:", err));
+
+    return json({ ok: true, application: app });
   }
 
   return json({ error: "not found" }, 404);

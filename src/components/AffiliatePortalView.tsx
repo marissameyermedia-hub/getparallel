@@ -96,6 +96,7 @@ const TIER_COLORS: Record<AffiliateTier, { bg: string; text: string; border: str
 };
 
 const TRACKED_LINK_BASE = 'https://getparallel.vip/r';
+const AFFILIATE_FN_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/affiliate`;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -131,7 +132,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
 
 // ── Apply Form ────────────────────────────────────────────────────────────────
 
-function ApplyForm({ onSubmitted }: { onSubmitted: () => void }) {
+function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) => void }) {
   const [step, setStep] = useState<1 | 2>(1);
   const [tier, setTier] = useState<AffiliateTier | null>(null);
   const [instagram, setInstagram] = useState('');
@@ -148,20 +149,28 @@ function ApplyForm({ onSubmitted }: { onSubmitted: () => void }) {
     setIsSubmitting(true);
     setError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) throw new Error('Not signed in');
-      const { error: err } = await supabase.from('affiliate_applications').insert({
-        email: user.email,
-        tier_applied_for: tier,
-        instagram_handle: instagram.replace('@', '') || null,
-        tiktok_handle: tiktok.replace('@', '') || null,
-        youtube_handle: youtube.replace('@', '') || null,
-        why_parallel: whyParallel || null,
-        audience_description: audienceDesc || null,
-        phase1_city_audience: phase1City,
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not signed in');
+      const res = await fetch(`${AFFILIATE_FN_URL}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '',
+        },
+        body: JSON.stringify({
+          tier,
+          instagram: instagram || null,
+          tiktok:    tiktok    || null,
+          youtube:   youtube   || null,
+          why_parallel:         whyParallel || null,
+          audience_description: audienceDesc || null,
+          phase1_city_audience: phase1City,
+        }),
       });
-      if (err) throw err;
-      onSubmitted();
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'Something went wrong. Please try again.');
+      onSubmitted(data.application as AffiliateApplication);
     } catch (e: any) {
       setError(e.message ?? 'Something went wrong. Please try again.');
     }
@@ -551,7 +560,7 @@ export function AffiliatePortalView({ onBack }: Props) {
             {[...Array(3)].map((_, i) => <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse" />)}
           </div>
         )}
-        {state === 'apply' && <ApplyForm onSubmitted={() => setState('submitted')} />}
+        {state === 'apply' && <ApplyForm onSubmitted={(app) => { setApplication(app); setState('submitted'); }} />}
         {state === 'submitted' && application && <PendingScreen app={application} />}
         {state === 'dashboard' && affiliate && <AffiliateDashboard affiliate={affiliate} />}
       </div>

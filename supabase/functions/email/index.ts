@@ -483,6 +483,37 @@ async function handleCancellationConfirm(req: Request) {
   return json({ ok: true });
 }
 
+function tplAffiliateAppReceived(name: string | null, tier: string) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const tierLabels: Record<string, string> = { seeds: "Seeds", voices: "Voices", anchors: "Anchors" };
+  const tierLabel = tierLabels[tier] ?? tier;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We received your application to join the Parallel Affiliate Army as a <strong>${tierLabel}</strong> affiliate. Thanks for applying!</p>`,
+    `<p style="margin:0 0 12px 0;">Our team reviews every application personally. We'll be in touch within a few business days with a decision.</p>`,
+    `<p style="margin:0 0 4px 0;">In the meantime, you can check your application status anytime by opening the Affiliate Program section in your account.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Application received", body, ctaUrl: APP_URL, ctaLabel: "Open Parallel" });
+  return {
+    subject: "We got your Affiliate Army application",
+    html,
+    text: `${greeting}\n\nWe received your application to join the Parallel Affiliate Army (${tierLabel} tier).\n\nWe'll review it and be in touch within a few business days.\n\n${APP_URL}`,
+  };
+}
+
+async function handleAffiliateAppReceived(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const tier  = String(body.tier  ?? "").trim();
+  const name  = body.name ? String(body.name).trim() : null;
+  if (!email || !tier) return json({ error: "email and tier required" }, 400);
+  const tpl = tplAffiliateAppReceived(name, tier);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 async function handleDateConfirmed(req: Request) {
   const { user, serviceRole } = await getCaller(req);
   let body: any;
@@ -517,6 +548,7 @@ Deno.serve(async (req) => {
     if (path === "/resume-confirm"     && req.method === "POST") return await handleResumeConfirm(req);
     if (path === "/date-confirmed"        && req.method === "POST") return await handleDateConfirmed(req);
     if (path === "/cancellation-confirm"  && req.method === "POST") return await handleCancellationConfirm(req);
+    if (path === "/affiliate-application" && req.method === "POST") return await handleAffiliateAppReceived(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);
