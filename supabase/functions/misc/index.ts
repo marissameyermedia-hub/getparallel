@@ -1,4 +1,6 @@
-// Parallel — misc edge function v31
+// Parallel — misc edge function v32
+// v32: Launch at $149 — plan validation accepts annual_standard alongside
+//      annual_founding (backwards compat); receipt email shows $149.00.
 // v31: /paypal/config now returns annualDiscount20/25/30 plan IDs so
 //      PricingPage can route affiliate promo subscribers to the correct
 //      discounted PayPal plan. Sandbox falls back to the founding plan.
@@ -548,7 +550,8 @@ async function handlePaypalConfig(req: Request) {
     clientId: PAYPAL_CLIENT_ID,
     env: IS_LIVE ? "live" : "sandbox",
     plans: {
-      annualFounding:   { planId: annualPlanId, price: "79.00",  currency: "USD", interval: "year", label: "Annual — 5-day free trial", trialDays: 5 },
+      annualStandard:   { planId: annualPlanId, price: "149.00", currency: "USD", interval: "year", label: "Annual — 5-day free trial", trialDays: 5 },
+      annualFounding:   { planId: annualPlanId, price: "149.00", currency: "USD", interval: "year", label: "Annual — 5-day free trial", trialDays: 5 },
       annualDiscount20: { planId: plan20,        price: "119.20", currency: "USD", interval: "year", label: "Annual 20% off ($149 → $119.20)" },
       annualDiscount25: { planId: plan25,        price: "111.75", currency: "USD", interval: "year", label: "Annual 25% off ($149 → $111.75)" },
       annualDiscount30: { planId: plan30,        price: "104.30", currency: "USD", interval: "year", label: "Annual 30% off ($149 → $104.30)" },
@@ -565,7 +568,7 @@ async function handlePaypalRecordSub(req: Request) {
   const subscriptionId = String(body.subscriptionId ?? "").trim();
   const plan = String(body.plan ?? "").trim();
   if (!subscriptionId) return json({ error: "Missing subscriptionId" }, 400);
-  if (!(["annual_founding"].includes(plan))) return json({ error: "Invalid plan" }, 400);
+  if (!(["annual_founding", "annual_standard"].includes(plan))) return json({ error: "Invalid plan" }, 400);
   const now = new Date();
   const periodEnd = new Date(now);
   periodEnd.setFullYear(periodEnd.getFullYear() + 1);
@@ -589,7 +592,7 @@ async function handlePaypalRecordSub(req: Request) {
   } catch (refErr) {
     console.warn("[paypal/record-subscription] referral conversion non-fatal:", refErr);
   }
-  const amount = "$79.00";
+  const amount = "$149.00";
   fetch(`${SUPABASE_URL}/functions/v1/email/subscription-receipt`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
@@ -1140,7 +1143,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "31" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "32" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);

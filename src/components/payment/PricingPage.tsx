@@ -89,7 +89,7 @@ function loadPayPalSdk(clientId: string): Promise<any> {
   return w.__paypal_sdk_promise__;
 }
 
-const BASE_PRICE = 79;
+const BASE_PRICE = 149;
 
 export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavigate }: PricingPageProps) {
   const [config, setConfig] = useState<PayPalConfig | null>(null);
@@ -116,8 +116,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   const firstChargeDate = getFirstChargeDate();
   const nextRenewalDate = getNextRenewalDate();
 
-  // Compute discounted price — only applied post-launch (PRE_LAUNCH founding rate already beats all discounts)
-  const discountPct = (!PRE_LAUNCH && affiliatePromo?.subscription_discount_pct) ? affiliatePromo.subscription_discount_pct : 0;
+  const discountPct = affiliatePromo?.subscription_discount_pct ?? 0;
   const annualPrice = discountPct > 0
     ? parseFloat((BASE_PRICE * (1 - discountPct / 100)).toFixed(2))
     : BASE_PRICE;
@@ -179,17 +178,14 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
             label: 'subscribe',
           },
           createSubscription: (_data: any, actions: any) => {
-            // Pick the plan at click time so we read the latest affiliatePromoRef
-            // value even if the promo was applied after the buttons rendered.
-            // Affiliate discounts are priced off the post-launch $149 rate, so
-            // during founding the $79 plan already beats every discount — keep
-            // everyone on founding until launch.
-            const discountPct = PRE_LAUNCH ? 0 : (affiliatePromoRef.current?.subscription_discount_pct ?? 0);
-            const planKey = discountPct === 30 ? 'annualDiscount30'
-                          : discountPct === 25 ? 'annualDiscount25'
-                          : discountPct === 20 ? 'annualDiscount20'
-                          : 'annualFounding';
-            const planId = config.plans[planKey]?.planId
+            // Pick the plan at click time so we always read the latest promo state,
+            // even if the user applied a code after the buttons first rendered.
+            const pct = affiliatePromoRef.current?.subscription_discount_pct ?? 0;
+            const planKey = pct === 30 ? 'annualDiscount30'
+                          : pct === 25 ? 'annualDiscount25'
+                          : pct === 20 ? 'annualDiscount20'
+                          : 'annualStandard';
+            const planId = (config.plans as any)[planKey]?.planId
                         || config.plans.annualFounding?.planId
                         || config.annualPlanId
                         || 'P-7PT724153F712010ANIFAOHA';
@@ -214,7 +210,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                 },
                 body: JSON.stringify({
                   subscriptionId: data.subscriptionID,
-                  plan: 'annual_founding',
+                  plan: 'annual_standard',
                 }),
               });
               const body = await res.json();
@@ -351,11 +347,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full">
                 5-day free trial
               </span>
-              {PRE_LAUNCH && (
-                <span className="text-xs font-medium bg-white/15 text-parallel-cream px-2 py-0.5 rounded-full">
-                  ⭐ Founding Rate
-                </span>
-              )}
             </div>
 
             {/* Today + annual price */}
@@ -439,7 +430,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                       <p className="text-xs text-green-700">Save ${savings.toFixed(2)} ({discountPct}% off)</p>
                     )}
                     {!hasDiscount && (
-                      <p className="text-xs text-green-700">You're on our best founding rate</p>
+                      <p className="text-xs text-green-700">Attribution tracked — welcome!</p>
                     )}
                   </div>
                   {hasDiscount && (
@@ -548,23 +539,11 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                       <span className="font-medium text-gray-900">Account Settings → Cancel Subscription</span>.
                       Cancelling takes effect at the end of your current billing period.
                     </p>
-                    {PRE_LAUNCH && (
-                      <p>
-                        After launch, annual renews at <strong>$149/year</strong>.
-                      </p>
-                    )}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-        )}
-
-        {/* Founding footnote */}
-        {PRE_LAUNCH && !loadingConfig && (
-          <p className="text-center text-[11px] text-gray-500 leading-relaxed mb-5">
-            Founding pricing is available for a limited time. After launch, annual renews at $149/year.
-          </p>
         )}
 
         {/* Legal + security */}
@@ -640,5 +619,3 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   );
 }
 
-// PRE_LAUNCH flag — same pattern as MatchesView
-const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH === 'true';
