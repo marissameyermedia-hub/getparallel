@@ -89,6 +89,8 @@ function loadPayPalSdk(clientId: string): Promise<any> {
   return w.__paypal_sdk_promise__;
 }
 
+const BASE_PRICE = 79;
+
 export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavigate }: PricingPageProps) {
   const [config, setConfig] = useState<PayPalConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -113,6 +115,15 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   const trialEndDate = getTrialEndDate();
   const firstChargeDate = getFirstChargeDate();
   const nextRenewalDate = getNextRenewalDate();
+
+  // Compute discounted price — only applied post-launch (PRE_LAUNCH founding rate already beats all discounts)
+  const discountPct = (!PRE_LAUNCH && affiliatePromo?.subscription_discount_pct) ? affiliatePromo.subscription_discount_pct : 0;
+  const annualPrice = discountPct > 0
+    ? parseFloat((BASE_PRICE * (1 - discountPct / 100)).toFixed(2))
+    : BASE_PRICE;
+  const savings = parseFloat((BASE_PRICE - annualPrice).toFixed(2));
+  const monthlyEquiv = parseFloat((annualPrice / 12).toFixed(2));
+  const hasDiscount = annualPrice < BASE_PRICE;
 
   // Keep ref in sync so the PayPal onApprove closure can read the latest value
   useEffect(() => { affiliatePromoRef.current = affiliatePromo; }, [affiliatePromo]);
@@ -347,26 +358,42 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               )}
             </div>
 
-            <div className="flex items-baseline justify-between mb-1">
-              <p className="text-xl font-bold">$0.00 today</p>
-              <p className="text-sm text-white/70">then $79 / year</p>
+            {/* Today + annual price */}
+            <div className="flex items-end justify-between mb-1">
+              <div>
+                <p className="text-3xl font-bold leading-none">$0.00</p>
+                <p className="text-xs text-white/60 mt-0.5">today — free for 5 days</p>
+              </div>
+              <div className="text-right">
+                {hasDiscount && (
+                  <p className="text-xs text-white/40 line-through">${BASE_PRICE}/yr</p>
+                )}
+                <p className="text-lg font-bold">${annualPrice}/yr</p>
+                {hasDiscount && (
+                  <p className="text-xs text-green-300 font-medium">you save ${savings}</p>
+                )}
+                {!hasDiscount && (
+                  <p className="text-xs text-white/50">${monthlyEquiv}/mo</p>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-white/60 mb-3">
-              Try free for 5 days — cancel anytime before {trialEndDate} and you won't be charged.
-            </p>
 
-            <div className="border-t border-white/20 pt-3 space-y-1">
+            <div className="border-t border-white/20 pt-3 mt-3 space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-white/80">
                 <Check size={12} className="flex-shrink-0" />
-                First charge of $79.00 on {firstChargeDate}
+                <span>First charge of <strong className="text-white">${annualPrice.toFixed(2)}</strong> on {firstChargeDate}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                <Check size={12} className="flex-shrink-0" />
+                <span>Cancel free anytime before {trialEndDate} — no charge</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                <Check size={12} className="flex-shrink-0" />
+                <span><strong className="text-white">${monthlyEquiv.toFixed(2)}/month</strong> — billed once a year</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-white/80">
                 <Check size={12} className="flex-shrink-0" />
                 Renews annually — cancel anytime
-              </div>
-              <div className="flex items-center gap-2 text-xs text-white/80">
-                <Check size={12} className="flex-shrink-0" />
-                $6.58 / month — billed once a year
               </div>
             </div>
           </div>
@@ -402,21 +429,29 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
             )}
             <div ref={buttonContainerRef} id="paypal-button-container" />
             {affiliatePromo ? (
-              <div className="flex items-center gap-2 mt-4 px-3 py-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
-                <Tag size={14} className="flex-shrink-0 text-green-600" />
-                <span>
-                  {!PRE_LAUNCH && affiliatePromo.subscription_discount_pct > 0 ? (
+              <div className="flex items-start gap-2 mt-4 px-3 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800">
+                <Tag size={14} className="flex-shrink-0 text-green-600 mt-0.5" />
+                <div>
+                  {hasDiscount ? (
                     <>
-                      <span className="font-semibold">{affiliatePromo.subscription_discount_pct}% off</span> applied
-                      {affiliatePromo.display_name ? ` via ${affiliatePromo.display_name}` : ''}
+                      <p className="font-semibold">
+                        {affiliatePromo.subscription_discount_pct}% off applied
+                        {affiliatePromo.display_name ? ` via ${affiliatePromo.display_name}` : ''}
+                      </p>
+                      <p className="text-xs text-green-700 mt-0.5">
+                        You'll pay <strong>${annualPrice.toFixed(2)}/year</strong> instead of ${BASE_PRICE} — saving you ${savings.toFixed(2)}
+                      </p>
                     </>
                   ) : (
                     <>
-                      <span className="font-semibold">Promo code applied</span>
-                      {affiliatePromo.display_name ? ` — referred by ${affiliatePromo.display_name}` : ''}
+                      <p className="font-semibold">Promo code applied</p>
+                      <p className="text-xs text-green-700 mt-0.5">
+                        {affiliatePromo.display_name ? `Referred by ${affiliatePromo.display_name} · ` : ''}
+                        You're already on our best founding member rate (${BASE_PRICE}/year)
+                      </p>
                     </>
                   )}
-                </span>
+                </div>
               </div>
             ) : (
               <PromoCodeInput
@@ -433,8 +468,11 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
         {!loadingConfig && (
           <p className="text-[11px] text-gray-500 text-center leading-relaxed mb-4">
             Free trial ends <span className="text-gray-700 font-medium">{trialEndDate}</span>. After that,{' '}
-            <span className="text-gray-700 font-medium">$79.00 USD</span> will be charged on{' '}
+            <span className="text-gray-700 font-medium">${annualPrice.toFixed(2)} USD</span> will be charged on{' '}
             <span className="text-gray-700 font-medium">{firstChargeDate}</span> and every year after until you cancel.
+            {hasDiscount && (
+              <> <span className="text-green-700 font-medium">({discountPct}% discount applied.)</span></>
+            )}
           </p>
         )}
 
@@ -463,7 +501,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                     <p>
                       Your 5-day free trial begins immediately. If you don't cancel before{' '}
                       <strong>{trialEndDate}</strong>, you'll be charged{' '}
-                      <strong>$79.00 USD</strong> on {firstChargeDate}.
+                      <strong>${annualPrice.toFixed(2)} USD</strong> on {firstChargeDate}.
                       Your subscription then auto-renews annually on{' '}
                       <strong>{nextRenewalDate}</strong> and each year after.
                     </p>
