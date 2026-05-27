@@ -14,7 +14,7 @@
  *     -H "apikey: <supabase_anon_key>" | jq .
  */
 
-const MERCURY_BASE = "https://sandbox.mercury.com/api/v1";
+const MERCURY_BASE = "https://api-sandbox.mercury.com/api/v1";
 
 const token = Deno.env.get("MERCURY_API_TOKEN_SANDBOX");
 if (!token) {
