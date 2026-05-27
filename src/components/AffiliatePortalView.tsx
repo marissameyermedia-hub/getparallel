@@ -1143,12 +1143,14 @@ export function AffiliatePortalView({ onBack }: Props) {
       // Try profile API first — succeeds only for active affiliates
       const { data: prof } = await affiliateApi<AffiliateProfile>('profile');
       if (prof) {
+        localStorage.setItem('parallel_is_affiliate', 'true');
         setProfile(prof);
         setState('dashboard');
         return;
       }
 
       // Not yet an affiliate — check for pending application
+      localStorage.removeItem('parallel_is_affiliate');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setState('apply'); return; }
 

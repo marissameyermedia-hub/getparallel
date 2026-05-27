@@ -621,7 +621,29 @@ function App() {
               toast.success('Email confirmed! Welcome to Parallel 🎉', { duration: 4000 });
             }
           } else {
-            setCurrentView('onboarding');
+            // Incomplete onboarding — but active affiliates skip the dating flow
+            const maybeAffiliate =
+              localStorage.getItem('parallel_is_affiliate') === 'true' ||
+              params.get('view') === 'affiliate-portal';
+            if (maybeAffiliate) {
+              try {
+                const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
+                  headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
+                });
+                if (r.ok) {
+                  localStorage.setItem('parallel_is_affiliate', 'true');
+                  window.history.replaceState({}, '', window.location.pathname);
+                  setCurrentView('affiliate-portal');
+                } else {
+                  localStorage.removeItem('parallel_is_affiliate');
+                  setCurrentView('onboarding');
+                }
+              } catch {
+                setCurrentView('onboarding');
+              }
+            } else {
+              setCurrentView('onboarding');
+            }
           }
         } else {
           const storedToken = await getAccessToken();
@@ -679,7 +701,29 @@ function App() {
                   setCurrentView(safeView);
                 }
               } else {
-                setCurrentView('onboarding');
+                // Incomplete onboarding — but active affiliates skip the dating flow
+                const maybeAffiliate =
+                  localStorage.getItem('parallel_is_affiliate') === 'true' ||
+                  params.get('view') === 'affiliate-portal';
+                if (maybeAffiliate) {
+                  try {
+                    const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
+                      headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
+                    });
+                    if (r.ok) {
+                      localStorage.setItem('parallel_is_affiliate', 'true');
+                      window.history.replaceState({}, '', window.location.pathname);
+                      setCurrentView('affiliate-portal');
+                    } else {
+                      localStorage.removeItem('parallel_is_affiliate');
+                      setCurrentView('onboarding');
+                    }
+                  } catch {
+                    setCurrentView('onboarding');
+                  }
+                } else {
+                  setCurrentView('onboarding');
+                }
               }
             } catch (tokenErr) {
               toast('Your session expired — please sign back in.', { duration: 4000 });
