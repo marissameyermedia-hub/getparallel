@@ -621,27 +621,21 @@ function App() {
               toast.success('Email confirmed! Welcome to Parallel 🎉', { duration: 4000 });
             }
           } else {
-            // Incomplete onboarding — but active affiliates skip the dating flow
-            const maybeAffiliate =
-              localStorage.getItem('parallel_is_affiliate') === 'true' ||
-              params.get('view') === 'affiliate-portal';
-            if (maybeAffiliate) {
-              try {
-                const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
-                  headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
-                });
-                if (r.ok) {
-                  localStorage.setItem('parallel_is_affiliate', 'true');
-                  window.history.replaceState({}, '', window.location.pathname);
-                  setCurrentView('affiliate-portal');
-                } else {
-                  localStorage.removeItem('parallel_is_affiliate');
-                  setCurrentView('onboarding');
-                }
-              } catch {
+            // Dating onboarding incomplete — always probe affiliate profile
+            // so affiliate-only users (no dating flow) aren't trapped here.
+            try {
+              const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
+              });
+              if (r.ok) {
+                localStorage.setItem('parallel_is_affiliate', 'true');
+                window.history.replaceState({}, '', window.location.pathname);
+                setCurrentView('affiliate-portal');
+              } else {
+                localStorage.removeItem('parallel_is_affiliate');
                 setCurrentView('onboarding');
               }
-            } else {
+            } catch {
               setCurrentView('onboarding');
             }
           }
@@ -701,27 +695,20 @@ function App() {
                   setCurrentView(safeView);
                 }
               } else {
-                // Incomplete onboarding — but active affiliates skip the dating flow
-                const maybeAffiliate =
-                  localStorage.getItem('parallel_is_affiliate') === 'true' ||
-                  params.get('view') === 'affiliate-portal';
-                if (maybeAffiliate) {
-                  try {
-                    const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
-                      headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
-                    });
-                    if (r.ok) {
-                      localStorage.setItem('parallel_is_affiliate', 'true');
-                      window.history.replaceState({}, '', window.location.pathname);
-                      setCurrentView('affiliate-portal');
-                    } else {
-                      localStorage.removeItem('parallel_is_affiliate');
-                      setCurrentView('onboarding');
-                    }
-                  } catch {
+                // Dating onboarding incomplete — always probe affiliate profile
+                try {
+                  const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
+                    headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
+                  });
+                  if (r.ok) {
+                    localStorage.setItem('parallel_is_affiliate', 'true');
+                    window.history.replaceState({}, '', window.location.pathname);
+                    setCurrentView('affiliate-portal');
+                  } else {
+                    localStorage.removeItem('parallel_is_affiliate');
                     setCurrentView('onboarding');
                   }
-                } else {
+                } catch {
                   setCurrentView('onboarding');
                 }
               }
@@ -1397,6 +1384,8 @@ function App() {
     'my-profile', 'preview-profile', 'profile',
     // admin: has its own sticky header with back button
     'admin',
+    // affiliate-portal: has its own fixed header and tab navigation
+    'affiliate-portal',
   ].includes(currentView);
 
   return (
@@ -1502,7 +1491,22 @@ function App() {
                 await fetchMatches(token);
                 setCurrentView('matches');
               } else {
-                setCurrentView('onboarding');
+                // Dating onboarding incomplete — probe affiliate profile
+                try {
+                  const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+                  });
+                  if (r.ok) {
+                    localStorage.setItem('parallel_is_affiliate', 'true');
+                    window.history.replaceState({}, '', window.location.pathname);
+                    setCurrentView('affiliate-portal');
+                  } else {
+                    localStorage.removeItem('parallel_is_affiliate');
+                    setCurrentView('onboarding');
+                  }
+                } catch {
+                  setCurrentView('onboarding');
+                }
               }
             }}
             onCreateAccount={() => setCurrentView('account-creation')}
