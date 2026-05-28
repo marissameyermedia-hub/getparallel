@@ -2126,6 +2126,7 @@ function renderDayList() {
     const dayOfWeek = i % 7;
     const postKey = `${week}-${dayOfWeek}`;
     const hasPost = !!state.posts[postKey];
+    const displayD = (state.posts[postKey]?._scheduled_at) ? new Date(state.posts[postKey]._scheduled_at) : d;
     const div = document.createElement('div');
     div.className = 'day-item';
     div.onclick = () => openPost(week, dayOfWeek);
@@ -2133,8 +2134,8 @@ function renderDayList() {
       <div class="day-left">
         <div class="day-dot ${hasPost ? 'has-post' : ''}"></div>
         <div>
-          <div class="day-name">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
-          <div class="day-date">${formatDate(d)}</div>
+          <div class="day-name">${displayD.toLocaleDateString('en-US',{weekday:'short'})}</div>
+          <div class="day-date">${formatDate(displayD)}</div>
         </div>
       </div>
       ${hasPost ? `<div class="day-count">${(state.posts[postKey].slides||[]).filter(Boolean).length} slides</div>` : ''}
@@ -2171,7 +2172,7 @@ function renderFeedGrid() {
           ${isArchived
             ? `<span class="badge badge-archived">✓ posted</span>`
             : `<span class="badge badge-week">W${week}</span>
-               <span class="badge badge-day">${d.toLocaleDateString('en-US',{weekday:'short'})}</span>
+               <span class="badge badge-day">${(post._scheduled_at ? new Date(post._scheduled_at) : d).toLocaleDateString('en-US',{weekday:'short'})}</span>
                ${post.slides.filter(Boolean).length > 1 ? `<span class="badge badge-slides">${post.slides.filter(Boolean).length} slides</span>` : ''}`
           }
         </div>
