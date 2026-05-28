@@ -1402,7 +1402,7 @@
             <div class="form-label">
               <span>Location Tag</span>
             </div>
-            <input type="text" id="locationField" placeholder="Atlanta, GA" />
+            <input type="text" id="locationField" placeholder="City, ST" />
           </div>
 
           <div class="form-group">
@@ -1952,6 +1952,11 @@ function getWeekDays() {
 
 const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const LOCATION_ROTATION = [
+  'Atlanta, GA', 'New York, NY', 'Los Angeles, CA', 'Chicago, IL',
+  'Miami, FL', 'Denver, CO', 'Dallas, TX', 'Austin, TX',
+  'Phoenix, AZ', 'Seattle, WA',
+];
 
 function formatDate(d) { return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`; }
 
@@ -2162,7 +2167,8 @@ function openPost(week, slot) {
   document.getElementById('hashtagField').value = post.hashtags || '';
   document.getElementById('postDate').value = formatDate(d);
   document.getElementById('postTime').value = post.time || '';
-  document.getElementById('locationField').value = post.location || '';
+  const defaultLocation = LOCATION_ROTATION[dayIndex % LOCATION_ROTATION.length];
+  document.getElementById('locationField').value = post.location || defaultLocation;
   document.getElementById('audioField').value = post.audio || '';
   document.getElementById('notesField').value = post.notes || '';
   updateCaptionCount();
@@ -2752,15 +2758,16 @@ async function autoFillMeta() {
         max_tokens: 400,
         messages: [{
           role: 'user',
-          content: `You are a social media strategist for Parallel, a premium dating app launching in Atlanta and Denver. May 2026.
+          content: `You are a social media strategist for Parallel, a premium dating app expanding nationally. May 2026.
 
 Post caption: "${caption || 'General Parallel brand post'}"
 Platforms: ${platforms}
+Suggested city for this slot: ${LOCATION_ROTATION[((state.activePost?.week - 1) * 7 + (state.activePost?.slot || 0)) % LOCATION_ROTATION.length]}
 
 Return ONLY valid JSON, no markdown:
 {
   "postTime": "best time like '7:30 AM'",
-  "location": "Atlanta, GA or Denver, CO",
+  "location": "use the suggested city above",
   "audio": "specific trending song name and artist for dating/lifestyle content in 2026",
   "audioWhy": "5 words on why this audio fits"
 }`
