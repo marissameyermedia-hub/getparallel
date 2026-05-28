@@ -112,6 +112,10 @@ function App() {
   const [hasActivated, setHasActivated] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  // True when the user entered via an affiliate deep link (?view=affiliate-portal)
+  // but isn't signed in yet. Threads through signup + phone verification so a
+  // brand-new affiliate applicant lands in the portal apply form, not onboarding.
+  const [affiliateIntent, setAffiliateIntent] = useState(false);
   const [tosGateRequired, setTosGateRequired] = useState(false);
   const [userDateOfBirth, setUserDateOfBirth] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
@@ -332,6 +336,10 @@ function App() {
     const checkSession = async () => {
       // Declare params at function scope so it's available throughout
       const params = new URLSearchParams(window.location.search);
+
+      // Remember affiliate deep-link intent so signup + phone verification
+      // route a brand-new applicant to the portal instead of dating onboarding.
+      if (params.get('view') === 'affiliate-portal') setAffiliateIntent(true);
 
       // Capture push notification deep-link before any URL cleanup.
       // The messages edge function embeds ?notify=message&from=<senderId>
@@ -620,16 +628,21 @@ function App() {
             if (params.get('email_confirmed') === 'true' || isEmailConfirmationLink) {
               toast.success('Email confirmed! Welcome to Parallel 🎉', { duration: 4000 });
             }
+          } else if (params.get('view') === 'affiliate-portal') {
+            // Explicit affiliate deep link (apply / status / dashboard) —
+            // the portal resolves which state to show, including pending
+            // applicants who aren't active affiliates yet.
+            window.history.replaceState({}, '', window.location.pathname);
+            setCurrentView('affiliate-portal');
           } else {
-            // Dating onboarding incomplete — always probe affiliate profile
-            // so affiliate-only users (no dating flow) aren't trapped here.
+            // Dating onboarding incomplete — probe affiliate profile so
+            // active affiliate-only users (no dating flow) aren't trapped here.
             try {
               const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
                 headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
               });
               if (r.ok) {
                 localStorage.setItem('parallel_is_affiliate', 'true');
-                window.history.replaceState({}, '', window.location.pathname);
                 setCurrentView('affiliate-portal');
               } else {
                 localStorage.removeItem('parallel_is_affiliate');
@@ -694,15 +707,18 @@ function App() {
                   const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
                   setCurrentView(safeView);
                 }
+              } else if (params.get('view') === 'affiliate-portal') {
+                // Explicit affiliate deep link — portal resolves the state.
+                window.history.replaceState({}, '', window.location.pathname);
+                setCurrentView('affiliate-portal');
               } else {
-                // Dating onboarding incomplete — always probe affiliate profile
+                // Dating onboarding incomplete — probe affiliate profile.
                 try {
                   const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
                     headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
                   });
                   if (r.ok) {
                     localStorage.setItem('parallel_is_affiliate', 'true');
-                    window.history.replaceState({}, '', window.location.pathname);
                     setCurrentView('affiliate-portal');
                   } else {
                     localStorage.removeItem('parallel_is_affiliate');
@@ -1586,12 +1602,14 @@ function App() {
                 return;
               }
               localStorage.removeItem('parallel_questionnaire_progress');
-              // Route through phone verification if phone was provided
+              // Route through phone verification if phone was provided.
+              // Affiliate applicants land in the portal (apply form) after
+              // verification instead of dating onboarding.
               if (userData.phone) {
                 setPhoneToVerify(userData.phone);
                 setCurrentView('phone-verification');
               } else {
-                setCurrentView('onboarding');
+                setCurrentView(affiliateIntent ? 'affiliate-portal' : 'onboarding');
               }
             }}
             onBack={() => setCurrentView('signin')}
@@ -1604,8 +1622,8 @@ function App() {
           <PhoneVerificationPage
             phone={phoneToVerify}
             accessToken={accessToken || ''}
-            onVerified={() => setCurrentView('onboarding')}
-            onSkip={() => setCurrentView('onboarding')}
+            onVerified={() => setCurrentView(affiliateIntent ? 'affiliate-portal' : 'onboarding')}
+            onSkip={() => setCurrentView(affiliateIntent ? 'affiliate-portal' : 'onboarding')}
             onBack={async () => { await supabase.auth.signOut(); resetAppState(); }}
           />
         )}

@@ -1,4 +1,5 @@
-// Parallel — email edge function v14
+// Parallel — email edge function v15
+// v15: Affiliate application-received email CTA deep-links to ?view=affiliate-portal.
 // v14: Add /affiliate-commission-clawback and /affiliate-payout-released.
 // v13: Affiliate approval email CTA links to ?view=affiliate-portal deep link.
 // v12: Add /affiliate-approved — sends approval email with promo code + tracked link.
@@ -497,11 +498,11 @@ function tplAffiliateAppReceived(name: string | null, tier: string) {
     `<p style="margin:0 0 12px 0;">Our team reviews every application personally. We'll be in touch within a few business days with a decision.</p>`,
     `<p style="margin:0 0 4px 0;">In the meantime, you can check your application status anytime by opening the Affiliate Program section in your account.</p>`,
   ].join("");
-  const html = shellHtml({ heading: "Application received", body, ctaUrl: APP_URL, ctaLabel: "Open Parallel" });
+  const html = shellHtml({ heading: "Application received", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Check your application status" });
   return {
     subject: "We got your Affiliate Army application",
     html,
-    text: `${greeting}\n\nWe received your application to join the Parallel Affiliate Army (${tierLabel} tier).\n\nWe'll review it and be in touch within a few business days.\n\n${APP_URL}`,
+    text: `${greeting}\n\nWe received your application to join the Parallel Affiliate Army (${tierLabel} tier).\n\nWe'll review it and be in touch within a few business days.\n\nCheck your status: ${APP_URL}?view=affiliate-portal`,
   };
 }
 
@@ -648,7 +649,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "14" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "15" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
