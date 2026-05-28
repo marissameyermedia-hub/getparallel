@@ -1,4 +1,5 @@
-// Parallel — affiliate edge function v9
+// Parallel — affiliate edge function v10
+// v10: Fix affiliate_link URL format — use /r/{slug} tracked links instead of ?aff={slug}
 // v9: Full payout setup flow
 //   - GET /profile: affiliate's own data, program constants, payout setup status
 //   - POST /payout/setup: legal name + tax address + Mercury bank account (one call)
@@ -138,7 +139,7 @@ async function handleGetProfile(req: Request): Promise<Response> {
     status: affiliate.status,
     promo_code: affiliate.promo_code,
     affiliate_link: affiliate.tracked_link_slug
-      ? `https://getparallel.vip?aff=${affiliate.tracked_link_slug}`
+      ? `https://getparallel.vip/r/${affiliate.tracked_link_slug}`
       : null,
     commission_rate: affiliate.commission_rate,
     commission_rate_pct: Math.round(Number(affiliate.commission_rate) * 100),

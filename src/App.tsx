@@ -1287,6 +1287,9 @@ function App() {
     setEmailConfirmed(true);
     setHasVerified(false);
     setHasActivated(false);
+    // Clear affiliate intent so a subsequent sign-in on the same tab isn't
+    // incorrectly routed to the portal by a stale flag.
+    setAffiliateIntent(false);
   };
 
   const handleLogOut = async () => {
@@ -1545,6 +1548,7 @@ function App() {
             onCreateAccount={() => setCurrentView('account-creation')}
             onShowExplainer={() => setCurrentView('account-creation')}
             onNavigate={(v) => setCurrentView(v as any)}
+            showAffiliateBanner={affiliateIntent}
           />
         )}
 
