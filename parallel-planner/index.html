@@ -297,6 +297,43 @@
     gap: 12px;
   }
 
+  /* ── ENGAGEMENT STRIP ── */
+  .engagement-strip {
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .engagement-strip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--surface-2);
+  }
+  .engagement-strip-header:hover { background: var(--surface-3, var(--surface-2)); }
+  .engagement-strip-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .engagement-body { padding: 12px 16px; max-height: 260px; overflow-y: auto; }
+  .engagement-body.collapsed { display: none; }
+  .engagement-list { display: flex; flex-direction: column; gap: 10px; }
+  .engagement-placeholder { font-size: 12px; color: var(--text-muted); }
+  .comment-row {
+    display: flex;
+    gap: 10px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .comment-service { font-size: 16px; flex-shrink: 0; }
+  .comment-content { flex: 1; min-width: 0; }
+  .comment-author { font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+  .comment-text { color: var(--text-secondary); white-space: pre-wrap; word-break: break-word; }
+  .comment-time { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
   /* ── POST CARD ── */
   .post-card {
     background: var(--white);
@@ -1467,6 +1504,19 @@
     <!-- feed grid -->
     <div class="feed-grid" id="feedGrid"></div>
 
+    <!-- ENGAGEMENT STRIP -->
+    <div class="engagement-strip" id="engagementStrip">
+      <div class="engagement-strip-header" onclick="toggleEngagement()">
+        <span class="engagement-strip-title">💬 Recent Comments</span>
+        <span id="engagementToggleIcon" style="color:var(--text-muted);font-size:12px;">▲ hide</span>
+      </div>
+      <div id="engagementBody" class="engagement-body">
+        <div id="engagementList" class="engagement-list">
+          <div class="engagement-placeholder">Loading…</div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- MEDIA REPO PANEL -->
@@ -1975,6 +2025,8 @@ async function init() {
   initDB().then(() => loadRepoFromDB()).catch(e => console.warn('IndexedDB init failed', e));
   // Load Buffer channel health (non-blocking)
   loadChannelStatus();
+  // Load recent comments (non-blocking)
+  loadEngagement();
   // Load performance metrics for published posts (non-blocking, 30s delay to not block render)
   setTimeout(loadPublishedMetrics, 30_000);
 }
@@ -2012,6 +2064,52 @@ async function loadChannelStatus() {
     }).join('');
   } catch (e) {
     if (el) el.innerHTML = '<div class="channel-status-loading">—</div>';
+  }
+}
+
+let _engagementOpen = true;
+function toggleEngagement() {
+  _engagementOpen = !_engagementOpen;
+  const body = document.getElementById('engagementBody');
+  const icon = document.getElementById('engagementToggleIcon');
+  if (body) body.classList.toggle('collapsed', !_engagementOpen);
+  if (icon) icon.textContent = _engagementOpen ? '▲ hide' : '▼ show';
+}
+
+async function loadEngagement() {
+  const list = document.getElementById('engagementList');
+  if (!list) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/buffer-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'recent_comments' }),
+    });
+    const data = await res.json();
+
+    if (!data.available || !data.comments) {
+      list.innerHTML = `<div class="engagement-placeholder">Comment syncing isn't available on this Buffer plan — reply to comments directly in each app or via Buffer's web dashboard.</div>`;
+      return;
+    }
+    if (!data.comments.length) {
+      list.innerHTML = '<div class="engagement-placeholder">No recent comments yet.</div>';
+      return;
+    }
+    const SERVICE_ICON: Record<string, string> = { instagram: '📷', facebook: '📘', tiktok: '🎵' };
+    list.innerHTML = data.comments.slice(0, 20).map((c: any) => {
+      const icon = SERVICE_ICON[c.service?.toLowerCase()] || '💬';
+      const time = c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+      return `<div class="comment-row">
+        <div class="comment-service">${icon}</div>
+        <div class="comment-content">
+          <div class="comment-author">${c.authorName || 'User'}</div>
+          <div class="comment-text">${c.text || ''}</div>
+          ${time ? `<div class="comment-time">${time}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    if (list) list.innerHTML = '<div class="engagement-placeholder">Could not load comments.</div>';
   }
 }
 
