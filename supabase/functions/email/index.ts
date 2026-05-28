@@ -1,4 +1,6 @@
-// Parallel — email edge function v15
+// Parallel — email edge function v16
+// v16: Add /affiliate-verify-identity — intermediate email sent after admin approval,
+//      prompting the affiliate to complete Persona identity verification.
 // v15: Affiliate application-received email CTA deep-links to ?view=affiliate-portal.
 // v14: Add /affiliate-commission-clawback and /affiliate-payout-released.
 // v13: Affiliate approval email CTA links to ?view=affiliate-portal deep link.
@@ -506,6 +508,37 @@ function tplAffiliateAppReceived(name: string | null, tier: string) {
   };
 }
 
+function tplAffiliateVerifyIdentity(opts: { name: string | null; tier: string }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const tierLabels: Record<string, string> = { seeds: "Seeds", voices: "Voices", anchors: "Anchors" };
+  const tierLabel = tierLabels[opts.tier] ?? opts.tier;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">Great news — your application to join the Parallel Affiliate Army as a <strong>${tierLabel}</strong> affiliate has been approved!</p>`,
+    `<p style="margin:0 0 12px 0;">There's one more step before your dashboard is activated: we need to verify your identity. This is a quick (~2 minute) process powered by Persona, our identity verification provider. You'll need a government-issued photo ID.</p>`,
+    `<p style="margin:0 0 4px 0;">Once your identity is confirmed, your affiliate link, promo code, and dashboard will be ready to go.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Approved — one step left!", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Complete identity verification" });
+  return {
+    subject: "You're approved — complete your identity verification",
+    html,
+    text: `${greeting}\n\nYour application to join the Parallel Affiliate Army (${tierLabel} tier) has been approved!\n\nOne last step: verify your identity to activate your dashboard. Open the link below and follow the prompts — it takes about 2 minutes.\n\nVerify now: ${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateVerifyIdentity(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const tier  = String(body.tier  ?? "").trim();
+  const name  = body.name ? String(body.name).trim() : null;
+  if (!email || !tier) return json({ error: "email and tier required" }, 400);
+  const tpl = tplAffiliateVerifyIdentity({ name, tier });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 function tplAffiliateApproved(opts: { name: string | null; tier: string; promoCode: string; trackedLinkSlug: string; commissionRate: number }) {
   const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
   const tierLabels: Record<string, string> = { seeds: "Seeds", voices: "Voices", anchors: "Anchors" };
@@ -649,7 +682,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "15" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "16" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -661,6 +694,7 @@ Deno.serve(async (req) => {
     if (path === "/date-confirmed"        && req.method === "POST") return await handleDateConfirmed(req);
     if (path === "/cancellation-confirm"  && req.method === "POST") return await handleCancellationConfirm(req);
     if (path === "/affiliate-application"        && req.method === "POST") return await handleAffiliateAppReceived(req);
+    if (path === "/affiliate-verify-identity"    && req.method === "POST") return await handleAffiliateVerifyIdentity(req);
     if (path === "/affiliate-approved"           && req.method === "POST") return await handleAffiliateApproved(req);
     if (path === "/affiliate-commission-clawback" && req.method === "POST") return await handleAffiliateCommissionClawback(req);
     if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);

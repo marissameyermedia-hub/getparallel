@@ -1,4 +1,8 @@
-// Parallel — affiliate edge function v10
+// Parallel — affiliate edge function v11
+// v11: /admin/approve creates affiliates with status='pending_verification' by default.
+//      Sends identity-verification email instead of full approval email.
+//      Pass skip_persona:true to create as active immediately (legacy/bypass).
+//      Persona webhook in misc activates the row and sends the full approval email.
 // v10: Fix affiliate_link URL format — use /r/{slug} tracked links instead of ?aff={slug}
 // v9: Full payout setup flow
 //   - GET /profile: affiliate's own data, program constants, payout setup status
@@ -830,7 +834,7 @@ async function handleAdminApprove(req: Request): Promise<Response> {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-  const { application_id } = body;
+  const { application_id, skip_persona = false } = body;
   if (!application_id) return json({ error: "application_id required" }, 400);
 
   const admin = adminClient();
@@ -841,10 +845,10 @@ async function handleAdminApprove(req: Request): Promise<Response> {
     .maybeSingle();
   if (appErr || !app) return json({ error: "application not found" }, 404);
 
-  // Idempotent — if affiliate already exists just update the application
+  // Idempotent — if affiliate already exists just update the application status
   const { data: existing } = await admin
     .from("affiliates")
-    .select("id, promo_code, tracked_link_slug")
+    .select("id, promo_code, tracked_link_slug, status")
     .eq("email", app.email)
     .maybeSingle();
   if (existing) {
@@ -891,6 +895,10 @@ async function handleAdminApprove(req: Request): Promise<Response> {
   if (slugErr) return json({ error: "failed to generate slug: " + slugErr.message }, 500);
 
   const now = new Date().toISOString();
+  // skip_persona=true activates the affiliate immediately (for known/trusted partners).
+  // Default: create as pending_verification — Persona webhook will activate and email.
+  const affiliateStatus = skip_persona ? "active" : "pending_verification";
+
   const { data: newAffiliate, error: createErr } = await admin
     .from("affiliates")
     .insert({
@@ -898,7 +906,7 @@ async function handleAdminApprove(req: Request): Promise<Response> {
       display_name:             displayName,
       email:                    app.email,
       tier:                     app.tier_applied_for,
-      status:                   "active",
+      status:                   affiliateStatus,
       commission_rate:          tierCfg.commission_rate,
       subscription_discount_pct: tierCfg.subscription_discount_pct,
       promo_code:               promoCode,
@@ -915,24 +923,23 @@ async function handleAdminApprove(req: Request): Promise<Response> {
     .update({ audit_status: "approved", reviewed_at: now })
     .eq("id", application_id);
 
-  fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-approved`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SUPABASE_SERVICE_ROLE_KEY,
-      "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-    },
-    body: JSON.stringify({
-      email:              app.email,
-      name:               displayName,
-      tier:               app.tier_applied_for,
-      promo_code:         promoCode,
-      tracked_link_slug:  slug,
-      commission_rate:    tierCfg.commission_rate,
-    }),
-  }).catch((err) => console.error("[affiliate/admin/approve] email failed:", err));
+  if (skip_persona) {
+    // Bypassing Persona — send full approval email with link and promo code now.
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-approved`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: app.email, name: displayName, tier: app.tier_applied_for, promo_code: promoCode, tracked_link_slug: slug, commission_rate: tierCfg.commission_rate }),
+    }).catch((err) => console.error("[affiliate/admin/approve] approval email failed:", err));
+  } else {
+    // Standard flow — send "approved, verify identity" email; full approval email fires from Persona webhook.
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-verify-identity`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: app.email, name: displayName, tier: app.tier_applied_for }),
+    }).catch((err) => console.error("[affiliate/admin/approve] verify-identity email failed:", err));
+  }
 
-  return json({ ok: true, affiliate: newAffiliate });
+  return json({ ok: true, affiliate: newAffiliate, pending_verification: !skip_persona });
 }
 
 // ── POST /apply ───────────────────────────────────────────────────────────────

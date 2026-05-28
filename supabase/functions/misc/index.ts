@@ -1,4 +1,6 @@
-// Parallel — misc edge function v34
+// Parallel — misc edge function v35
+// v35: Persona webhook — when affiliate identity verified, activate affiliates row
+//      (pending_verification → active) and fire full affiliate-approved email.
 // v34: PAYMENT.SALE.COMPLETED — set clawback_deadline = payment_time + 30 days (was missing).
 // v33: PAYMENT.SALE.COMPLETED — use commission_status 'releasable' (enum fix; 'approved' doesn't exist).
 // v32: Launch at $149 — plan validation accepts annual_standard alongside
@@ -383,14 +385,54 @@ async function handlePersonaWebhook(req: Request) {
   // Affiliate applications use reference IDs prefixed with "aff_"
   if (referenceId.startsWith("aff_")) {
     const appId = referenceId.slice(4);
-    const personaStatus = verified ? "approved" : (status === "declined" ? "declined" : "pending");
+    const personaStatusVal = verified ? "approved" : (status === "declined" ? "declined" : "pending");
     const { error: affErr } = await admin.from("affiliate_applications").update({
       persona_inquiry_id: inquiryId,
-      persona_status: personaStatus,
+      persona_status: personaStatusVal,
       persona_completed_at: verified ? now : null,
     }).eq("id", appId);
     if (affErr) { console.error("[persona/webhook] affiliate update failed:", affErr); return json({ error: "db error" }, 500); }
-    console.log("[persona/webhook] affiliate application updated:", { appId, personaStatus, verified });
+
+    // If Persona approved, activate the affiliates row (pending_verification → active)
+    // and fire the full approval email with promo code + tracked link.
+    if (verified) {
+      const { data: app } = await admin
+        .from("affiliate_applications")
+        .select("email, tier_applied_for, audit_status")
+        .eq("id", appId)
+        .maybeSingle();
+
+      if (app?.audit_status === "approved") {
+        const { data: aff } = await admin
+          .from("affiliates")
+          .select("id, display_name, email, tier, promo_code, tracked_link_slug, commission_rate, status")
+          .eq("email", app.email)
+          .maybeSingle();
+
+        if (aff && aff.status === "pending_verification") {
+          await admin.from("affiliates")
+            .update({ status: "active", updated_at: now })
+            .eq("id", aff.id);
+
+          fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-approved`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+            body: JSON.stringify({
+              email: aff.email,
+              name: aff.display_name,
+              tier: aff.tier,
+              promo_code: aff.promo_code,
+              tracked_link_slug: aff.tracked_link_slug,
+              commission_rate: aff.commission_rate,
+            }),
+          }).catch((err) => console.error("[persona/webhook] affiliate approval email failed:", err));
+
+          console.log("[persona/webhook] affiliate activated:", { affiliateId: aff.id, email: aff.email });
+        }
+      }
+    }
+
+    console.log("[persona/webhook] affiliate application updated:", { appId, personaStatus: personaStatusVal, verified });
     return json({ ok: true, status, verified, affiliate: true });
   }
 
@@ -1147,7 +1189,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "34" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "35" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
