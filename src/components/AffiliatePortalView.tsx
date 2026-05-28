@@ -616,7 +616,7 @@ function PayoutSetupForm({
       </button>
 
       <p className="text-xs text-gray-400 text-center leading-relaxed">
-        Bank details go directly to our payment processor and are never stored on Parallel's servers.
+        Your banking details are securely stored by Mercury, our payment processor, not on Parallel's servers directly.
       </p>
     </div>
   );
@@ -688,6 +688,9 @@ function EarningsTab() {
 
   return (
     <div className="pb-8">
+      <p className="text-xs text-gray-400 pt-1 pb-4 leading-relaxed">
+        Commissions are recorded when your referral completes their first subscription payment.
+      </p>
       <div className="grid grid-cols-2 gap-3 mb-5">
         <div className="bg-white border border-gray-100 rounded-2xl p-4">
           <p className="text-xs text-gray-400 mb-1">Total earned</p>
@@ -858,7 +861,10 @@ function PayoutsTab({
                     {new Date(p.period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                   <p className="text-xs text-gray-400 capitalize">
-                    {p.mercury_status.replace(/_/g, ' ')}
+                    {p.mercury_status === 'sent'
+                      ? 'Sent (arrives 3–5 business days)'
+                      : p.mercury_status.replace(/_/g, ' ')
+                    }
                     {p.paid_at
                       ? ` · ${new Date(p.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
                       : ''
@@ -1059,6 +1065,23 @@ function AffiliateDashboard({
               </div>
             </div>
 
+            {/* Payout nudge */}
+            {conversions > 0 && !profile.bank_account_connected && (
+              <div className="mt-6 flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5">
+                <AlertCircle size={16} className="text-amber-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-800">Set up payouts to get paid</p>
+                  <p className="text-xs text-amber-600 mt-0.5">You have referrals — connect your bank to start receiving commissions.</p>
+                </div>
+                <button
+                  onClick={() => setTab('payouts')}
+                  className="text-xs font-medium text-amber-700 underline flex-shrink-0"
+                >
+                  Set up →
+                </button>
+              </div>
+            )}
+
             {/* Share section */}
             <div className="mt-8">
               <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
@@ -1203,7 +1226,6 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly }: Prop
       }
 
       // Not yet an affiliate — check for pending application
-      localStorage.removeItem('parallel_is_affiliate');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setState('apply'); return; }
 
