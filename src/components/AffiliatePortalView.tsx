@@ -237,6 +237,7 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showExpectations, setShowExpectations] = useState(false);
 
   async function submit() {
     if (!tier || !termsAccepted) return;
@@ -277,6 +278,35 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
 
       {step === 1 && (
         <>
+          {/* What to expect collapsible */}
+          <button
+            onClick={() => setShowExpectations(v => !v)}
+            className="w-full flex items-center justify-between py-2.5 mb-4 text-left"
+          >
+            <span className="text-sm font-medium text-[#7B5EA7]">What happens after I apply?</span>
+            {showExpectations
+              ? <ChevronUp size={14} className="text-[#7B5EA7]" />
+              : <ChevronDown size={14} className="text-[#7B5EA7]" />
+            }
+          </button>
+          {showExpectations && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-5 space-y-3">
+              {([
+                { n: '1', title: 'We review your application', body: 'Our team checks your content and audience fit within a few business days.' },
+                { n: '2', title: 'Quick identity check', body: "Once approved, you'll complete a 2-minute Persona ID verification required for ACH payouts." },
+                { n: '3', title: 'Dashboard activated', body: 'Your tracked link, promo code, and earnings dashboard go live immediately after verification.' },
+              ] as const).map(({ n, title, body }) => (
+                <div key={n} className="flex gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#7B5EA7]/10 text-[#7B5EA7] text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5">{n}</div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{title}</p>
+                    <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <p className="text-sm font-medium text-gray-700 mb-3">Choose your tier</p>
           <div className="space-y-3 mb-6">
             {TIERS.map(t => {
@@ -357,7 +387,10 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
                 onChange={e => setPhase1City(e.target.checked)}
                 className="mt-0.5 w-4 h-4 rounded accent-[#7B5EA7]"
               />
-              <span className="text-sm text-gray-700">My audience is primarily in a Phase 1 launch city (NYC, LA, Chicago, SF, Austin, Miami)</span>
+              <span className="text-sm text-gray-700">
+                My audience is primarily in a Phase 1 launch city (NYC, LA, Chicago, SF, Austin, Miami)
+                <span className="block text-xs text-gray-400 mt-0.5 leading-relaxed">Phase 1 cities have the most active members — checking this may speed up approval.</span>
+              </span>
             </label>
 
             <label className="flex items-start gap-3 cursor-pointer">
@@ -1064,6 +1097,24 @@ function AffiliateDashboard({
                 </p>
               </div>
             </div>
+
+            {/* Own discount callout */}
+            {profile.subscription_discount_pct > 0 && (
+              <div className="mt-4 flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-4 py-3.5">
+                <Tag size={15} className="text-gray-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">Your member discount</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Affiliates get {profile.subscription_discount_pct}% off their own Parallel subscription.</p>
+                </div>
+                <a
+                  href="/?view=pricing"
+                  className="text-xs font-medium underline flex-shrink-0"
+                  style={{ color: hex.accent }}
+                >
+                  Redeem →
+                </a>
+              </div>
+            )}
 
             {/* Payout nudge */}
             {conversions > 0 && !profile.bank_account_connected && (
