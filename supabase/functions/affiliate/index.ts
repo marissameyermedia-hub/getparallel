@@ -1,4 +1,4 @@
-// Parallel — affiliate edge function v11
+// Parallel — affiliate edge function v12
 // v11: /admin/approve creates affiliates with status='pending_verification' by default.
 //      Sends identity-verification email instead of full approval email.
 //      Pass skip_persona:true to create as active immediately (legacy/bypass).
@@ -826,6 +826,63 @@ async function handleValidatePromo(req: Request): Promise<Response> {
   });
 }
 
+// ── POST /admin/update-status ─────────────────────────────────────────────────
+// Updates application audit_status for non-approval statuses and fires
+// email notifications where appropriate.
+
+async function handleAdminUpdateStatus(req: Request): Promise<Response> {
+  const { isAdmin } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+  const { application_id, status } = body;
+  if (!application_id) return json({ error: "application_id required" }, 400);
+
+  const allowed = ["rejected", "needs_info", "in_review"];
+  if (!allowed.includes(status)) return json({ error: `status must be one of: ${allowed.join(", ")}` }, 400);
+
+  const admin = adminClient();
+  const { data: app, error: appErr } = await admin
+    .from("affiliate_applications")
+    .select("id, email, tier_applied_for, audit_status")
+    .eq("id", application_id)
+    .maybeSingle();
+  if (appErr || !app) return json({ error: "application not found" }, 404);
+
+  const now = new Date().toISOString();
+  const { error: updateErr } = await admin
+    .from("affiliate_applications")
+    .update({ audit_status: status, reviewed_at: now })
+    .eq("id", application_id);
+  if (updateErr) return json({ error: updateErr.message }, 500);
+
+  // Resolve display name for email personalisation
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("name")
+    .eq("email", app.email)
+    .maybeSingle();
+  const displayName: string | null = (profile?.name as string | null) ?? null;
+
+  if (status === "rejected") {
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-rejected`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: app.email, name: displayName }),
+    }).catch((err) => console.error("[affiliate/admin/update-status] rejected email failed:", err));
+  } else if (status === "needs_info") {
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-needs-info`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: app.email, name: displayName }),
+    }).catch((err) => console.error("[affiliate/admin/update-status] needs-info email failed:", err));
+  }
+  // in_review: status update only — no email
+
+  return json({ ok: true, status, application_id });
+}
+
 // ── POST /admin/approve ───────────────────────────────────────────────────────
 
 async function handleAdminApprove(req: Request): Promise<Response> {
@@ -1065,6 +1122,11 @@ Deno.serve(async (req: Request) => {
   // POST /payout/clawback
   if (req.method === "POST" && endpoint === "payout" && segments[1] === "clawback") {
     return await handlePayoutClawback(req);
+  }
+
+  // POST /admin/update-status
+  if (req.method === "POST" && endpoint === "admin" && segments[1] === "update-status") {
+    return await handleAdminUpdateStatus(req);
   }
 
   // POST /admin/approve

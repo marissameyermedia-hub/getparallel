@@ -1,4 +1,6 @@
-// Parallel — email edge function v16
+// Parallel — email edge function v17
+// v17: Add /affiliate-rejected and /affiliate-needs-info — email notifications
+//      when admin rejects or requests more info on an affiliate application.
 // v16: Add /affiliate-verify-identity — intermediate email sent after admin approval,
 //      prompting the affiliate to complete Persona identity verification.
 // v15: Affiliate application-received email CTA deep-links to ?view=affiliate-portal.
@@ -651,6 +653,62 @@ function tplAffiliatePayoutReleased(opts: { name: string | null; amount: number 
   };
 }
 
+function tplAffiliateRejected(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">Thank you for applying to the Parallel Affiliate Army. After reviewing your application, we've decided not to move forward at this time.</p>`,
+    `<p style="margin:0 0 12px 0;">This doesn't mean the door is permanently closed — we continue to grow our program and welcome you to reapply in the future as your audience grows.</p>`,
+    `<p style="margin:0 0 4px 0;">Thank you for your interest in Parallel.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Application update", body });
+  return {
+    subject: "Your Parallel Affiliate Army application",
+    html,
+    text: `${greeting}\n\nThank you for applying to the Parallel Affiliate Army. After reviewing your application, we've decided not to move forward at this time.\n\nThis doesn't mean the door is permanently closed — we welcome you to reapply in the future as your audience grows.\n\nThank you for your interest in Parallel.`,
+  };
+}
+
+function tplAffiliateNeedsInfo(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We're reviewing your Parallel Affiliate Army application and have a few questions before we can move forward.</p>`,
+    `<p style="margin:0 0 12px 0;">Our team will follow up shortly with the specifics — please keep an eye on this email address.</p>`,
+    `<p style="margin:0 0 4px 0;">In the meantime, reply directly to this email if you have any questions.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "We need a bit more info", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Check your application status" });
+  return {
+    subject: "Your Affiliate Army application — a quick question",
+    html,
+    text: `${greeting}\n\nWe're reviewing your Parallel Affiliate Army application and have a few questions before we can move forward.\n\nOur team will follow up shortly with the specifics. Reply to this email if you have any questions.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateRejected(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliateRejected(name);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+async function handleAffiliateNeedsInfo(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliateNeedsInfo(name);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 async function handleAffiliateCommissionClawback(req: Request) {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
@@ -682,7 +740,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "16" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "17" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -696,6 +754,8 @@ Deno.serve(async (req) => {
     if (path === "/affiliate-application"        && req.method === "POST") return await handleAffiliateAppReceived(req);
     if (path === "/affiliate-verify-identity"    && req.method === "POST") return await handleAffiliateVerifyIdentity(req);
     if (path === "/affiliate-approved"           && req.method === "POST") return await handleAffiliateApproved(req);
+    if (path === "/affiliate-rejected"           && req.method === "POST") return await handleAffiliateRejected(req);
+    if (path === "/affiliate-needs-info"         && req.method === "POST") return await handleAffiliateNeedsInfo(req);
     if (path === "/affiliate-commission-clawback" && req.method === "POST") return await handleAffiliateCommissionClawback(req);
     if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);
     return json({ error: "Not found", path, method: req.method }, 404);
