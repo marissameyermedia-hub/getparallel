@@ -709,6 +709,28 @@
   .schedule-row { display: flex; gap: 10px; }
   .schedule-row .form-group { flex: 1; }
 
+  .suggested-time-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: rgba(123,94,167,0.1);
+    border: 1px solid rgba(123,94,167,0.25);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .suggested-time-banner strong { color: var(--purple); }
+  .suggested-time-use {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--purple);
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .suggested-time-use:hover { text-decoration: underline; }
+
   /* platform toggles */
   .platform-toggles { display: flex; gap: 8px; }
 
@@ -1561,6 +1583,7 @@
               <input type="text" id="postTime" placeholder="7:30 AM" />
             </div>
           </div>
+          <div id="suggestedTimeBanner" class="suggested-time-banner" style="display:none;"></div>
 
           <div class="form-group">
             <div class="form-label">Platforms</div>
@@ -2497,7 +2520,30 @@ function openPost(week, slot) {
 
   renderSlides(post.slides || []);
 
+  // Show Buffer suggested time if available and post has no time yet
+  showSuggestedTime(post.time || '');
+
   document.getElementById('postModal').classList.add('open');
+}
+
+function showSuggestedTime(currentTime: string) {
+  const banner = document.getElementById('suggestedTimeBanner');
+  if (!banner) return;
+  // Gather all suggestedTimes from all channels
+  const allTimes: string[] = [];
+  for (const ch of (state.bufferChannels || [])) {
+    for (const st of (ch.suggestedTimes || [])) {
+      if (st.time) allTimes.push(st.time);
+    }
+  }
+  if (!allTimes.length) { banner.style.display = 'none'; return; }
+  // Pick the most common suggestion (or first)
+  const freq: Record<string, number> = {};
+  for (const t of allTimes) freq[t] = (freq[t] || 0) + 1;
+  const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+  const label = currentTime ? `Buffer suggests <strong>${best}</strong> — currently set to ${currentTime}` : `Buffer suggests <strong>${best}</strong> for your audience`;
+  banner.innerHTML = `${label} <span class="suggested-time-use" onclick="document.getElementById('postTime').value='${best}'">Use this</span>`;
+  banner.style.display = 'flex';
 }
 
 function closeModal() {
