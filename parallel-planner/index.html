@@ -1187,6 +1187,132 @@
     padding: 16px;
   }
   #cropCanvas { display: block; cursor: crosshair; user-select: none; touch-action: none; }
+
+  /* ════════════════════════════════════
+     MOBILE  (≤ 768px)
+     ════════════════════════════════════ */
+
+  .mobile-menu-btn { display: none; }
+
+  @media (max-width: 768px) {
+
+    /* HEADER */
+    header { padding: 0 14px; }
+    .mobile-menu-btn { display: inline-flex; }
+    /* Hide Drive sync buttons — keyboard/mouse workflows */
+    .header-actions > :nth-child(2),
+    .header-actions > :nth-child(3) { display: none; }
+    .backup-status span { display: none; }
+    .header-actions { gap: 6px; }
+    .logo { font-size: 13px; }
+
+    /* LAYOUT */
+    .layout { flex-direction: column; height: auto; min-height: calc(100vh - 60px); }
+
+    /* SIDEBAR — off-canvas overlay */
+    aside {
+      position: fixed;
+      left: -280px;
+      top: 60px;
+      bottom: 0;
+      width: 260px;
+      z-index: 150;
+      transition: left 0.25s ease;
+      box-shadow: var(--shadow-lg);
+    }
+    aside.mobile-open { left: 0; }
+
+    /* Tap-outside overlay to dismiss sidebar */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      top: 60px;
+      background: rgba(0,0,0,0.4);
+      z-index: 140;
+    }
+    .sidebar-overlay.visible { display: block; }
+
+    /* MEDIA REPO — drag-drop not viable on touch */
+    .repo-panel { display: none !important; }
+
+    /* MAIN */
+    main { padding: 14px; gap: 12px; width: 100%; }
+
+    /* TIME INSIGHT */
+    .time-insight { flex-direction: column; gap: 8px; padding: 14px; }
+    .time-insight > :last-child { display: none; }
+
+    /* TOOLBAR */
+    .toolbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .platform-tabs { width: 100%; }
+    .platform-tab { flex: 1; justify-content: center; }
+
+    /* POST MODAL — full-screen bottom sheet */
+    .modal-backdrop { padding: 0; align-items: flex-end; }
+    .modal {
+      border-radius: 20px 20px 0 0;
+      max-width: 100%;
+      width: 100%;
+      max-height: 95dvh;
+    }
+    .modal-header { padding: 12px 16px; flex-wrap: wrap; gap: 6px; }
+    .modal-title { font-size: 14px; }
+    .status-selector { gap: 4px; }
+    .status-btn { font-size: 10px; padding: 4px 8px; }
+
+    /* MODAL BODY — slides strip on top, details below */
+    .modal-body { flex-direction: column; }
+
+    /* SLIDES PANEL — horizontal scroll strip */
+    .slides-panel {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .slides-scroll {
+      flex-direction: row;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 8px 10px;
+      gap: 6px;
+    }
+    .slide-slot {
+      flex-shrink: 0;
+      width: 88px;
+      /* aspect-ratio: 4/5 inherited → ~110px tall */
+    }
+    .canva-import { padding: 8px 10px; }
+
+    /* DETAILS PANEL */
+    .details-scroll { padding: 12px 14px; gap: 12px; }
+
+    /* SCHEDULE ROW — stack date + time */
+    .schedule-row { flex-direction: column; gap: 10px; }
+
+    /* PLATFORM TOGGLES — wrap */
+    .platform-toggles { flex-wrap: wrap; }
+
+    /* MODAL FOOTER — wrap buttons */
+    .modal-footer { flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+    .modal-footer > :last-child {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+      width: 100%;
+    }
+
+    /* OTHER MODALS (hashtag manager, crop, upload) */
+    .hashtag-modal,
+    .crop-modal { border-radius: 20px 20px 0 0; max-width: 100%; width: 100%; max-height: 95dvh; }
+    #canvaPickerModal .modal { border-radius: 20px 20px 0 0; }
+    .canva-picker-grid { grid-template-columns: repeat(3, 1fr); }
+
+    /* TOAST — full-width on mobile */
+    .toast { bottom: 72px; right: 12px; left: 12px; width: auto; }
+  }
 </style>
 </head>
 <body>
@@ -1195,6 +1321,7 @@
 <header>
   <div class="logo">PARA<span>//</span>EL. <span style="font-weight:300;opacity:0.4;margin-left:8px;">content planner</span></div>
   <div class="header-actions">
+    <button class="btn btn-ghost mobile-menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
     <div class="backup-status" id="backupStatus">
       <div class="backup-dot"></div>
       <span>synced</span>
@@ -1299,6 +1426,8 @@
   </div>
 
 </div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 <input type="file" id="repoBatchInput" accept="image/*" multiple style="display:none" onchange="handleRepoBatchUpload(event)" />
 
@@ -1579,6 +1708,11 @@
 // ═══════════════════════════════════════════
 // INDEXED DB — MEDIA REPOSITORY
 // ═══════════════════════════════════════════
+
+function toggleSidebar() {
+  document.querySelector('aside').classList.toggle('mobile-open');
+  document.getElementById('sidebarOverlay').classList.toggle('visible');
+}
 
 let db = null;
 let repoImages = []; // in-memory cache [{id, name, dataUrl, uploadedAt}]
