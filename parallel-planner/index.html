@@ -413,6 +413,23 @@
   .badge-week { background: var(--void); color: rgba(255,255,255,0.8); }
   .badge-day { background: var(--purple); color: white; }
   .badge-slides { background: rgba(255,255,255,0.9); color: var(--text-secondary); }
+  .badge-buffer { background: rgba(123,94,167,0.85); color: white; cursor: pointer; }
+  .badge-buffer:hover { background: rgba(123,94,167,1); }
+
+  .post-metrics-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 4px 6px;
+    background: rgba(13,13,15,0.82);
+    backdrop-filter: blur(4px);
+    font-size: 9px;
+    color: rgba(255,255,255,0.8);
+    font-family: 'DM Mono', monospace;
+    border-radius: 0 0 8px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   .post-date-badge {
     position: absolute;
@@ -1955,6 +1972,7 @@ function rowToPost(row) {
     _scheduled_at: row.scheduled_at,
     _id: row.id,
     _permalink: row.permalink || '',
+    _buffer_post_ids: row.buffer_post_ids || null,
   };
 }
 
@@ -2170,7 +2188,8 @@ function renderFeedGrid() {
         <img class="post-thumb" src="${firstSlide}" alt="" onerror="this.style.display='none'" />
         <div class="post-badge">
           ${isArchived
-            ? `<span class="badge badge-archived">✓ posted</span>`
+            ? `<span class="badge badge-archived">✓ posted</span>
+               ${post._buffer_post_ids ? `<span class="badge badge-buffer" onclick="event.stopPropagation();window.open('https://publish.buffer.com','_blank')" title="View in Buffer">⬆ Buffer</span>` : ''}`
             : `<span class="badge badge-week">W${week}</span>
                <span class="badge badge-day">${(post._scheduled_at ? new Date(post._scheduled_at) : d).toLocaleDateString('en-US',{weekday:'short'})}</span>
                ${post.slides.filter(Boolean).length > 1 ? `<span class="badge badge-slides">${post.slides.filter(Boolean).length} slides</span>` : ''}`
@@ -2180,6 +2199,9 @@ function renderFeedGrid() {
           <div class="status-dot ${post.status || 'draft'}"></div>
         </div>
         ${post.date ? `<div class="post-date-badge">${post.date}</div>` : ''}
+        ${post._buffer_metrics ? `<div class="post-metrics-bar" id="metrics-${week}-${dayOfWeek}">
+          ${post._buffer_metrics._summary || ''}
+        </div>` : ''}
         ${!isArchived ? `<div class="post-overlay">
           <button class="post-overlay-btn post-overlay-edit">Edit post</button>
         </div>` : ''}
@@ -3126,14 +3148,28 @@ async function publishViaBuffer() {
       throw new Error(errDetail);
     }
 
+    // Collect Buffer post IDs per service
+    const bufferPostIds: Record<string, string> = {};
+    for (const r of (data.results || [])) {
+      if (r.post_id) bufferPostIds[r.service] = r.post_id;
+    }
+
+    // Persist buffer_post_ids to DB
+    if (Object.keys(bufferPostIds).length > 0 && sb) {
+      await sb.from('scheduled_posts')
+        .update({ status: 'published', buffer_post_ids: bufferPostIds })
+        .eq('planner_key', postKey);
+    }
+
     // Mark as published in local state
     if (!state.posts[postKey]) state.posts[postKey] = { slides: [], platforms: [] };
     state.posts[postKey].status = 'published';
+    state.posts[postKey]._buffer_post_ids = bufferPostIds;
     saveToStorage();
     renderFeedGrid();
     renderDayList();
 
-    const platforms = (data.results || []).filter(r => r.post_id).map(r => r.service).join(', ');
+    const platforms = Object.keys(bufferPostIds).join(', ');
     showToast(`✓ Posted to ${platforms} via Buffer`);
 
     document.getElementById('aiResult').className = 'ai-result visible';
