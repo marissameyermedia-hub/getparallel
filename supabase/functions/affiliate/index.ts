@@ -1,4 +1,7 @@
-// Parallel — affiliate edge function v13
+// Parallel — affiliate edge function v14
+// v14: handleAdminActivate validates promo_code + tracked_link_slug before firing
+//      approval email — prevents silent email failures when data is incomplete.
+//      in_review status updates now route through edge function (RLS fix).
 // v13: POST /admin/activate — manually activates a pending_verification affiliate
 //      and sends the full approval email. Escape hatch when Persona webhook fails.
 //      POST /payout/release now fires /affiliate-payout-failed email on Mercury errors.
@@ -922,6 +925,9 @@ async function handleAdminActivate(req: Request): Promise<Response> {
   if (aff.status === "active") return json({ ok: true, already_active: true });
   if (aff.status !== "pending_verification") {
     return json({ error: `cannot activate affiliate with status '${aff.status}' — only pending_verification is allowed` }, 400);
+  }
+  if (!aff.promo_code || !aff.tracked_link_slug) {
+    return json({ error: "affiliate is missing promo_code or tracked_link_slug — cannot send approval email. Fix the data first." }, 400);
   }
 
   const now = new Date().toISOString();
