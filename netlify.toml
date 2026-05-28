@@ -79,6 +79,17 @@
   to   = "/accessibility.html"
   status = 200
 
+[[redirects]]
+  from = "/affiliate-terms"
+  to   = "/affiliate-terms.html"
+  status = 200
+
+# /affiliate deep link — sends affiliate applicants into the portal signup flow
+[[redirects]]
+  from = "/affiliate"
+  to   = "/?view=affiliate-portal"
+  status = 302
+
 # SPA fallback — must come LAST so policy pages above take priority
 [[redirects]]
   from   = "/*"

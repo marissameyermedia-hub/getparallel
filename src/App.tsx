@@ -380,7 +380,11 @@ function App() {
       // also a portal entry — normalize it to view=affiliate-portal so all the
       // downstream routing branches treat it the same and the freshly-verified
       // applicant lands back in the portal, not dating onboarding.
-      if (params.get('view') === 'affiliate-portal' || params.get('affiliate_verified') === '1') {
+      if (
+        params.get('view') === 'affiliate-portal' ||
+        params.get('affiliate_verified') === '1' ||
+        window.location.pathname === '/affiliate'
+      ) {
         setAffiliateIntent(true);
         params.set('view', 'affiliate-portal');
       }

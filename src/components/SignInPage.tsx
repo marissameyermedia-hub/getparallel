@@ -369,6 +369,23 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
         </div>
       </section>
 
+      {/* ── Affiliate callout ─────────────────────────────────────── */}
+      <section className="w-full border-t border-gray-100 bg-parallel-cream">
+        <div className="max-w-3xl mx-auto px-6 py-12 text-center">
+          <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-3 font-medium">Affiliate Program</p>
+          <h2 className="text-2xl font-semibold tracking-tight mb-3">Earn by growing the pool.</h2>
+          <p className="text-gray-500 text-sm leading-relaxed max-w-md mx-auto mb-6">
+            Bring new members to Parallel and earn up to 20% commission on every subscription you refer. Share a link, earn on every conversion.
+          </p>
+          <a
+            href="/?view=affiliate-portal"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400 hover:text-gray-900 transition-colors"
+          >
+            Learn about the Affiliate Program →
+          </a>
+        </div>
+      </section>
+
       {/* ── Footer ────────────────────────────────────────────────── */}
       {onNavigate && <AppFooter onNavigate={onNavigate} />}
 
