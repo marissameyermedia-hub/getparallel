@@ -1,4 +1,6 @@
-// Parallel — email edge function v17
+// Parallel — email edge function v18
+// v18: Add /affiliate-payout-failed — notify affiliate when Mercury ACH fails
+//      so they're not left in the dark about a delayed payout.
 // v17: Add /affiliate-rejected and /affiliate-needs-info — email notifications
 //      when admin rejects or requests more info on an affiliate application.
 // v16: Add /affiliate-verify-identity — intermediate email sent after admin approval,
@@ -735,12 +737,40 @@ async function handleAffiliatePayoutReleased(req: Request) {
   return json({ ok: true });
 }
 
+function tplAffiliatePayoutFailed(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We attempted to send your affiliate payout but encountered a technical issue with our payment processor. No money has left your balance — your commissions are safe and remain in your account.</p>`,
+    `<p style="margin:0 0 12px 0;">Our team has been notified and will retry your payout as soon as the issue is resolved. You'll receive a confirmation email once payment is on its way.</p>`,
+    `<p style="margin:0 0 4px 0;">If you have any questions, reply to this email and we'll update you directly.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Payout update — we'll retry shortly", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "View your dashboard" });
+  return {
+    subject: "Your Parallel affiliate payout — update",
+    html,
+    text: `${greeting}\n\nWe attempted to send your affiliate payout but encountered a technical issue. No money has left your balance — your commissions are safe.\n\nOur team has been notified and will retry your payout as soon as the issue is resolved. You'll receive a confirmation once payment is sent.\n\nQuestions? Reply to this email.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliatePayoutFailed(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliatePayoutFailed(name);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "17" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "18" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -758,6 +788,7 @@ Deno.serve(async (req) => {
     if (path === "/affiliate-needs-info"         && req.method === "POST") return await handleAffiliateNeedsInfo(req);
     if (path === "/affiliate-commission-clawback" && req.method === "POST") return await handleAffiliateCommissionClawback(req);
     if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);
+    if (path === "/affiliate-payout-failed"      && req.method === "POST") return await handleAffiliatePayoutFailed(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);

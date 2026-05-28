@@ -1,4 +1,9 @@
-// Parallel — affiliate edge function v12
+// Parallel — affiliate edge function v13
+// v13: POST /admin/activate — manually activates a pending_verification affiliate
+//      and sends the full approval email. Escape hatch when Persona webhook fails.
+//      POST /payout/release now fires /affiliate-payout-failed email on Mercury errors.
+// v12: POST /admin/update-status — updates audit_status for rejected/needs_info/in_review
+//      and fires email notifications.
 // v11: /admin/approve creates affiliates with status='pending_verification' by default.
 //      Sends identity-verification email instead of full approval email.
 //      Pass skip_persona:true to create as active immediately (legacy/bypass).
@@ -606,6 +611,11 @@ async function handlePayoutRelease(req: Request): Promise<Response> {
   const accountId = await getMercuryAccountId();
   if (!accountId) {
     await admin.from("affiliate_payouts").update({ mercury_status: "failed", failure_reason: "could not fetch Mercury account" }).eq("id", payout.id);
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-payout-failed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: aff.email, name: aff.display_name }),
+    }).catch(() => {});
     return json({ error: "Mercury account unavailable — check Mercury API credentials" }, 502);
   }
 
@@ -626,13 +636,19 @@ async function handlePayoutRelease(req: Request): Promise<Response> {
 
   const mercuryBody = await mercuryRes.json().catch(() => ({}));
 
-  // 9. If Mercury failed: update payout record, leave attributions untouched
+  // 9. If Mercury failed: update payout record, leave attributions untouched, notify affiliate
   if (!mercuryRes.ok) {
     await admin.from("affiliate_payouts").update({
       mercury_status: "failed",
       failure_reason: JSON.stringify(mercuryBody).slice(0, 500),
     }).eq("id", payout.id);
     console.error("[affiliate/payout/release] Mercury error:", mercuryRes.status, mercuryBody);
+    // Notify affiliate their payout failed — commissions are safe, will retry
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-payout-failed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: aff.email, name: aff.display_name }),
+    }).catch((err) => console.error("[affiliate/payout/release] payout-failed email error:", err));
     return json({ error: "Mercury payment failed", detail: mercuryBody }, 502);
   }
 
@@ -883,6 +899,55 @@ async function handleAdminUpdateStatus(req: Request): Promise<Response> {
   return json({ ok: true, status, application_id });
 }
 
+// ── POST /admin/activate ──────────────────────────────────────────────────────
+// Manually activates a pending_verification affiliate and sends the full
+// approval email. Use when the Persona webhook fails to fire.
+
+async function handleAdminActivate(req: Request): Promise<Response> {
+  const { isAdmin } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+  const { affiliate_id } = body;
+  if (!affiliate_id) return json({ error: "affiliate_id required" }, 400);
+
+  const admin = adminClient();
+  const { data: aff, error: affErr } = await admin
+    .from("affiliates")
+    .select("id, email, display_name, tier, status, promo_code, tracked_link_slug, commission_rate")
+    .eq("id", affiliate_id)
+    .maybeSingle();
+  if (affErr || !aff) return json({ error: "affiliate not found" }, 404);
+  if (aff.status === "active") return json({ ok: true, already_active: true });
+  if (aff.status !== "pending_verification") {
+    return json({ error: `cannot activate affiliate with status '${aff.status}' — only pending_verification is allowed` }, 400);
+  }
+
+  const now = new Date().toISOString();
+  const { error: updateErr } = await admin
+    .from("affiliates")
+    .update({ status: "active", updated_at: now })
+    .eq("id", affiliate_id);
+  if (updateErr) return json({ error: updateErr.message }, 500);
+
+  fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-approved`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+    body: JSON.stringify({
+      email: aff.email,
+      name: aff.display_name,
+      tier: aff.tier,
+      promo_code: aff.promo_code,
+      tracked_link_slug: aff.tracked_link_slug,
+      commission_rate: aff.commission_rate,
+    }),
+  }).catch((err) => console.error("[affiliate/admin/activate] approval email failed:", err));
+
+  console.log("[affiliate/admin/activate] activated:", { affiliate_id, email: aff.email });
+  return json({ ok: true, affiliate_id, status: "active" });
+}
+
 // ── POST /admin/approve ───────────────────────────────────────────────────────
 
 async function handleAdminApprove(req: Request): Promise<Response> {
@@ -1127,6 +1192,11 @@ Deno.serve(async (req: Request) => {
   // POST /admin/update-status
   if (req.method === "POST" && endpoint === "admin" && segments[1] === "update-status") {
     return await handleAdminUpdateStatus(req);
+  }
+
+  // POST /admin/activate
+  if (req.method === "POST" && endpoint === "admin" && segments[1] === "activate") {
+    return await handleAdminActivate(req);
   }
 
   // POST /admin/approve
