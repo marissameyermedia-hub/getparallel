@@ -2636,26 +2636,30 @@ async function generateCaption(refine = false) {
   const currentCaption = document.getElementById('captionField').value.trim();
 
   const textInstruction = hasImages
-    ? `You are a social media strategist for Parallel, a premium dating app. Voice: dry, confident, deadpan. No hype. No exclamation points. Compatibility over chemistry. Never name competitors.
+    ? `You are a social media strategist for Parallel, a premium dating app. Voice: funny, witty, relatable — like a friend who gets it. Use humor that comes from truth, not cringe. Compatibility over chemistry. Never name competitors.
 
-You are looking at ${contentBlocks.length} slide${contentBlocks.length > 1 ? 's' : ''} from a Parallel carousel post. Read carefully.
+You are looking at ${contentBlocks.length} slide${contentBlocks.length > 1 ? 's' : ''} from a Parallel carousel post. Read each slide carefully and write captions that riff on the specific content shown.
 ${refine && followPrompt ? `\nCREATOR DIRECTION (follow this exactly, it overrides defaults): "${followPrompt}"` : ''}
 ${refine && currentCaption ? `\nCurrent caption for reference: "${currentCaption}"` : ''}
 
+Each caption must be EXACTLY 4 sentences: 3 funny/relatable sentences based on the slide content, then 1 call-to-action sentence ending with a link to sign up (use "getparallel.vip").
+
 Output EXACTLY this format, no extra text:
 
-CAPTION 1: [caption]
-CAPTION 2: [caption]
-CAPTION 3: [caption]
+CAPTION 1: [4-sentence caption]
+CAPTION 2: [4-sentence caption]
+CAPTION 3: [4-sentence caption]
 HASHTAGS: [exactly 5 hashtags — mix: 1 high-volume (#dating or #relationship), 2 mid-tier (#intentionaldating #compatibilitymatters), 2 branded (#parallelvip #getparallel) — all on one line]`
-    : `You are a social media strategist for Parallel, a premium dating app. Voice: dry, confident, deadpan. No hype. No exclamation points.
+    : `You are a social media strategist for Parallel, a premium dating app. Voice: funny, witty, relatable — like a friend who gets it. Use humor that comes from truth, not cringe.
 ${refine && followPrompt ? `\nCREATOR DIRECTION (follow this exactly, it overrides defaults): "${followPrompt}"` : ''}
+
+Each caption must be EXACTLY 4 sentences: 3 funny/relatable sentences, then 1 call-to-action sentence ending with a link to sign up (use "getparallel.vip").
 
 Output EXACTLY this format:
 
-CAPTION 1: [caption]
-CAPTION 2: [caption]
-CAPTION 3: [caption]
+CAPTION 1: [4-sentence caption]
+CAPTION 2: [4-sentence caption]
+CAPTION 3: [4-sentence caption]
 HASHTAGS: [exactly 5 hashtags on one line]`;
 
   contentBlocks.push({ type: 'text', text: textInstruction });
