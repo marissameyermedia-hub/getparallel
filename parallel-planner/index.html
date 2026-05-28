@@ -1561,10 +1561,8 @@
       <button class="btn" style="background:var(--surface);color:var(--text-secondary);border:1px solid var(--border);" onclick="deletePost()">Delete post</button>
       <div style="display:flex;gap:8px;">
         <button class="btn" style="background:var(--surface);color:var(--text-secondary);border:1px solid var(--border);" onclick="closeModal()">Cancel</button>
-        <button class="btn" id="tiktokBtn" onclick="copyForTikTok()" style="background:#010101;color:white;border:none;">♪ Copy for TikTok</button>
-        <button class="btn" id="threadsBtn" onclick="copyForThreads()" style="background:#000000;color:white;border:none;">⊕ Copy for Threads</button>
         <button class="btn" id="scheduleBtn" onclick="schedulePost()" style="background:#7B5EA7;color:white;border:none;">🗓 Schedule</button>
-        <button class="btn btn-primary" id="publishBtn" onclick="publishToInstagram()" style="background:linear-gradient(135deg,#833AB4,#E1306C);border:none;">📷 Publish to Instagram</button>
+        <button class="btn btn-primary" id="bufferBtn" onclick="publishViaBuffer()" style="background:linear-gradient(135deg,#7B5EA7,#A98FD0);border:none;">⬆ Push to Buffer</button>
         <button class="btn btn-primary" onclick="savePost()">Save post</button>
       </div>
     </div>
@@ -3070,60 +3068,83 @@ function deleteBankCaption(id) {
 // COPY FOR TIKTOK
 // ═══════════════════════════════════════════
 
-function copyForTikTok() {
+async function publishViaBuffer() {
+  if (!state.activePost) return;
+  const postKey = `${state.activePost.week}-${state.activePost.slot}`;
+  const post = state.posts[postKey];
+  const rawSlides = (post?.slides || []).filter(Boolean);
   const caption = document.getElementById('captionField').value.trim();
-  const hashtags = document.getElementById('hashtagField').value.trim();
 
-  if (!caption && !hashtags) { showToast('Add a caption first'); return; }
-
-  let text = caption;
-  if (hashtags && !caption.includes(hashtags.split(' ')[0])) {
-    text = caption ? `${caption}\n\n${hashtags}` : hashtags;
-  }
-
-  copyText(text, 'tiktokBtn', '♪ Copy for TikTok', '✓ Copied — open TikTok, upload your 3 PNGs, paste');
-}
-
-async function copyForThreads() {
-  const caption = document.getElementById('captionField').value.trim();
+  if (rawSlides.length === 0) { showToast('Add slides before publishing'); return; }
   if (!caption) { showToast('Add a caption first'); return; }
 
-  const btn = document.getElementById('threadsBtn');
-  btn.innerHTML = '<div class="spinner"></div>';
+  const btn = document.getElementById('bufferBtn');
+  btn.innerHTML = '<div class="spinner"></div> Sending...';
   btn.disabled = true;
 
   try {
-    // Threads works best with conversational, no-hashtag text — rewrite with AI
-    const response = await fetch('https://qnnjtmhwcpsmpzlxdxex.supabase.co/functions/v1/claude-proxy', {
+    // Resolve any base64 slides to public Storage URLs
+    const slideUrls = [];
+    for (let i = 0; i < rawSlides.length; i++) {
+      const s = rawSlides[i];
+      if (s.startsWith('http')) {
+        slideUrls.push(s);
+      } else if (s.startsWith('data:') && sb) {
+        const commaIdx = s.indexOf(',');
+        const meta = s.substring(0, commaIdx);
+        const b64 = s.substring(commaIdx + 1);
+        const mime = (meta.match(/:(.*?);/) || [])[1] || 'image/png';
+        const ext = mime.split('/')[1] || 'png';
+        const path = `auto-publish/${postKey}-${Date.now()}-${i}.${ext}`;
+        const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const { error } = await sb.storage.from('social-media').upload(path, bytes, { contentType: mime, upsert: true });
+        if (error) throw new Error(`Upload failed: ${error.message}`);
+        const { data: urlData } = sb.storage.from('social-media').getPublicUrl(path);
+        slideUrls.push(urlData.publicUrl);
+      }
+    }
+
+    if (slideUrls.length === 0) throw new Error('No valid slide URLs after resolving');
+
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/publish-buffer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 300,
-        messages: [{
-          role: 'user',
-          content: `Rewrite this Instagram caption for Threads. Threads is conversational — no hashtags, shorter, more like a thought or observation someone would post. Keep Parallel's dry, confident voice. Max 3 sentences. No hashtags. End with getparallel.vip if it fits naturally.
-
-Original caption: "${caption}"
-
-Return ONLY the rewritten Threads caption, nothing else.`
-        }]
+        slide_urls: slideUrls,
+        caption,
+        hashtags: document.getElementById('hashtagField').value.trim(),
+        location: document.getElementById('locationField').value.trim() || null,
+        audio: document.getElementById('audioField').value.trim() || null,
       })
     });
 
-    const data = await response.json();
-    const threadsCaption = (data.content || []).map(b => b.text || '').join('').trim();
+    const data = await res.json();
+    if (!data.ok) {
+      const errDetail = data.error || (data.results || []).map(r => r.error).filter(Boolean).join('; ') || 'Buffer returned ok: false';
+      throw new Error(errDetail);
+    }
 
-    if (!threadsCaption) throw new Error('No response');
+    // Mark as published in local state
+    if (!state.posts[postKey]) state.posts[postKey] = { slides: [], platforms: [] };
+    state.posts[postKey].status = 'published';
+    saveToStorage();
+    renderFeedGrid();
+    renderDayList();
 
-    copyText(threadsCaption, 'threadsBtn', '⊕ Copy for Threads', '✓ Copied for Threads — open Threads, attach your images, paste');
+    const platforms = (data.results || []).filter(r => r.post_id).map(r => r.service).join(', ');
+    showToast(`✓ Posted to ${platforms} via Buffer`);
 
-  } catch(e) {
-    // Fallback — just use original caption without hashtags
-    const stripped = caption.split('\n').filter(l => !l.trim().startsWith('#')).join('\n').trim();
-    copyText(stripped, 'threadsBtn', '⊕ Copy for Threads', '✓ Copied for Threads');
+    document.getElementById('aiResult').className = 'ai-result visible';
+    document.getElementById('aiResult').innerHTML = `
+      <div style="padding:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:8px;margin-top:4px;">
+        <div style="font-size:12px;font-weight:600;color:#22C55E;">✓ Published to ${platforms} via Buffer</div>
+      </div>`;
+
+  } catch(err) {
+    showToast(`Publish failed: ${err.message.slice(0, 100)}`);
   }
 
+  btn.innerHTML = '⬆ Push to Buffer';
   btn.disabled = false;
 }
 
@@ -3229,90 +3250,6 @@ async function schedulePost() {
   }
 
   btn.innerHTML = '🗓 Schedule';
-  btn.disabled = false;
-}
-
-// ═══════════════════════════════════════════
-// PUBLISH TO INSTAGRAM
-// ═══════════════════════════════════════════
-
-
-async function publishToInstagram() {
-  if (!state.activePost) return;
-
-  const postKey = `${state.activePost.week}-${state.activePost.slot}`;
-  const post = state.posts[postKey];
-  const slides = (post?.slides || []).filter(Boolean);
-
-  if (slides.length === 0) {
-    showToast('Add slides before publishing');
-    return;
-  }
-
-  const caption = document.getElementById('captionField').value.trim();
-  const rawHashtags = document.getElementById('hashtagField').value.trim();
-  // Limit to 5 hashtags
-  const top5 = rawHashtags ? rawHashtags.split(/\s+/).filter(t => t.startsWith('#')).slice(0, 5).join(' ') : '';
-  const fullCaption = top5 ? `${caption}\n\n${top5}` : caption;
-
-  if (!caption) {
-    showToast('Add a caption before publishing');
-    return;
-  }
-
-  const btn = document.getElementById('publishBtn');
-  btn.innerHTML = '<div class="spinner"></div> Publishing...';
-  btn.disabled = true;
-
-  try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/publish-instagram`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify({ slides, caption: fullCaption })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      throw new Error(data.error || `HTTP ${res.status}`);
-    }
-
-    // Save the post with published status and permalink
-    if (!state.posts[postKey]) state.posts[postKey] = { slides: [], platforms: [] };
-    state.posts[postKey].status = 'published';
-    state.posts[postKey]._permalink = data.permalink;
-    if (sb) {
-      await sb.from('scheduled_posts').update({
-        status: 'published',
-        instagram_post_id: data.instagram_post_id,
-        permalink: data.permalink,
-        updated_at: new Date().toISOString()
-      }).eq('planner_key', postKey);
-    }
-    saveLocalPrefs();
-    renderFeedGrid();
-
-    showToast('✓ Published to Instagram');
-
-    // Show the link in the modal
-    const resultEl = document.getElementById('aiResult');
-    resultEl.className = 'ai-result visible';
-    resultEl.innerHTML = `
-      <div style="padding:10px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:8px;margin-top:4px;">
-        <div style="font-size:12px;font-weight:600;color:#22C55E;margin-bottom:4px;">✓ Published to @parallel_vip</div>
-        <a href="${data.permalink}" target="_blank" style="font-size:11px;color:var(--purple);text-decoration:underline;">${data.permalink}</a>
-      </div>
-    `;
-
-  } catch (err) {
-    showToast(`Publish failed: ${err.message}`);
-    console.error(err);
-  }
-
-  btn.innerHTML = '📷 Publish to Instagram';
   btn.disabled = false;
 }
 
