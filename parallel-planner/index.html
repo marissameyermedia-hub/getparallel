@@ -2294,7 +2294,8 @@ function openPost(week, slot) {
   const dayIndex = (week - 1) * 7 + slot;
   const d = days[dayIndex];
 
-  document.getElementById('modalTitle').textContent = `W${week} · ${DAY_NAMES[slot]} ${formatDate(d)}`;
+  const displayDate = post._scheduled_at ? new Date(post._scheduled_at) : d;
+  document.getElementById('modalTitle').textContent = `W${week} · ${displayDate.toLocaleDateString('en-US',{weekday:'short'})} ${displayDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
   document.getElementById('captionField').value = post.caption || '';
   document.getElementById('hashtagField').value = post.hashtags || '';
   document.getElementById('postDate').value = formatDate(d);
