@@ -346,11 +346,10 @@ function App() {
         headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
       });
       if (r.ok) {
-        localStorage.setItem('parallel_is_affiliate', 'true');
+        try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
         return 'affiliate-portal';
       }
     } catch { /* fall through to application check */ }
-    localStorage.removeItem('parallel_is_affiliate');
     // Pending applicant? Query PostgREST directly with the token — RLS scopes
     // the result to the caller's own application (by JWT email), so this works
     // even on the stored-token path where the SDK has no active session.
@@ -361,7 +360,10 @@ function App() {
       );
       if (r.ok) {
         const apps = await r.json().catch(() => []);
-        if (Array.isArray(apps) && apps.length > 0) return 'affiliate-portal';
+        if (Array.isArray(apps) && apps.length > 0) {
+          try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
+          return 'affiliate-portal';
+        }
       }
     } catch { /* fall through to onboarding */ }
     return 'onboarding';
@@ -685,7 +687,12 @@ function App() {
           } else {
             // Dating onboarding incomplete — route active affiliates and
             // pending applicants to the portal; everyone else to onboarding.
-            setCurrentView(await resolveNonOnboardedRoute(session.access_token));
+            // Skip the two network calls for users who have no affiliate history
+            // (most users in the dating app mid-onboarding path).
+            const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
+            setCurrentView(affiliateIntent || cachedIsAffiliate
+              ? await resolveNonOnboardedRoute(session.access_token)
+              : 'onboarding');
           }
         } else {
           const storedToken = await getAccessToken();
@@ -749,7 +756,10 @@ function App() {
               } else {
                 // Dating onboarding incomplete — route active affiliates and
                 // pending applicants to the portal; everyone else to onboarding.
-                setCurrentView(await resolveNonOnboardedRoute(storedToken));
+                const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
+                setCurrentView(affiliateIntent || cachedIsAffiliate
+                  ? await resolveNonOnboardedRoute(storedToken)
+                  : 'onboarding');
               }
             } catch (tokenErr) {
               toast('Your session expired — please sign back in.', { duration: 4000 });
