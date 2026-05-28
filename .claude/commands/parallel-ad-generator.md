@@ -11,6 +11,7 @@ Canva template: https://www.canva.com/design/DAHKmK0J6Ls/7CewZjan-fLtdlViH45EkA/
 - Logo (PARA//EL.) stays top left on every slide
 - URL (getparallel.vip) stays bottom right on every slide
 - Realign text neatly after changing copy
+- **Text color rule**: On a purple background, all body text must be white. On black background, all body text must be white. On white background, all body text must be black.
 
 ## Background Color Pattern
 Rotate in this order, always picking up where the last published post left off:
