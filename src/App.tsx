@@ -116,6 +116,13 @@ function App() {
   // but isn't signed in yet. Threads through signup + phone verification so a
   // brand-new affiliate applicant lands in the portal apply form, not onboarding.
   const [affiliateIntent, setAffiliateIntent] = useState(false);
+  // True when the user landed back from a Persona identity verification
+  // (?affiliate_verified=1). Captured synchronously before checkSession
+  // rewrites the URL so the portal can show a "processing" state instead
+  // of the same "Verify Identity" CTA the user just came from.
+  const [personaReturnInProgress] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('affiliate_verified') === '1'; } catch { return false; }
+  });
   const [tosGateRequired, setTosGateRequired] = useState(false);
   const [userDateOfBirth, setUserDateOfBirth] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
@@ -2052,6 +2059,7 @@ function App() {
             onBack={() => setCurrentView('account')}
             onSignOut={handleLogOut}
             isAffiliateOnly={!hasCompletedOnboarding}
+            personaJustVerified={personaReturnInProgress}
           />
         )}
 

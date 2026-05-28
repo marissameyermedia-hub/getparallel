@@ -445,14 +445,31 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
 
 // ── Pending Screen ────────────────────────────────────────────────────────────
 
-function PendingScreen({ app, onRefresh }: { app: AffiliateApplication; onRefresh: () => void }) {
+function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplication; onRefresh: () => void; justVerified?: boolean }) {
   const needsVerification = app.audit_status === 'approved' && app.persona_status !== 'approved';
   const redirectUri = typeof window !== 'undefined'
-    ? `${window.location.origin}${window.location.pathname}?affiliate_verified=1`
+    ? `${window.location.origin}/?affiliate_verified=1`
     : '';
   const personaUrl = `https://withpersona.com/verify?inquiry-template-id=${encodeURIComponent(PERSONA_TEMPLATE_ID)}&reference-id=${encodeURIComponent(`aff_${app.id}`)}&environment=${PERSONA_ENV}&redirect-uri=${encodeURIComponent(redirectUri)}`;
 
   if (needsVerification) {
+    // User just returned from Persona but the webhook hasn't fired yet —
+    // show a processing state instead of the Verify Identity CTA again.
+    if (justVerified) {
+      return (
+        <div className="px-5 pb-8 text-center">
+          <div className="w-14 h-14 rounded-full bg-[#7B5EA7]/10 flex items-center justify-center mx-auto mb-5">
+            <div className="w-6 h-6 rounded-full border-2 border-[#7B5EA7] border-t-transparent animate-spin" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Activating your account…</h2>
+          <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto mb-6">
+            Identity verification received. Your dashboard will be ready in just a moment — hang tight.
+          </p>
+          <p className="text-xs text-gray-400">This usually takes less than a minute.</p>
+        </div>
+      );
+    }
+
     return (
       <div className="px-5 pb-8 text-center">
         <ShieldCheck size={40} className="text-[#7B5EA7] mx-auto mb-4" />
@@ -1256,13 +1273,26 @@ interface Props {
   onBack: () => void;
   onSignOut?: () => void;
   isAffiliateOnly?: boolean;
+  personaJustVerified?: boolean;
 }
 
-export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly }: Props) {
+export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, personaJustVerified }: Props) {
   const [state, setState] = useState<PortalState>('loading');
   const [profile, setProfile] = useState<AffiliateProfile | null>(null);
   const [application, setApplication] = useState<AffiliateApplication | null>(null);
   const [loadKey, setLoadKey] = useState(0);
+
+  // When the user lands back from Persona (?affiliate_verified=1), the webhook
+  // may not have fired yet so /profile still returns 404 and the portal would
+  // show the "Verify Identity" CTA again — confusing. Poll every 3 s for up to
+  // 2 minutes; once the webhook activates the affiliate, /profile returns 200
+  // and the load effect switches state to 'dashboard'.
+  useEffect(() => {
+    if (!personaJustVerified || state !== 'submitted') return;
+    const interval = setInterval(() => setLoadKey(k => k + 1), 3000);
+    const timeout = setTimeout(() => clearInterval(interval), 120_000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [personaJustVerified, state]);
 
   useEffect(() => {
     setState('loading');
@@ -1354,7 +1384,7 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly }: Prop
         )}
         {state === 'submitted' && application && (
           <div className="pt-24">
-            <PendingScreen app={application} onRefresh={() => setLoadKey(k => k + 1)} />
+            <PendingScreen app={application} onRefresh={() => setLoadKey(k => k + 1)} justVerified={personaJustVerified} />
           </div>
         )}
         {state === 'dashboard' && profile && (
