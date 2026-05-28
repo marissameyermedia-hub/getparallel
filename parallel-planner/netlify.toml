@@ -1,5 +1,5 @@
 # Parallel Planner — Netlify configuration
-# Platforms: Instagram, Facebook, TikTok (via Buffer), Threads
+# Platforms: Instagram, Facebook, TikTok (via Buffer)
 # Deploy trigger: post date auto-derives from grid slot, time-only input
 
 [build]
