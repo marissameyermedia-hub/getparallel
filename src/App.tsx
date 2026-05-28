@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 let emailConfirmedNotified = false;
 import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL, AFFILIATE_FUNCTION_URL } from './utils/supabase/client';
 import { WaitlistPage } from './components/WaitlistPage';
-import { publicAnonKey } from './utils/supabase/info';
+import { projectId, publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
 import { SignInPage } from './components/SignInPage';
 import { AccountCreationPage } from './components/AccountCreationPage';
@@ -330,6 +330,43 @@ function App() {
     if (storedActivated) setHasActivated(storedActivated === 'true');
   };
 
+  // ── Affiliate route resolution for non-onboarded users ───────
+  // A user who hasn't completed dating onboarding might still belong in the
+  // affiliate portal: they could be an active affiliate (no dating flow at
+  // all) OR a pending applicant who signed up + applied but isn't approved
+  // yet. Probing only /profile misses pending applicants (it 401s until the
+  // affiliate is active), which would dump them into dating onboarding. This
+  // resolves the correct destination; the portal itself renders the right
+  // sub-state (apply / submitted / dashboard).
+  const resolveNonOnboardedRoute = async (
+    token: string,
+  ): Promise<'affiliate-portal' | 'onboarding'> => {
+    try {
+      const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+      });
+      if (r.ok) {
+        localStorage.setItem('parallel_is_affiliate', 'true');
+        return 'affiliate-portal';
+      }
+    } catch { /* fall through to application check */ }
+    localStorage.removeItem('parallel_is_affiliate');
+    // Pending applicant? Query PostgREST directly with the token — RLS scopes
+    // the result to the caller's own application (by JWT email), so this works
+    // even on the stored-token path where the SDK has no active session.
+    try {
+      const r = await fetch(
+        `https://${projectId}.supabase.co/rest/v1/affiliate_applications?select=id&limit=1`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey } },
+      );
+      if (r.ok) {
+        const apps = await r.json().catch(() => []);
+        if (Array.isArray(apps) && apps.length > 0) return 'affiliate-portal';
+      }
+    } catch { /* fall through to onboarding */ }
+    return 'onboarding';
+  };
+
   // ── Session check on mount ────────────────────────────────────
 
   useEffect(() => {
@@ -339,7 +376,14 @@ function App() {
 
       // Remember affiliate deep-link intent so signup + phone verification
       // route a brand-new applicant to the portal instead of dating onboarding.
-      if (params.get('view') === 'affiliate-portal') setAffiliateIntent(true);
+      // Returning from Persona identity verification (?affiliate_verified=1) is
+      // also a portal entry — normalize it to view=affiliate-portal so all the
+      // downstream routing branches treat it the same and the freshly-verified
+      // applicant lands back in the portal, not dating onboarding.
+      if (params.get('view') === 'affiliate-portal' || params.get('affiliate_verified') === '1') {
+        setAffiliateIntent(true);
+        params.set('view', 'affiliate-portal');
+      }
 
       // Capture push notification deep-link before any URL cleanup.
       // The messages edge function embeds ?notify=message&from=<senderId>
@@ -635,22 +679,9 @@ function App() {
             window.history.replaceState({}, '', window.location.pathname);
             setCurrentView('affiliate-portal');
           } else {
-            // Dating onboarding incomplete — probe affiliate profile so
-            // active affiliate-only users (no dating flow) aren't trapped here.
-            try {
-              const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': publicAnonKey },
-              });
-              if (r.ok) {
-                localStorage.setItem('parallel_is_affiliate', 'true');
-                setCurrentView('affiliate-portal');
-              } else {
-                localStorage.removeItem('parallel_is_affiliate');
-                setCurrentView('onboarding');
-              }
-            } catch {
-              setCurrentView('onboarding');
-            }
+            // Dating onboarding incomplete — route active affiliates and
+            // pending applicants to the portal; everyone else to onboarding.
+            setCurrentView(await resolveNonOnboardedRoute(session.access_token));
           }
         } else {
           const storedToken = await getAccessToken();
@@ -712,21 +743,9 @@ function App() {
                 window.history.replaceState({}, '', window.location.pathname);
                 setCurrentView('affiliate-portal');
               } else {
-                // Dating onboarding incomplete — probe affiliate profile.
-                try {
-                  const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
-                    headers: { 'Authorization': `Bearer ${storedToken}`, 'apikey': publicAnonKey },
-                  });
-                  if (r.ok) {
-                    localStorage.setItem('parallel_is_affiliate', 'true');
-                    setCurrentView('affiliate-portal');
-                  } else {
-                    localStorage.removeItem('parallel_is_affiliate');
-                    setCurrentView('onboarding');
-                  }
-                } catch {
-                  setCurrentView('onboarding');
-                }
+                // Dating onboarding incomplete — route active affiliates and
+                // pending applicants to the portal; everyone else to onboarding.
+                setCurrentView(await resolveNonOnboardedRoute(storedToken));
               }
             } catch (tokenErr) {
               toast('Your session expired — please sign back in.', { duration: 4000 });
@@ -1504,25 +1523,23 @@ function App() {
               }
               const onboardingComplete = !!userData.has_completed_onboarding;
               if (onboardingComplete) {
-                await fetchMatches(token);
-                setCurrentView('matches');
-              } else {
-                // Dating onboarding incomplete — probe affiliate profile
-                try {
-                  const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
-                  });
-                  if (r.ok) {
-                    localStorage.setItem('parallel_is_affiliate', 'true');
-                    window.history.replaceState({}, '', window.location.pathname);
-                    setCurrentView('affiliate-portal');
-                  } else {
-                    localStorage.removeItem('parallel_is_affiliate');
-                    setCurrentView('onboarding');
-                  }
-                } catch {
-                  setCurrentView('onboarding');
+                // Honor an affiliate deep-link intent even for full members —
+                // they clicked into the portal, so send them there.
+                if (affiliateIntent) {
+                  window.history.replaceState({}, '', window.location.pathname);
+                  setCurrentView('affiliate-portal');
+                } else {
+                  await fetchMatches(token);
+                  setCurrentView('matches');
                 }
+              } else {
+                // Dating onboarding incomplete — route active affiliates and
+                // pending applicants to the portal; everyone else to onboarding.
+                const route = await resolveNonOnboardedRoute(token);
+                if (route === 'affiliate-portal') {
+                  window.history.replaceState({}, '', window.location.pathname);
+                }
+                setCurrentView(route);
               }
             }}
             onCreateAccount={() => setCurrentView('account-creation')}

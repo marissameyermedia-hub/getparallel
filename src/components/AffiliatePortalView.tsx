@@ -226,7 +226,7 @@ async function affiliateApi<T = any>(
 
 // ── Apply Form ────────────────────────────────────────────────────────────────
 
-function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) => void }) {
+function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: AffiliateApplication) => void; onAlreadyApplied: () => void }) {
   const [step, setStep] = useState<1 | 2>(1);
   const [tier, setTier] = useState<AffiliateTier | null>(null);
   const [instagram, setInstagram] = useState('');
@@ -255,7 +255,14 @@ function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) =
       },
     });
     setIsSubmitting(false);
-    if (err) { setError(err); return; }
+    if (err) {
+      // An application already exists (e.g. submitted on another device, or a
+      // transient error hid it on load). Re-resolve the portal so they land on
+      // their real status screen instead of a dead-end error.
+      if (/already submitted/i.test(err)) { onAlreadyApplied(); return; }
+      setError(err);
+      return;
+    }
     if (data?.application) onSubmitted(data.application);
   }
 
@@ -1266,7 +1273,10 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly }: Prop
         )}
         {state === 'apply' && (
           <div className="pt-16 px-0">
-            <ApplyForm onSubmitted={(app) => { setApplication(app); setState('submitted'); }} />
+            <ApplyForm
+              onSubmitted={(app) => { setApplication(app); setState('submitted'); }}
+              onAlreadyApplied={() => setLoadKey(k => k + 1)}
+            />
           </div>
         )}
         {state === 'submitted' && application && (
