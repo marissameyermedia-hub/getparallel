@@ -167,11 +167,11 @@ const SHARE_NUDGES = [
 
 // Matches the actual commission_status DB enum values
 const COMMISSION_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  pending:     { label: 'Awaiting payment', color: 'text-yellow-600' },
-  releasable:  { label: 'Eligible',         color: 'text-emerald-600' },
-  released:    { label: 'Paid',             color: 'text-emerald-600' },
-  clawed_back: { label: 'Reversed',         color: 'text-red-500' },
-  fraud:       { label: 'Flagged',          color: 'text-red-500' },
+  pending:     { label: 'Awaiting subscription', color: 'text-yellow-600' },
+  releasable:  { label: 'Eligible',              color: 'text-emerald-600' },
+  released:    { label: 'Paid',                  color: 'text-emerald-600' },
+  clawed_back: { label: 'Reversed',              color: 'text-red-500' },
+  fraud:       { label: 'Flagged',               color: 'text-red-500' },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -360,7 +360,7 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
                     <input
                       type="text"
                       value={value}
-                      onChange={e => set(e.target.value)}
+                      onChange={e => set(e.target.value.replace(/^@+/, ''))}
                       placeholder={placeholder}
                       className="flex-1 bg-transparent text-sm outline-none text-gray-900 placeholder-gray-300"
                     />
@@ -422,6 +422,10 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
             </div>
           )}
 
+          {!hasHandle && (
+            <p className="text-xs text-gray-400 text-center mb-3">Add at least one social handle to continue.</p>
+          )}
+
           <div className="flex gap-2">
             <button
               onClick={() => setStep(1)}
@@ -448,11 +452,15 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
 function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplication; onRefresh: () => void; justVerified?: boolean }) {
   const [pollTimedOut, setPollTimedOut] = useState(false);
 
+  // Start the 2-minute timeout exactly once when justVerified is first true.
+  // Do NOT depend on `app` or other values that change during polling to avoid
+  // resetting the clock on every re-render.
   useEffect(() => {
     if (!justVerified) return;
     const t = setTimeout(() => setPollTimedOut(true), 120_000);
     return () => clearTimeout(t);
-  }, [justVerified]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justVerified]); // intentionally omits app — timeout must not reset on polls
 
   const needsVerification = app.audit_status === 'approved' && app.persona_status !== 'approved';
   const redirectUri = typeof window !== 'undefined'
@@ -520,8 +528,8 @@ function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplica
     pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',    body: "We're reviewing your application. Typically 1–3 business days." },
     in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
     approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Verified!',               body: "Identity confirmed. Your affiliate dashboard is being activated — check back shortly." },
-    needs_info: { icon: AlertCircle,   color: 'text-orange-500', title: 'More info needed',        body: "Check your email — we need a bit more information to process your application." },
-    rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved', body: "Thank you for your interest. This tier may not be the right fit right now. You're welcome to reapply in the future." },
+    needs_info: { icon: AlertCircle,   color: 'text-orange-500', title: 'More info needed',        body: "We need a bit more info before we can process your application. Check your email for details — then reply directly to that message." },
+    rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved', body: "Thank you for your interest. This tier may not be the right fit right now." },
   };
 
   const s = statusMessages[app.audit_status];
@@ -536,7 +544,21 @@ function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplica
       <Icon size={40} className={`${s.color} mx-auto mb-4`} />
       <h2 className="text-xl font-bold text-gray-900 mb-2">{s.title}</h2>
       <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto mb-6">{s.body}</p>
-      {app.audit_status !== 'rejected' && (
+      {app.audit_status === 'rejected' ? (
+        <a
+          href="mailto:affiliates@getparallel.vip?subject=Affiliate%20Reapplication"
+          className="inline-block px-6 py-3 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white"
+        >
+          Contact us to reapply
+        </a>
+      ) : app.audit_status === 'needs_info' ? (
+        <a
+          href={`mailto:affiliates@getparallel.vip?subject=Affiliate%20Application%20Info&body=Application%20ID%3A%20${app.id}`}
+          className="inline-block px-6 py-3 rounded-2xl font-semibold text-sm border-2 border-[#7B5EA7] text-[#7B5EA7]"
+        >
+          Reply by email
+        </a>
+      ) : (
         <button
           onClick={onRefresh}
           className="text-xs text-[#7B5EA7] underline"
@@ -568,6 +590,7 @@ function PayoutSetupForm({
 
   const bankPartiallyFilled = routingNumber.trim() || accountNumber.trim();
   const bankValid = !bankPartiallyFilled || (routingNumber.length === 9 && accountNumber.length >= 4);
+  const isOverwritingBank = profile.bank_account_connected && !!(routingNumber.trim() || accountNumber.trim());
 
   async function handleSubmit() {
     setSubmitting(true);
@@ -684,6 +707,13 @@ function PayoutSetupForm({
         </p>
       )}
 
+      {isOverwritingBank && bankValid && (
+        <div className="flex items-start gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 text-xs text-amber-700">
+          <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
+          <span>This will replace your existing bank account on file. Make sure the new details are correct before saving.</span>
+        </div>
+      )}
+
       <button
         onClick={handleSubmit}
         disabled={submitting || !legalName.trim() || !taxAddress.trim() || !bankValid}
@@ -762,16 +792,23 @@ function EarningsTab() {
 
   const { lifetime, by_year } = data;
   const years = Object.keys(by_year).sort((a, b) => Number(b) - Number(a));
+  const pendingTotal = parseFloat((lifetime.total_earned - lifetime.total_paid).toFixed(2));
 
   return (
     <div className="pb-8">
       <p className="text-xs text-gray-400 pt-1 pb-4 leading-relaxed">
-        Commissions are recorded when your referral completes their first subscription payment.
+        Commissions lock in when your referral's subscription payment confirms. They're held for 30 days (clawback window), then become eligible for payout.
       </p>
-      <div className="grid grid-cols-2 gap-3 mb-5">
+      <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="bg-white border border-gray-100 rounded-2xl p-4">
           <p className="text-xs text-gray-400 mb-1">Total earned</p>
           <p className="text-xl font-bold text-gray-900 tabular-nums">${lifetime.total_earned.toFixed(2)}</p>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-2xl p-4">
+          <p className="text-xs text-gray-400 mb-1">Pending payout</p>
+          <p className={`text-xl font-bold tabular-nums ${pendingTotal > 0 ? 'text-yellow-600' : 'text-gray-900'}`}>
+            ${pendingTotal.toFixed(2)}
+          </p>
         </div>
         <div className="bg-white border border-gray-100 rounded-2xl p-4">
           <p className="text-xs text-gray-400 mb-1">Total paid</p>
@@ -844,7 +881,10 @@ function EarningsTab() {
                             <p className={`text-xs font-medium ${statusDisplay.color}`}>{statusDisplay.label}</p>
                           </div>
                           <span className="text-sm font-bold text-gray-900 tabular-nums flex-shrink-0">
-                            {attr.commission_amount > 0 ? `$${attr.commission_amount.toFixed(2)}` : '—'}
+                            {attr.commission_amount > 0
+                              ? `$${attr.commission_amount.toFixed(2)}`
+                              : <span className="text-xs text-gray-400 font-normal" title="Amount set when subscription confirms">TBD</span>
+                            }
                           </span>
                         </div>
                       );
@@ -920,11 +960,11 @@ function PayoutsTab({
         </div>
       )}
 
-      {/* Automatic payout note */}
+      {/* Payout cadence note */}
       <div className="flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5">
         <Clock size={15} className="text-gray-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-500 leading-relaxed">
-          Payouts run automatically on the 1st of each month for all eligible commissions — no action needed from you.
+          Payouts are reviewed and processed by the Parallel team around the 1st of each month. No action needed from you — we'll send a confirmation email when your payout is on its way.
         </p>
       </div>
 
@@ -938,23 +978,33 @@ function PayoutsTab({
         ) : payouts && payouts.length > 0 ? (
           <div className="space-y-2">
             {payouts.map(p => (
-              <div key={p.id} className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3 gap-3">
+              <div key={p.id} className={`flex items-start justify-between bg-white border rounded-xl px-4 py-3 gap-3 ${p.mercury_status === 'failed' ? 'border-red-200' : 'border-gray-100'}`}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900">
                     {new Date(p.period_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {' – '}
                     {new Date(p.period_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
-                  <p className="text-xs text-gray-400 capitalize">
+                  <p className={`text-xs capitalize mt-0.5 ${p.mercury_status === 'failed' ? 'text-red-500' : 'text-gray-400'}`}>
                     {p.mercury_status === 'sent'
-                      ? 'Sent (arrives 3–5 business days)'
+                      ? `Sent (arrives 3–5 business days)${p.paid_at ? ` · ${new Date(p.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
+                      : p.mercury_status === 'failed'
+                      ? 'Transfer failed'
                       : p.mercury_status.replace(/_/g, ' ')
                     }
-                    {p.paid_at
-                      ? ` · ${new Date(p.paid_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                      : ''
-                    }
                   </p>
+                  {p.mercury_status === 'failed' && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Your commissions are safe.{' '}
+                      <a
+                        href="mailto:affiliates@getparallel.vip?subject=Payout%20Issue"
+                        className="underline"
+                      >
+                        Contact us
+                      </a>
+                      {' '}and we'll get this sorted.
+                    </p>
+                  )}
                 </div>
                 <span className="text-sm font-bold text-gray-900 tabular-nums flex-shrink-0">
                   ${Number(p.net_amount).toFixed(2)}
@@ -1011,6 +1061,7 @@ function AffiliateDashboard({
   const [tab, setTab] = useState<DashboardTab>('overview');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [sharedFallback, setSharedFallback] = useState(false);
 
   const hex = TIER_HEX[profile.tier];
   const conversions = profile.total_conversions;
@@ -1044,8 +1095,14 @@ function AffiliateDashboard({
       url: profile.affiliate_link ?? 'https://getparallel.vip',
     };
     try {
-      if (navigator.share) await navigator.share(shareData);
-      else handleCopyLink();
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Web Share API not available — copy the link and show feedback on Share button
+        await navigator.clipboard.writeText(profile.affiliate_link ?? 'https://getparallel.vip');
+        setSharedFallback(true);
+        setTimeout(() => setSharedFallback(false), 2000);
+      }
     } catch { /* user cancelled */ }
   };
 
@@ -1091,7 +1148,7 @@ function AffiliateDashboard({
               <div className="text-xs uppercase tracking-widest text-gray-500">members referred</div>
               {Number(profile.total_paid_lifetime) > 0 && (
                 <div className="text-sm text-gray-400 mt-1">
-                  ${Number(profile.total_paid_lifetime).toFixed(2)} earned total
+                  ${Number(profile.total_paid_lifetime).toFixed(2)} paid out
                 </div>
               )}
             </div>
@@ -1215,8 +1272,10 @@ function AffiliateDashboard({
                       className="flex-1 text-white px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       style={{ background: hex.btn }}
                     >
-                      <Share2 size={16} aria-hidden="true" />
-                      Share
+                      {sharedFallback
+                        ? <><Check size={16} aria-hidden="true" />Copied!</>
+                        : <><Share2 size={16} aria-hidden="true" />Share</>
+                      }
                     </button>
                   </div>
                   <div className="text-center text-xs text-gray-300 font-mono break-all mb-4">
