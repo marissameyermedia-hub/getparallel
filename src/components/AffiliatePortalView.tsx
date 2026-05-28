@@ -446,6 +446,14 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
 // ── Pending Screen ────────────────────────────────────────────────────────────
 
 function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplication; onRefresh: () => void; justVerified?: boolean }) {
+  const [pollTimedOut, setPollTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!justVerified) return;
+    const t = setTimeout(() => setPollTimedOut(true), 120_000);
+    return () => clearTimeout(t);
+  }, [justVerified]);
+
   const needsVerification = app.audit_status === 'approved' && app.persona_status !== 'approved';
   const redirectUri = typeof window !== 'undefined'
     ? `${window.location.origin}/?affiliate_verified=1`
@@ -456,6 +464,25 @@ function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplica
     // User just returned from Persona but the webhook hasn't fired yet —
     // show a processing state instead of the Verify Identity CTA again.
     if (justVerified) {
+      if (pollTimedOut) {
+        return (
+          <div className="px-5 pb-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-5">
+              <Clock size={24} className="text-gray-400" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Still activating…</h2>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto mb-6">
+              This is taking longer than usual. You'll receive an email when your account is ready — or try refreshing now.
+            </p>
+            <button
+              onClick={onRefresh}
+              className="px-6 py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white"
+            >
+              Refresh
+            </button>
+          </div>
+        );
+      }
       return (
         <div className="px-5 pb-8 text-center">
           <div className="w-14 h-14 rounded-full bg-[#7B5EA7]/10 flex items-center justify-center mx-auto mb-5">
@@ -490,8 +517,8 @@ function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplica
   }
 
   const statusMessages: Record<AppAuditStatus, { icon: typeof Clock; color: string; title: string; body: string }> = {
-    pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',    body: "We're reviewing your application. You'll hear from us within a few business days." },
-    in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',            body: "We're actively reviewing your application — hang tight!" },
+    pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',    body: "We're reviewing your application. Typically 1–3 business days." },
+    in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
     approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Verified!',               body: "Identity confirmed. Your affiliate dashboard is being activated — check back shortly." },
     needs_info: { icon: AlertCircle,   color: 'text-orange-500', title: 'More info needed',        body: "Check your email — we need a bit more information to process your application." },
     rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved', body: "Thank you for your interest. This tier may not be the right fit right now. You're welcome to reapply in the future." },
@@ -893,6 +920,14 @@ function PayoutsTab({
         </div>
       )}
 
+      {/* Automatic payout note */}
+      <div className="flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5">
+        <Clock size={15} className="text-gray-400 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-gray-500 leading-relaxed">
+          Payouts run automatically on the 1st of each month for all eligible commissions — no action needed from you.
+        </p>
+      </div>
+
       {/* Payout history */}
       <div>
         <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Payout history</div>
@@ -1117,19 +1152,26 @@ function AffiliateDashboard({
 
             {/* Own discount callout */}
             {profile.subscription_discount_pct > 0 && (
-              <div className="mt-4 flex items-center gap-3 bg-white border border-gray-100 rounded-2xl px-4 py-3.5">
-                <Tag size={15} className="text-gray-400 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">Your member discount</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Affiliates get {profile.subscription_discount_pct}% off their own Parallel subscription.</p>
+              <div className="mt-4 bg-white border border-gray-100 rounded-2xl px-4 py-3.5">
+                <div className="flex items-center gap-3">
+                  <Tag size={15} className="text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">Your member discount</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Affiliates get {profile.subscription_discount_pct}% off their own subscription.</p>
+                  </div>
+                  <a
+                    href="/?view=pricing"
+                    className="text-xs font-medium underline flex-shrink-0"
+                    style={{ color: hex.accent }}
+                  >
+                    Subscribe →
+                  </a>
                 </div>
-                <a
-                  href="/?view=pricing"
-                  className="text-xs font-medium underline flex-shrink-0"
-                  style={{ color: hex.accent }}
-                >
-                  Redeem →
-                </a>
+                {profile.promo_code && (
+                  <p className="text-xs text-gray-400 mt-2.5 pl-[26px]">
+                    Enter code <span className="font-mono font-semibold text-gray-700">{profile.promo_code}</span> at checkout.
+                  </p>
+                )}
               </div>
             )}
 

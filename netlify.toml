@@ -90,6 +90,13 @@
   to   = "/?view=affiliate-portal"
   status = 302
 
+# /r/:slug tracked affiliate links — explicit redirect so attribution is
+# captured even if the SPA JS fails to execute on first load
+[[redirects]]
+  from   = "/r/:slug"
+  to     = "/?r=:slug"
+  status = 302
+
 # SPA fallback — must come LAST so policy pages above take priority
 [[redirects]]
   from   = "/*"
