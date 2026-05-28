@@ -17,48 +17,36 @@ async function gql(apiKey: string, query: string, variables?: unknown) {
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Buffer HTTP ${res.status}: ${text.slice(0, 300)}`);
+    throw new Error(`Buffer HTTP ${res.status}: ${text.slice(0, 600)}`);
   }
   return res.json();
 }
 
 async function getConnectedChannels(apiKey: string) {
-  const data = await gql(apiKey, `
-    query {
-      channels {
-        id
-        service
-        name
-      }
-    }
-  `);
+  const accountWithChannels = await gql(apiKey, `query { account { id name channels { id service name } } }`);
+  if (!accountWithChannels.errors && accountWithChannels.data?.account?.channels?.length > 0) {
+    const all: any[] = accountWithChannels.data.account.channels;
+    console.log(`Channels via account.channels (${all.length}): ${JSON.stringify(all.map(c => ({ id: c.id, service: c.service })))}`);
+    return all.filter(c => TARGET_SERVICES.includes((c.service ?? '').toLowerCase()));
+  }
+
+  const accountId = accountWithChannels.data?.account?.id;
+  if (!accountId) throw new Error(`Buffer account query failed: ${JSON.stringify(accountWithChannels)}`);
+
+  console.log(`account.id: ${accountId}, trying channels(input: { organizationId })`);
+
+  const data = await gql(apiKey,
+    `query GetChannels($input: ChannelsInput!) { channels(input: $input) { id service name } }`,
+    { input: { organizationId: accountId } }
+  );
   if (data.errors) throw new Error(`Buffer channels error: ${JSON.stringify(data.errors)}`);
   const all: any[] = data.data?.channels ?? [];
-  return all.filter(c =>
-    TARGET_SERVICES.includes((c.service ?? '').toLowerCase())
-  );
-}
-
-// Look up a Facebook/Instagram location ID from a text string using the Graph API
-async function resolveLocationId(locationText: string): Promise<string | null> {
-  try {
-    const fbPageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN');
-    if (!fbPageToken || !locationText) return null;
-
-    const url = new URL('https://graph.facebook.com/v25.0/search');
-    url.searchParams.set('type', 'place');
-    url.searchParams.set('q', locationText);
-    url.searchParams.set('limit', '1');
-    url.searchParams.set('fields', 'id,name,location');
-    url.searchParams.set('access_token', fbPageToken);
-
-    const res = await fetch(url.toString());
-    const data = await res.json();
-    if (data.error || !data.data?.length) return null;
-    return data.data[0].id ?? null;
-  } catch {
-    return null;
+  console.log(`Channels via root query (${all.length}): ${JSON.stringify(all.map(c => ({ id: c.id, service: c.service })))}`);
+  const filtered = all.filter(c => TARGET_SERVICES.includes((c.service ?? '').toLowerCase()));
+  if (filtered.length === 0 && all.length > 0) {
+    throw new Error(`No IG/FB/TT channels. Found: ${all.map(c => c.service).join(', ')}`);
   }
+  return filtered;
 }
 
 async function createPost(
@@ -66,22 +54,16 @@ async function createPost(
   channelId: string,
   service: string,
   text: string,
-  imageUrls: string[],
-  locationId: string | null,
-  hasAudio: boolean
+  imageUrls: string[]
 ): Promise<string> {
   const assets = imageUrls.map(url => ({ image: { url } }));
 
-  // Build service-specific attributes
-  const serviceAttributes: Record<string, any> = {};
-
-  if (service === 'instagram' && locationId) {
-    serviceAttributes.instagramServiceAttributes = { locationId };
-  }
-
-  if (service === 'tiktok' && hasAudio) {
-    // auto_add_music tells TikTok to pick today's trending sound automatically
-    serviceAttributes.tiktokServiceAttributes = { autoAddMusic: true };
+  // Service-specific metadata (type is required for IG and FB)
+  const metadata: Record<string, any> = {};
+  if (service === 'instagram') {
+    metadata.instagram = { type: 'post', shouldShareToFeed: true };
+  } else if (service === 'facebook') {
+    metadata.facebook = { type: 'post' };
   }
 
   const input: Record<string, any> = {
@@ -91,26 +73,18 @@ async function createPost(
     schedulingType: 'automatic',
     mode: 'shareNow',
   };
-
-  if (Object.keys(serviceAttributes).length > 0) {
-    input.serviceAttributes = serviceAttributes;
-  }
+  if (Object.keys(metadata).length > 0) input.metadata = metadata;
 
   const data = await gql(apiKey, `
     mutation CreatePost($input: CreatePostInput!) {
       createPost(input: $input) {
-        ... on PostActionSuccess {
-          post { id status }
-        }
-        ... on MutationError {
-          message
-        }
+        ... on PostActionSuccess { post { id status } }
+        ... on MutationError { message }
       }
     }
   `, { input });
 
   if (data.errors) throw new Error(`Buffer mutation error: ${JSON.stringify(data.errors)}`);
-
   const result = data.data?.createPost;
   if (!result) throw new Error('Empty response from Buffer createPost');
   if (result.message) throw new Error(`Buffer rejected post: ${result.message}`);
@@ -121,7 +95,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    const { slide_urls, caption, hashtags, location, audio } = await req.json();
+    const { slide_urls, caption, hashtags } = await req.json();
 
     const apiKey = Deno.env.get('BUFFER_API_KEY');
     if (!apiKey) throw new Error('BUFFER_API_KEY secret not set');
@@ -139,51 +113,18 @@ Deno.serve(async (req: Request) => {
     const channels = await getConnectedChannels(apiKey);
     if (channels.length === 0) throw new Error('No connected Instagram/Facebook/TikTok channels found in Buffer');
 
-    // Resolve location text → Facebook Place ID (best-effort, used for Instagram)
-    const locationId = location ? await resolveLocationId(location) : null;
-    if (location && locationId) console.log(`Location resolved: "${location}" → ${locationId}`);
-    if (location && !locationId) console.log(`Location "${location}" could not be resolved to a Place ID — posting without location`);
-
-    const hasAudio = Boolean(audio && audio.trim());
-
-    const results: { service: string; channel: string; post_id?: string; error?: string; location_applied?: boolean; auto_music?: boolean }[] = [];
+    const results: { service: string; channel: string; post_id?: string; error?: string }[] = [];
 
     for (const ch of channels) {
       const service = ch.service.toLowerCase();
       try {
-        const postId = await createPost(
-          apiKey,
-          ch.id,
-          service,
-          fullText,
-          validUrls,
-          service === 'instagram' ? locationId : null,
-          hasAudio
-        );
-        results.push({
-          service,
-          channel: ch.name,
-          post_id: postId,
-          ...(service === 'instagram' && locationId ? { location_applied: true } : {}),
-          ...(service === 'tiktok' && hasAudio ? { auto_music: true } : {}),
-        });
+        const postId = await createPost(apiKey, ch.id, service, fullText, validUrls);
+        results.push({ service, channel: ch.name, post_id: postId });
         console.log(`Buffer: posted to ${service} (${ch.name}) → ${postId}`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        // If location/music caused rejection, retry without those attributes
-        if ((msg.includes('locationId') || msg.includes('autoAddMusic') || msg.includes('serviceAttributes')) && (locationId || hasAudio)) {
-          try {
-            console.log(`Buffer: retrying ${service} without service attributes`);
-            const postId = await createPost(apiKey, ch.id, service, fullText, validUrls, null, false);
-            results.push({ service, channel: ch.name, post_id: postId });
-          } catch (retryErr) {
-            const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
-            results.push({ service, channel: ch.name, error: retryMsg });
-          }
-        } else {
-          results.push({ service, channel: ch.name, error: msg });
-          console.error(`Buffer: failed ${service} — ${msg}`);
-        }
+        results.push({ service, channel: ch.name, error: msg });
+        console.error(`Buffer: failed ${service} — ${msg}`);
       }
     }
 
