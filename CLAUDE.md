@@ -49,3 +49,9 @@ If an algorithm deploy causes problems:
 4. Update `index.ts` to match the rolled-back version and commit: `matching: rollback to vNNN — [reason]`
 
 Rollback takes under 2 minutes. Real users see the broken version only for the window between deploy and rollback.
+
+## Parallel Planner — Deploy URL
+
+After every git push to the planner branch, always send the user this link in plain text (no markdown formatting, no asterisks):
+
+http://claude-deploy-parallel-planner-netlify-vppui--parallel-planner.netlify.app
