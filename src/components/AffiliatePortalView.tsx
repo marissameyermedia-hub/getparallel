@@ -405,7 +405,7 @@ function ApplyForm({ onSubmitted }: { onSubmitted: (app: AffiliateApplication) =
 
 // ── Pending Screen ────────────────────────────────────────────────────────────
 
-function PendingScreen({ app }: { app: AffiliateApplication }) {
+function PendingScreen({ app, onRefresh }: { app: AffiliateApplication; onRefresh: () => void }) {
   const needsVerification = app.audit_status === 'approved' && app.persona_status !== 'approved';
   const redirectUri = typeof window !== 'undefined'
     ? `${window.location.origin}${window.location.pathname}?affiliate_verified=1`
@@ -451,7 +451,15 @@ function PendingScreen({ app }: { app: AffiliateApplication }) {
       </div>
       <Icon size={40} className={`${s.color} mx-auto mb-4`} />
       <h2 className="text-xl font-bold text-gray-900 mb-2">{s.title}</h2>
-      <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto">{s.body}</p>
+      <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto mb-6">{s.body}</p>
+      {app.audit_status !== 'rejected' && (
+        <button
+          onClick={onRefresh}
+          className="text-xs text-[#7B5EA7] underline"
+        >
+          Check for updates
+        </button>
+      )}
     </div>
   );
 }
@@ -472,10 +480,15 @@ function PayoutSetupForm({
   const [accountNumber, setAccountNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  const bankPartiallyFilled = routingNumber.trim() || accountNumber.trim();
+  const bankValid = !bankPartiallyFilled || (routingNumber.length === 9 && accountNumber.length >= 4);
 
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
+    setSavedMessage(null);
     const body: Record<string, any> = {
       legal_name: legalName.trim(),
       tax_address: taxAddress.trim(),
@@ -491,7 +504,12 @@ function PayoutSetupForm({
     );
     setSubmitting(false);
     if (err) { setError(err); return; }
-    onSuccess({ tax_info_collected: true, bank_account_connected: data?.bank_account_connected ?? false });
+    const bankConnected = data?.bank_account_connected ?? false;
+    setSavedMessage(bankConnected
+      ? "Payout info saved — you're all set!"
+      : "Legal info saved. Add your bank account below to start receiving payouts."
+    );
+    onSuccess({ tax_info_collected: true, bank_account_connected: bankConnected });
   }
 
   return (
@@ -562,6 +580,13 @@ function PayoutSetupForm({
         />
       </div>
 
+      {savedMessage && (
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5 text-sm text-emerald-700">
+          <CheckCircle2 size={14} className="flex-shrink-0" />
+          <span>{savedMessage}</span>
+        </div>
+      )}
+
       {error && (
         <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 text-sm text-red-600">
           <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
@@ -569,9 +594,15 @@ function PayoutSetupForm({
         </div>
       )}
 
+      {bankPartiallyFilled && !bankValid && (
+        <p className="text-xs text-amber-600">
+          Routing number must be 9 digits and account number must be 4–17 digits.
+        </p>
+      )}
+
       <button
         onClick={handleSubmit}
-        disabled={submitting || !legalName.trim() || !taxAddress.trim()}
+        disabled={submitting || !legalName.trim() || !taxAddress.trim() || !bankValid}
         className="w-full py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white disabled:opacity-40 transition-opacity"
       >
         {submitting ? 'Saving…' : 'Save Payout Info'}
@@ -591,8 +622,11 @@ function EarningsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     affiliateApi<EarningsData>('earnings').then(({ data, error }) => {
       if (error) { setError(error); setLoading(false); return; }
       if (data) {
@@ -602,7 +636,7 @@ function EarningsTab() {
       }
       setLoading(false);
     });
-  }, []);
+  }, [retryCount]);
 
   function toggleYear(year: string) {
     setExpandedYears(prev => {
@@ -629,7 +663,15 @@ function EarningsTab() {
   );
 
   if (error) return (
-    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-600 my-4">{error}</div>
+    <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-600 my-4 flex items-center justify-between gap-3">
+      <span>{error}</span>
+      <button
+        onClick={() => setRetryCount(c => c + 1)}
+        className="flex-shrink-0 text-xs font-medium text-red-700 underline"
+      >
+        Try again
+      </button>
+    </div>
   );
 
   if (!data) return null;
@@ -785,7 +827,7 @@ function PayoutsTab({
             profile={profile}
             onSuccess={(updates) => {
               onProfileUpdate(updates);
-              setShowSetupForm(false);
+              if (updates.bank_account_connected) setShowSetupForm(false);
             }}
           />
         </div>
@@ -1137,8 +1179,10 @@ export function AffiliatePortalView({ onBack }: Props) {
   const [state, setState] = useState<PortalState>('loading');
   const [profile, setProfile] = useState<AffiliateProfile | null>(null);
   const [application, setApplication] = useState<AffiliateApplication | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
 
   useEffect(() => {
+    setState('loading');
     async function load() {
       // Try profile API first — succeeds only for active affiliates
       const { data: prof } = await affiliateApi<AffiliateProfile>('profile');
@@ -1169,7 +1213,7 @@ export function AffiliatePortalView({ onBack }: Props) {
       }
     }
     load();
-  }, []);
+  }, [loadKey]);
 
   const hex = profile ? TIER_HEX[profile.tier] : null;
   const tierLabel = profile ? TIERS.find(t => t.id === profile.tier)?.label : null;
@@ -1214,7 +1258,7 @@ export function AffiliatePortalView({ onBack }: Props) {
         )}
         {state === 'submitted' && application && (
           <div className="pt-24">
-            <PendingScreen app={application} />
+            <PendingScreen app={application} onRefresh={() => setLoadKey(k => k + 1)} />
           </div>
         )}
         {state === 'dashboard' && profile && (
