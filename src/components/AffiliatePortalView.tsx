@@ -1173,9 +1173,11 @@ function AffiliateDashboard({
 
 interface Props {
   onBack: () => void;
+  onSignOut?: () => void;
+  isAffiliateOnly?: boolean;
 }
 
-export function AffiliatePortalView({ onBack }: Props) {
+export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly }: Props) {
   const [state, setState] = useState<PortalState>('loading');
   const [profile, setProfile] = useState<AffiliateProfile | null>(null);
   const [application, setApplication] = useState<AffiliateApplication | null>(null);
@@ -1223,15 +1225,26 @@ export function AffiliatePortalView({ onBack }: Props) {
       {/* Fixed header */}
       <div className="fixed top-0 left-0 right-0 bg-parallel-cream z-10 border-b border-gray-100">
         <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">
-          <button
-            onClick={onBack}
-            aria-label="Go back"
-            className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition-colors"
-          >
-            <ChevronLeft size={24} aria-hidden="true" />
-          </button>
+          {isAffiliateOnly ? (
+            <div className="w-10" />
+          ) : (
+            <button
+              onClick={onBack}
+              aria-label="Go back"
+              className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition-colors"
+            >
+              <ChevronLeft size={24} aria-hidden="true" />
+            </button>
+          )}
           <h1 className="font-medium text-base absolute left-1/2 -translate-x-1/2">Affiliate Program</h1>
-          {hex && tierLabel ? (
+          {isAffiliateOnly && onSignOut ? (
+            <button
+              onClick={onSignOut}
+              className="text-sm text-gray-500 hover:text-gray-700 transition-colors pr-1"
+            >
+              Sign out
+            </button>
+          ) : hex && tierLabel ? (
             <div
               className="text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide"
               style={{ background: hex.badgeBg, color: hex.badgeText }}

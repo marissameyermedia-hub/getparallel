@@ -1535,6 +1535,7 @@ function App() {
         {currentView === 'account-creation' && (
           <AccountCreationPage
             referralCode={referralCode}
+            isAffiliateSignup={affiliateIntent}
             onComplete={async (userData) => {
               if (userData.accessToken && userData.userId) {
                 setAccessToken(userData.accessToken);
@@ -2012,7 +2013,11 @@ function App() {
 
         {/* ── Affiliate portal ── */}
         {currentView === 'affiliate-portal' && (
-          <AffiliatePortalView onBack={() => setCurrentView('account')} />
+          <AffiliatePortalView
+            onBack={() => setCurrentView('account')}
+            onSignOut={handleLogOut}
+            isAffiliateOnly={!hasCompletedOnboarding}
+          />
         )}
 
         {/* ── App footer — legal/policy/account views only — inside scroll area ── */}
