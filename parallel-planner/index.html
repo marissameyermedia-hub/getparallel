@@ -619,6 +619,7 @@
   .details-scroll { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
 
   .form-group { display: flex; flex-direction: column; gap: 6px; }
+  #postDate[readonly] { background: var(--bg-secondary); color: var(--text-muted); cursor: default; opacity: 0.7; }
 
   .form-label {
     font-size: 11px;
@@ -1380,7 +1381,7 @@
           <div class="schedule-row">
             <div class="form-group">
               <div class="form-label">Post Date</div>
-              <input type="text" id="postDate" placeholder="Tue Jun 3" />
+              <input type="text" id="postDate" readonly />
             </div>
             <div class="form-group">
               <div class="form-label">Post Time</div>
@@ -2159,7 +2160,7 @@ function openPost(week, slot) {
   document.getElementById('modalTitle').textContent = `W${week} · ${DAY_NAMES[slot]} ${formatDate(d)}`;
   document.getElementById('captionField').value = post.caption || '';
   document.getElementById('hashtagField').value = post.hashtags || '';
-  document.getElementById('postDate').value = post.date || formatDate(d);
+  document.getElementById('postDate').value = formatDate(d);
   document.getElementById('postTime').value = post.time || '';
   document.getElementById('locationField').value = post.location || '';
   document.getElementById('audioField').value = post.audio || '';
@@ -3010,7 +3011,7 @@ async function schedulePost() {
 
   if (slides.length === 0) { showToast('Add slides before scheduling'); return; }
   if (!caption) { showToast('Add a caption before scheduling'); return; }
-  if (!postDate || !postTime) { showToast('Set a post date and time first'); return; }
+  if (!postTime) { showToast('Set a post time first'); return; }
 
   // Parse date + time into ISO string — always PST (America/Los_Angeles)
   const dateStr = `${postDate} ${postTime} 2026`;

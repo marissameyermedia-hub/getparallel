@@ -1,6 +1,6 @@
 # Parallel Planner — Netlify configuration
 # Platforms: Instagram, Facebook, TikTok (via Buffer), Threads
-# Deploy trigger: scheduler failed-status fix + Buffer GraphQL field cleanup
+# Deploy trigger: post date auto-derives from grid slot, time-only input
 
 [build]
   publish = "."
