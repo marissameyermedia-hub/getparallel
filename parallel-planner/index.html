@@ -1952,6 +1952,8 @@ async function init() {
   initDB().then(() => loadRepoFromDB()).catch(e => console.warn('IndexedDB init failed', e));
   // Load Buffer channel health (non-blocking)
   loadChannelStatus();
+  // Load performance metrics for published posts (non-blocking, 30s delay to not block render)
+  setTimeout(loadPublishedMetrics, 30_000);
 }
 
 async function loadChannelStatus() {
@@ -1994,6 +1996,74 @@ function formatFollowers(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
   return String(n);
+}
+
+async function loadPublishedMetrics() {
+  // Collect published posts that have Buffer post IDs but no cached metrics (or stale >24h)
+  const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+  const postsToFetch = Object.entries(state.posts).filter(([, p]: [string, any]) => {
+    if (!p._buffer_post_ids || !Object.keys(p._buffer_post_ids).length) return false;
+    if (p.status !== 'published') return false;
+    if (p._buffer_metrics && p._buffer_metrics_at) {
+      const age = Date.now() - new Date(p._buffer_metrics_at).getTime();
+      if (age < CACHE_TTL_MS) return false; // still fresh
+    }
+    return true;
+  });
+
+  for (const [postKey, post] of postsToFetch as [string, any][]) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/buffer-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'post_metrics', post_ids: post._buffer_post_ids }),
+      });
+      const data = await res.json();
+      if (!data.ok) continue;
+
+      // Build summary string from best available service
+      const metrics = data.metrics || {};
+      const summary = buildMetricsSummary(metrics);
+      if (!summary) continue;
+
+      const now = new Date().toISOString();
+      const cached = { ...metrics, _summary: summary };
+      state.posts[postKey]._buffer_metrics = cached;
+      state.posts[postKey]._buffer_metrics_at = now;
+
+      // Persist to DB
+      if (sb) {
+        await sb.from('scheduled_posts')
+          .update({ buffer_metrics: cached, buffer_metrics_at: now })
+          .eq('planner_key', postKey);
+      }
+
+      // Update card in place
+      const [week, slot] = postKey.split('-').map(Number);
+      const el = document.getElementById(`metrics-${week}-${slot}`);
+      if (el) el.textContent = summary;
+    } catch (e) {
+      console.warn('Metrics fetch failed for', postKey, e);
+    }
+  }
+}
+
+function buildMetricsSummary(metrics: Record<string, any>): string {
+  // Prefer instagram, then facebook, then tiktok
+  const order = ['instagram', 'facebook', 'tiktok'];
+  for (const svc of order) {
+    const s = metrics[svc]?.statistics;
+    if (!s) continue;
+    const parts: string[] = [];
+    if (s.reach) parts.push(`${formatFollowers(s.reach)} reach`);
+    else if (s.impressions) parts.push(`${formatFollowers(s.impressions)} impr`);
+    if (s.likes) parts.push(`${formatFollowers(s.likes)}♥`);
+    if (s.saves) parts.push(`${formatFollowers(s.saves)}🔖`);
+    if (s.comments) parts.push(`${formatFollowers(s.comments)}💬`);
+    if (s.videoViews) parts.push(`${formatFollowers(s.videoViews)} views`);
+    if (parts.length) return parts.join(' · ');
+  }
+  return '';
 }
 
 // ═══════════════════════════════════════════
@@ -2045,6 +2115,8 @@ function rowToPost(row) {
     _id: row.id,
     _permalink: row.permalink || '',
     _buffer_post_ids: row.buffer_post_ids || null,
+    _buffer_metrics: row.buffer_metrics || null,
+    _buffer_metrics_at: row.buffer_metrics_at || null,
   };
 }
 
