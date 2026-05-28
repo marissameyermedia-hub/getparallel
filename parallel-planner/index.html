@@ -161,6 +161,25 @@
   }
   .week-btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
 
+  /* Channel status widget */
+  .channel-status-list { display: flex; flex-direction: column; gap: 6px; }
+  .channel-status-loading { font-size: 11px; color: var(--text-muted); }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .channel-dot {
+    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+    background: #6b7280;
+  }
+  .channel-dot.ok { background: #22c55e; }
+  .channel-dot.warn { background: #f59e0b; }
+  .channel-dot.error { background: #ef4444; }
+  .channel-name { color: var(--text-primary); flex: 1; font-weight: 500; text-transform: capitalize; }
+  .channel-followers { color: var(--text-muted); font-size: 11px; font-family: 'DM Mono', monospace; margin-left: auto; }
+
   /* Day list */
   .day-list { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
 
@@ -1371,6 +1390,14 @@
       <div class="day-list" id="dayList"></div>
     </div>
 
+    <!-- CHANNEL HEALTH -->
+    <div class="sidebar-section" id="channelStatusSection">
+      <div class="sidebar-label" style="margin-bottom:8px;">Channels</div>
+      <div id="channelStatusList" class="channel-status-list">
+        <div class="channel-status-loading">Loading…</div>
+      </div>
+    </div>
+
     <div class="sidebar-section">
       <div class="sidebar-label" style="margin-bottom:8px;">Hashtag Sets</div>
       <div class="hashtag-sets" id="sidebarHashtagSets" style="max-height:180px;"></div>
@@ -1903,6 +1930,7 @@ let state = {
   currentMonth: new Date(2026, 4, 24),
   activePost: null,
   currentSlideCount: 3,
+  bufferChannels: [],
   selectedPlatform: 'all',
   canvaSelection: [],
   activeUploadTarget: null,
@@ -1922,6 +1950,50 @@ async function init() {
   updateBankCount();
   // Boot IndexedDB media repo
   initDB().then(() => loadRepoFromDB()).catch(e => console.warn('IndexedDB init failed', e));
+  // Load Buffer channel health (non-blocking)
+  loadChannelStatus();
+}
+
+async function loadChannelStatus() {
+  const el = document.getElementById('channelStatusList');
+  if (!el) return;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/buffer-data`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'channels' }),
+    });
+    const data = await res.json();
+    if (!data.ok || !data.channels?.length) {
+      el.innerHTML = '<div class="channel-status-loading">No channels found</div>';
+      return;
+    }
+    // Store for use by suggested-times in schedule modal
+    state.bufferChannels = data.channels;
+    const SERVICE_ICON: Record<string, string> = { instagram: '📷', facebook: '📘', tiktok: '🎵' };
+    el.innerHTML = data.channels.map((ch: any) => {
+      const connected = !ch.isDisconnected;
+      const dotClass = connected ? 'ok' : 'error';
+      const followers = ch.followers?.count != null
+        ? formatFollowers(ch.followers.count)
+        : '';
+      const icon = SERVICE_ICON[ch.service?.toLowerCase()] || '🔗';
+      return `<div class="channel-row">
+        <div class="channel-dot ${dotClass}"></div>
+        <span>${icon}</span>
+        <span class="channel-name">${ch.service}</span>
+        ${followers ? `<span class="channel-followers">${followers}</span>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    if (el) el.innerHTML = '<div class="channel-status-loading">—</div>';
+  }
+}
+
+function formatFollowers(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
 }
 
 // ═══════════════════════════════════════════
