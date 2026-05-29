@@ -131,6 +131,12 @@ function App() {
   const [personaReturnInProgress] = useState(() => {
     try { return new URLSearchParams(window.location.search).get('affiliate_verified') === '1'; } catch { return false; }
   });
+  const [affiliatePreVerified] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('affiliate_pre_verified') === '1'; } catch { return false; }
+  });
+  const [affiliatePreInquiryId] = useState<string | null>(() => {
+    try { return new URLSearchParams(window.location.search).get('inquiry-id') ?? null; } catch { return null; }
+  });
   const [tosGateRequired, setTosGateRequired] = useState(false);
   const [userDateOfBirth, setUserDateOfBirth] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
@@ -400,6 +406,7 @@ function App() {
       if (
         params.get('view') === 'affiliate-portal' ||
         params.get('affiliate_verified') === '1' ||
+        params.get('affiliate_pre_verified') === '1' ||
         window.location.pathname === '/affiliate'
       ) {
         setAffiliateIntent(true);
@@ -2082,6 +2089,8 @@ function App() {
             onSignOut={handleLogOut}
             isAffiliateOnly={!hasCompletedOnboarding}
             personaJustVerified={personaReturnInProgress}
+            affiliatePreVerified={affiliatePreVerified}
+            affiliatePreInquiryId={affiliatePreInquiryId}
           />
         )}
 

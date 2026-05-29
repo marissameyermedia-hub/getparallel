@@ -1,4 +1,9 @@
-// Parallel — affiliate edge function v16
+// Parallel — affiliate edge function v17
+// v17: Remove why_parallel + audience_description from /apply (collected via social fetch instead).
+//      Add persona_inquiry_id to /apply insert/update.
+//      GET /admin/review now fetches real social profile data (Instagram follower count,
+//      TikTok/YouTube existence) before calling Claude. Prompt updated to use fetched data.
+//      Removed "questions" field from Claude JSON shape — collect everything upfront.
 // v16: GET /admin/review/:id — fetch full application + run Claude analysis for
 //      AI-powered review page. Marks app as in_review if still pending. Returns
 //      { application, analysis } where analysis has recommendation, confidence,
@@ -1085,7 +1090,7 @@ async function handleApply(req: Request): Promise<Response> {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-  const { tier, instagram, tiktok, youtube, why_parallel, audience_description, phase1_city_audience, terms_accepted } = body;
+  const { tier, instagram, tiktok, youtube, persona_inquiry_id, phase1_city_audience, terms_accepted } = body;
   if (!tier) return json({ error: "tier required" }, 400);
   if (!terms_accepted) return json({ error: "You must accept the affiliate program terms to apply" }, 400);
 
@@ -1115,8 +1120,7 @@ async function handleApply(req: Request): Promise<Response> {
         instagram_handle:     instagram ? String(instagram).replace("@", "") : null,
         tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
         youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
-        why_parallel:         why_parallel         || null,
-        audience_description: audience_description || null,
+        persona_inquiry_id:   persona_inquiry_id || null,
         phase1_city_audience: phase1_city_audience ?? false,
         terms_accepted_at:    now,
       })
@@ -1135,8 +1139,7 @@ async function handleApply(req: Request): Promise<Response> {
         instagram_handle:     instagram ? String(instagram).replace("@", "") : null,
         tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
         youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
-        why_parallel:         why_parallel         || null,
-        audience_description: audience_description || null,
+        persona_inquiry_id:   persona_inquiry_id || null,
         phase1_city_audience: phase1_city_audience ?? false,
         terms_accepted_at:    now,
       })
@@ -1163,6 +1166,57 @@ async function handleApply(req: Request): Promise<Response> {
   }).catch((err) => console.error("[affiliate/apply] email send failed:", err));
 
   return json({ ok: true, application: app });
+}
+
+// ── Social media profile fetchers ─────────────────────────────────────────────
+
+async function fetchInstagramProfile(handle: string): Promise<{ followers: number | null; bio: string | null; verified: boolean } | null> {
+  try {
+    const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`, {
+      headers: {
+        "x-ig-app-id": "936619743392459",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const user = data?.data?.user;
+    if (!user) return null;
+    return {
+      followers: user.edge_followed_by?.count ?? null,
+      bio: user.biography ?? null,
+      verified: user.is_verified ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchTikTokProfile(handle: string): Promise<{ exists: boolean; author: string | null } | null> {
+  try {
+    const res = await fetch(`https://www.tiktok.com/oembed?url=https://www.tiktok.com/@${encodeURIComponent(handle)}`, {
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return { exists: true, author: data?.author_name ?? null };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYouTubeProfile(handle: string): Promise<{ exists: boolean; author: string | null } | null> {
+  try {
+    const res = await fetch(`https://www.youtube.com/oembed?url=https://youtube.com/@${encodeURIComponent(handle)}&format=json`, {
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return { exists: true, author: data?.author_name ?? null };
+  } catch {
+    return null;
+  }
 }
 
 // ── GET /admin/review/:applicationId ─────────────────────────────────────────
@@ -1192,6 +1246,43 @@ async function handleAdminReview(applicationId: string, req: Request): Promise<R
     app.audit_status = "in_review";
   }
 
+  // Fetch real social profile data concurrently (best-effort — null if blocked/rate-limited)
+  const [igProfile, ttProfile, ytProfile] = await Promise.all([
+    app.instagram_handle ? fetchInstagramProfile(app.instagram_handle) : Promise.resolve(null),
+    app.tiktok_handle ? fetchTikTokProfile(app.tiktok_handle) : Promise.resolve(null),
+    app.youtube_handle ? fetchYouTubeProfile(app.youtube_handle) : Promise.resolve(null),
+  ]);
+
+  // Build social data summary with real follower counts where available
+  const socialLines: string[] = [];
+  if (app.instagram_handle) {
+    let line = `Instagram: @${app.instagram_handle}`;
+    if (igProfile) {
+      const followerStr = igProfile.followers !== null ? `${igProfile.followers.toLocaleString()} followers` : "account exists";
+      const verifiedStr = igProfile.verified ? " (verified)" : "";
+      const bioStr = igProfile.bio ? `; bio: "${igProfile.bio.slice(0, 120)}"` : "";
+      line += ` — ${followerStr}${verifiedStr}${bioStr}`;
+    } else {
+      line += " (profile blocked or not found — verify manually)";
+    }
+    socialLines.push(line);
+  }
+  if (app.tiktok_handle) {
+    let line = `TikTok: @${app.tiktok_handle}`;
+    line += ttProfile
+      ? ` — account confirmed as "${ttProfile.author ?? app.tiktok_handle}"`
+      : " (profile blocked or not found — verify manually)";
+    socialLines.push(line);
+  }
+  if (app.youtube_handle) {
+    let line = `YouTube: @${app.youtube_handle}`;
+    line += ytProfile
+      ? ` — channel confirmed as "${ytProfile.author ?? app.youtube_handle}"`
+      : " (profile blocked or not found — verify manually)";
+    socialLines.push(line);
+  }
+  const socialData = socialLines.length ? socialLines.join("\n") : "None provided";
+
   // Build Claude prompt
   const tierDescriptions: Record<string, string> = {
     seeds: "Seeds tier — micro-influencers, typically 1K–10K followers, community-focused",
@@ -1199,26 +1290,17 @@ async function handleAdminReview(applicationId: string, req: Request): Promise<R
     anchors: "Anchors tier — macro-influencers, typically 100K+ followers, major reach",
   };
 
-  const socialHandles = [
-    app.instagram_handle ? `Instagram: @${app.instagram_handle}` : null,
-    app.tiktok_handle ? `TikTok: @${app.tiktok_handle}` : null,
-    app.youtube_handle ? `YouTube: @${app.youtube_handle}` : null,
-  ].filter(Boolean).join("\n");
-
-  const prompt = `You are a senior affiliate program manager at Parallel, a premium dating app launching in major US cities. Analyze this affiliate application and return a structured JSON review to help a human reviewer decide whether to approve, reject, or request more info.
+  const prompt = `You are a senior affiliate program manager at Parallel, a premium dating app launching in major US cities. Analyze this affiliate application and return a structured JSON review to help a human reviewer decide whether to approve or reject it. We do NOT ask applicants follow-up questions — we verify everything from public profile data.
 
 APPLICATION
 Email: ${app.email}
 Tier requested: ${tierDescriptions[app.tier_applied_for] || app.tier_applied_for}
 Submitted: ${new Date(app.created_at).toLocaleDateString()}
 Phase 1 city audience (NYC/LA/Chicago/SF/Austin/Miami): ${app.phase1_city_audience ? "Yes" : "No"}
-ID verification status: ${app.persona_status}
+ID verification: ${app.persona_status === "approved" ? "Verified ✓" : app.persona_status === "none" ? "Not yet verified" : app.persona_status}
 
-Social handles:
-${socialHandles || "None provided"}
-
-Why they want to promote Parallel:
-"${app.why_parallel || "Not provided"}"
+Social profiles (fetched from public APIs — use follower counts to assess tier fit):
+${socialData}
 
 TIER GUIDE
 - Seeds: 1K–10K followers, authentic community presence, 15% commission
@@ -1229,14 +1311,13 @@ Best-converting audiences for a dating app: lifestyle, relationships, self-impro
 
 Return ONLY valid JSON with this exact shape:
 {
-  "recommendation": "approve" | "needs_info" | "reject",
+  "recommendation": "approve" | "reject",
   "confidence": "high" | "medium" | "low",
   "summary": "2–3 sentence plain English assessment of this applicant",
   "strengths": ["strength 1", "strength 2"],
   "concerns": ["concern 1", "concern 2"],
-  "questions": ["question to ask if needs_info — omit or empty if not needed"],
   "tier_fit": "well_suited" | "overstated" | "understated" | "unclear",
-  "tier_rationale": "One sentence on whether the requested tier matches what they've shown",
+  "tier_rationale": "One sentence on whether the requested tier matches their verified follower count",
   "audience_quality": "strong" | "moderate" | "weak" | "unknown",
   "audience_notes": "One sentence on likely audience relevance for a dating app"
 }`;
