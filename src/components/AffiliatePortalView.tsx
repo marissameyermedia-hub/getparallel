@@ -449,7 +449,7 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
 
 // ── Pending Screen ────────────────────────────────────────────────────────────
 
-function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplication; onRefresh: () => void; justVerified?: boolean }) {
+function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: AffiliateApplication; onRefresh: () => void; onReapply?: () => void; justVerified?: boolean }) {
   const [pollTimedOut, setPollTimedOut] = useState(false);
 
   // Start the 2-minute timeout exactly once when justVerified is first true.
@@ -545,15 +545,17 @@ function PendingScreen({ app, onRefresh, justVerified }: { app: AffiliateApplica
       <h2 className="text-xl font-bold text-gray-900 mb-2">{s.title}</h2>
       <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto mb-6">{s.body}</p>
       {app.audit_status === 'rejected' ? (
-        <a
-          href="mailto:affiliates@getparallel.vip?subject=Affiliate%20Reapplication"
-          className="inline-block px-6 py-3 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white"
-        >
-          Contact us to reapply
-        </a>
+        onReapply ? (
+          <button
+            onClick={onReapply}
+            className="inline-block px-6 py-3 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white"
+          >
+            Reapply
+          </button>
+        ) : null
       ) : app.audit_status === 'needs_info' ? (
         <a
-          href={`mailto:affiliates@getparallel.vip?subject=Affiliate%20Application%20Info&body=Application%20ID%3A%20${app.id}`}
+          href={`mailto:hello@getparallel.vip?subject=Affiliate%20Application%20Info&body=Application%20ID%3A%20${app.id}`}
           className="inline-block px-6 py-3 rounded-2xl font-semibold text-sm border-2 border-[#7B5EA7] text-[#7B5EA7]"
         >
           Reply by email
@@ -997,7 +999,7 @@ function PayoutsTab({
                     <p className="text-xs text-red-400 mt-1">
                       Your commissions are safe.{' '}
                       <a
-                        href="mailto:affiliates@getparallel.vip?subject=Payout%20Issue"
+                        href="mailto:hello@getparallel.vip?subject=Payout%20Issue"
                         className="underline"
                       >
                         Contact us
@@ -1435,10 +1437,40 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
     <div className="min-h-screen bg-parallel-cream">
       {/* Fixed header */}
       <div className="fixed top-0 left-0 right-0 bg-parallel-cream z-10 border-b border-gray-100">
-        <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">
-          {isAffiliateOnly ? (
-            <div className="w-10" />
-          ) : (
+        {isAffiliateOnly ? (
+          <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-7 h-7 rounded-full bg-parallel-void flex items-center justify-center"
+                aria-hidden="true"
+              >
+                <span
+                  style={{
+                    fontSize: '8px',
+                    fontWeight: 700,
+                    color: '#FFFFFF',
+                    letterSpacing: '.02em',
+                    userSelect: 'none',
+                  }}
+                >
+                  P<span style={{ color: '#A98FD0' }}>//</span>
+                </span>
+              </div>
+              <span className="text-[11px] font-semibold tracking-widest uppercase text-gray-400">
+                Affiliate
+              </span>
+            </div>
+            {onSignOut && (
+              <button
+                onClick={onSignOut}
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                Sign out
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center justify-between px-4 h-14 max-w-lg mx-auto">
             <button
               onClick={onBack}
               aria-label="Go back"
@@ -1446,26 +1478,19 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
             >
               <ChevronLeft size={24} aria-hidden="true" />
             </button>
-          )}
-          <h1 className="font-medium text-base absolute left-1/2 -translate-x-1/2">Affiliate Program</h1>
-          {isAffiliateOnly && onSignOut ? (
-            <button
-              onClick={onSignOut}
-              className="text-sm text-gray-500 hover:text-gray-700 transition-colors pr-1"
-            >
-              Sign out
-            </button>
-          ) : hex && tierLabel ? (
-            <div
-              className="text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide"
-              style={{ background: hex.badgeBg, color: hex.badgeText }}
-            >
-              {tierLabel}
-            </div>
-          ) : (
-            <div className="w-16" />
-          )}
-        </div>
+            <h1 className="font-medium text-base absolute left-1/2 -translate-x-1/2">Affiliate Program</h1>
+            {hex && tierLabel ? (
+              <div
+                className="text-xs font-medium px-3 py-1 rounded-full uppercase tracking-wide"
+                style={{ background: hex.badgeBg, color: hex.badgeText }}
+              >
+                {tierLabel}
+              </div>
+            ) : (
+              <div className="w-16" />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content */}
@@ -1485,7 +1510,7 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
         )}
         {state === 'submitted' && application && (
           <div className="pt-24">
-            <PendingScreen app={application} onRefresh={() => setLoadKey(k => k + 1)} justVerified={personaJustVerified} />
+            <PendingScreen app={application} onRefresh={() => setLoadKey(k => k + 1)} onReapply={() => setState('apply')} justVerified={personaJustVerified} />
           </div>
         )}
         {state === 'dashboard' && profile && (

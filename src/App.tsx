@@ -44,6 +44,7 @@ import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
 import { AffiliatePortalView } from './components/AffiliatePortalView';
+import { AffiliateLandingPage } from './components/AffiliateLandingPage';
 import { AdminDashboard } from './components/safety/AdminDashboard';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
@@ -82,8 +83,15 @@ function App() {
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
     | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
     | 'verification' | 'invite-friends' | 'reset-password'
-    | 'preview-profile' | 'waitlist' | 'admin' | 'affiliate-portal'
-  >(() => window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
+    | 'preview-profile' | 'waitlist' | 'admin' | 'affiliate-portal' | 'affiliate-landing'
+  >(() => {
+    if (window.location.pathname === '/waitlist') return 'waitlist';
+    try {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('view') === 'affiliate') return 'affiliate-landing';
+    } catch { /* ignore */ }
+    return 'signin';
+  });
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
@@ -774,7 +782,10 @@ function App() {
               setCurrentView('signin');
             }
           } else {
-            setCurrentView(window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
+            setCurrentView(
+              window.location.pathname === '/waitlist' ? 'waitlist' :
+              (() => { try { return new URLSearchParams(window.location.search).get('view') === 'affiliate' ? 'affiliate-landing' : 'signin'; } catch { return 'signin'; } })()
+            );
           }
         }
       } catch (e) {
@@ -1445,6 +1456,8 @@ function App() {
     'admin',
     // affiliate-portal: has its own fixed header and tab navigation
     'affiliate-portal',
+    // affiliate-landing: public marketing page, no app chrome
+    'affiliate-landing',
   ].includes(currentView);
 
   return (
@@ -2061,6 +2074,11 @@ function App() {
             isAffiliateOnly={!hasCompletedOnboarding}
             personaJustVerified={personaReturnInProgress}
           />
+        )}
+
+        {/* ── Affiliate landing (public marketing page — no auth required) ── */}
+        {currentView === 'affiliate-landing' && (
+          <AffiliateLandingPage onNavigate={(v) => setCurrentView(v as any)} />
         )}
 
         {/* ── App footer — legal/policy/account views only — inside scroll area ── */}

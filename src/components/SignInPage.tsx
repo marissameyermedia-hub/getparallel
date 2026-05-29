@@ -378,7 +378,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             Bring new members to Parallel and earn up to 20% commission on every subscription you refer. Share a link, earn on every conversion.
           </p>
           <a
-            href="/?view=affiliate-portal"
+            href="/?view=affiliate"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400 hover:text-gray-900 transition-colors"
           >
             Learn about the Affiliate Program →

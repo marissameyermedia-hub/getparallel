@@ -1,4 +1,7 @@
-// Parallel — affiliate edge function v14
+// Parallel — affiliate edge function v15
+// v15: POST /apply allows re-application when previous application was rejected.
+//      Updates the existing rejected row (reset to 'pending') instead of 409.
+//      Email references updated to hello@getparallel.vip.
 // v14: handleAdminActivate validates promo_code + tracked_link_slug before firing
 //      approval email — prevents silent email failures when data is incomplete.
 //      in_review status updates now route through edge function (RLS fix).
@@ -1085,28 +1088,59 @@ async function handleApply(req: Request): Promise<Response> {
   const admin = adminClient();
   const { data: existing } = await admin
     .from("affiliate_applications")
-    .select("id")
+    .select("id, audit_status")
     .eq("email", user.email)
     .maybeSingle();
-  if (existing) return json({ error: "Application already submitted" }, 409);
+
+  // Block re-submission unless the previous application was rejected
+  if (existing && existing.audit_status !== "rejected") {
+    return json({ error: "Application already submitted" }, 409);
+  }
 
   const now = new Date().toISOString();
-  const { data: app, error: insertErr } = await admin
-    .from("affiliate_applications")
-    .insert({
-      email:                user.email,
-      tier_applied_for:     tier,
-      instagram_handle:     instagram ? String(instagram).replace("@", "") : null,
-      tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
-      youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
-      why_parallel:         why_parallel         || null,
-      audience_description: audience_description || null,
-      phase1_city_audience: phase1_city_audience ?? false,
-      terms_accepted_at:    now,
-    })
-    .select()
-    .single();
-  if (insertErr) return json({ error: insertErr.message }, 500);
+  let app: any;
+
+  if (existing) {
+    // Rejected reapplication — reset the existing row to pending
+    const { data: updated, error: updateErr } = await admin
+      .from("affiliate_applications")
+      .update({
+        tier_applied_for:     tier,
+        audit_status:         "pending",
+        persona_status:       "none",
+        instagram_handle:     instagram ? String(instagram).replace("@", "") : null,
+        tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
+        youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
+        why_parallel:         why_parallel         || null,
+        audience_description: audience_description || null,
+        phase1_city_audience: phase1_city_audience ?? false,
+        terms_accepted_at:    now,
+      })
+      .eq("id", existing.id)
+      .select()
+      .single();
+    if (updateErr) return json({ error: updateErr.message }, 500);
+    app = updated;
+  } else {
+    // New application — insert
+    const { data: inserted, error: insertErr } = await admin
+      .from("affiliate_applications")
+      .insert({
+        email:                user.email,
+        tier_applied_for:     tier,
+        instagram_handle:     instagram ? String(instagram).replace("@", "") : null,
+        tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
+        youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
+        why_parallel:         why_parallel         || null,
+        audience_description: audience_description || null,
+        phase1_city_audience: phase1_city_audience ?? false,
+        terms_accepted_at:    now,
+      })
+      .select()
+      .single();
+    if (insertErr) return json({ error: insertErr.message }, 500);
+    app = inserted;
+  }
 
   const { data: profile } = await admin
     .from("profiles")
