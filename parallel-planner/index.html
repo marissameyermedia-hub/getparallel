@@ -2047,8 +2047,8 @@ async function loadChannelStatus() {
     }
     // Store for use by suggested-times in schedule modal
     state.bufferChannels = data.channels;
-    const SERVICE_ICON: Record<string, string> = { instagram: '📷', facebook: '📘', tiktok: '🎵' };
-    el.innerHTML = data.channels.map((ch: any) => {
+    const SERVICE_ICON = { instagram: '📷', facebook: '📘', tiktok: '🎵' };
+    el.innerHTML = data.channels.map((ch) => {
       const connected = !ch.isDisconnected;
       const dotClass = connected ? 'ok' : 'error';
       const followers = ch.followers?.count != null
@@ -2095,8 +2095,8 @@ async function loadEngagement() {
       list.innerHTML = '<div class="engagement-placeholder">No recent comments yet.</div>';
       return;
     }
-    const SERVICE_ICON: Record<string, string> = { instagram: '📷', facebook: '📘', tiktok: '🎵' };
-    list.innerHTML = data.comments.slice(0, 20).map((c: any) => {
+    const SERVICE_ICON = { instagram: '📷', facebook: '📘', tiktok: '🎵' };
+    list.innerHTML = data.comments.slice(0, 20).map((c) => {
       const icon = SERVICE_ICON[c.service?.toLowerCase()] || '💬';
       const time = c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
       return `<div class="comment-row">
@@ -2113,7 +2113,7 @@ async function loadEngagement() {
   }
 }
 
-function formatFollowers(n: number): string {
+function formatFollowers(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
   return String(n);
@@ -2122,7 +2122,7 @@ function formatFollowers(n: number): string {
 async function loadPublishedMetrics() {
   // Collect published posts that have Buffer post IDs but no cached metrics (or stale >24h)
   const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-  const postsToFetch = Object.entries(state.posts).filter(([, p]: [string, any]) => {
+  const postsToFetch = Object.entries(state.posts).filter(([, p]) => {
     if (!p._buffer_post_ids || !Object.keys(p._buffer_post_ids).length) return false;
     if (p.status !== 'published') return false;
     if (p._buffer_metrics && p._buffer_metrics_at) {
@@ -2132,7 +2132,7 @@ async function loadPublishedMetrics() {
     return true;
   });
 
-  for (const [postKey, post] of postsToFetch as [string, any][]) {
+  for (const [postKey, post] of postsToFetch) {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/buffer-data`, {
         method: 'POST',
@@ -2169,13 +2169,13 @@ async function loadPublishedMetrics() {
   }
 }
 
-function buildMetricsSummary(metrics: Record<string, any>): string {
+function buildMetricsSummary(metrics) {
   // Prefer instagram, then facebook, then tiktok
   const order = ['instagram', 'facebook', 'tiktok'];
   for (const svc of order) {
     const s = metrics[svc]?.statistics;
     if (!s) continue;
-    const parts: string[] = [];
+    const parts = [];
     if (s.reach) parts.push(`${formatFollowers(s.reach)} reach`);
     else if (s.impressions) parts.push(`${formatFollowers(s.impressions)} impr`);
     if (s.likes) parts.push(`${formatFollowers(s.likes)}♥`);
@@ -2624,11 +2624,11 @@ function openPost(week, slot) {
   document.getElementById('postModal').classList.add('open');
 }
 
-function showSuggestedTime(currentTime: string) {
+function showSuggestedTime(currentTime) {
   const banner = document.getElementById('suggestedTimeBanner');
   if (!banner) return;
   // Gather all suggestedTimes from all channels
-  const allTimes: string[] = [];
+  const allTimes = [];
   for (const ch of (state.bufferChannels || [])) {
     for (const st of (ch.suggestedTimes || [])) {
       if (st.time) allTimes.push(st.time);
@@ -2636,7 +2636,7 @@ function showSuggestedTime(currentTime: string) {
   }
   if (!allTimes.length) { banner.style.display = 'none'; return; }
   // Pick the most common suggestion (or first)
-  const freq: Record<string, number> = {};
+  const freq = {};
   for (const t of allTimes) freq[t] = (freq[t] || 0) + 1;
   const best = Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
   const label = currentTime ? `Buffer suggests <strong>${best}</strong> — currently set to ${currentTime}` : `Buffer suggests <strong>${best}</strong> for your audience`;
@@ -3437,7 +3437,7 @@ async function publishViaBuffer() {
     }
 
     // Collect Buffer post IDs per service
-    const bufferPostIds: Record<string, string> = {};
+    const bufferPostIds = {};
     for (const r of (data.results || [])) {
       if (r.post_id) bufferPostIds[r.service] = r.post_id;
     }
