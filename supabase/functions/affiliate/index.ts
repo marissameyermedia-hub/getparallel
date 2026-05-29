@@ -1,4 +1,8 @@
-// Parallel — affiliate edge function v15
+// Parallel — affiliate edge function v16
+// v16: GET /admin/review/:id — fetch full application + run Claude analysis for
+//      AI-powered review page. Marks app as in_review if still pending. Returns
+//      { application, analysis } where analysis has recommendation, confidence,
+//      strengths, concerns, questions, tier_fit, audience_quality.
 // v15: POST /apply allows re-application when previous application was rejected.
 //      Updates the existing rejected row (reset to 'pending') instead of 409.
 //      Email references updated to hello@getparallel.vip.
@@ -1161,6 +1165,116 @@ async function handleApply(req: Request): Promise<Response> {
   return json({ ok: true, application: app });
 }
 
+// ── GET /admin/review/:applicationId ─────────────────────────────────────────
+
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") || "";
+
+async function handleAdminReview(applicationId: string, req: Request): Promise<Response> {
+  const { isAdmin } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  const admin = adminClient();
+
+  const { data: app, error } = await admin
+    .from("affiliate_applications")
+    .select("*")
+    .eq("id", applicationId)
+    .maybeSingle();
+
+  if (error || !app) return json({ error: "application not found" }, 404);
+
+  // Mark as in_review if still pending
+  if (app.audit_status === "pending") {
+    await admin
+      .from("affiliate_applications")
+      .update({ audit_status: "in_review" })
+      .eq("id", applicationId);
+    app.audit_status = "in_review";
+  }
+
+  // Build Claude prompt
+  const tierDescriptions: Record<string, string> = {
+    seeds: "Seeds tier — micro-influencers, typically 1K–10K followers, community-focused",
+    voices: "Voices tier — mid-tier, typically 10K–100K followers, growing reach",
+    anchors: "Anchors tier — macro-influencers, typically 100K+ followers, major reach",
+  };
+
+  const socialHandles = [
+    app.instagram_handle ? `Instagram: @${app.instagram_handle}` : null,
+    app.tiktok_handle ? `TikTok: @${app.tiktok_handle}` : null,
+    app.youtube_handle ? `YouTube: @${app.youtube_handle}` : null,
+  ].filter(Boolean).join("\n");
+
+  const prompt = `You are a senior affiliate program manager at Parallel, a premium dating app launching in major US cities. Analyze this affiliate application and return a structured JSON review to help a human reviewer decide whether to approve, reject, or request more info.
+
+APPLICATION
+Email: ${app.email}
+Tier requested: ${tierDescriptions[app.tier_applied_for] || app.tier_applied_for}
+Submitted: ${new Date(app.created_at).toLocaleDateString()}
+Phase 1 city audience (NYC/LA/Chicago/SF/Austin/Miami): ${app.phase1_city_audience ? "Yes" : "No"}
+ID verification status: ${app.persona_status}
+
+Social handles:
+${socialHandles || "None provided"}
+
+Why they want to promote Parallel:
+"${app.why_parallel || "Not provided"}"
+
+TIER GUIDE
+- Seeds: 1K–10K followers, authentic community presence, 15% commission
+- Voices: 10K–100K followers, consistent content, proven audience, 20% commission
+- Anchors: 100K+ followers, major reach, verified brand experience, 25% commission
+
+Best-converting audiences for a dating app: lifestyle, relationships, self-improvement, dating advice, social life, wellness.
+
+Return ONLY valid JSON with this exact shape:
+{
+  "recommendation": "approve" | "needs_info" | "reject",
+  "confidence": "high" | "medium" | "low",
+  "summary": "2–3 sentence plain English assessment of this applicant",
+  "strengths": ["strength 1", "strength 2"],
+  "concerns": ["concern 1", "concern 2"],
+  "questions": ["question to ask if needs_info — omit or empty if not needed"],
+  "tier_fit": "well_suited" | "overstated" | "understated" | "unclear",
+  "tier_rationale": "One sentence on whether the requested tier matches what they've shown",
+  "audience_quality": "strong" | "moderate" | "weak" | "unknown",
+  "audience_notes": "One sentence on likely audience relevance for a dating app"
+}`;
+
+  let analysis: Record<string, unknown> | null = null;
+  if (ANTHROPIC_API_KEY) {
+    try {
+      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1024,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        const text: string = aiData?.content?.[0]?.text ?? "";
+        try {
+          analysis = JSON.parse(text);
+        } catch {
+          const m = text.match(/\{[\s\S]*\}/);
+          if (m) analysis = JSON.parse(m[0]);
+        }
+      }
+    } catch (e) {
+      console.error("[affiliate/admin/review] Claude call failed:", e);
+    }
+  }
+
+  return json({ application: app, analysis });
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
@@ -1242,6 +1356,11 @@ Deno.serve(async (req: Request) => {
   // POST /admin/approve
   if (req.method === "POST" && endpoint === "admin" && segments[1] === "approve") {
     return await handleAdminApprove(req);
+  }
+
+  // GET /admin/review/:applicationId
+  if (req.method === "GET" && endpoint === "admin" && segments[1] === "review" && segments[2]) {
+    return await handleAdminReview(segments[2], req);
   }
 
   // POST /apply
