@@ -1,4 +1,10 @@
-// Parallel — affiliate edge function v20
+// Parallel — affiliate edge function v21
+// v21: Two-phase payout flow with approval queue.
+//      POST /payout/queue  — stage a payout (creates DB row, locks attributions as 'queued', no Mercury call)
+//      GET  /payout/pending — return all pending_approval payouts with attribution breakdown for admin review
+//      POST /payout/approve — admin approves a queued payout: calls Mercury, verifies returned amount, marks released
+//      POST /payout/cancel  — cancel a queued payout, unlock attributions back to 'releasable'
+//      Adds queued_by/queued_at, approved_by/approved_at, mercury_verified_amount tracking on payout rows.
 // v20: GET /admin/review — return applicant_name from profiles so the admin
 //      review UI can display it alongside all application details.
 // v19: Instagram — use HTTP status code to distinguish "account exists but blocked"
@@ -716,6 +722,304 @@ async function handlePayoutRelease(req: Request): Promise<Response> {
 
   console.log("[affiliate/payout/release] released:", { affiliate_id, gross, attributions: attrIds.length, mercuryTxId });
   return json({ ok: true, payout_id: payout.id, gross_amount: gross, mercury_transaction_id: mercuryTxId, attribution_count: attrIds.length });
+}
+
+// ── POST /payout/queue ────────────────────────────────────────────────────────
+// Stage a payout for admin approval. Creates payout row (pending_approval),
+// locks attributions as 'queued'. Does NOT call Mercury.
+
+async function handlePayoutQueue(req: Request): Promise<Response> {
+  const { isAdmin, userId: queuedBy } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  let body: { affiliate_id?: string } = {};
+  try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+  const { affiliate_id } = body;
+  if (!affiliate_id) return json({ error: "affiliate_id required" }, 400);
+
+  const admin = adminClient();
+  const now = new Date().toISOString();
+
+  // Lock check — reject if a payout is already queued or in flight
+  const { data: existing } = await admin
+    .from("affiliate_payouts")
+    .select("id, mercury_status")
+    .eq("affiliate_id", affiliate_id)
+    .in("mercury_status", ["pending_approval", "sent"])
+    .maybeSingle();
+  if (existing) return json({ error: "a payout is already queued or in flight for this affiliate" }, 409);
+
+  const { data: aff, error: affErr } = await admin
+    .from("affiliates")
+    .select("id, display_name, email, mercury_recipient_id, tax_info_collected_at, bank_account_collected_at")
+    .eq("id", affiliate_id)
+    .maybeSingle();
+  if (affErr || !aff) return json({ error: "affiliate not found" }, 404);
+  if (!aff.mercury_recipient_id) return json({ error: "affiliate has no bank account connected" }, 400);
+  if (!aff.tax_info_collected_at) return json({ error: "affiliate has not submitted tax information" }, 400);
+
+  // Fetch eligible attributions (releasable, past clawback)
+  const { data: attrs, error: attrsErr } = await admin
+    .from("affiliate_attributions")
+    .select("id, commission_amount, subscribed_at, signed_up_at, clawback_deadline")
+    .eq("affiliate_id", affiliate_id)
+    .eq("commission_status", "releasable")
+    .or(`clawback_deadline.is.null,clawback_deadline.lt.${now}`);
+  if (attrsErr) return json({ error: "db error", detail: attrsErr.message }, 500);
+  if (!attrs || attrs.length === 0) return json({ error: "no commissions are past the clawback window" }, 400);
+
+  const gross = parseFloat(attrs.reduce((s, a) => s + Number(a.commission_amount ?? 0), 0).toFixed(2));
+  if (gross < PAYOUT_MINIMUM_USD) return json({ error: `total eligible ($${gross}) is below the $${PAYOUT_MINIMUM_USD} minimum` }, 400);
+
+  const dates = attrs.map((a: any) => (a.subscribed_at ?? a.signed_up_at) as string).filter(Boolean);
+  const periodStart = dates.length ? dates.reduce((min, d) => d < min ? d : min, dates[0]).slice(0, 10) : now.slice(0, 10);
+  const periodEnd   = dates.length ? dates.reduce((max, d) => d > max ? d : max, dates[0]).slice(0, 10) : now.slice(0, 10);
+
+  const { data: payout, error: payoutErr } = await admin
+    .from("affiliate_payouts")
+    .insert({
+      affiliate_id,
+      period_start: periodStart,
+      period_end:   periodEnd,
+      gross_amount: gross,
+      net_amount:   gross,
+      mercury_status: "pending_approval",
+      queued_by: queuedBy ?? null,
+      queued_at: now,
+    })
+    .select("id")
+    .single();
+  if (payoutErr || !payout) return json({ error: "failed to create payout record" }, 500);
+
+  // Lock attributions as 'queued'
+  const attrIds = attrs.map((a: any) => a.id);
+  await admin.from("affiliate_attributions").update({
+    commission_status: "queued",
+    payout_id: payout.id,
+    updated_at: now,
+  }).in("id", attrIds);
+
+  console.log("[affiliate/payout/queue]", { affiliate_id, gross, count: attrIds.length, payout_id: payout.id });
+  return json({ ok: true, payout_id: payout.id, gross_amount: gross, attribution_count: attrIds.length });
+}
+
+// ── GET /payout/pending ───────────────────────────────────────────────────────
+// Returns all pending_approval payouts with per-attribution breakdown for the
+// admin approval queue UI.
+
+async function handlePayoutPending(req: Request): Promise<Response> {
+  const { isAdmin } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  const admin = adminClient();
+
+  const { data: payouts, error } = await admin
+    .from("affiliate_payouts")
+    .select("id, affiliate_id, period_start, period_end, gross_amount, net_amount, mercury_status, queued_by, queued_at, created_at, affiliates(display_name, legal_name, email, mercury_recipient_id)")
+    .eq("mercury_status", "pending_approval")
+    .order("queued_at", { ascending: true });
+  if (error) return json({ error: "db error", detail: error.message }, 500);
+
+  const results = await Promise.all((payouts ?? []).map(async (p: any) => {
+    const { data: attrs } = await admin
+      .from("affiliate_attributions")
+      .select("id, commission_amount, subscribed_at, signed_up_at, referred_user_id, profiles(name, email)")
+      .eq("payout_id", p.id)
+      .eq("commission_status", "queued")
+      .order("subscribed_at", { ascending: false });
+
+    return {
+      id: p.id,
+      affiliate_id: p.affiliate_id,
+      period_start: p.period_start,
+      period_end:   p.period_end,
+      gross_amount: Number(p.gross_amount),
+      mercury_status: p.mercury_status,
+      queued_at: p.queued_at,
+      affiliate: p.affiliates ?? null,
+      attributions: (attrs ?? []).map((a: any) => ({
+        id: a.id,
+        commission_amount: Number(a.commission_amount),
+        subscribed_at: a.subscribed_at ?? a.signed_up_at ?? null,
+        referred_user: a.profiles ? { name: (a.profiles as any).name ?? null, email: (a.profiles as any).email } : null,
+      })),
+    };
+  }));
+
+  return json({ ok: true, payouts: results });
+}
+
+// ── POST /payout/approve ──────────────────────────────────────────────────────
+// Admin approves a queued payout: re-verifies amount, calls Mercury ACH,
+// checks Mercury's returned amount matches, then marks released.
+
+async function handlePayoutApprove(req: Request): Promise<Response> {
+  const { isAdmin, userId: approvedBy } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  let body: { payout_id?: string } = {};
+  try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+  const { payout_id } = body;
+  if (!payout_id) return json({ error: "payout_id required" }, 400);
+
+  const admin = adminClient();
+  const now = new Date().toISOString();
+
+  const { data: payout, error: payoutErr } = await admin
+    .from("affiliate_payouts")
+    .select("id, affiliate_id, gross_amount, mercury_status")
+    .eq("id", payout_id)
+    .eq("mercury_status", "pending_approval")
+    .maybeSingle();
+  if (payoutErr || !payout) return json({ error: "payout not found or not in pending_approval state" }, 404);
+
+  const { data: aff, error: affErr } = await admin
+    .from("affiliates")
+    .select("id, display_name, email, mercury_recipient_id, total_paid_lifetime")
+    .eq("id", payout.affiliate_id)
+    .maybeSingle();
+  if (affErr || !aff) return json({ error: "affiliate not found" }, 404);
+  if (!aff.mercury_recipient_id) return json({ error: "affiliate has no Mercury recipient — bank account missing" }, 400);
+
+  // Re-sum attributions at approval time to catch any drift
+  const { data: attrs, error: attrsErr } = await admin
+    .from("affiliate_attributions")
+    .select("id, commission_amount")
+    .eq("payout_id", payout_id)
+    .eq("commission_status", "queued");
+  if (attrsErr) return json({ error: "db error fetching attributions" }, 500);
+  if (!attrs || attrs.length === 0) return json({ error: "no queued attributions for this payout — it may have been cancelled" }, 400);
+
+  const recalcGross = parseFloat(attrs.reduce((s, a) => s + Number(a.commission_amount ?? 0), 0).toFixed(2));
+  if (recalcGross !== Number(payout.gross_amount)) {
+    return json({
+      error: `Amount mismatch: payout record says $${payout.gross_amount} but attributions sum to $${recalcGross}. Cancel and re-queue.`,
+    }, 409);
+  }
+
+  const accountId = await getMercuryAccountId();
+  if (!accountId) {
+    await admin.from("affiliate_payouts").update({ mercury_status: "failed", failure_reason: "could not fetch Mercury account" }).eq("id", payout_id);
+    return json({ error: "Mercury account unavailable — check API credentials" }, 502);
+  }
+
+  const mercuryRes = await fetch(`${MERCURY_BASE}/account/${accountId}/transactions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${btoa(`${MERCURY_TOKEN}:`)}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      externalMemo: `Parallel affiliate commission — ${aff.display_name}`,
+      amount: recalcGross,
+      paymentMethod: "ach",
+      recipientId: aff.mercury_recipient_id,
+    }),
+  });
+
+  const mercuryBody = await mercuryRes.json().catch(() => ({}));
+
+  if (!mercuryRes.ok) {
+    await admin.from("affiliate_payouts").update({
+      mercury_status: "failed",
+      failure_reason: JSON.stringify(mercuryBody).slice(0, 500),
+    }).eq("id", payout_id);
+    // Unlock attributions so they can be re-queued
+    await admin.from("affiliate_attributions").update({
+      commission_status: "releasable",
+      payout_id: null,
+      updated_at: now,
+    }).eq("payout_id", payout_id).eq("commission_status", "queued");
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-payout-failed`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: aff.email, name: aff.display_name }),
+    }).catch(() => {});
+    console.error("[affiliate/payout/approve] Mercury error:", mercuryRes.status, mercuryBody);
+    return json({ error: "Mercury payment failed", detail: mercuryBody }, 502);
+  }
+
+  const mercuryTxId = (mercuryBody as any).id ?? null;
+  const mercuryReturnedAmount = Number((mercuryBody as any).amount ?? 0);
+
+  // Verify Mercury's returned amount matches what we sent
+  if (mercuryReturnedAmount > 0 && mercuryReturnedAmount !== recalcGross) {
+    await admin.from("affiliate_payouts").update({
+      mercury_transaction_id: mercuryTxId,
+      mercury_status: "failed",
+      failure_reason: `Mercury amount mismatch: sent $${recalcGross}, Mercury returned $${mercuryReturnedAmount}`,
+    }).eq("id", payout_id);
+    console.error("[affiliate/payout/approve] Mercury amount mismatch:", { sent: recalcGross, returned: mercuryReturnedAmount, txId: mercuryTxId });
+    return json({
+      error: `Mercury returned a different amount ($${mercuryReturnedAmount}) than sent ($${recalcGross}). Payout flagged. Contact Mercury support. Transaction ID: ${mercuryTxId}`,
+    }, 500);
+  }
+
+  // All good — update payout, mark attributions released, update affiliate lifetime total
+  await admin.from("affiliate_payouts").update({
+    mercury_transaction_id: mercuryTxId,
+    mercury_verified_amount: mercuryReturnedAmount > 0 ? mercuryReturnedAmount : recalcGross,
+    mercury_status: "sent",
+    paid_at: now,
+    approved_by: approvedBy ?? null,
+    approved_at: now,
+  }).eq("id", payout_id);
+
+  const attrIds = attrs.map((a: any) => a.id);
+  await admin.from("affiliate_attributions").update({
+    commission_status: "released",
+    updated_at: now,
+  }).in("id", attrIds);
+
+  await admin.from("affiliates").update({
+    total_paid_lifetime: parseFloat(((Number(aff.total_paid_lifetime) ?? 0) + recalcGross).toFixed(2)),
+    updated_at: now,
+  }).eq("id", aff.id);
+
+  fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-payout-released`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+    body: JSON.stringify({ email: aff.email, name: aff.display_name, amount: recalcGross, payout_id }),
+  }).catch((err) => console.error("[affiliate/payout/approve] email failed:", err));
+
+  console.log("[affiliate/payout/approve] approved:", { payout_id, affiliate_id: aff.id, gross: recalcGross, mercuryTxId });
+  return json({ ok: true, payout_id, gross_amount: recalcGross, mercury_transaction_id: mercuryTxId, mercury_verified_amount: mercuryReturnedAmount > 0 ? mercuryReturnedAmount : recalcGross });
+}
+
+// ── POST /payout/cancel ───────────────────────────────────────────────────────
+// Cancel a queued payout — unlock attributions back to 'releasable'.
+
+async function handlePayoutCancel(req: Request): Promise<Response> {
+  const { isAdmin } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  let body: { payout_id?: string } = {};
+  try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
+  const { payout_id } = body;
+  if (!payout_id) return json({ error: "payout_id required" }, 400);
+
+  const admin = adminClient();
+  const now = new Date().toISOString();
+
+  const { data: payout, error: payoutErr } = await admin
+    .from("affiliate_payouts")
+    .select("id, mercury_status")
+    .eq("id", payout_id)
+    .eq("mercury_status", "pending_approval")
+    .maybeSingle();
+  if (payoutErr || !payout) return json({ error: "payout not found or not in pending_approval state" }, 404);
+
+  // Return attributions to releasable
+  await admin.from("affiliate_attributions").update({
+    commission_status: "releasable",
+    payout_id: null,
+    updated_at: now,
+  }).eq("payout_id", payout_id).eq("commission_status", "queued");
+
+  await admin.from("affiliate_payouts").update({ mercury_status: "cancelled" }).eq("id", payout_id);
+
+  console.log("[affiliate/payout/cancel] cancelled:", { payout_id });
+  return json({ ok: true, payout_id });
 }
 
 // ── GET /validate/:slug ───────────────────────────────────────────────────────
@@ -1577,7 +1881,27 @@ Deno.serve(async (req: Request) => {
     return await handlePayoutPreview(req);
   }
 
-  // POST /payout/release
+  // POST /payout/queue
+  if (req.method === "POST" && endpoint === "payout" && segments[1] === "queue") {
+    return await handlePayoutQueue(req);
+  }
+
+  // GET /payout/pending
+  if (req.method === "GET" && endpoint === "payout" && segments[1] === "pending") {
+    return await handlePayoutPending(req);
+  }
+
+  // POST /payout/approve
+  if (req.method === "POST" && endpoint === "payout" && segments[1] === "approve") {
+    return await handlePayoutApprove(req);
+  }
+
+  // POST /payout/cancel
+  if (req.method === "POST" && endpoint === "payout" && segments[1] === "cancel") {
+    return await handlePayoutCancel(req);
+  }
+
+  // POST /payout/release (legacy — backend only, no UI button)
   if (req.method === "POST" && endpoint === "payout" && segments[1] === "release") {
     return await handlePayoutRelease(req);
   }
