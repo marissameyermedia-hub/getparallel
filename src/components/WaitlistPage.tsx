@@ -146,10 +146,10 @@ export function WaitlistPage({ onNavigate }: WaitlistPageProps) {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-semibold text-[#0D0D0F] tracking-tight leading-[1.1] mb-4">
-            Parallel is opening<br />city by city.
+            Compatibility-first dating, now open.
           </h1>
           <p className="text-gray-600 leading-relaxed mb-10">
-            Tell us where you are. We'll let you know when there are enough people near you for matching to actually work.
+            Tell us where you are and we'll keep you in the loop as matching grows in your city.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -213,9 +213,9 @@ export function WaitlistPage({ onNavigate }: WaitlistPageProps) {
               disabled={status === 'loading' || !email || !effectiveCity}
               className="w-full bg-[#0D0D0F] text-white px-6 py-3.5 rounded-full font-medium hover:bg-[#0D0D0F]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
             >
-              {status === 'loading' ? 'Joining…' : (
+              {status === 'loading' ? 'Submitting…' : (
                 <>
-                  Join the waitlist
+                  Keep me posted
                   <ArrowRight size={18} />
                 </>
               )}
