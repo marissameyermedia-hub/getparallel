@@ -1,4 +1,6 @@
-// Parallel — affiliate edge function v19
+// Parallel — affiliate edge function v20
+// v20: GET /admin/review — return applicant_name from profiles so the admin
+//      review UI can display it alongside all application details.
 // v19: Instagram — use HTTP status code to distinguish "account exists but blocked"
 //      (401/403) from "account not found" (404). Ensures Claude never flags valid
 //      accounts as fake just because Instagram blocks server-side API access.
@@ -1353,6 +1355,14 @@ async function handleAdminReview(applicationId: string, req: Request): Promise<R
 
   if (error || !app) return json({ error: "application not found" }, 404);
 
+  // Look up applicant name from profiles (best-effort)
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("name")
+    .eq("email", app.email)
+    .maybeSingle();
+  const applicantName: string | null = (profile?.name as string | null) ?? null;
+
   // Mark as in_review if still pending
   if (app.audit_status === "pending") {
     await admin
@@ -1506,7 +1516,7 @@ Return ONLY valid JSON with this exact shape:
       : null,
   };
 
-  return json({ application: app, analysis, social_profiles: socialProfiles });
+  return json({ application: app, analysis, social_profiles: socialProfiles, applicant_name: applicantName });
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
