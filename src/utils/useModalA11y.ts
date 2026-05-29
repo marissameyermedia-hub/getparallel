@@ -15,7 +15,7 @@ const FOCUSABLE =
  *   4. When `containerRef` is supplied, traps focus inside the dialog:
  *      - Moves initial focus to the first focusable element on open.
  *      - Tab / Shift+Tab cycle within the container; focus cannot escape.
- *      This satisfies WCAG 2.1 AA § 2.1.2 (No Keyboard Trap) + the
+ *      This satisfies WCAG 2.2 AA § 2.1.2 (No Keyboard Trap) + the
  *      implicit requirement of role="dialog" aria-modal="true".
  *
  * Usage (basic):

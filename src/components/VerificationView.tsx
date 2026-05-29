@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ShieldCheck, ArrowLeft, CheckCircle, XCircle, Loader } from 'lucide-react';
-import { MISC_FUNCTION_URL } from '../utils/supabase/client';
+import { MISC_FUNCTION_URL, supabase } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
 import { getAccessToken } from '../utils/auth';
 
@@ -209,6 +209,18 @@ export function VerificationView({ userId, onBack, onVerified, isAlreadyVerified
       if (!res.ok && res.status !== 404) {
         throw new Error('Failed to record consent');
       }
+
+      // Non-blocking: log to biometric_consent_log for BIPA / WA MHMDA compliance.
+      // Failure must never block the user from proceeding to Persona.
+      supabase.from('biometric_consent_log').insert({
+        user_id: userId,
+        consent_type: 'biometric_bipa',
+        policy_version: 'ToS-May26-2026',
+      }).then(({ error: logError }) => {
+        if (logError) console.error('[biometric-consent-log] insert failed:', logError);
+      }).catch((logErr) => {
+        console.error('[biometric-consent-log] unexpected error:', logErr);
+      });
 
       // Navigate directly to Persona — they redirect back with ?verified=1 when done.
       window.location.href = personaUrl;

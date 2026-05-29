@@ -138,26 +138,25 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           {/* Anchor both columns at the top — the card stack on the right is
               taller than the copy on the left, and items-center was pulling the
               headline halfway down the viewport. */}
-          <div className="grid md:grid-cols-[1.1fr_1fr] gap-12 md:gap-16 items-start">
+          <div className="max-w-xl">
 
-            {/* Left: copy. md:pt-4 nudges the headline down just enough so it
-                visually sits across from the top edge of the angled cards. */}
+            {/* Copy */}
             <div className="md:pt-4">
               <p className="text-xs tracking-[0.2em] uppercase text-gray-500 mb-5 font-medium">
-                Professional matchmaking · Early access
+                Professional matchmaking
               </p>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] mb-6">
                 Ready to get matched?
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed mb-8 max-w-lg">
-                We're launching in every city. Join now, complete the questionnaire, and you'll be matched when your city's pool is ready. Beta members lock in their first year free.
+                Complete the questionnaire and meet your matches. Real compatibility — not just photos.
               </p>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={onShowExplainer}
                   className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-8 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
                 >
-                  Join the beta
+                  Create an account
                   <ArrowRight size={18} />
                 </button>
                 <button
@@ -169,63 +168,6 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               </div>
             </div>
 
-            {/* Right: two match cards, one M, one F, visually overlapped.
-                Reduced max width + tamed translations so the stack stays
-                inside the hero section and doesn't dwarf the headline. */}
-            <div className="relative py-4 md:py-8">
-              <div className="relative max-w-[320px] mx-auto">
-                <div className="md:-translate-x-4 md:rotate-[-3deg] transition-transform">
-                  <PreviewMatchCard
-                    name="Daniel"
-                    age={31}
-                    height={'6\'1"'}
-                    location="Seattle · 3 miles away"
-                    score={87}
-                    photoUrl="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=600&q=80&auto=format&fit=crop"
-                    verified
-                    bio="Software engineer, runner, dog dad to a very good golden named Olive."
-                    breakdown={{
-                      'Attachment & Emotional Health': 92,
-                      'Communication & Conflict': 88,
-                      'Life Goals': 90,
-                      'Values & Beliefs': 84,
-                      'Financial & Career': 86,
-                      'Connection Style': 82,
-                      'Lifestyle Behaviors': 85,
-                      'Social & Shared Life': 89,
-                    }}
-                  />
-                </div>
-                {/* Maya: previously had md:-translate-y-24 which pushed her above
-                    the section into the navbar. -translate-y-8 keeps the overlap
-                    effect without breaking the layout. */}
-                <div className="md:translate-x-6 md:-translate-y-8 md:rotate-[4deg] relative md:absolute md:inset-x-0 md:top-0 mt-6 md:mt-0 transition-transform">
-                  <PreviewMatchCard
-                    name="Maya"
-                    age={28}
-                    height={'5\'6"'}
-                    location="Seattle · 4 miles away"
-                    score={91}
-                    photoUrl="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&q=80&auto=format&fit=crop"
-                    verified
-                    bio="Product designer, weekend hiker, reading my way through every Toni Morrison book."
-                    breakdown={{
-                      'Attachment & Emotional Health': 95,
-                      'Communication & Conflict': 90,
-                      'Life Goals': 94,
-                      'Values & Beliefs': 91,
-                      'Financial & Career': 88,
-                      'Connection Style': 89,
-                      'Lifestyle Behaviors': 92,
-                      'Social & Shared Life': 87,
-                    }}
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-center text-gray-500 mt-8 md:mt-48 italic">
-                Every match comes with a score and a reason why.
-              </p>
-            </div>
           </div>
         </div>
       </section>
@@ -249,7 +191,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             <Step
               number="02"
               title="We run the numbers"
-              body="The algorithm goes to work. We read your answers, run the math, and find your best matches. During beta we're actively refining — your feedback shapes the product."
+              body="The algorithm goes to work. We read your answers, run the math, and find your best matches."
             />
             <Step
               number="03"
@@ -336,7 +278,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
               onClick={onShowExplainer}
               className="w-full sm:w-auto bg-parallel-purple text-parallel-cream px-10 py-4 rounded-full hover:bg-parallel-purple/90 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md"
             >
-              Join the beta
+              Create an account
               <ArrowRight size={18} />
             </button>
             <button
@@ -347,7 +289,7 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-6">
-            Beta members lock in their first year free.
+            Founding member pricing: $79/year.
           </p>
         </div>
       </section>

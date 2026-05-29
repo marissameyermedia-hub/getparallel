@@ -64,35 +64,43 @@ The `compatibility_score` (the harmonic mean) is identical on both rows. The `br
 
 The app queries `WHERE user_id = currentUser` — so a user only sees matches where they are the `user_id`. Both rows must exist for both people to see the match.
 
-### The delete pattern — known risk
+### The delete pattern — v102 fix
 
-Every matching run starts by deleting all existing rows for the calling user:
+Every matching run starts by deleting the calling user's own outbound rows, then re-inserting them. Reciprocal rows (where `matched_user_id = userId`) are handled with UPSERT so they're never destroyed by another user's run:
+
 ```typescript
-await sb.from(targetTable).delete().eq("user_id", userId);         // deletes A's outbound rows
-await sb.from(targetTable).delete().eq("matched_user_id", userId); // deletes reciprocal rows created by others
+// v102: only delete own outbound rows
+await sb.from(targetTable).delete().eq("user_id", userId);
+
+// own rows: fresh insert (safe — just deleted them)
+const myRows = inserts.filter(r => r.user_id === userId);
+await sb.from(targetTable).insert(myRows);
+
+// reciprocal rows: upsert — update if already written by the other user's run
+const reciprocalRows = inserts.filter(r => r.user_id !== userId);
+await sb.from(targetTable).upsert(reciprocalRows, { onConflict: "user_id,matched_user_id" });
 ```
 
-**The second line is dangerous at scale.** If User B's matching run fires after User A's run already created both A→B and B→A rows, B's run will delete A→B before recreating it. Any failure between deletion and re-insertion leaves A with no match row for B.
+**Pre-v102 danger (now fixed):** The old code also ran `delete().eq("matched_user_id", userId)` which wiped rows created by other users' runs. Example: Steve's run creates `user_id=Steve, matched_user_id=Danielle`. When Danielle's run fires, the old code deleted that row — leaving Steve visible to Danielle but Danielle invisible to Steve. v102 eliminates this.
 
-The correct fix (v102, pending implementation): only delete `user_id = userId` rows. Upsert reciprocal rows using INSERT ON CONFLICT DO UPDATE so they're never destructively wiped by another user's run.
+The `matches` table has `UNIQUE(user_id, matched_user_id)` — required for upsert to work. The `shadow_matches` table has the same constraint (added in migration `shadow_matches_unique_and_pg_cron_schedule`).
 
-### When matching runs (current behavior)
+### When matching runs
 
-1. **On onboarding completion**: `complete-onboarding` fires run-matching for the newly onboarded user only. This creates matches for the new user against all released candidates, and creates reciprocal rows for all those candidates. Candidates who were already in the system do NOT get a fresh run — their matches with the new user only exist because the new user's run created the reciprocal rows.
+1. **On onboarding completion**: `complete-onboarding` fires run-matching for the newly onboarded user only. Creates matches against all released candidates and reciprocal rows for each.
 
-2. **Manually triggered** (via the admin panel or direct MCP call).
+2. **Scheduled global run (pg_cron every 4 hours)**: The `trigger-global-matching` edge function queries all released/released_paying users and fires run-matching for each. This is the safety net that self-heals any asymmetric or missing rows. Schedule: `0 */4 * * *` (midnight, 4am, 8am, noon, 4pm, 8pm UTC).
 
-3. **No scheduled global run exists yet** — this is a known gap.
+3. **Manually triggered**: via the admin panel, direct MCP call, or `POST /functions/v1/trigger-global-matching` with service role key.
 
-### Known gap: new user fan-out
+### Scheduled global matching
 
-When User A completes onboarding, run-matching fires for A. This creates A→B and B→A rows for all currently-released users. BUT: if User B's matching was subsequently re-run for any reason (bug, admin trigger, race condition), it would wipe B→A and re-create it. If that re-run fails after deletion, A loses their B match row and never gets it back until the next explicit run.
+`trigger-global-matching` is a deployed edge function that orchestrates global runs. It:
+1. Queries all `has_completed_onboarding = true` users with `release_status IN ('released', 'released_paying')` or `is_seed_account = true`
+2. Fires `POST /run-matching` for each with a 100ms delay between requests
+3. Uses `EdgeRuntime.waitUntil` so the HTTP response returns immediately while runs proceed in the background
 
-**The correct behavior** (to be implemented): when any user is released, trigger run-matching for ALL currently-released users — not just the new person. This ensures every existing user sees the new person immediately, from their own perspective.
-
-### Scheduled global matching (to be implemented)
-
-A `pg_cron` job running every 4 hours that calls run-matching for every user with `release_status IN ('released', 'released_paying')`. This is the safety net that self-heals any asymmetric or missing rows. At beta scale this is trivially cheap. At 10,000+ users, switch to an incremental strategy (only re-run users whose answer pool has changed since the last run).
+At beta scale this is trivially cheap. At 10,000+ users, switch to an incremental strategy (only re-run users whose answer pool has changed since the last run).
 
 ### What to do if users report not seeing a match
 

@@ -19,22 +19,19 @@
 //   v100 → clean rewrite replacing v71. No v72-v99 exist.
 //   v101 → fix scoreReligion: both-open case now scores 80 instead of 45.
 //          Synced live release_status/shadow_matches logic into local file.
-//   v102 → fix delete pattern: only delete own rows, upsert reciprocals.
 // ─────────────────────────────────────────────────────────────────────────────
 // =============================================================================
-// run-matching v102
+// run-matching v101
 // =============================================================================
-// Changes from v101:
-//   1. Fix dangerous delete pattern: previously deleted ALL rows where
-//      matched_user_id = userId before re-inserting, which could wipe rows
-//      created by OTHER users' concurrent matching runs (e.g., Steve's row for
-//      Danielle gets deleted when Danielle's run fires). Now we only delete
-//      a user's own outbound rows (user_id = userId) and use UPSERT for
-//      reciprocal rows, eliminating the race condition.
-//
-// Inherited from v101:
+// Changes from v100:
 //   1. scoreReligion: when both users have "Open to different beliefs" in Q12.2,
-//      score returns 80 instead of bumping the baseline to 45.
+//      score returns 80 instead of bumping the baseline to 45. Rationale: if
+//      both parties explicitly say the difference doesn't matter, penalising them
+//      55 points for having different beliefs contradicts their own stated
+//      preference. The 12.2 question (scored at 90) already captures openness;
+//      6.2 should not double-penalise when openness is mutual.
+//
+// Inherited from live v100 (phase 0):
 //   - Candidate pool filtered to release_status IN ('released','released_paying')
 //     OR is_seed_account = true.
 //   - Pending users are scored; results route to shadow_matches instead of matches.
@@ -44,7 +41,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const VERSION = "102";
+const VERSION = "101";
 
 let CANONICAL: any = null;
 let CANONICAL_HASH: string = "unloaded";
@@ -833,10 +830,8 @@ async function runMatching(userId: string) {
     || !!me.is_seed_account;
   const targetTable = meLive ? "matches" : "shadow_matches";
 
-  // Only delete this user's own outbound rows. Never delete rows where
-  // matched_user_id = userId — those are other users' outbound rows and
-  // deleting them causes asymmetric match disappearances.
   await sb.from(targetTable).delete().eq("user_id", userId);
+  await sb.from(targetTable).delete().eq("matched_user_id", userId);
 
   const inserts: any[] = [];
   let hardFilterRejects = 0; let dealbreakerRejects = 0; let scoreRejects = 0;
@@ -902,14 +897,7 @@ async function runMatching(userId: string) {
     });
   }
 
-  // Insert own rows fresh (deleted above). Upsert reciprocal rows so we
-  // don't clobber rows already written by the other user's own run.
-  const myRows = inserts.filter((r: any) => r.user_id === userId);
-  const reciprocalRows = inserts.filter((r: any) => r.user_id !== userId);
-  if (myRows.length > 0) await sb.from(targetTable).insert(myRows);
-  if (reciprocalRows.length > 0) {
-    await sb.from(targetTable).upsert(reciprocalRows, { onConflict: "user_id,matched_user_id" });
-  }
+  if (inserts.length > 0) await sb.from(targetTable).insert(inserts);
 
   return {
     success: true, version: VERSION, canonical_hash: CANONICAL_HASH,

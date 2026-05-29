@@ -58,8 +58,20 @@ const CATEGORIES = [
   {
     key: 'intimacy_connection',
     label: 'Connection Style',
-    defaultTokens: 2,
-    researchNote: 'How you connect emotionally and physically. Alignment helps — but couples adapt here more successfully than in psychological or values dimensions.',
+    defaultTokens: 3,
+    researchNote: "Physical intimacy alignment is a top-five relationship dissatisfier when mismatched, yet rarely discussed directly. Attraction fades — but intimacy needs don't.",
+  },
+  {
+    key: 'lifestyle_behaviors',
+    label: 'Lifestyle Behaviors',
+    defaultTokens: 4,
+    researchNote: "Lifestyle differences create friction but are more negotiable than values or emotional patterns. Research shows lifestyle conflicts are 'solvable' — most other categories aren't.",
+  },
+  {
+    key: 'social_shared_life',
+    label: 'Social & Shared Life',
+    defaultTokens: 4,
+    researchNote: 'Shared activities bond couples and create positive memories, but they predict relationship enjoyment more than relationship survival.',
   },
 ];
 
@@ -85,12 +97,27 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
         if (res.ok) {
           const data = await res.json();
           if (data.weights) {
-            const weights = data.weights as Record<string, number>;
-            const storedTotal = Object.values(weights).reduce((a, b) => a + b, 0);
+            const keyMap: Record<string, string> = {
+              'Attachment & Emotional Health': 'attachment_emotional_health',
+              'Communication & Conflict': 'communication_conflict',
+              'Life Goals': 'life_goals',
+              'Values & Beliefs': 'values_beliefs',
+              'Financial & Career': 'financial_career',
+              'Connection Style': 'intimacy_connection',
+              'Lifestyle Behaviors': 'lifestyle_behaviors',
+              'Social & Shared Life': 'social_shared_life',
+            };
+            const mapped = Object.fromEntries(
+              Object.entries(data.weights).map(([k, v]) => [keyMap[k] ?? k, v])
+            ) as Record<string, number>;
+
+            // If the stored total doesn't match TOTAL_TOKENS (e.g. legacy 20-token values),
+            // scale proportionally and fix any rounding drift.
+            const storedTotal = Object.values(mapped).reduce((a, b) => a + b, 0);
             if (storedTotal > 0 && storedTotal !== TOTAL_TOKENS) {
               const scale = TOTAL_TOKENS / storedTotal;
               const scaled: Record<string, number> = Object.fromEntries(
-                Object.entries(weights).map(([k, v]) => [k, Math.max(1, Math.round(v * scale))])
+                Object.entries(mapped).map(([k, v]) => [k, Math.max(1, Math.round(v * scale))])
               );
               const scaledTotal = Object.values(scaled).reduce((a, b) => a + b, 0);
               const drift = TOTAL_TOKENS - scaledTotal;
@@ -100,7 +127,7 @@ export function MatchWeightsScreen({ onComplete, onBack, isOnboarding = false }:
               }
               setTokens(scaled);
             } else {
-              setTokens(weights);
+              setTokens(mapped);
             }
           }
         }

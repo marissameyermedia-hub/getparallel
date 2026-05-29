@@ -92,7 +92,7 @@ export function PaymentDetailsView({ onBack, hasActivated = true, onGoToPayment,
                     <CheckCircle className="w-4 h-4 text-parallel-cream" />
                   </div>
                   <div>
-                    <div className="font-medium">Annual or monthly plans</div>
+                    <div className="font-medium">Annual plans</div>
                     <div className="text-sm text-gray-600">Cancel anytime</div>
                   </div>
                 </div>

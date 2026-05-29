@@ -22,7 +22,7 @@ export function PrivacyPolicyView({ onBack }: PrivacyPolicyViewProps) {
         </div>
 
         <div className="prose prose-gray max-w-none">
-          <p className="text-sm text-gray-600 mb-8">Last updated: April 21, 2026</p>
+          <p className="text-sm text-gray-600 mb-8">Last updated: May 26, 2026</p>
 
           <div className="space-y-6 text-gray-700 leading-relaxed">
             <section>

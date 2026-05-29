@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, FileText, ShieldCheck, CreditCard, Bell, Lock, HelpCircle, FileText as FileTextAlt, LogOut, ChevronRight, Pause, Trash2, Eye, BarChart2, Heart, ExternalLink, Settings2 } from 'lucide-react';
+import { User, FileText, ShieldCheck, CreditCard, Bell, Lock, HelpCircle, FileText as FileTextAlt, LogOut, ChevronRight, Pause, Trash2, Eye, BarChart2, Heart, ExternalLink, Settings2, Sliders } from 'lucide-react';
 import { MatchWeightsScreen } from './MatchWeightsScreen';
 import { EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MISC_FUNCTION_URL } from '../utils/supabase/client';
 import { publicAnonKey } from '../utils/supabase/info';
@@ -504,6 +504,22 @@ export function AccountPage({
             </div>
           </button>
 
+          {/* Feedback adapts matching — shown only once subscribed */}
+          {hasActivated && (
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <Sliders size={16} className="text-gray-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-800 mb-1">Your preferences adapt over time</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    When you pass and say why, we shift what we look for in your next matches —
+                    prioritizing dimensions where you've seen consistent misalignment.
+                    You can always review and reset priorities above.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Profile buttons */}
           <div className="grid grid-cols-2 gap-3 mb-4">
