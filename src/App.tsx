@@ -784,12 +784,19 @@ function App() {
           } else {
             setCurrentView(
               window.location.pathname === '/waitlist' ? 'waitlist' :
-              (() => { try { return new URLSearchParams(window.location.search).get('view') === 'affiliate' ? 'affiliate-landing' : 'signin'; } catch { return 'signin'; } })()
+              params.get('view') === 'affiliate-portal' ? 'account-creation' :
+              params.get('view') === 'affiliate' ? 'affiliate-landing' :
+              'signin'
             );
           }
         }
       } catch (e) {
-        setCurrentView(window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
+        setCurrentView(
+          window.location.pathname === '/waitlist' ? 'waitlist' :
+          params.get('view') === 'affiliate-portal' ? 'account-creation' :
+          params.get('view') === 'affiliate' ? 'affiliate-landing' :
+          'signin'
+        );
       }
 
       setIsLoading(false);
