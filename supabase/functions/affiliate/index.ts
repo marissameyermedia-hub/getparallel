@@ -1,4 +1,8 @@
-// Parallel — affiliate edge function v17
+// Parallel — affiliate edge function v18
+// v18: Remove phase1_city_audience from /apply (launching US+Canada wide, not phase-gated).
+//      Fix social profile fetching — TikTok/YouTube oEmbed requires video URLs, not profiles;
+//      now fetches profile HTML and parses embedded JSON for follower/subscriber counts.
+//      Instagram falls back to HTML scrape with schema.org + regex extraction when API blocks.
 // v17: Remove why_parallel + audience_description from /apply (collected via social fetch instead).
 //      Add persona_inquiry_id to /apply insert/update.
 //      GET /admin/review now fetches real social profile data (Instagram follower count,
@@ -1090,7 +1094,7 @@ async function handleApply(req: Request): Promise<Response> {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-  const { tier, instagram, tiktok, youtube, persona_inquiry_id, phase1_city_audience, terms_accepted } = body;
+  const { tier, instagram, tiktok, youtube, persona_inquiry_id, terms_accepted } = body;
   if (!tier) return json({ error: "tier required" }, 400);
   if (!terms_accepted) return json({ error: "You must accept the affiliate program terms to apply" }, 400);
 
@@ -1121,7 +1125,6 @@ async function handleApply(req: Request): Promise<Response> {
         tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
         youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
         persona_inquiry_id:   persona_inquiry_id || null,
-        phase1_city_audience: phase1_city_audience ?? false,
         terms_accepted_at:    now,
       })
       .eq("id", existing.id)
@@ -1140,7 +1143,6 @@ async function handleApply(req: Request): Promise<Response> {
         tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
         youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
         persona_inquiry_id:   persona_inquiry_id || null,
-        phase1_city_audience: phase1_city_audience ?? false,
         terms_accepted_at:    now,
       })
       .select()
@@ -1170,50 +1172,161 @@ async function handleApply(req: Request): Promise<Response> {
 
 // ── Social media profile fetchers ─────────────────────────────────────────────
 
+const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 async function fetchInstagramProfile(handle: string): Promise<{ followers: number | null; bio: string | null; verified: boolean } | null> {
   try {
-    const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`, {
+    // Try the private web API first (works when not behind a login wall)
+    const apiRes = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`, {
       headers: {
         "x-ig-app-id": "936619743392459",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+        "User-Agent": BROWSER_UA,
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.instagram.com/",
+        "Origin": "https://www.instagram.com",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "cors",
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      const user = data?.data?.user;
+      if (user) return {
+        followers: user.edge_followed_by?.count ?? null,
+        bio: user.biography ?? null,
+        verified: user.is_verified ?? false,
+      };
+    }
+
+    // Fallback: fetch profile HTML and parse embedded data
+    const htmlRes = await fetch(`https://www.instagram.com/${encodeURIComponent(handle)}/`, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!htmlRes.ok) return null;
+    const html = await htmlRes.text();
+
+    // schema.org JSON-LD embedded in page (most reliable when available)
+    const ldMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    if (ldMatch) {
+      try {
+        const ld = JSON.parse(ldMatch[1]);
+        const stats: any[] = ld?.mainEntity?.interactionStatistic ?? [];
+        const follow = stats.find((s: any) => String(s.interactionType ?? "").includes("Follow"));
+        if (follow?.userInteractionCount != null) {
+          return { followers: Number(follow.userInteractionCount), bio: null, verified: false };
+        }
+      } catch { /* continue */ }
+    }
+
+    // Regex fallback against embedded JSON blobs
+    const countMatch = html.match(/"edge_followed_by":\{"count":(\d+)\}/);
+    if (countMatch) return { followers: parseInt(countMatch[1]), bio: null, verified: false };
+
+    // Account exists (page loaded) but follower count is behind login wall
+    if (html.includes(handle) || html.includes("ProfilePage")) {
+      return { followers: null, bio: null, verified: false };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchTikTokProfile(handle: string): Promise<{ followers: number | null; author: string | null } | null> {
+  try {
+    // TikTok embeds profile data in __UNIVERSAL_DATA_FOR_REHYDRATION__ script tag
+    const res = await fetch(`https://www.tiktok.com/@${encodeURIComponent(handle)}`, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
       },
       signal: AbortSignal.timeout(7000),
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    const user = data?.data?.user;
-    if (!user) return null;
-    return {
-      followers: user.edge_followed_by?.count ?? null,
-      bio: user.biography ?? null,
-      verified: user.is_verified ?? false,
-    };
+    const html = await res.text();
+
+    // Parse __UNIVERSAL_DATA_FOR_REHYDRATION__ for full profile stats
+    const scriptMatch = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+    if (scriptMatch) {
+      try {
+        const data = JSON.parse(scriptMatch[1]);
+        const userInfo = data?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo;
+        if (userInfo) {
+          return {
+            followers: userInfo.stats?.followerCount ?? null,
+            author: userInfo.user?.nickname ?? userInfo.user?.uniqueId ?? null,
+          };
+        }
+      } catch { /* continue */ }
+    }
+
+    // Regex fallback
+    const followerMatch = html.match(/"followerCount":(\d+)/);
+    const nameMatch = html.match(/"nickname":"([^"]+)"/);
+    if (followerMatch || html.includes(handle)) {
+      return {
+        followers: followerMatch ? parseInt(followerMatch[1]) : null,
+        author: nameMatch?.[1] ?? null,
+      };
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
-async function fetchTikTokProfile(handle: string): Promise<{ exists: boolean; author: string | null } | null> {
+async function fetchYouTubeProfile(handle: string): Promise<{ subscribers: number | null; subscribersText: string | null; author: string | null } | null> {
   try {
-    const res = await fetch(`https://www.tiktok.com/oembed?url=https://www.tiktok.com/@${encodeURIComponent(handle)}`, {
-      signal: AbortSignal.timeout(7000),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return { exists: true, author: data?.author_name ?? null };
-  } catch {
-    return null;
-  }
-}
+    // Try YouTube Data API v3 if key is configured
+    const ytKey = Deno.env.get("YOUTUBE_API_KEY");
+    if (ytKey) {
+      const apiRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&forHandle=${encodeURIComponent(handle)}&key=${ytKey}`,
+        { signal: AbortSignal.timeout(7000) }
+      );
+      if (apiRes.ok) {
+        const data = await apiRes.json();
+        const ch = data?.items?.[0];
+        if (ch) return {
+          subscribers: ch.statistics?.subscriberCount ? parseInt(ch.statistics.subscriberCount) : null,
+          subscribersText: null,
+          author: ch.snippet?.title ?? null,
+        };
+      }
+    }
 
-async function fetchYouTubeProfile(handle: string): Promise<{ exists: boolean; author: string | null } | null> {
-  try {
-    const res = await fetch(`https://www.youtube.com/oembed?url=https://youtube.com/@${encodeURIComponent(handle)}&format=json`, {
+    // Fallback: fetch channel HTML and extract subscriber count from embedded JSON
+    const res = await fetch(`https://www.youtube.com/@${encodeURIComponent(handle)}`, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
       signal: AbortSignal.timeout(7000),
     });
     if (!res.ok) return null;
-    const data = await res.json();
-    return { exists: true, author: data?.author_name ?? null };
+    const html = await res.text();
+
+    const subTextMatch = html.match(/"subscriberCountText":\{"simpleText":"([^"]+)"\}/);
+    const nameMatch = html.match(/"channelMetadataRenderer":\{"title":"([^"]+)"/);
+    const subNumMatch = html.match(/"subscriberCount":"(\d+)"/);
+
+    if (subTextMatch || nameMatch || html.includes("youtube.com")) {
+      return {
+        subscribers: subNumMatch ? parseInt(subNumMatch[1]) : null,
+        subscribersText: subTextMatch?.[1] ?? null,
+        author: nameMatch?.[1] ?? null,
+      };
+    }
+    return null;
   } catch {
     return null;
   }
@@ -1258,27 +1371,42 @@ async function handleAdminReview(applicationId: string, req: Request): Promise<R
   if (app.instagram_handle) {
     let line = `Instagram: @${app.instagram_handle}`;
     if (igProfile) {
-      const followerStr = igProfile.followers !== null ? `${igProfile.followers.toLocaleString()} followers` : "account exists";
-      const verifiedStr = igProfile.verified ? " (verified)" : "";
-      const bioStr = igProfile.bio ? `; bio: "${igProfile.bio.slice(0, 120)}"` : "";
-      line += ` — ${followerStr}${verifiedStr}${bioStr}`;
+      const parts: string[] = [];
+      if (igProfile.followers !== null) parts.push(`${igProfile.followers.toLocaleString()} followers`);
+      else parts.push("account exists, follower count behind login wall");
+      if (igProfile.verified) parts.push("verified");
+      if (igProfile.bio) parts.push(`bio: "${igProfile.bio.slice(0, 120)}"`);
+      line += ` — ${parts.join("; ")}`;
     } else {
-      line += " (profile blocked or not found — verify manually)";
+      line += " (not found or access blocked — verify manually)";
     }
     socialLines.push(line);
   }
   if (app.tiktok_handle) {
     let line = `TikTok: @${app.tiktok_handle}`;
-    line += ttProfile
-      ? ` — account confirmed as "${ttProfile.author ?? app.tiktok_handle}"`
-      : " (profile blocked or not found — verify manually)";
+    if (ttProfile) {
+      const parts: string[] = [];
+      if (ttProfile.followers !== null) parts.push(`${ttProfile.followers.toLocaleString()} followers`);
+      else parts.push("account exists");
+      if (ttProfile.author) parts.push(`name: "${ttProfile.author}"`);
+      line += ` — ${parts.join("; ")}`;
+    } else {
+      line += " (not found or access blocked — verify manually)";
+    }
     socialLines.push(line);
   }
   if (app.youtube_handle) {
     let line = `YouTube: @${app.youtube_handle}`;
-    line += ytProfile
-      ? ` — channel confirmed as "${ytProfile.author ?? app.youtube_handle}"`
-      : " (profile blocked or not found — verify manually)";
+    if (ytProfile) {
+      const parts: string[] = [];
+      if (ytProfile.subscribers !== null) parts.push(`${ytProfile.subscribers.toLocaleString()} subscribers`);
+      else if (ytProfile.subscribersText) parts.push(`${ytProfile.subscribersText} subscribers`);
+      else parts.push("channel exists");
+      if (ytProfile.author) parts.push(`name: "${ytProfile.author}"`);
+      line += ` — ${parts.join("; ")}`;
+    } else {
+      line += " (not found or access blocked — verify manually)";
+    }
     socialLines.push(line);
   }
   const socialData = socialLines.length ? socialLines.join("\n") : "None provided";
@@ -1296,7 +1424,6 @@ APPLICATION
 Email: ${app.email}
 Tier requested: ${tierDescriptions[app.tier_applied_for] || app.tier_applied_for}
 Submitted: ${new Date(app.created_at).toLocaleDateString()}
-Phase 1 city audience (NYC/LA/Chicago/SF/Austin/Miami): ${app.phase1_city_audience ? "Yes" : "No"}
 ID verification: ${app.persona_status === "approved" ? "Verified ✓" : app.persona_status === "none" ? "Not yet verified" : app.persona_status}
 
 Social profiles (fetched from public APIs — use follower counts to assess tier fit):

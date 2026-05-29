@@ -237,7 +237,6 @@ function ApplyForm({ userId, personaPreVerified, personaPreInquiryId, onSubmitte
   const [instagram, setInstagram] = useState('');
   const [tiktok, setTiktok] = useState('');
   const [youtube, setYoutube] = useState('');
-  const [phase1City, setPhase1City] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -256,7 +255,6 @@ function ApplyForm({ userId, personaPreVerified, personaPreInquiryId, onSubmitte
         setInstagram(s.instagram || '');
         setTiktok(s.tiktok || '');
         setYoutube(s.youtube || '');
-        setPhase1City(s.phase1City || false);
         sessionStorage.removeItem('affiliate_form_state');
         setStep(2);
       }
@@ -276,7 +274,6 @@ function ApplyForm({ userId, personaPreVerified, personaPreInquiryId, onSubmitte
         instagram: instagram || null,
         tiktok: tiktok || null,
         youtube: youtube || null,
-        phase1_city_audience: phase1City,
         persona_inquiry_id: personaInquiryId || null,
       },
     });
@@ -298,7 +295,7 @@ function ApplyForm({ userId, personaPreVerified, personaPreInquiryId, onSubmitte
     if (!userId) { e.preventDefault(); return; }
     try {
       sessionStorage.setItem('affiliate_form_state', JSON.stringify({
-        tier, instagram, tiktok, youtube, phase1City,
+        tier, instagram, tiktok, youtube,
       }));
     } catch { /* ignore */ }
   }
@@ -430,19 +427,6 @@ function ApplyForm({ userId, personaPreVerified, personaPreInquiryId, onSubmitte
                 </p>
               )}
             </div>
-
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={phase1City}
-                onChange={e => setPhase1City(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded accent-[#7B5EA7]"
-              />
-              <span className="text-sm text-gray-700">
-                My audience is primarily in a Phase 1 launch city (NYC, LA, Chicago, SF, Austin, Miami)
-                <span className="block text-xs text-gray-400 mt-0.5 leading-relaxed">Phase 1 cities have the most active members — checking this may speed up approval.</span>
-              </span>
-            </label>
 
             <label className="flex items-start gap-3 cursor-pointer">
               <input
