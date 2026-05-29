@@ -1,4 +1,6 @@
-// Parallel — misc edge function v35
+// Parallel — misc edge function v36
+// v36: verify-phone-otp — clear phone from any prior profile before linking to
+//      current user, so the same phone number can be reused across test accounts.
 // v35: Persona webhook — when affiliate identity verified, activate affiliates row
 //      (pending_verification → active) and fire full affiliate-approved email.
 // v34: PAYMENT.SALE.COMPLETED — set clawback_deadline = payment_time + 30 days (was missing).
@@ -253,6 +255,8 @@ async function handleVerifyPhoneOtp(req: Request) {
   if (new Date(row.expires_at).getTime() < Date.now()) return json({ success: false, error: "Code expired" }, 400);
   if (row.otp_code !== otp) return json({ success: false, error: "Incorrect code" }, 400);
   await admin.from("phone_otps").update({ used: true }).eq("id", row.id);
+  // Release the phone from any other profile first so the same number can be reused.
+  await admin.from("profiles").update({ phone: null, phone_verified: false }).neq("id", user.id).eq("phone", phone);
   await admin.from("profiles").update({ phone, phone_verified: true, updated_at: new Date().toISOString() }).eq("id", user.id);
   return json({ success: true, phoneVerified: true });
 }
@@ -1189,7 +1193,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/misc\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "35" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "misc", version: "36" });
     if (path === "/auth/pwa-token/create" && req.method === "POST") return await handlePwaTokenCreate(req);
     if (path === "/auth/pwa-token/exchange" && req.method === "POST") return await handlePwaTokenExchange(req);
     if (path === "/referral/by-code" && req.method === "GET") return await handleReferralByCode(req);
