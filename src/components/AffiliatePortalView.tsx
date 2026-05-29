@@ -4,7 +4,6 @@ import {
   Clock, CheckCircle2, AlertCircle, ShieldCheck, Link2, Tag,
   ChevronDown, ChevronUp, History, CreditCard,
 } from 'lucide-react';
-import { supabase } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const PERSONA_TEMPLATE_ID = 'itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG';
@@ -204,13 +203,13 @@ async function affiliateApi<T = any>(
   opts: { method?: string; body?: unknown } = {}
 ): Promise<{ data: T | null; error: string | null }> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { data: null, error: 'Not signed in' };
+    const token = localStorage.getItem('parallel_access_token');
+    if (!token) return { data: null, error: 'Not signed in' };
     const fetchOpts: RequestInit = {
       method: opts.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
+        'Authorization': `Bearer ${token}`,
         'apikey': publicAnonKey,
       },
     };
@@ -1410,17 +1409,23 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
       }
 
       // Not yet an affiliate — check for pending application
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setState('apply'); return; }
+      const token = localStorage.getItem('parallel_access_token');
+      if (!token) { setState('apply'); return; }
 
-      const { data: apps } = await supabase
-        .from('affiliate_applications')
-        .select('id,tier_applied_for,audit_status,persona_status,created_at')
-        .eq('email', user.email ?? '')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const userRes = await fetch(`https://${projectId}.supabase.co/auth/v1/user`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+      }).catch(() => null);
+      const userData = userRes?.ok ? await userRes.json() : null;
+      const userEmail = userData?.email;
+      if (!userEmail) { setState('apply'); return; }
 
-      if (apps && apps.length > 0) {
+      const appsRes = await fetch(
+        `https://${projectId}.supabase.co/rest/v1/affiliate_applications?select=id,tier_applied_for,audit_status,persona_status,created_at&email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey } }
+      ).catch(() => null);
+      const apps = appsRes?.ok ? await appsRes.json() : null;
+
+      if (Array.isArray(apps) && apps.length > 0) {
         setApplication(apps[0] as AffiliateApplication);
         setState('submitted');
       } else {
