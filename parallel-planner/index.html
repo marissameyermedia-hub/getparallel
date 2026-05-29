@@ -2586,7 +2586,7 @@ function openPost(week, slot) {
   document.getElementById('modalTitle').textContent = `W${week} · ${displayDate.toLocaleDateString('en-US',{weekday:'short'})} ${displayDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
   document.getElementById('captionField').value = post.caption || '';
   document.getElementById('hashtagField').value = post.hashtags || '';
-  document.getElementById('postDate').value = formatDate(d);
+  document.getElementById('postDate').value = formatDate(displayDate);
   document.getElementById('postTime').value = post.time || '';
   const defaultLocation = LOCATION_ROTATION[dayIndex % LOCATION_ROTATION.length];
   document.getElementById('locationField').value = post.location || defaultLocation;
