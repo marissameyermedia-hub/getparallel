@@ -24,6 +24,10 @@ interface AccountCreationPageProps {
   // green "you were referred" banner above the form to build trust at the
   // exact moment the user is deciding whether to hand over their info.
   referralCode?: string | null;
+  // When true, the user arrived via ?view=affiliate-portal and is signing
+  // up specifically to join the affiliate program, not to use dating features.
+  // Adjusts copy to remove dating-specific language.
+  isAffiliateSignup?: boolean;
 }
 
 function normalizePhone(raw: string): string {
@@ -97,7 +101,7 @@ async function logToSAgreement(accessToken: string): Promise<void> {
   }
 }
 
-export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCode }: AccountCreationPageProps) {
+export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCode, isAffiliateSignup }: AccountCreationPageProps) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -300,8 +304,35 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
 
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Create Account</h1>
-          <p className="text-gray-600">You deserve to have everything you want. Tell us what it is.</p>
+          <p className="text-gray-600">
+            {isAffiliateSignup
+              ? 'Create your account to access the Parallel Affiliate Program.'
+              : 'You deserve to have everything you want. Tell us what it is.'}
+          </p>
         </div>
+
+        {/* Affiliate context banner — shown when user arrived via ?view=affiliate-portal */}
+        {isAffiliateSignup && (
+          <div
+            role="status"
+            className="mb-4 p-3 rounded-2xl flex items-center gap-3"
+            style={{ background: '#EEEDFE', border: '0.5px solid #A98FD0' }}
+          >
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: '#7B5EA7' }}
+              aria-hidden="true"
+            >
+              <span style={{ fontSize: '9px', fontWeight: 700, color: '#F5F2EE', letterSpacing: '0.02em' }}>
+                P<span style={{ color: '#A98FD0' }}>//</span>
+              </span>
+            </div>
+            <p className="text-sm" style={{ color: '#3C3489' }}>
+              <span className="font-medium">You're signing up for the Affiliate Program.</span>{' '}
+              <span style={{ color: '#534AB7' }}>Your account gives you access to the affiliate portal.</span>
+            </p>
+          </div>
+        )}
 
         {/* Referral acknowledgement — only shown when ?ref=CODE was captured.
             Builds trust at the exact moment the user is handing over PII.
@@ -507,7 +538,9 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
               <p id="dob-error" role="alert" className="mt-1 text-xs text-red-600 ml-1">You must be at least 18 to use Parallel</p>
             )}
             <p id="dob-hint" className="mt-1.5 text-xs text-gray-500 ml-1">
-              🔒 Used to verify you're 18+ and auto-fill your age in the questionnaire. Never shown publicly.
+              {isAffiliateSignup
+                ? '🔒 Required to verify you\'re 18+ to participate in the affiliate program.'
+                : '🔒 Used to verify you\'re 18+ and auto-fill your age in the questionnaire. Never shown publicly.'}
             </p>
           </div>
 
@@ -545,7 +578,9 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
               >
                 Privacy Policy
               </button>
-              , including the collection and processing of my personal information for compatibility matching.
+              {isAffiliateSignup
+                ? ', including the collection and processing of my personal information to administer the affiliate program.'
+                : ', including the collection and processing of my personal information for compatibility matching.'}
             </p>
           </div>
 

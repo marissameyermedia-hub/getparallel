@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronLeft, Check, Lock, Loader, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { publicAnonKey } from '../../utils/supabase/info';
-import { MISC_FUNCTION_URL } from '../../utils/supabase/client';
+import { MISC_FUNCTION_URL, AFFILIATE_FUNCTION_URL } from '../../utils/supabase/client';
 import { PromoCodeInput } from "./PromoCodeInput";
 import { getAccessToken } from '../../utils/auth';
+
+interface AffiliatePromo {
+  affiliate_id: string;
+  display_name: string;
+  subscription_discount_pct: number;
+}
 
 interface PricingPageProps {
   onBack: () => void;
@@ -15,11 +21,23 @@ interface PricingPageProps {
   onNavigate?: (view: string) => void;
 }
 
+interface PayPalPlan {
+  planId: string;
+  price: string;
+  currency: string;
+  interval: string;
+  label: string;
+  trialDays?: number;
+}
+
 interface PayPalConfig {
   clientId: string;
   env: 'sandbox' | 'live';
   plans: {
-    annualFounding: { planId: string; price: string; currency: string; interval: string; label: string; trialDays?: number };
+    annualFounding: PayPalPlan;
+    annualDiscount20?: PayPalPlan;
+    annualDiscount25?: PayPalPlan;
+    annualDiscount30?: PayPalPlan;
   };
   annualPlanId?: string;
 }
@@ -71,12 +89,25 @@ function loadPayPalSdk(clientId: string): Promise<any> {
   return w.__paypal_sdk_promise__;
 }
 
+const BASE_PRICE = 149;
+
 export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavigate }: PricingPageProps) {
   const [config, setConfig] = useState<PayPalConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [showDetails, setShowDetails] = useState(false);
+  const [affiliatePromo, setAffiliatePromo] = useState<AffiliatePromo | null>(() => {
+    // Restore from localStorage if the user already applied a code this session
+    try {
+      const id = localStorage.getItem('affiliate_id');
+      const code = localStorage.getItem('affiliate_promo_code');
+      const pct = localStorage.getItem('affiliate_discount_pct');
+      if (id && code) return { affiliate_id: id, display_name: '', subscription_discount_pct: pct ? parseInt(pct, 10) : 0 };
+    } catch { /* noop */ }
+    return null;
+  });
+  const affiliatePromoRef = useRef<AffiliatePromo | null>(affiliatePromo);
 
   const buttonContainerRef = useRef<HTMLDivElement | null>(null);
   const buttonsInstanceRef = useRef<any>(null);
@@ -84,6 +115,17 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   const trialEndDate = getTrialEndDate();
   const firstChargeDate = getFirstChargeDate();
   const nextRenewalDate = getNextRenewalDate();
+
+  const discountPct = affiliatePromo?.subscription_discount_pct ?? 0;
+  const annualPrice = discountPct > 0
+    ? parseFloat((BASE_PRICE * (1 - discountPct / 100)).toFixed(2))
+    : BASE_PRICE;
+  const savings = parseFloat((BASE_PRICE - annualPrice).toFixed(2));
+  const monthlyEquiv = parseFloat((annualPrice / 12).toFixed(2));
+  const hasDiscount = annualPrice < BASE_PRICE;
+
+  // Keep ref in sync so the PayPal onApprove closure can read the latest value
+  useEffect(() => { affiliatePromoRef.current = affiliatePromo; }, [affiliatePromo]);
 
   // Load PayPal config once on mount
   useEffect(() => {
@@ -122,13 +164,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
         const paypal = await loadPayPalSdk(config.clientId);
         if (cancelled || !buttonContainerRef.current) return;
 
-        const planId = config.plans.annualFounding?.planId || config.annualPlanId || 'P-7PT724153F712010ANIFAOHA';
-
-        if (!planId) {
-          setError('This plan is not available right now. Please contact support.');
-          return;
-        }
-
         if (buttonsInstanceRef.current) {
           try { buttonsInstanceRef.current.close(); } catch {}
           buttonsInstanceRef.current = null;
@@ -143,6 +178,17 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
             label: 'subscribe',
           },
           createSubscription: (_data: any, actions: any) => {
+            // Pick the plan at click time so we always read the latest promo state,
+            // even if the user applied a code after the buttons first rendered.
+            const pct = affiliatePromoRef.current?.subscription_discount_pct ?? 0;
+            const planKey = pct === 30 ? 'annualDiscount30'
+                          : pct === 25 ? 'annualDiscount25'
+                          : pct === 20 ? 'annualDiscount20'
+                          : 'annualStandard';
+            const planId = (config.plans as any)[planKey]?.planId
+                        || config.plans.annualFounding?.planId
+                        || config.annualPlanId
+                        || 'P-7PT724153F712010ANIFAOHA';
             return actions.subscription.create({ plan_id: planId });
           },
           onApprove: async (data: any) => {
@@ -164,12 +210,43 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                 },
                 body: JSON.stringify({
                   subscriptionId: data.subscriptionID,
-                  plan: 'annual_founding',
+                  plan: 'annual_standard',
                 }),
               });
               const body = await res.json();
               if (!res.ok) {
                 throw new Error(body.error || 'Could not confirm your subscription. Please contact support.');
+              }
+              // Fire affiliate attribution if promo code was used or cookie tracked
+              const promo = affiliatePromoRef.current;
+              const cookieAffId = (() => { try { return localStorage.getItem('affiliate_id'); } catch { return null; } })();
+              const affId = promo?.affiliate_id || cookieAffId;
+              const promoCode = (() => { try { return localStorage.getItem('affiliate_promo_code'); } catch { return null; } })();
+              if (affId) {
+                fetch(`${AFFILIATE_FUNCTION_URL}/attribute`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'apikey': publicAnonKey,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    affiliate_id: affId,
+                    method: promoCode ? 'promo_code' : 'cookie',
+                    ...(promoCode ? { promo_code_used: promoCode } : {}),
+                    ...((() => { try { return localStorage.getItem('affiliate_click_id'); } catch { return null; } })()
+                      ? { click_id: localStorage.getItem('affiliate_click_id') }
+                      : {}),
+                  }),
+                }).then(() => {
+                  try {
+                    localStorage.removeItem('affiliate_id');
+                    localStorage.removeItem('affiliate_click_id');
+                    localStorage.removeItem('affiliate_slug');
+                    localStorage.removeItem('affiliate_promo_code');
+                    localStorage.removeItem('affiliate_discount_pct');
+                  } catch { /* noop */ }
+                }).catch(() => { /* non-critical */ });
               }
               onCheckout('annual');
             } catch (e: any) {
@@ -270,33 +347,115 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full">
                 5-day free trial
               </span>
-              {PRE_LAUNCH && (
-                <span className="text-xs font-medium bg-white/15 text-parallel-cream px-2 py-0.5 rounded-full">
-                  ⭐ Founding Rate
-                </span>
-              )}
             </div>
 
-            <div className="flex items-baseline justify-between mb-1">
-              <p className="text-xl font-bold">$0.00 today</p>
-              <p className="text-sm text-white/70">then $79 / year</p>
+            {/* Today + annual price */}
+            <div className="flex items-end justify-between mb-1">
+              <div>
+                <p className="text-3xl font-bold leading-none">$0.00</p>
+                <p className="text-xs text-white/60 mt-0.5">today — free for 5 days</p>
+              </div>
+              <div className="text-right">
+                {hasDiscount && (
+                  <p className="text-xs text-white/40 line-through">${BASE_PRICE}/yr</p>
+                )}
+                <p className="text-lg font-bold">${annualPrice}/yr</p>
+                {hasDiscount && (
+                  <p className="text-xs text-green-300 font-medium">you save ${savings}</p>
+                )}
+                {!hasDiscount && (
+                  <p className="text-xs text-white/50">${monthlyEquiv}/mo</p>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-white/60 mb-3">
-              Try free for 5 days — cancel anytime before {trialEndDate} and you won't be charged.
-            </p>
 
-            <div className="border-t border-white/20 pt-3 space-y-1">
+            <div className="border-t border-white/20 pt-3 mt-3 space-y-1.5">
               <div className="flex items-center gap-2 text-xs text-white/80">
                 <Check size={12} className="flex-shrink-0" />
-                First charge of $79.00 on {firstChargeDate}
+                <span>First charge of <strong className="text-white">${annualPrice.toFixed(2)}</strong> on {firstChargeDate}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                <Check size={12} className="flex-shrink-0" />
+                <span>Cancel free anytime before {trialEndDate} — no charge</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-white/80">
+                <Check size={12} className="flex-shrink-0" />
+                <span><strong className="text-white">${monthlyEquiv.toFixed(2)}/month</strong> — billed once a year</span>
               </div>
               <div className="flex items-center gap-2 text-xs text-white/80">
                 <Check size={12} className="flex-shrink-0" />
                 Renews annually — cancel anytime
               </div>
-              <div className="flex items-center gap-2 text-xs text-white/80">
-                <Check size={12} className="flex-shrink-0" />
-                $6.58 / month — billed once a year
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Order summary (cart) — always above the pay buttons ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
+          className="mb-4"
+        >
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            {/* Line items */}
+            <div className="px-4 pt-4 pb-3 space-y-3">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Order summary</p>
+
+              {/* Product */}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Parallel Annual Membership</p>
+                  <p className="text-xs text-gray-500 mt-0.5">5-day free trial · renews annually</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  {hasDiscount && (
+                    <p className="text-xs text-gray-400 line-through">${BASE_PRICE.toFixed(2)}</p>
+                  )}
+                  <p className="text-sm font-bold text-gray-900">${annualPrice.toFixed(2)}<span className="text-xs font-normal text-gray-500">/yr</span></p>
+                </div>
+              </div>
+
+              {/* Promo code — inline in cart */}
+              {affiliatePromo ? (
+                <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-100 rounded-xl">
+                  <Tag size={13} className="text-green-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-green-800">
+                      {affiliatePromo.display_name
+                        ? `Code applied via ${affiliatePromo.display_name}`
+                        : 'Promo code applied'}
+                    </p>
+                    {hasDiscount && (
+                      <p className="text-xs text-green-700">Save ${savings.toFixed(2)} ({discountPct}% off)</p>
+                    )}
+                    {!hasDiscount && (
+                      <p className="text-xs text-green-700">Attribution tracked — welcome!</p>
+                    )}
+                  </div>
+                  {hasDiscount && (
+                    <p className="text-sm font-bold text-green-700 flex-shrink-0">−${savings.toFixed(2)}</p>
+                  )}
+                </div>
+              ) : (
+                <PromoCodeInput
+                  onAffiliateApplied={(promo) => {
+                    setAffiliatePromo(promo);
+                    affiliatePromoRef.current = promo;
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Totals */}
+            <div className="border-t border-gray-100 bg-gray-50 px-4 py-3 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Due today (trial)</span>
+                <span className="text-base font-bold text-gray-900">$0.00</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Due {firstChargeDate}</span>
+                <span className="text-sm font-semibold text-gray-700">${annualPrice.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -309,7 +468,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
           </div>
         )}
 
-        {/* PayPal buttons */}
+        {/* ── PayPal buttons ── */}
         {loadingConfig ? (
           <div className="flex items-center justify-center py-6 text-gray-500 gap-2">
             <Loader size={18} className="animate-spin" />
@@ -331,7 +490,6 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
               </div>
             )}
             <div ref={buttonContainerRef} id="paypal-button-container" />
-            <PromoCodeInput />
           </motion.div>
         )}
 
@@ -339,8 +497,11 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
         {!loadingConfig && (
           <p className="text-[11px] text-gray-500 text-center leading-relaxed mb-4">
             Free trial ends <span className="text-gray-700 font-medium">{trialEndDate}</span>. After that,{' '}
-            <span className="text-gray-700 font-medium">$79.00 USD</span> will be charged on{' '}
+            <span className="text-gray-700 font-medium">${annualPrice.toFixed(2)} USD</span> will be charged on{' '}
             <span className="text-gray-700 font-medium">{firstChargeDate}</span> and every year after until you cancel.
+            {hasDiscount && (
+              <> <span className="text-green-700 font-medium">({discountPct}% discount applied.)</span></>
+            )}
           </p>
         )}
 
@@ -369,7 +530,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                     <p>
                       Your 5-day free trial begins immediately. If you don't cancel before{' '}
                       <strong>{trialEndDate}</strong>, you'll be charged{' '}
-                      <strong>$79.00 USD</strong> on {firstChargeDate}.
+                      <strong>${annualPrice.toFixed(2)} USD</strong> on {firstChargeDate}.
                       Your subscription then auto-renews annually on{' '}
                       <strong>{nextRenewalDate}</strong> and each year after.
                     </p>
@@ -378,23 +539,11 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                       <span className="font-medium text-gray-900">Account Settings → Cancel Subscription</span>.
                       Cancelling takes effect at the end of your current billing period.
                     </p>
-                    {PRE_LAUNCH && (
-                      <p>
-                        After launch, annual renews at <strong>$149/year</strong>.
-                      </p>
-                    )}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-        )}
-
-        {/* Founding footnote */}
-        {PRE_LAUNCH && !loadingConfig && (
-          <p className="text-center text-[11px] text-gray-500 leading-relaxed mb-5">
-            Founding pricing is available for a limited time. After launch, annual renews at $149/year.
-          </p>
         )}
 
         {/* Legal + security */}
@@ -470,5 +619,3 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
   );
 }
 
-// PRE_LAUNCH flag — same pattern as MatchesView
-const PRE_LAUNCH = import.meta.env.VITE_PRE_LAUNCH === 'true';

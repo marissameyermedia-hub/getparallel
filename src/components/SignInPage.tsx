@@ -10,9 +10,10 @@ interface SignInPageProps {
   onCreateAccount: () => void;
   onShowExplainer: () => void;
   onNavigate?: (view: string) => void;
+  showAffiliateBanner?: boolean;
 }
 
-export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavigate }: SignInPageProps) {
+export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavigate, showAffiliateBanner }: SignInPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -131,6 +132,22 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
 
       {/* Spacer so fixed nav doesn't overlap content — nav is py-4 (~56px) + safe area */}
       <div style={{ height: 'calc(env(safe-area-inset-top, 0px) + 56px)', flexShrink: 0 }} />
+
+      {/* ── Affiliate context banner ───────────────────────────────── */}
+      {showAffiliateBanner && (
+        <div role="status" className="w-full px-6 py-3 flex items-center justify-center gap-3" style={{ background: '#EEEDFE', borderBottom: '0.5px solid #C4B8E3' }}>
+          <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#7B5EA7' }}>
+            <span style={{ fontSize: '8px', fontWeight: 700, color: '#F5F2EE' }}>
+              P<span style={{ color: '#A98FD0' }}>//</span>
+            </span>
+          </div>
+          <p className="text-sm font-medium" style={{ color: '#3C3489' }}>
+            You're signing up for the{' '}
+            <span className="font-semibold">Parallel Affiliate Program.</span>
+            {' '}Create your account or sign in below.
+          </p>
+        </div>
+      )}
 
       {/* ── HERO ──────────────────────────────────────────────────── */}
       <section className="w-full">
@@ -291,6 +308,23 @@ export function SignInPage({ onSignIn, onCreateAccount, onShowExplainer, onNavig
           <p className="text-xs text-gray-500 mt-6">
             Founding member pricing: $79/year.
           </p>
+        </div>
+      </section>
+
+      {/* ── Affiliate callout ─────────────────────────────────────── */}
+      <section className="w-full border-t border-gray-100 bg-parallel-cream">
+        <div className="max-w-3xl mx-auto px-6 py-12 text-center">
+          <p className="text-xs tracking-[0.2em] uppercase text-gray-400 mb-3 font-medium">Affiliate Program</p>
+          <h2 className="text-2xl font-semibold tracking-tight mb-3">Earn by growing the pool.</h2>
+          <p className="text-gray-500 text-sm leading-relaxed max-w-md mx-auto mb-6">
+            Bring new members to Parallel and earn up to 20% commission on every subscription you refer. Share a link, earn on every conversion.
+          </p>
+          <a
+            href="/?view=affiliate"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400 hover:text-gray-900 transition-colors"
+          >
+            Learn about the Affiliate Program →
+          </a>
         </div>
       </section>
 

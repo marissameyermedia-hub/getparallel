@@ -3,9 +3,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 // Guard so the email-confirmed welcome endpoint fires at most once per page load
 // even if both the pre-session and in-session code paths both trigger.
 let emailConfirmedNotified = false;
-import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL } from './utils/supabase/client';
+import { supabase, EDGE_FUNCTION_URL, ONBOARDING_FUNCTION_URL, MATCHES_FUNCTION_URL, MESSAGES_FUNCTION_URL, MISC_FUNCTION_URL, EMAIL_FUNCTION_URL, FEEDBACK_PROCESSOR_URL, AFFILIATE_FUNCTION_URL } from './utils/supabase/client';
 import { WaitlistPage } from './components/WaitlistPage';
-import { publicAnonKey } from './utils/supabase/info';
+import { projectId, publicAnonKey } from './utils/supabase/info';
 import { getAccessToken } from './utils/auth';
 import { SignInPage } from './components/SignInPage';
 import { AccountCreationPage } from './components/AccountCreationPage';
@@ -43,6 +43,8 @@ import { AppFeedbackBottomSheet } from './components/AppFeedbackBottomSheet';
 import { NPSBottomSheet } from './components/NPSBottomSheet';
 import { VerificationView } from './components/VerificationView';
 import { InviteView } from './components/InviteView';
+import { AffiliatePortalView } from './components/AffiliatePortalView';
+import { AffiliateLandingPage } from './components/AffiliateLandingPage';
 import { AdminDashboard } from './components/safety/AdminDashboard';
 import { InAppNotificationBanner } from './components/InAppNotificationBanner';
 import { PushSubscriptionSync } from './components/PushSubscriptionSync';
@@ -81,8 +83,15 @@ function App() {
     | 'help-support' | 'terms-service' | 'privacy-policy' | 'community-guidelines' | 'refund-policy'
     | 'consumer-health-data-policy' | 'delete-account' | 'messaging' | 'inbox'
     | 'verification' | 'invite-friends' | 'reset-password'
-    | 'preview-profile' | 'waitlist' | 'admin'
-  >(() => window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
+    | 'preview-profile' | 'waitlist' | 'admin' | 'affiliate-portal' | 'affiliate-landing'
+  >(() => {
+    if (window.location.pathname === '/waitlist') return 'waitlist';
+    try {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get('view') === 'affiliate') return 'affiliate-landing';
+    } catch { /* ignore */ }
+    return 'signin';
+  });
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
@@ -111,6 +120,17 @@ function App() {
   const [hasActivated, setHasActivated] = useState(false);
   const [hasVerified, setHasVerified] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  // True when the user entered via an affiliate deep link (?view=affiliate-portal)
+  // but isn't signed in yet. Threads through signup + phone verification so a
+  // brand-new affiliate applicant lands in the portal apply form, not onboarding.
+  const [affiliateIntent, setAffiliateIntent] = useState(false);
+  // True when the user landed back from a Persona identity verification
+  // (?affiliate_verified=1). Captured synchronously before checkSession
+  // rewrites the URL so the portal can show a "processing" state instead
+  // of the same "Verify Identity" CTA the user just came from.
+  const [personaReturnInProgress] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('affiliate_verified') === '1'; } catch { return false; }
+  });
   const [tosGateRequired, setTosGateRequired] = useState(false);
   const [userDateOfBirth, setUserDateOfBirth] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
@@ -171,6 +191,18 @@ function App() {
       }
       return localStorage.getItem('parallel_referral_code');
     } catch { return null; }
+  });
+
+  // Captured from /r/{slug} tracked links. Stored in localStorage so it survives
+  // SignIn → AccountCreation. Cleared after attribution is recorded.
+  const [affiliateSlug, setAffiliateSlug] = useState<string | null>(() => {
+    try { return localStorage.getItem('affiliate_slug'); } catch { return null; }
+  });
+  const [affiliateClickId, setAffiliateClickId] = useState<string | null>(() => {
+    try { return localStorage.getItem('affiliate_click_id'); } catch { return null; }
+  });
+  const [affiliateId, setAffiliateId] = useState<string | null>(() => {
+    try { return localStorage.getItem('affiliate_id'); } catch { return null; }
   });
 
   const answerSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -313,12 +345,66 @@ function App() {
     if (storedActivated) setHasActivated(storedActivated === 'true');
   };
 
+  // ── Affiliate route resolution for non-onboarded users ───────
+  // A user who hasn't completed dating onboarding might still belong in the
+  // affiliate portal: they could be an active affiliate (no dating flow at
+  // all) OR a pending applicant who signed up + applied but isn't approved
+  // yet. Probing only /profile misses pending applicants (it 401s until the
+  // affiliate is active), which would dump them into dating onboarding. This
+  // resolves the correct destination; the portal itself renders the right
+  // sub-state (apply / submitted / dashboard).
+  const resolveNonOnboardedRoute = async (
+    token: string,
+  ): Promise<'affiliate-portal' | 'onboarding'> => {
+    try {
+      const r = await fetch(`${AFFILIATE_FUNCTION_URL}/profile`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+      });
+      if (r.ok) {
+        try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
+        return 'affiliate-portal';
+      }
+    } catch { /* fall through to application check */ }
+    // Pending applicant? Query PostgREST directly with the token — RLS scopes
+    // the result to the caller's own application (by JWT email), so this works
+    // even on the stored-token path where the SDK has no active session.
+    try {
+      const r = await fetch(
+        `https://${projectId}.supabase.co/rest/v1/affiliate_applications?select=id&limit=1`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey } },
+      );
+      if (r.ok) {
+        const apps = await r.json().catch(() => []);
+        if (Array.isArray(apps) && apps.length > 0) {
+          try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
+          return 'affiliate-portal';
+        }
+      }
+    } catch { /* fall through to onboarding */ }
+    return 'onboarding';
+  };
+
   // ── Session check on mount ────────────────────────────────────
 
   useEffect(() => {
     const checkSession = async () => {
       // Declare params at function scope so it's available throughout
       const params = new URLSearchParams(window.location.search);
+
+      // Remember affiliate deep-link intent so signup + phone verification
+      // route a brand-new applicant to the portal instead of dating onboarding.
+      // Returning from Persona identity verification (?affiliate_verified=1) is
+      // also a portal entry — normalize it to view=affiliate-portal so all the
+      // downstream routing branches treat it the same and the freshly-verified
+      // applicant lands back in the portal, not dating onboarding.
+      if (
+        params.get('view') === 'affiliate-portal' ||
+        params.get('affiliate_verified') === '1' ||
+        window.location.pathname === '/affiliate'
+      ) {
+        setAffiliateIntent(true);
+        params.set('view', 'affiliate-portal');
+      }
 
       // Capture push notification deep-link before any URL cleanup.
       // The messages edge function embeds ?notify=message&from=<senderId>
@@ -330,6 +416,36 @@ function App() {
         params.delete('from');
         const newSearch = params.toString();
         window.history.replaceState({}, '', window.location.pathname + (newSearch ? `?${newSearch}` : '') + window.location.hash);
+      }
+
+      // Detect affiliate tracked link /r/{slug} — capture slug, fire click event,
+      // store IDs in localStorage, then rewrite URL to / so signup flow loads cleanly.
+      const affiliateLinkMatch = window.location.pathname.match(/^\/r\/([A-Za-z0-9_-]+)/);
+      if (affiliateLinkMatch) {
+        const slug = affiliateLinkMatch[1];
+        window.history.replaceState({}, '', '/');
+        try {
+          localStorage.setItem('affiliate_slug', slug);
+          setAffiliateSlug(slug);
+          // Fire click tracking — don't block init on this
+          fetch(`${AFFILIATE_FUNCTION_URL}/click`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': publicAnonKey },
+            body: JSON.stringify({ slug }),
+          }).then(async (r) => {
+            if (r.ok) {
+              const d = await r.json();
+              if (d.click_id) {
+                try { localStorage.setItem('affiliate_click_id', d.click_id); } catch { /* noop */ }
+                setAffiliateClickId(d.click_id);
+              }
+              if (d.affiliate_id) {
+                try { localStorage.setItem('affiliate_id', d.affiliate_id); } catch { /* noop */ }
+                setAffiliateId(d.affiliate_id);
+              }
+            }
+          }).catch(() => { /* non-critical */ });
+        } catch { /* localStorage unavailable */ }
       }
       
       try {
@@ -566,6 +682,9 @@ function App() {
               // Notification deep-link: open directly to the conversation.
               setSelectedMatchId(notifyFrom);
               setCurrentView('messaging');
+            } else if (params.get('view') === 'affiliate-portal') {
+              window.history.replaceState({}, '', window.location.pathname);
+              setCurrentView('affiliate-portal');
             } else {
               const lastView = localStorage.getItem('parallel_last_view') as any;
               const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
@@ -574,8 +693,21 @@ function App() {
             if (params.get('email_confirmed') === 'true' || isEmailConfirmationLink) {
               toast.success('Email confirmed! Welcome to Parallel 🎉', { duration: 4000 });
             }
+          } else if (params.get('view') === 'affiliate-portal') {
+            // Explicit affiliate deep link (apply / status / dashboard) —
+            // the portal resolves which state to show, including pending
+            // applicants who aren't active affiliates yet.
+            window.history.replaceState({}, '', window.location.pathname);
+            setCurrentView('affiliate-portal');
           } else {
-            setCurrentView('onboarding');
+            // Dating onboarding incomplete — route active affiliates and
+            // pending applicants to the portal; everyone else to onboarding.
+            // Skip the two network calls for users who have no affiliate history
+            // (most users in the dating app mid-onboarding path).
+            const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
+            setCurrentView(affiliateIntent || cachedIsAffiliate
+              ? await resolveNonOnboardedRoute(session.access_token)
+              : 'onboarding');
           }
         } else {
           const storedToken = await getAccessToken();
@@ -624,13 +756,25 @@ function App() {
                 if (notifyType === 'message' && notifyFrom) {
                   setSelectedMatchId(notifyFrom);
                   setCurrentView('messaging');
+                } else if (params.get('view') === 'affiliate-portal') {
+                  window.history.replaceState({}, '', window.location.pathname);
+                  setCurrentView('affiliate-portal');
                 } else {
                   const lastView = localStorage.getItem('parallel_last_view') as any;
                   const safeView = ['matches', 'inbox', 'account', 'questionnaire'].includes(lastView) ? lastView : 'matches';
                   setCurrentView(safeView);
                 }
+              } else if (params.get('view') === 'affiliate-portal') {
+                // Explicit affiliate deep link — portal resolves the state.
+                window.history.replaceState({}, '', window.location.pathname);
+                setCurrentView('affiliate-portal');
               } else {
-                setCurrentView('onboarding');
+                // Dating onboarding incomplete — route active affiliates and
+                // pending applicants to the portal; everyone else to onboarding.
+                const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
+                setCurrentView(affiliateIntent || cachedIsAffiliate
+                  ? await resolveNonOnboardedRoute(storedToken)
+                  : 'onboarding');
               }
             } catch (tokenErr) {
               toast('Your session expired — please sign back in.', { duration: 4000 });
@@ -638,7 +782,10 @@ function App() {
               setCurrentView('signin');
             }
           } else {
-            setCurrentView(window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
+            setCurrentView(
+              window.location.pathname === '/waitlist' ? 'waitlist' :
+              (() => { try { return new URLSearchParams(window.location.search).get('view') === 'affiliate' ? 'affiliate-landing' : 'signin'; } catch { return 'signin'; } })()
+            );
           }
         }
       } catch (e) {
@@ -1172,6 +1319,9 @@ function App() {
     setEmailConfirmed(true);
     setHasVerified(false);
     setHasActivated(false);
+    // Clear affiliate intent so a subsequent sign-in on the same tab isn't
+    // incorrectly routed to the portal by a stale flag.
+    setAffiliateIntent(false);
   };
 
   const handleLogOut = async () => {
@@ -1304,6 +1454,10 @@ function App() {
     'my-profile', 'preview-profile', 'profile',
     // admin: has its own sticky header with back button
     'admin',
+    // affiliate-portal: has its own fixed header and tab navigation
+    'affiliate-portal',
+    // affiliate-landing: public marketing page, no app chrome
+    'affiliate-landing',
   ].includes(currentView);
 
   return (
@@ -1406,15 +1560,29 @@ function App() {
               }
               const onboardingComplete = !!userData.has_completed_onboarding;
               if (onboardingComplete) {
-                await fetchMatches(token);
-                setCurrentView('matches');
+                // Honor an affiliate deep-link intent even for full members —
+                // they clicked into the portal, so send them there.
+                if (affiliateIntent) {
+                  window.history.replaceState({}, '', window.location.pathname);
+                  setCurrentView('affiliate-portal');
+                } else {
+                  await fetchMatches(token);
+                  setCurrentView('matches');
+                }
               } else {
-                setCurrentView('onboarding');
+                // Dating onboarding incomplete — route active affiliates and
+                // pending applicants to the portal; everyone else to onboarding.
+                const route = await resolveNonOnboardedRoute(token);
+                if (route === 'affiliate-portal') {
+                  window.history.replaceState({}, '', window.location.pathname);
+                }
+                setCurrentView(route);
               }
             }}
             onCreateAccount={() => setCurrentView('account-creation')}
             onShowExplainer={() => setCurrentView('account-creation')}
             onNavigate={(v) => setCurrentView(v as any)}
+            showAffiliateBanner={affiliateIntent}
           />
         )}
 
@@ -1422,6 +1590,7 @@ function App() {
         {currentView === 'account-creation' && (
           <AccountCreationPage
             referralCode={referralCode}
+            isAffiliateSignup={affiliateIntent}
             onComplete={async (userData) => {
               if (userData.accessToken && userData.userId) {
                 setAccessToken(userData.accessToken);
@@ -1444,6 +1613,32 @@ function App() {
                   setEmailConfirmed(false);
                 }
 
+                // Fire-and-forget: record affiliate attribution if the user arrived
+                // via a tracked link or cookie from a previous session.
+                const storedAffId = affiliateId || ((() => { try { return localStorage.getItem('affiliate_id'); } catch { return null; } })());
+                const storedClickId = affiliateClickId || ((() => { try { return localStorage.getItem('affiliate_click_id'); } catch { return null; } })());
+                if (storedAffId) {
+                  fetch(`${AFFILIATE_FUNCTION_URL}/attribute`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${userData.accessToken}`,
+                      'apikey': publicAnonKey,
+                    },
+                    body: JSON.stringify({ affiliate_id: storedAffId, click_id: storedClickId, method: 'cookie' }),
+                  }).then(() => {
+                    // Clear affiliate tracking data now that attribution is recorded
+                    try {
+                      localStorage.removeItem('affiliate_slug');
+                      localStorage.removeItem('affiliate_click_id');
+                      localStorage.removeItem('affiliate_id');
+                    } catch { /* noop */ }
+                    setAffiliateSlug(null);
+                    setAffiliateClickId(null);
+                    setAffiliateId(null);
+                  }).catch(() => { /* non-critical */ });
+                }
+
                 // Fire-and-forget: send the initial verification email so the
                 // user has it in their inbox by the time they finish onboarding.
                 // No await — failure shouldn't block signup, and the banner
@@ -1463,12 +1658,14 @@ function App() {
                 return;
               }
               localStorage.removeItem('parallel_questionnaire_progress');
-              // Route through phone verification if phone was provided
+              // Route through phone verification if phone was provided.
+              // Affiliate applicants land in the portal (apply form) after
+              // verification instead of dating onboarding.
               if (userData.phone) {
                 setPhoneToVerify(userData.phone);
                 setCurrentView('phone-verification');
               } else {
-                setCurrentView('onboarding');
+                setCurrentView(affiliateIntent ? 'affiliate-portal' : 'onboarding');
               }
             }}
             onBack={() => setCurrentView('signin')}
@@ -1481,8 +1678,8 @@ function App() {
           <PhoneVerificationPage
             phone={phoneToVerify}
             accessToken={accessToken || ''}
-            onVerified={() => setCurrentView('onboarding')}
-            onSkip={() => setCurrentView('onboarding')}
+            onVerified={() => setCurrentView(affiliateIntent ? 'affiliate-portal' : 'onboarding')}
+            onSkip={() => setCurrentView(affiliateIntent ? 'affiliate-portal' : 'onboarding')}
             onBack={async () => { await supabase.auth.signOut(); resetAppState(); }}
           />
         )}
@@ -1867,6 +2064,21 @@ function App() {
         {/* ── Invite friends ── */}
         {currentView === 'invite-friends' && (
           <InviteView onBack={() => setCurrentView('account')} />
+        )}
+
+        {/* ── Affiliate portal ── */}
+        {currentView === 'affiliate-portal' && (
+          <AffiliatePortalView
+            onBack={() => setCurrentView('account')}
+            onSignOut={handleLogOut}
+            isAffiliateOnly={!hasCompletedOnboarding}
+            personaJustVerified={personaReturnInProgress}
+          />
+        )}
+
+        {/* ── Affiliate landing (public marketing page — no auth required) ── */}
+        {currentView === 'affiliate-landing' && (
+          <AffiliateLandingPage onNavigate={(v) => setCurrentView(v as any)} />
         )}
 
         {/* ── App footer — legal/policy/account views only — inside scroll area ── */}

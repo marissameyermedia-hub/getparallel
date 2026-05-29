@@ -1,4 +1,15 @@
-// Parallel — email edge function v10
+// Parallel — email edge function v18
+// v18: Add /affiliate-payout-failed — notify affiliate when Mercury ACH fails
+//      so they're not left in the dark about a delayed payout.
+// v17: Add /affiliate-rejected and /affiliate-needs-info — email notifications
+//      when admin rejects or requests more info on an affiliate application.
+// v16: Add /affiliate-verify-identity — intermediate email sent after admin approval,
+//      prompting the affiliate to complete Persona identity verification.
+// v15: Affiliate application-received email CTA deep-links to ?view=affiliate-portal.
+// v14: Add /affiliate-commission-clawback and /affiliate-payout-released.
+// v13: Affiliate approval email CTA links to ?view=affiliate-portal deep link.
+// v12: Add /affiliate-approved — sends approval email with promo code + tracked link.
+// v11: Add /affiliate-application — sends application received confirmation.
 // v10: Add /cancellation-confirm — sends cancellation confirmation email.
 // v9: /date-confirmed handler.
 //     - Background: White #FFFFFF (Cream per tailwind.config.ts brand tokens)
@@ -483,6 +494,111 @@ async function handleCancellationConfirm(req: Request) {
   return json({ ok: true });
 }
 
+function tplAffiliateAppReceived(name: string | null, tier: string) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const tierLabels: Record<string, string> = { seeds: "Seeds", voices: "Voices", anchors: "Anchors" };
+  const tierLabel = tierLabels[tier] ?? tier;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We received your application to join the Parallel Affiliate Army as a <strong>${tierLabel}</strong> affiliate. Thanks for applying!</p>`,
+    `<p style="margin:0 0 12px 0;">Our team reviews every application personally. We'll be in touch within a few business days with a decision.</p>`,
+    `<p style="margin:0 0 4px 0;">In the meantime, you can check your application status anytime by opening the Affiliate Program section in your account.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Application received", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Check your application status" });
+  return {
+    subject: "We got your Affiliate Army application",
+    html,
+    text: `${greeting}\n\nWe received your application to join the Parallel Affiliate Army (${tierLabel} tier).\n\nWe'll review it and be in touch within a few business days.\n\nCheck your status: ${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+function tplAffiliateVerifyIdentity(opts: { name: string | null; tier: string }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const tierLabels: Record<string, string> = { seeds: "Seeds", voices: "Voices", anchors: "Anchors" };
+  const tierLabel = tierLabels[opts.tier] ?? opts.tier;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">Great news — your application to join the Parallel Affiliate Army as a <strong>${tierLabel}</strong> affiliate has been approved!</p>`,
+    `<p style="margin:0 0 12px 0;">There's one more step before your dashboard is activated: we need to verify your identity. This is a quick (~2 minute) process powered by Persona, our identity verification provider. You'll need a government-issued photo ID.</p>`,
+    `<p style="margin:0 0 4px 0;">Once your identity is confirmed, your affiliate link, promo code, and dashboard will be ready to go.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Approved — one step left!", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Complete identity verification" });
+  return {
+    subject: "You're approved — complete your identity verification",
+    html,
+    text: `${greeting}\n\nYour application to join the Parallel Affiliate Army (${tierLabel} tier) has been approved!\n\nOne last step: verify your identity to activate your dashboard. Open the link below and follow the prompts — it takes about 2 minutes.\n\nVerify now: ${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateVerifyIdentity(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const tier  = String(body.tier  ?? "").trim();
+  const name  = body.name ? String(body.name).trim() : null;
+  if (!email || !tier) return json({ error: "email and tier required" }, 400);
+  const tpl = tplAffiliateVerifyIdentity({ name, tier });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+function tplAffiliateApproved(opts: { name: string | null; tier: string; promoCode: string; trackedLinkSlug: string; commissionRate: number }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const tierLabels: Record<string, string> = { seeds: "Seeds", voices: "Voices", anchors: "Anchors" };
+  const tierLabel = tierLabels[opts.tier] ?? opts.tier;
+  const commissionPct = Math.round(opts.commissionRate * 100);
+  const trackedLink = `https://getparallel.vip/r/${opts.trackedLinkSlug}`;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 16px 0;">You've been approved as a <strong>${tierLabel}</strong> affiliate — welcome to the Parallel Affiliate Army!</p>`,
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;background:${B.linen};border-radius:10px;padding:16px 20px;width:100%;">`,
+    `  <tr><td style="font-size:13px;color:${B.stone};padding-bottom:8px;">Your promo code</td></tr>`,
+    `  <tr><td style="font-size:22px;font-weight:700;color:${B.purple};letter-spacing:0.05em;font-family:monospace;">${opts.promoCode}</td></tr>`,
+    `  <tr><td style="font-size:13px;color:${B.stone};padding-top:12px;padding-bottom:4px;">Your tracked link</td></tr>`,
+    `  <tr><td style="font-size:13px;color:${B.void_};word-break:break-all;">${trackedLink}</td></tr>`,
+    `  <tr><td style="font-size:13px;color:${B.stone};padding-top:12px;padding-bottom:4px;">Your commission</td></tr>`,
+    `  <tr><td style="font-size:13px;font-weight:600;color:${B.void_};">${commissionPct}% of every membership you refer</td></tr>`,
+    `</table>`,
+    `<p style="margin:0 0 12px 0;font-size:14px;color:${B.stone};">Share your link or promo code on social. Every time someone signs up and subscribes, you earn ${commissionPct}%. Open the app to see your full dashboard.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "You're in — welcome to the Affiliate Army!", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Open your dashboard" });
+  return {
+    subject: "You're approved — Parallel Affiliate Army",
+    html,
+    text: `${greeting}\n\nYou're approved as a ${tierLabel} affiliate!\n\nPromo code: ${opts.promoCode}\nTracked link: ${trackedLink}\nCommission: ${commissionPct}% per referral\n\nOpen your dashboard: ${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateApproved(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email         = String(body.email         ?? "").trim();
+  const tier          = String(body.tier          ?? "").trim();
+  const promoCode     = String(body.promo_code    ?? "").trim();
+  const trackedLinkSlug = String(body.tracked_link_slug ?? "").trim();
+  const commissionRate  = typeof body.commission_rate === "number" ? body.commission_rate : 0.10;
+  const name          = body.name ? String(body.name).trim() : null;
+  if (!email || !tier || !promoCode || !trackedLinkSlug) return json({ error: "email, tier, promo_code, tracked_link_slug required" }, 400);
+  const tpl = tplAffiliateApproved({ name, tier, promoCode, trackedLinkSlug, commissionRate });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+async function handleAffiliateAppReceived(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const tier  = String(body.tier  ?? "").trim();
+  const name  = body.name ? String(body.name).trim() : null;
+  if (!email || !tier) return json({ error: "email and tier required" }, 400);
+  const tpl = tplAffiliateAppReceived(name, tier);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 async function handleDateConfirmed(req: Request) {
   const { user, serviceRole } = await getCaller(req);
   let body: any;
@@ -501,12 +617,160 @@ async function handleDateConfirmed(req: Request) {
   return json({ ok: true });
 }
 
+function tplAffiliateCommissionClawback(opts: { name: string | null; commission_amount: number }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const amount = `$${opts.commission_amount.toFixed(2)}`;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We're writing to let you know that a commission of <strong>${amount}</strong> has been reversed on your affiliate account.</p>`,
+    `<p style="margin:0 0 12px 0;">This happens when the subscriber who signed up using your promo code or link cancels or disputes their payment within the 30-day clawback window. The commission has been removed from your pending balance.</p>`,
+    `<p style="margin:0 0 4px 0;">If you have questions, reply to this email and we'll look into it.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "A commission has been reversed", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "View your dashboard" });
+  return {
+    subject: "Affiliate commission reversal — Parallel",
+    html,
+    text: `${greeting}\n\nA commission of ${amount} has been reversed on your affiliate account.\n\nThis happens when a subscriber cancels within the 30-day clawback window.\n\nQuestions? Reply to this email.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+function tplAffiliatePayoutReleased(opts: { name: string | null; amount: number }) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const amountStr = `$${opts.amount.toFixed(2)}`;
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 16px 0;">Good news — your affiliate payout of <strong>${amountStr}</strong> has been sent via ACH to the bank account on file.</p>`,
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0;background:${B.linen};border-radius:10px;padding:16px 20px;width:100%;">`,
+    `  <tr><td style="font-size:14px;color:${B.stone};padding-bottom:4px;">Amount</td><td style="font-size:14px;font-weight:600;color:${B.void_};text-align:right;">${amountStr}</td></tr>`,
+    `  <tr><td style="font-size:14px;color:${B.stone};padding-top:8px;padding-bottom:4px;">Method</td><td style="font-size:14px;color:${B.void_};text-align:right;">ACH bank transfer</td></tr>`,
+    `  <tr><td style="font-size:14px;color:${B.stone};padding-top:8px;">Arrival</td><td style="font-size:14px;color:${B.void_};text-align:right;">3–5 business days</td></tr>`,
+    `</table>`,
+    `<p style="margin:0 0 4px 0;font-size:13px;color:${B.stone};">Open your affiliate dashboard to see your updated payout history.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: `Your payout of ${amountStr} is on the way`, body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "View your dashboard" });
+  return {
+    subject: `Your Parallel affiliate payout of ${amountStr} has been sent`,
+    html,
+    text: `${greeting}\n\nYour affiliate payout of ${amountStr} has been sent via ACH.\n\nExpected arrival: 3–5 business days.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+function tplAffiliateRejected(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">Thank you for applying to the Parallel Affiliate Army. After reviewing your application, we've decided not to move forward at this time.</p>`,
+    `<p style="margin:0 0 12px 0;">This doesn't mean the door is permanently closed — we continue to grow our program and welcome you to reapply in the future as your audience grows.</p>`,
+    `<p style="margin:0 0 4px 0;">Thank you for your interest in Parallel.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Application update", body });
+  return {
+    subject: "Your Parallel Affiliate Army application",
+    html,
+    text: `${greeting}\n\nThank you for applying to the Parallel Affiliate Army. After reviewing your application, we've decided not to move forward at this time.\n\nThis doesn't mean the door is permanently closed — we welcome you to reapply in the future as your audience grows.\n\nThank you for your interest in Parallel.`,
+  };
+}
+
+function tplAffiliateNeedsInfo(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We're reviewing your Parallel Affiliate Army application and have a few questions before we can move forward.</p>`,
+    `<p style="margin:0 0 12px 0;">Our team will follow up shortly with the specifics — please keep an eye on this email address.</p>`,
+    `<p style="margin:0 0 4px 0;">In the meantime, reply directly to this email if you have any questions.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "We need a bit more info", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Check your application status" });
+  return {
+    subject: "Your Affiliate Army application — a quick question",
+    html,
+    text: `${greeting}\n\nWe're reviewing your Parallel Affiliate Army application and have a few questions before we can move forward.\n\nOur team will follow up shortly with the specifics. Reply to this email if you have any questions.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateRejected(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliateRejected(name);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+async function handleAffiliateNeedsInfo(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliateNeedsInfo(name);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+async function handleAffiliateCommissionClawback(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  const commission_amount = typeof body.commission_amount === "number" ? body.commission_amount : 0;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliateCommissionClawback({ name, commission_amount });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+async function handleAffiliatePayoutReleased(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  const amount = typeof body.amount === "number" ? body.amount : 0;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliatePayoutReleased({ name, amount });
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
+function tplAffiliatePayoutFailed(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">We attempted to send your affiliate payout but encountered a technical issue with our payment processor. No money has left your balance — your commissions are safe and remain in your account.</p>`,
+    `<p style="margin:0 0 12px 0;">Our team has been notified and will retry your payout as soon as the issue is resolved. You'll receive a confirmation email once payment is on its way.</p>`,
+    `<p style="margin:0 0 4px 0;">If you have any questions, reply to this email and we'll update you directly.</p>`,
+  ].join("");
+  const html = shellHtml({ heading: "Payout update — we'll retry shortly", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "View your dashboard" });
+  return {
+    subject: "Your Parallel affiliate payout — update",
+    html,
+    text: `${greeting}\n\nWe attempted to send your affiliate payout but encountered a technical issue. No money has left your balance — your commissions are safe.\n\nOur team has been notified and will retry your payout as soon as the issue is resolved. You'll receive a confirmation once payment is sent.\n\nQuestions? Reply to this email.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliatePayoutFailed(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliatePayoutFailed(name);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "10" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "18" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -517,6 +781,14 @@ Deno.serve(async (req) => {
     if (path === "/resume-confirm"     && req.method === "POST") return await handleResumeConfirm(req);
     if (path === "/date-confirmed"        && req.method === "POST") return await handleDateConfirmed(req);
     if (path === "/cancellation-confirm"  && req.method === "POST") return await handleCancellationConfirm(req);
+    if (path === "/affiliate-application"        && req.method === "POST") return await handleAffiliateAppReceived(req);
+    if (path === "/affiliate-verify-identity"    && req.method === "POST") return await handleAffiliateVerifyIdentity(req);
+    if (path === "/affiliate-approved"           && req.method === "POST") return await handleAffiliateApproved(req);
+    if (path === "/affiliate-rejected"           && req.method === "POST") return await handleAffiliateRejected(req);
+    if (path === "/affiliate-needs-info"         && req.method === "POST") return await handleAffiliateNeedsInfo(req);
+    if (path === "/affiliate-commission-clawback" && req.method === "POST") return await handleAffiliateCommissionClawback(req);
+    if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);
+    if (path === "/affiliate-payout-failed"      && req.method === "POST") return await handleAffiliatePayoutFailed(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);
