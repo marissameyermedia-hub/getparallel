@@ -1834,6 +1834,7 @@ let repoImages = []; // in-memory cache [{id, name, dataUrl, uploadedAt}]
 let repoCollapsed = false;
 let currentDragItem = null; // {dataUrl, name} being dragged from repo
 let cardDrag = null; // postKey being dragged for card reorder
+let _bufferPublishing = false; // global lock — prevents duplicate pushes
 
 function initDB() {
   return new Promise((resolve, reject) => {
@@ -3381,6 +3382,7 @@ function deleteBankCaption(id) {
 // ═══════════════════════════════════════════
 
 async function publishViaBuffer() {
+  if (_bufferPublishing) { showToast('Already publishing — please wait'); return; }
   if (!state.activePost) return;
   const postKey = `${state.activePost.week}-${state.activePost.slot}`;
   const post = state.posts[postKey];
@@ -3390,6 +3392,15 @@ async function publishViaBuffer() {
   if (rawSlides.length === 0) { showToast('Add slides before publishing'); return; }
   if (!caption) { showToast('Add a caption first'); return; }
 
+  // Hard guard: block re-publishing posts already sent to Buffer
+  const alreadyPublished = post?.status === 'published' || post?.status === 'archived'
+    || (post?._buffer_post_ids && Object.keys(post._buffer_post_ids).length > 0);
+  if (alreadyPublished) {
+    const ok = confirm('This post was already pushed to Buffer and will create a DUPLICATE on all platforms. Are you sure you want to push again?');
+    if (!ok) return;
+  }
+
+  _bufferPublishing = true;
   const btn = document.getElementById('bufferBtn');
   btn.innerHTML = '<div class="spinner"></div> Sending...';
   btn.disabled = true;
@@ -3468,10 +3479,11 @@ async function publishViaBuffer() {
 
   } catch(err) {
     showToast(`Publish failed: ${err.message.slice(0, 100)}`);
+  } finally {
+    _bufferPublishing = false;
+    btn.innerHTML = '⬆ Push to Buffer';
+    btn.disabled = false;
   }
-
-  btn.innerHTML = '⬆ Push to Buffer';
-  btn.disabled = false;
 }
 
 function copyText(text, btnId, originalLabel, toastMsg) {
