@@ -2409,7 +2409,6 @@ function renderDayList() {
     const dayOfWeek = i % 7;
     const postKey = `${week}-${dayOfWeek}`;
     const hasPost = !!state.posts[postKey];
-    const displayD = (state.posts[postKey]?._scheduled_at) ? new Date(state.posts[postKey]._scheduled_at) : d;
     const div = document.createElement('div');
     div.className = 'day-item';
     div.onclick = () => openPost(week, dayOfWeek);
@@ -2417,8 +2416,8 @@ function renderDayList() {
       <div class="day-left">
         <div class="day-dot ${hasPost ? 'has-post' : ''}"></div>
         <div>
-          <div class="day-name">${displayD.toLocaleDateString('en-US',{weekday:'short'})}</div>
-          <div class="day-date">${formatDate(displayD)}</div>
+          <div class="day-name">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
+          <div class="day-date">${formatDate(d)}</div>
         </div>
       </div>
       ${hasPost ? `<div class="day-count">${(state.posts[postKey].slides||[]).filter(Boolean).length} slides</div>` : ''}
@@ -2456,7 +2455,7 @@ function renderFeedGrid() {
             ? `<span class="badge badge-archived">✓ posted</span>
                ${post._buffer_post_ids ? `<span class="badge badge-buffer" onclick="event.stopPropagation();window.open('https://publish.buffer.com','_blank')" title="View in Buffer">⬆ Buffer</span>` : ''}`
             : `<span class="badge badge-week">W${week}</span>
-               <span class="badge badge-day">${(post._scheduled_at ? new Date(post._scheduled_at) : d).toLocaleDateString('en-US',{weekday:'short'})}</span>
+               <span class="badge badge-day">${d.toLocaleDateString('en-US',{weekday:'short'})}</span>
                ${post.slides.filter(Boolean).length > 1 ? `<span class="badge badge-slides">${post.slides.filter(Boolean).length} slides</span>` : ''}`
           }
         </div>
@@ -2582,8 +2581,7 @@ function openPost(week, slot) {
   const dayIndex = (week - 1) * 7 + slot;
   const d = days[dayIndex];
 
-  const displayDate = post._scheduled_at ? new Date(post._scheduled_at) : d;
-  document.getElementById('modalTitle').textContent = `W${week} · ${displayDate.toLocaleDateString('en-US',{weekday:'short'})} ${displayDate.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+  document.getElementById('modalTitle').textContent = `W${week} · ${d.toLocaleDateString('en-US',{weekday:'short'})} ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
   document.getElementById('captionField').value = post.caption || '';
   document.getElementById('hashtagField').value = post.hashtags || '';
   document.getElementById('postDate').value = formatDate(d);
