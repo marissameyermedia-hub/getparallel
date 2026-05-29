@@ -13,7 +13,7 @@ const AFFILIATE_FN_URL = `https://${projectId}.supabase.co/functions/v1/affiliat
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type AffiliateTier = 'seeds' | 'voices' | 'anchors';
-type AppAuditStatus = 'pending' | 'in_review' | 'approved' | 'rejected' | 'needs_info';
+type AppAuditStatus = 'pending' | 'in_review' | 'approved' | 'rejected';
 type DashboardTab = 'overview' | 'earnings' | 'payouts';
 type PortalState = 'loading' | 'apply' | 'submitted' | 'dashboard';
 
@@ -566,7 +566,6 @@ function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: Affil
     pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',    body: "We're reviewing your application. Typically 1–3 business days." },
     in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
     approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Verified!',               body: "Identity confirmed. Your affiliate dashboard is being activated — check back shortly." },
-    needs_info: { icon: AlertCircle,   color: 'text-orange-500', title: 'More info needed',        body: "We need a bit more info before we can process your application. Check your email for details — then reply directly to that message." },
     rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved', body: "Thank you for your interest. This tier may not be the right fit right now." },
   };
 
@@ -591,13 +590,6 @@ function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: Affil
             Reapply
           </button>
         ) : null
-      ) : app.audit_status === 'needs_info' ? (
-        <a
-          href={`mailto:hello@getparallel.vip?subject=Affiliate%20Application%20Info&body=Application%20ID%3A%20${app.id}`}
-          className="inline-block px-6 py-3 rounded-2xl font-semibold text-sm border-2 border-[#7B5EA7] text-[#7B5EA7]"
-        >
-          Reply by email
-        </a>
       ) : (
         <button
           onClick={onRefresh}

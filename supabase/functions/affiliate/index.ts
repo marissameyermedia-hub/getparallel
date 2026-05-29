@@ -25,7 +25,7 @@
 // v13: POST /admin/activate — manually activates a pending_verification affiliate
 //      and sends the full approval email. Escape hatch when Persona webhook fails.
 //      POST /payout/release now fires /affiliate-payout-failed email on Mercury errors.
-// v12: POST /admin/update-status — updates audit_status for rejected/needs_info/in_review
+// v12: POST /admin/update-status — updates audit_status for rejected/in_review
 //      and fires email notifications.
 // v11: /admin/approve creates affiliates with status='pending_verification' by default.
 //      Sends identity-verification email instead of full approval email.
@@ -878,7 +878,7 @@ async function handleAdminUpdateStatus(req: Request): Promise<Response> {
   const { application_id, status } = body;
   if (!application_id) return json({ error: "application_id required" }, 400);
 
-  const allowed = ["rejected", "needs_info", "in_review"];
+  const allowed = ["rejected", "in_review"];
   if (!allowed.includes(status)) return json({ error: `status must be one of: ${allowed.join(", ")}` }, 400);
 
   const admin = adminClient();
@@ -910,12 +910,6 @@ async function handleAdminUpdateStatus(req: Request): Promise<Response> {
       headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
       body: JSON.stringify({ email: app.email, name: displayName }),
     }).catch((err) => console.error("[affiliate/admin/update-status] rejected email failed:", err));
-  } else if (status === "needs_info") {
-    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-needs-info`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
-      body: JSON.stringify({ email: app.email, name: displayName }),
-    }).catch((err) => console.error("[affiliate/admin/update-status] needs-info email failed:", err));
   }
   // in_review: status update only — no email
 

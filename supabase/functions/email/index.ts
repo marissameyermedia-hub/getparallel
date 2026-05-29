@@ -1,4 +1,6 @@
-// Parallel — email edge function v18
+// Parallel — email edge function v19
+// v19: Remove /affiliate-needs-info — "needs more info" flow deleted entirely.
+//      Applications are now decided directly (approve/reject); applicants reapply if rejected.
 // v18: Add /affiliate-payout-failed — notify affiliate when Mercury ACH fails
 //      so they're not left in the dark about a delayed payout.
 // v17: Add /affiliate-rejected and /affiliate-needs-info — email notifications
@@ -671,22 +673,6 @@ function tplAffiliateRejected(name: string | null) {
   };
 }
 
-function tplAffiliateNeedsInfo(name: string | null) {
-  const greeting = name ? `Hi ${name},` : "Hi,";
-  const body = [
-    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
-    `<p style="margin:0 0 12px 0;">We're reviewing your Parallel Affiliate Army application and have a few questions before we can move forward.</p>`,
-    `<p style="margin:0 0 12px 0;">Our team will follow up shortly with the specifics — please keep an eye on this email address.</p>`,
-    `<p style="margin:0 0 4px 0;">In the meantime, reply directly to this email if you have any questions.</p>`,
-  ].join("");
-  const html = shellHtml({ heading: "We need a bit more info", body, ctaUrl: `${APP_URL}?view=affiliate-portal`, ctaLabel: "Check your application status" });
-  return {
-    subject: "Your Affiliate Army application — a quick question",
-    html,
-    text: `${greeting}\n\nWe're reviewing your Parallel Affiliate Army application and have a few questions before we can move forward.\n\nOur team will follow up shortly with the specifics. Reply to this email if you have any questions.\n\n${APP_URL}?view=affiliate-portal`,
-  };
-}
-
 async function handleAffiliateRejected(req: Request) {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
@@ -694,18 +680,6 @@ async function handleAffiliateRejected(req: Request) {
   const name = body.name ? String(body.name).trim() : null;
   if (!email) return json({ error: "email required" }, 400);
   const tpl = tplAffiliateRejected(name);
-  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
-  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
-  return json({ ok: true });
-}
-
-async function handleAffiliateNeedsInfo(req: Request) {
-  let body: any;
-  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
-  const email = String(body.email ?? "").trim();
-  const name = body.name ? String(body.name).trim() : null;
-  if (!email) return json({ error: "email required" }, 400);
-  const tpl = tplAffiliateNeedsInfo(name);
   const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
   if (!sendRes.ok) return json({ error: sendRes.error }, 500);
   return json({ ok: true });
@@ -770,7 +744,7 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "18" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "19" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -785,7 +759,6 @@ Deno.serve(async (req) => {
     if (path === "/affiliate-verify-identity"    && req.method === "POST") return await handleAffiliateVerifyIdentity(req);
     if (path === "/affiliate-approved"           && req.method === "POST") return await handleAffiliateApproved(req);
     if (path === "/affiliate-rejected"           && req.method === "POST") return await handleAffiliateRejected(req);
-    if (path === "/affiliate-needs-info"         && req.method === "POST") return await handleAffiliateNeedsInfo(req);
     if (path === "/affiliate-commission-clawback" && req.method === "POST") return await handleAffiliateCommissionClawback(req);
     if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);
     if (path === "/affiliate-payout-failed"      && req.method === "POST") return await handleAffiliatePayoutFailed(req);
