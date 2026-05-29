@@ -1636,15 +1636,6 @@
           <div id="suggestedTimeBanner" class="suggested-time-banner" style="display:none;"></div>
 
           <div class="form-group">
-            <div class="form-label">Platforms</div>
-            <div class="platform-toggles">
-              <div class="platform-toggle" onclick="togglePlatform(this,'ig')" data-platform="ig">📷 Instagram</div>
-              <div class="platform-toggle" onclick="togglePlatform(this,'tiktok')" data-platform="tiktok">♪ TikTok</div>
-              <div class="platform-toggle" onclick="togglePlatform(this,'fb')" data-platform="fb">f Facebook</div>
-            </div>
-          </div>
-
-          <div class="form-group">
             <div class="form-label">
               <span>Location Tag</span>
             </div>
@@ -2374,6 +2365,19 @@ const LOCATION_ROTATION = [
   'Phoenix, AZ', 'Seattle, WA',
 ];
 
+const AUDIO_ROTATION = [
+  'die with a smile by Lady Gaga & Bruno Mars',
+  'APT. by ROSÉ & Bruno Mars',
+  'espresso by Sabrina Carpenter',
+  'Taste by Sabrina Carpenter',
+  'Good Luck, Babe! by Chappell Roan',
+  'BIRDS OF A FEATHER by Billie Eilish',
+  'Please Please Please by Sabrina Carpenter',
+  'Pink Pony Club by Chappell Roan',
+  'Levii\'s Jeans by Beyoncé ft. Post Malone',
+  'Midnight Rain (Sped Up) by Taylor Swift',
+];
+
 function formatDate(d) { return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}`; }
 
 function prevMonth() {
@@ -2591,7 +2595,7 @@ function openPost(week, slot) {
   document.getElementById('postTime').value = post.time || '';
   const defaultLocation = LOCATION_ROTATION[dayIndex % LOCATION_ROTATION.length];
   document.getElementById('locationField').value = post.location || defaultLocation;
-  document.getElementById('audioField').value = post.audio || '';
+  document.getElementById('audioField').value = post.audio || AUDIO_ROTATION[dayIndex % AUDIO_ROTATION.length];
   document.getElementById('notesField').value = post.notes || '';
   updateCaptionCount();
 
