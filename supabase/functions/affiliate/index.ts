@@ -1494,7 +1494,25 @@ Return ONLY valid JSON with this exact shape:
     }
   }
 
-  return json({ application: app, analysis });
+  const socialProfiles = {
+    instagram: app.instagram_handle
+      ? (igProfile !== null
+          ? { found: true, followers: igProfile.followers, verified: igProfile.verified }
+          : { found: false, followers: null, verified: false })
+      : null,
+    tiktok: app.tiktok_handle
+      ? (ttProfile !== null
+          ? { found: true, followers: ttProfile.followers, author: ttProfile.author }
+          : { found: false, followers: null, author: null })
+      : null,
+    youtube: app.youtube_handle
+      ? (ytProfile !== null
+          ? { found: true, subscribers: ytProfile.subscribers, subscribersText: ytProfile.subscribersText, author: ytProfile.author }
+          : { found: false, subscribers: null, subscribersText: null, author: null })
+      : null,
+  };
+
+  return json({ application: app, analysis, social_profiles: socialProfiles });
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
