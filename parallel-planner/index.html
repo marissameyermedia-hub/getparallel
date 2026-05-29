@@ -2462,7 +2462,7 @@ function renderFeedGrid() {
         <div class="post-status">
           <div class="status-dot ${post.status || 'draft'}"></div>
         </div>
-        ${post.date ? `<div class="post-date-badge">${post.date}</div>` : ''}
+        <div class="post-date-badge">${formatDate(d)}</div>
         ${post._buffer_metrics ? `<div class="post-metrics-bar" id="metrics-${week}-${dayOfWeek}">
           ${post._buffer_metrics._summary || ''}
         </div>` : ''}
