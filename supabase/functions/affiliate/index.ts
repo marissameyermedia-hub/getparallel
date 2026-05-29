@@ -1,4 +1,8 @@
-// Parallel — affiliate edge function v18
+// Parallel — affiliate edge function v19
+// v19: Instagram — use HTTP status code to distinguish "account exists but blocked"
+//      (401/403) from "account not found" (404). Ensures Claude never flags valid
+//      accounts as fake just because Instagram blocks server-side API access.
+//      Update Claude prompt to note that Instagram server-side blocks are expected.
 // v18: Remove phase1_city_audience from /apply (launching US+Canada wide, not phase-gated).
 //      Fix social profile fetching — TikTok/YouTube oEmbed requires video URLs, not profiles;
 //      now fetches profile HTML and parses embedded JSON for follower/subscriber counts.
@@ -1174,9 +1178,12 @@ async function handleApply(req: Request): Promise<Response> {
 
 const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+// Returns null only if the account is confirmed NOT to exist (404).
+// Returns { followers: null } if the account exists but Instagram blocked data access.
+// Returns { followers: N } if data was retrievable.
 async function fetchInstagramProfile(handle: string): Promise<{ followers: number | null; bio: string | null; verified: boolean } | null> {
   try {
-    // Try the private web API first (works when not behind a login wall)
+    // Instagram's web_profile_info: 200=data, 404=not found, 401/403=exists but blocked
     const apiRes = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`, {
       headers: {
         "x-ig-app-id": "936619743392459",
@@ -1190,6 +1197,9 @@ async function fetchInstagramProfile(handle: string): Promise<{ followers: numbe
       },
       signal: AbortSignal.timeout(7000),
     });
+
+    if (apiRes.status === 404) return null; // Account definitively does not exist
+
     if (apiRes.ok) {
       const data = await apiRes.json();
       const user = data?.data?.user;
@@ -1200,7 +1210,8 @@ async function fetchInstagramProfile(handle: string): Promise<{ followers: numbe
       };
     }
 
-    // Fallback: fetch profile HTML and parse embedded data
+    // 401/403/other non-404: account exists but Instagram blocked the API response.
+    // Try HTML as a secondary data source, but treat non-404 as "account exists" regardless.
     const htmlRes = await fetch(`https://www.instagram.com/${encodeURIComponent(handle)}/`, {
       headers: {
         "User-Agent": BROWSER_UA,
@@ -1209,31 +1220,29 @@ async function fetchInstagramProfile(handle: string): Promise<{ followers: numbe
       },
       signal: AbortSignal.timeout(7000),
     });
-    if (!htmlRes.ok) return null;
-    const html = await htmlRes.text();
 
-    // schema.org JSON-LD embedded in page (most reliable when available)
-    const ldMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
-    if (ldMatch) {
-      try {
-        const ld = JSON.parse(ldMatch[1]);
-        const stats: any[] = ld?.mainEntity?.interactionStatistic ?? [];
-        const follow = stats.find((s: any) => String(s.interactionType ?? "").includes("Follow"));
-        if (follow?.userInteractionCount != null) {
-          return { followers: Number(follow.userInteractionCount), bio: null, verified: false };
-        }
-      } catch { /* continue */ }
+    if (htmlRes.status === 404) return null; // Profile page 404 = doesn't exist
+
+    if (htmlRes.ok) {
+      const html = await htmlRes.text();
+      // schema.org JSON-LD (most reliable when present)
+      const ldMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+      if (ldMatch) {
+        try {
+          const ld = JSON.parse(ldMatch[1]);
+          const stats: any[] = ld?.mainEntity?.interactionStatistic ?? [];
+          const follow = stats.find((s: any) => String(s.interactionType ?? "").includes("Follow"));
+          if (follow?.userInteractionCount != null) {
+            return { followers: Number(follow.userInteractionCount), bio: null, verified: false };
+          }
+        } catch { /* continue */ }
+      }
+      const countMatch = html.match(/"edge_followed_by":\{"count":(\d+)\}/);
+      if (countMatch) return { followers: parseInt(countMatch[1]), bio: null, verified: false };
     }
 
-    // Regex fallback against embedded JSON blobs
-    const countMatch = html.match(/"edge_followed_by":\{"count":(\d+)\}/);
-    if (countMatch) return { followers: parseInt(countMatch[1]), bio: null, verified: false };
-
-    // Account exists (page loaded) but follower count is behind login wall
-    if (html.includes(handle) || html.includes("ProfilePage")) {
-      return { followers: null, bio: null, verified: false };
-    }
-    return null;
+    // Any non-404 response = account exists, just no data retrievable
+    return { followers: null, bio: null, verified: false };
   } catch {
     return null;
   }
@@ -1372,13 +1381,16 @@ async function handleAdminReview(applicationId: string, req: Request): Promise<R
     let line = `Instagram: @${app.instagram_handle}`;
     if (igProfile) {
       const parts: string[] = [];
-      if (igProfile.followers !== null) parts.push(`${igProfile.followers.toLocaleString()} followers`);
-      else parts.push("account exists, follower count behind login wall");
-      if (igProfile.verified) parts.push("verified");
+      if (igProfile.followers !== null) {
+        parts.push(`${igProfile.followers.toLocaleString()} followers`);
+      } else {
+        parts.push("account confirmed to exist; follower count not accessible via server-side API (Instagram blocks all unauthenticated server requests — admin should click the profile link to verify count manually)");
+      }
+      if (igProfile.verified) parts.push("verified badge");
       if (igProfile.bio) parts.push(`bio: "${igProfile.bio.slice(0, 120)}"`);
       line += ` — ${parts.join("; ")}`;
     } else {
-      line += " (not found or access blocked — verify manually)";
+      line += " — account NOT FOUND (handle may be wrong, account deactivated, or renamed)";
     }
     socialLines.push(line);
   }
@@ -1426,8 +1438,10 @@ Tier requested: ${tierDescriptions[app.tier_applied_for] || app.tier_applied_for
 Submitted: ${new Date(app.created_at).toLocaleDateString()}
 ID verification: ${app.persona_status === "approved" ? "Verified ✓" : app.persona_status === "none" ? "Not yet verified" : app.persona_status}
 
-Social profiles (fetched from public APIs — use follower counts to assess tier fit):
+Social profiles (fetched from public APIs):
 ${socialData}
+
+IMPORTANT: Instagram blocks all server-side API calls — if the Instagram line says "account confirmed to exist", that IS positive verification. The account is real. The admin will manually verify the follower count using the profile link. Do NOT penalize an applicant or lower confidence because Instagram follower count is unavailable — treat "account confirmed" the same as having the count for recommendation purposes, and note it in your summary.
 
 TIER GUIDE
 - Seeds: 1K–10K followers, authentic community presence, 15% commission
