@@ -7,6 +7,9 @@
 //   200: { accessToken: string, userId: string, emailConfirmed: boolean }
 //   4xx/5xx: { error: string }
 //
+// v10 (2026-05-29): Dev email bypass. For mmeyershop@gmail.com, delete any
+//   existing account before creating a fresh one so the email can be reused
+//   across test signups. Real users are unaffected.
 // v9 (2026-05-29): Dev test number bypass. Skip phone-taken check and clear
 //   existing profile phone for +12539486670 so it can be reused across test
 //   accounts without hitting the unique constraint. Real users are unaffected.
@@ -228,6 +231,19 @@ async function handleSignup(req: Request) {
   // test accounts. All other numbers are blocked if already on another profile.
   const isDevTestPhone = phone === "+12539486670";
 
+  // Dev email: delete any existing account so the same email can be reused
+  // across test signups. Deletes profile first (FK safety), then auth user.
+  const isDevEmail = email === "mmeyershop@gmail.com";
+  if (isDevEmail) {
+    const { data: existingProfile } = await admin.from("profiles").select("id").eq("email", email).maybeSingle();
+    if (existingProfile?.id) {
+      await admin.from("profiles").delete().eq("id", existingProfile.id);
+      await admin.auth.admin.deleteUser(existingProfile.id).catch((e: unknown) => {
+        console.warn("[auth/signup] dev email — auth user delete failed (non-fatal):", e);
+      });
+    }
+  }
+
   if (!isDevTestPhone) {
     const { data: phoneTaken } = await admin
       .from("profiles")
@@ -432,7 +448,7 @@ Deno.serve(async (req) => {
       return await handleSignup(req);
     }
     if (req.method === "GET" && (path === "/" || path === "/health")) {
-      return json({ ok: true, service: "auth", version: "9" });
+      return json({ ok: true, service: "auth", version: "10" });
     }
     return json({ error: "Not found", path }, 404);
   } catch (err) {
