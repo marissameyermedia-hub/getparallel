@@ -713,13 +713,19 @@ function App() {
             // pending applicants to the portal; everyone else to onboarding.
             // affiliateIntent = true means the user explicitly came via the
             // affiliate URL — always send them to the portal, no network check.
-            const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
             if (affiliateIntent) {
               // Persist the flag so refresh without the URL param still routes here
               try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
               setCurrentView('affiliate-portal');
             } else {
-              setCurrentView(cachedIsAffiliate ? await resolveNonOnboardedRoute(session.access_token) : 'onboarding');
+              // Always probe the DB — do NOT gate on the localStorage cache.
+              // The cache can be absent (fresh browser, private mode, or wiped
+              // by a session-expiry localStorage.clear()), which would silently
+              // drop an affiliate into the dating onboarding questionnaire.
+              // resolveNonOnboardedRoute sets parallel_is_affiliate='true' on
+              // success, so the next load is just as fast and the portal is
+              // never accidentally skipped.
+              setCurrentView(await resolveNonOnboardedRoute(session.access_token));
             }
           }
         } else {
@@ -788,13 +794,13 @@ function App() {
                 // pending applicants to the portal; everyone else to onboarding.
                 // affiliateIntent = true means the user explicitly came via the
                 // affiliate URL — always send them to the portal, no network check.
-                const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
                 if (affiliateIntent) {
                   // Persist the flag so refresh without the URL param still routes here
                   try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
                   setCurrentView('affiliate-portal');
                 } else {
-                  setCurrentView(cachedIsAffiliate ? await resolveNonOnboardedRoute(storedToken) : 'onboarding');
+                  // Always probe the DB — see comment in session path above.
+                  setCurrentView(await resolveNonOnboardedRoute(storedToken));
                 }
               }
             } catch (tokenErr) {
