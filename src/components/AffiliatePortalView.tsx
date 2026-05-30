@@ -1246,19 +1246,14 @@ function AffiliateDashboard({
                   <Tag size={15} className="text-gray-400 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">Your member discount</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Affiliates get {profile.subscription_discount_pct}% off their own subscription.</p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                      You can use your own discount code to subscribe — we track it automatically so no commission is earned on your own account.
+                    </p>
                   </div>
-                  <a
-                    href="/?view=pricing"
-                    className="text-xs font-medium underline flex-shrink-0"
-                    style={{ color: hex.accent }}
-                  >
-                    Subscribe →
-                  </a>
                 </div>
                 {profile.promo_code && (
                   <p className="text-xs text-gray-400 mt-2.5 pl-[26px]">
-                    Enter code <span className="font-mono font-semibold text-gray-700">{profile.promo_code}</span> at checkout.
+                    Use code <span className="font-mono font-semibold text-gray-700">{profile.promo_code}</span> at checkout for {profile.subscription_discount_pct}% off.
                   </p>
                 )}
               </div>
