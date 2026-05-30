@@ -1282,61 +1282,78 @@ function AffiliateDashboard({
             )}
 
             {/* Share section */}
-            <div className="mt-8">
+            <div className="mt-8 space-y-3">
               <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
                 {nudge}
               </div>
 
-              {profile.affiliate_link ? (
-                <>
-                  <div className="flex gap-3 mb-3">
-                    <button
-                      onClick={handleCopyLink}
-                      className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                    >
-                      {copiedLink
-                        ? <><Check size={16} aria-hidden="true" />Copied!</>
-                        : <><Copy size={16} aria-hidden="true" />Copy link</>
-                      }
-                    </button>
-                    <button
-                      onClick={handleShare}
-                      className="flex-1 text-white px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                      style={{ background: hex.btn }}
-                    >
-                      {sharedFallback
-                        ? <><Check size={16} aria-hidden="true" />Copied!</>
-                        : <><Share2 size={16} aria-hidden="true" />Share</>
-                      }
-                    </button>
-                  </div>
-                  <div className="text-center text-xs text-gray-300 font-mono break-all mb-4">
-                    {profile.affiliate_link}
-                  </div>
-                </>
-              ) : (
-                <div className="bg-white border border-gray-100 rounded-2xl p-4 text-sm text-gray-500 text-center mb-4">
-                  Your tracked link is being set up — check back soon.
+              {/* Affiliate link */}
+              <div className="bg-white border border-gray-100 rounded-2xl px-4 pt-3.5 pb-4">
+                <div className="mb-1">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Your referral link</span>
                 </div>
-              )}
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                  Share this link — anyone who signs up for Parallel through it is automatically credited to you.
+                </p>
+                {profile.affiliate_link ? (
+                  <>
+                    <div className="flex gap-2 mb-2">
+                      <button
+                        onClick={handleCopyLink}
+                        className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-4 py-3 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        {copiedLink
+                          ? <><Check size={15} aria-hidden="true" />Copied!</>
+                          : <><Copy size={15} aria-hidden="true" />Copy link</>
+                        }
+                      </button>
+                      <button
+                        onClick={handleShare}
+                        className="flex-1 text-white px-4 py-3 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        style={{ background: hex.btn }}
+                      >
+                        {sharedFallback
+                          ? <><Check size={15} aria-hidden="true" />Copied!</>
+                          : <><Share2 size={15} aria-hidden="true" />Share</>
+                        }
+                      </button>
+                    </div>
+                    <div className="text-center text-xs text-gray-300 font-mono break-all">
+                      {profile.affiliate_link}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm text-gray-400 text-center py-1">
+                    Your link is being set up — check back soon.
+                  </div>
+                )}
+              </div>
 
+              {/* Promo code */}
               {profile.promo_code && (
-                <button
-                  onClick={handleCopyCode}
-                  className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3.5 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Tag size={14} className="text-gray-400 flex-shrink-0" />
-                    <span className="text-xs text-gray-500 mr-1">Promo code</span>
-                    <span className="font-mono text-sm font-semibold text-gray-900">{profile.promo_code}</span>
+                <div className="bg-white border border-gray-100 rounded-2xl px-4 pt-3.5 pb-4">
+                  <div className="mb-1">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Follower discount code</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
-                    {copiedCode
-                      ? <><Check size={13} />Copied</>
-                      : <><Copy size={13} />Copy</>
-                    }
-                  </div>
-                </button>
+                  <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                    Give this code to your audience so they get a discount at checkout. We track it too, so you get credit either way.
+                  </p>
+                  <button
+                    onClick={handleCopyCode}
+                    className="w-full flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Tag size={14} className="text-gray-400 flex-shrink-0" />
+                      <span className="font-mono text-sm font-semibold text-gray-900">{profile.promo_code}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
+                      {copiedCode
+                        ? <><Check size={13} />Copied</>
+                        : <><Copy size={13} />Copy</>
+                      }
+                    </div>
+                  </button>
+                </div>
               )}
             </div>
 
