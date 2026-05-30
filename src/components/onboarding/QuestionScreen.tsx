@@ -884,16 +884,16 @@ export function QuestionScreen({
         className="flex-shrink-0 bg-parallel-cream border-t border-gray-100 py-3 px-4"
         style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
       >
-        <div className="max-w-md mx-auto flex items-center gap-3">
+        <div className="max-w-md mx-auto grid items-center gap-3" style={{ gridTemplateColumns: '48px 1fr 48px' }}>
           <button
             onClick={onBack}
             disabled={!canGoBack}
             aria-label="Previous question"
-            className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors disabled:opacity-0 disabled:pointer-events-none"
+            className="w-12 h-12 flex items-center justify-center rounded-full border-2 border-gray-200 hover:border-parallel-void transition-colors disabled:opacity-0 disabled:pointer-events-none"
           >
             <ChevronLeft size={22} aria-hidden="true" />
           </button>
-          <div className="flex-1">
+          <div>
             {onSave ? (
               <div className="flex gap-2">
                 <button onClick={onSave} disabled={!isAnswered()}
@@ -926,6 +926,7 @@ export function QuestionScreen({
               )
             )}
           </div>
+          <div aria-hidden="true" />
         </div>
       </div>
     </div>
