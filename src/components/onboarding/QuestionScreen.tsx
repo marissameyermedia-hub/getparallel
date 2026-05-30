@@ -360,6 +360,49 @@ export function QuestionScreen({
         </div>
       )}
 
+      {/* Q3.9 sticky header — title + count + search frozen above the scroll area */}
+      {question.id === '3.9' && (() => {
+        const sel = Array.isArray(localAnswer) ? (localAnswer as string[]) : [];
+        const rem = question.maxSelections ? question.maxSelections - sel.length : null;
+        return (
+          <div className="flex-shrink-0 px-6 pt-3 pb-3 bg-parallel-cream border-b border-gray-100">
+            <div className="max-w-md mx-auto">
+              <div className="mb-3">
+                <h2 className="text-2xl font-medium leading-snug">{question.text}</h2>
+                {question.subtitle && (
+                  <p className="text-base text-gray-600 mt-2">{question.subtitle}</p>
+                )}
+                {question.privacyNote && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="text-xs">🔒</span>
+                    <span className="text-xs text-gray-500">{question.privacyNote}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-gray-500">{sel.length === 0 ? 'None selected yet' : `${sel.length} selected`}</p>
+                {rem !== null && sel.length > 0 && (
+                  <p className="text-sm text-gray-500">{rem > 0 ? `${rem} more` : 'Maximum reached'}</p>
+                )}
+              </div>
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  type="text"
+                  value={hobbySearch}
+                  onChange={e => setHobbySearch(e.target.value)}
+                  placeholder="Search or browse by category ↓"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors text-sm"
+                />
+                {hobbySearch && (
+                  <button onClick={() => setHobbySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600">×</button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Scrollable content area */}
       <div
         ref={scrollRef}
@@ -372,7 +415,8 @@ export function QuestionScreen({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          {/* Question title */}
+          {/* Question title — hidden for Q3.9 which renders its own sticky header above */}
+          {question.id !== '3.9' && (
           <div className="mb-5 pt-3">
             <h2 className="text-2xl font-medium leading-snug">{question.text}</h2>
             {question.subtitle && (
@@ -389,6 +433,7 @@ export function QuestionScreen({
               <p className="text-xs text-gray-500 mt-2 leading-relaxed">{question.helperText}</p>
             )}
           </div>
+          )}
 
           {/* Dealbreaker toggle */}
           {showDealbreakerToggle && (
@@ -506,26 +551,7 @@ export function QuestionScreen({
                   : HOBBY_CATEGORIES;
 
                 return (
-                  <div className="space-y-5">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-gray-500">{selected.length === 0 ? 'None selected yet' : `${selected.length} selected`}</p>
-                      {remaining !== null && selected.length > 0 && (
-                        <p className="text-sm text-gray-500">{remaining > 0 ? `${remaining} more` : 'Maximum reached'}</p>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input
-                        type="text"
-                        value={hobbySearch}
-                        onChange={e => setHobbySearch(e.target.value)}
-                        placeholder="Search or browse by category ↓"
-                        className="w-full pl-9 pr-4 py-2.5 rounded-xl border-2 border-gray-200 focus:border-parallel-purple focus:outline-none transition-colors text-sm"
-                      />
-                      {hobbySearch && (
-                        <button onClick={() => setHobbySearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600">×</button>
-                      )}
-                    </div>
+                  <div className="space-y-5 pt-3">
                     {selected.length > 0 && !hobbySearch && (
                       <div className="flex flex-wrap gap-2 p-3 bg-parallel-void/5 rounded-2xl border border-parallel-void/10">
                         {selected.map(hobby => (

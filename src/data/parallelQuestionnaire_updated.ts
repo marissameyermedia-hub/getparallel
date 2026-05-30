@@ -362,7 +362,7 @@ export const parallelQuestionnaire: Section[] = [
       maxSelections: 15,
       tags: ["Compatibility Score"],
       weight: 4,
-      privacyNote: "Used for matching only — not shown on your profile",
+      privacyNote: "Shown on your match card",
       category: "Social & Shared Life",
     },
   ]},
