@@ -612,7 +612,22 @@ function PayoutSetupForm({
   onSuccess: (updates: { tax_info_collected: boolean; bank_account_connected: boolean }) => void;
 }) {
   const [legalName, setLegalName] = useState(profile.legal_name ?? '');
-  const [taxAddress, setTaxAddress] = useState(profile.tax_address ?? '');
+  // Parse stored address back into fields (stored as "street, city, state zip")
+  const parseStoredAddress = (addr: string | null) => {
+    if (!addr) return { street: '', city: '', state: '', zip: '' };
+    const parts = addr.split(',').map(s => s.trim());
+    const street = parts[0] ?? '';
+    const city = parts[1] ?? '';
+    const stateZip = (parts[2] ?? '').trim().split(' ');
+    const state = stateZip[0] ?? '';
+    const zip = stateZip[1] ?? '';
+    return { street, city, state, zip };
+  };
+  const parsed = parseStoredAddress(profile.tax_address);
+  const [street, setStreet] = useState(parsed.street);
+  const [city, setCity] = useState(parsed.city);
+  const [addrState, setAddrState] = useState(parsed.state);
+  const [zip, setZip] = useState(parsed.zip);
   const [accountType, setAccountType] = useState('personalChecking');
   const [routingNumber, setRoutingNumber] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -628,9 +643,10 @@ function PayoutSetupForm({
     setSubmitting(true);
     setError(null);
     setSavedMessage(null);
+    const taxAddress = [street.trim(), city.trim(), `${addrState.trim()} ${zip.trim()}`.trim()].filter(Boolean).join(', ');
     const body: Record<string, any> = {
       legal_name: legalName.trim(),
-      tax_address: taxAddress.trim(),
+      tax_address: taxAddress,
     };
     if (routingNumber.trim() || accountNumber.trim()) {
       body.routing_number = routingNumber.trim();
@@ -666,13 +682,40 @@ function PayoutSetupForm({
 
       <div>
         <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Mailing Address</label>
-        <textarea
-          value={taxAddress}
-          onChange={e => setTaxAddress(e.target.value)}
-          placeholder={'Street address, City, State ZIP'}
-          rows={2}
-          className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none resize-none border border-gray-100 focus:border-[#7B5EA7]"
-        />
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={street}
+            onChange={e => setStreet(e.target.value)}
+            placeholder="Street address"
+            className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7]"
+          />
+          <input
+            type="text"
+            value={city}
+            onChange={e => setCity(e.target.value)}
+            placeholder="City"
+            className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7]"
+          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={addrState}
+              onChange={e => setAddrState(e.target.value.toUpperCase().slice(0, 2))}
+              placeholder="State"
+              maxLength={2}
+              className="w-20 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7] font-mono uppercase"
+            />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={zip}
+              onChange={e => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+              placeholder="ZIP code"
+              className="flex-1 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7] font-mono"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="relative">
@@ -748,7 +791,7 @@ function PayoutSetupForm({
 
       <button
         onClick={handleSubmit}
-        disabled={submitting || !legalName.trim() || !taxAddress.trim() || !bankValid}
+        disabled={submitting || !legalName.trim() || !street.trim() || !city.trim() || !addrState.trim() || !zip.trim() || !bankValid}
         className="w-full py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white disabled:opacity-40 transition-opacity"
       >
         {submitting ? 'Saving…' : 'Save Payout Info'}

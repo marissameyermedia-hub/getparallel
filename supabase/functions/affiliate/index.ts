@@ -1,4 +1,6 @@
-// Parallel — affiliate edge function v21
+// Parallel — affiliate edge function v22
+// v22: Fix Mercury recipient creation — remove non-standard top-level bank fields,
+//      only send electronicRoutingInfo. Surface raw Mercury error message for debugging.
 // v21: Two-phase payout flow with approval queue.
 //      POST /payout/queue  — stage a payout (creates DB row, locks attributions as 'queued', no Mercury call)
 //      GET  /payout/pending — return all pending_approval payouts with attribution breakdown for admin review
@@ -258,9 +260,6 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
       body: JSON.stringify({
         name: legal_name,
         emails: [affiliate.email],
-        accountType: account_type,
-        routingNumber: routing_number,
-        accountNumber: account_number,
         electronicRoutingInfo: {
           accountType: eraAccountType,
           routingNumber: routing_number,
@@ -271,16 +270,16 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
 
     const mercuryBody = await mercuryRes.json().catch(() => ({}));
     if (!mercuryRes.ok) {
-      console.error("[affiliate/payout/setup] Mercury recipient error:", mercuryRes.status, mercuryBody);
-      const msg = (mercuryBody as any)?.message ?? "";
-      // Translate common Mercury errors into user-friendly messages
+      const msg: string = (mercuryBody as any)?.message ?? JSON.stringify(mercuryBody);
+      console.error("[affiliate/payout/setup] Mercury recipient error:", mercuryRes.status, msg, "sandbox:", MERCURY_IS_SANDBOX);
       if (msg.toLowerCase().includes("routing")) {
         return json({ error: "The routing number you entered is invalid — please double-check it" }, 400);
       }
       if (msg.toLowerCase().includes("account")) {
         return json({ error: "The account number you entered appears invalid — please double-check it" }, 400);
       }
-      return json({ error: "We couldn't connect your bank account. Please check your details and try again." }, 400);
+      // Surface the raw Mercury error so it's visible during setup/debugging
+      return json({ error: `Bank account connection failed: ${msg}` }, 400);
     }
 
     const recipientId = (mercuryBody as any).id ?? (mercuryBody as any).recipient?.id ?? null;
