@@ -105,7 +105,7 @@ const TIERS: Array<{
 }> = [
   {
     id: 'seeds',
-    label: 'Seeds',
+    label: 'Tier 1',
     icon: Star,
     commission: '10% commission · 20% member discount',
     description: 'Growing creators building their audience.',
@@ -113,7 +113,7 @@ const TIERS: Array<{
   },
   {
     id: 'voices',
-    label: 'Voices',
+    label: 'Tier 2',
     icon: Mic,
     commission: '15% commission · 25% member discount',
     description: 'Established voices with engaged communities.',
@@ -121,7 +121,7 @@ const TIERS: Array<{
   },
   {
     id: 'anchors',
-    label: 'Anchors',
+    label: 'Tier 3',
     icon: Anchor,
     commission: '20% commission · 30% member discount',
     description: 'Powerhouse partners with major reach.',

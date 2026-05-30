@@ -107,7 +107,7 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
           {([
             {
               Icon: Star,
-              label: 'Seeds',
+              label: 'Tier 1',
               commission: '10%',
               discount: '20%',
               range: '1K–10K followers',
@@ -117,7 +117,7 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
             },
             {
               Icon: Mic,
-              label: 'Voices',
+              label: 'Tier 2',
               commission: '15%',
               discount: '25%',
               range: '10K–100K followers',
@@ -127,7 +127,7 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
             },
             {
               Icon: Anchor,
-              label: 'Anchors',
+              label: 'Tier 3',
               commission: '20%',
               discount: '30%',
               range: '100K+ followers',
