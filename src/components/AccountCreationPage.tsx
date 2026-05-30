@@ -609,7 +609,7 @@ export function AccountCreationPage({ onComplete, onBack, onNavigate, referralCo
 
         <div className="text-center mt-6">
           <button onClick={onBack} className="text-gray-600 hover:text-parallel-void transition-colors">
-            ← Back to Sign In
+            {isAffiliateSignup ? 'Already have an account? Sign in' : '← Back to Sign In'}
           </button>
         </div>
       </div>

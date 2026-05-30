@@ -260,13 +260,7 @@ export function OnboardingFlow({ onComplete, onNavigate, showInbox, userDateOfBi
   if (!hasLoadedProgress) {
     return (
       <div className="fixed inset-0 bg-parallel-cream flex items-center justify-center" role="status" aria-live="polite">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex gap-1" aria-hidden="true">
-            <div className="w-1.5 h-8 bg-parallel-void rounded-full" />
-            <div className="w-1.5 h-8 bg-parallel-void rounded-full" />
-          </div>
-          <p className="text-sm text-gray-500">Loading your progress…</p>
-        </div>
+        <p className="text-sm text-gray-500">Loading your progress…</p>
       </div>
     );
   }

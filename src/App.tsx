@@ -131,6 +131,12 @@ function App() {
   const [personaReturnInProgress] = useState(() => {
     try { return new URLSearchParams(window.location.search).get('affiliate_verified') === '1'; } catch { return false; }
   });
+  const [affiliatePreVerified] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('affiliate_pre_verified') === '1'; } catch { return false; }
+  });
+  const [affiliatePreInquiryId] = useState<string | null>(() => {
+    try { return new URLSearchParams(window.location.search).get('inquiry-id') ?? null; } catch { return null; }
+  });
   const [tosGateRequired, setTosGateRequired] = useState(false);
   const [userDateOfBirth, setUserDateOfBirth] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
@@ -400,6 +406,7 @@ function App() {
       if (
         params.get('view') === 'affiliate-portal' ||
         params.get('affiliate_verified') === '1' ||
+        params.get('affiliate_pre_verified') === '1' ||
         window.location.pathname === '/affiliate'
       ) {
         setAffiliateIntent(true);
@@ -702,12 +709,12 @@ function App() {
           } else {
             // Dating onboarding incomplete — route active affiliates and
             // pending applicants to the portal; everyone else to onboarding.
-            // Skip the two network calls for users who have no affiliate history
-            // (most users in the dating app mid-onboarding path).
+            // affiliateIntent = true means the user explicitly came via the
+            // affiliate URL — always send them to the portal, no network check.
             const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
-            setCurrentView(affiliateIntent || cachedIsAffiliate
-              ? await resolveNonOnboardedRoute(session.access_token)
-              : 'onboarding');
+            setCurrentView(affiliateIntent
+              ? 'affiliate-portal'
+              : (cachedIsAffiliate ? await resolveNonOnboardedRoute(session.access_token) : 'onboarding'));
           }
         } else {
           const storedToken = await getAccessToken();
@@ -771,10 +778,12 @@ function App() {
               } else {
                 // Dating onboarding incomplete — route active affiliates and
                 // pending applicants to the portal; everyone else to onboarding.
+                // affiliateIntent = true means the user explicitly came via the
+                // affiliate URL — always send them to the portal, no network check.
                 const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
-                setCurrentView(affiliateIntent || cachedIsAffiliate
-                  ? await resolveNonOnboardedRoute(storedToken)
-                  : 'onboarding');
+                setCurrentView(affiliateIntent
+                  ? 'affiliate-portal'
+                  : (cachedIsAffiliate ? await resolveNonOnboardedRoute(storedToken) : 'onboarding'));
               }
             } catch (tokenErr) {
               toast('Your session expired — please sign back in.', { duration: 4000 });
@@ -784,12 +793,19 @@ function App() {
           } else {
             setCurrentView(
               window.location.pathname === '/waitlist' ? 'waitlist' :
-              (() => { try { return new URLSearchParams(window.location.search).get('view') === 'affiliate' ? 'affiliate-landing' : 'signin'; } catch { return 'signin'; } })()
+              params.get('view') === 'affiliate-portal' ? 'account-creation' :
+              params.get('view') === 'affiliate' ? 'affiliate-landing' :
+              'signin'
             );
           }
         }
       } catch (e) {
-        setCurrentView(window.location.pathname === '/waitlist' ? 'waitlist' : 'signin');
+        setCurrentView(
+          window.location.pathname === '/waitlist' ? 'waitlist' :
+          params.get('view') === 'affiliate-portal' ? 'account-creation' :
+          params.get('view') === 'affiliate' ? 'affiliate-landing' :
+          'signin'
+        );
       }
 
       setIsLoading(false);
@@ -1570,9 +1586,9 @@ function App() {
                   setCurrentView('matches');
                 }
               } else {
-                // Dating onboarding incomplete — route active affiliates and
-                // pending applicants to the portal; everyone else to onboarding.
-                const route = await resolveNonOnboardedRoute(token);
+                // Dating onboarding incomplete — if the user came via affiliate
+                // URL send them straight to the portal; otherwise resolve normally.
+                const route = affiliateIntent ? 'affiliate-portal' : await resolveNonOnboardedRoute(token);
                 if (route === 'affiliate-portal') {
                   window.history.replaceState({}, '', window.location.pathname);
                 }
@@ -2073,6 +2089,8 @@ function App() {
             onSignOut={handleLogOut}
             isAffiliateOnly={!hasCompletedOnboarding}
             personaJustVerified={personaReturnInProgress}
+            affiliatePreVerified={affiliatePreVerified}
+            affiliatePreInquiryId={affiliatePreInquiryId}
           />
         )}
 

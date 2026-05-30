@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   ChevronLeft, Copy, Check, Share2, Users, Star, Mic, Anchor,
   Clock, CheckCircle2, AlertCircle, ShieldCheck, Link2, Tag,
   ChevronDown, ChevronUp, History, CreditCard,
 } from 'lucide-react';
-import { supabase } from '../utils/supabase/client';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 const PERSONA_TEMPLATE_ID = 'itmpl_w7GgvrzeQ8P6sopBcayQBcBP39gG';
@@ -204,13 +203,13 @@ async function affiliateApi<T = any>(
   opts: { method?: string; body?: unknown } = {}
 ): Promise<{ data: T | null; error: string | null }> {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { data: null, error: 'Not signed in' };
+    const token = localStorage.getItem('parallel_access_token');
+    if (!token) return { data: null, error: 'Not signed in' };
     const fetchOpts: RequestInit = {
       method: opts.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
+        'Authorization': `Bearer ${token}`,
         'apikey': publicAnonKey,
       },
     };
@@ -226,21 +225,45 @@ async function affiliateApi<T = any>(
 
 // ── Apply Form ────────────────────────────────────────────────────────────────
 
-function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: AffiliateApplication) => void; onAlreadyApplied: () => void }) {
+function ApplyForm({ userId, personaPreVerified, personaPreInquiryId, onSubmitted, onAlreadyApplied }: {
+  userId: string | null;
+  personaPreVerified?: boolean;
+  personaPreInquiryId?: string | null;
+  onSubmitted: (app: AffiliateApplication) => void;
+  onAlreadyApplied: () => void;
+}) {
   const [step, setStep] = useState<1 | 2>(1);
   const [tier, setTier] = useState<AffiliateTier | null>(null);
   const [instagram, setInstagram] = useState('');
   const [tiktok, setTiktok] = useState('');
   const [youtube, setYoutube] = useState('');
-  const [whyParallel, setWhyParallel] = useState('');
-  const [phase1City, setPhase1City] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showExpectations, setShowExpectations] = useState(false);
+  const [personaVerified, setPersonaVerified] = useState(!!personaPreVerified);
+  const [personaInquiryId, setPersonaInquiryId] = useState<string | null>(personaPreInquiryId ?? null);
+
+  // Restore form state after returning from Persona redirect
+  useEffect(() => {
+    if (!personaPreVerified) return;
+    try {
+      const saved = sessionStorage.getItem('affiliate_form_state');
+      if (saved) {
+        const s = JSON.parse(saved);
+        if (s.tier) setTier(s.tier);
+        setInstagram(s.instagram || '');
+        setTiktok(s.tiktok || '');
+        setYoutube(s.youtube || '');
+        sessionStorage.removeItem('affiliate_form_state');
+        setStep(2);
+      }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function submit() {
-    if (!tier || !termsAccepted) return;
+    if (!tier || !termsAccepted || !personaVerified) return;
     setIsSubmitting(true);
     setError(null);
     const { data, error: err } = await affiliateApi<{ application: AffiliateApplication }>('apply', {
@@ -251,15 +274,11 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
         instagram: instagram || null,
         tiktok: tiktok || null,
         youtube: youtube || null,
-        why_parallel: whyParallel || null,
-        phase1_city_audience: phase1City,
+        persona_inquiry_id: personaInquiryId || null,
       },
     });
     setIsSubmitting(false);
     if (err) {
-      // An application already exists (e.g. submitted on another device, or a
-      // transient error hid it on load). Re-resolve the portal so they land on
-      // their real status screen instead of a dead-end error.
       if (/already submitted/i.test(err)) { onAlreadyApplied(); return; }
       setError(err);
       return;
@@ -268,6 +287,18 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
   }
 
   const hasHandle = instagram.trim() || tiktok.trim() || youtube.trim();
+  const personaUrl = userId
+    ? `https://withpersona.com/verify?inquiry-template-id=${encodeURIComponent(PERSONA_TEMPLATE_ID)}&reference-id=${encodeURIComponent(userId)}&environment=${PERSONA_ENV}&redirect-uri=${encodeURIComponent(window.location.origin + '/?view=affiliate-portal&affiliate_pre_verified=1')}`
+    : '#';
+
+  function handlePersonaClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (!userId) { e.preventDefault(); return; }
+    try {
+      sessionStorage.setItem('affiliate_form_state', JSON.stringify({
+        tier, instagram, tiktok, youtube,
+      }));
+    } catch { /* ignore */ }
+  }
 
   return (
     <div className="px-5 pb-8">
@@ -278,7 +309,6 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
 
       {step === 1 && (
         <>
-          {/* What to expect collapsible */}
           <button
             onClick={() => setShowExpectations(v => !v)}
             className="w-full flex items-center justify-between py-2.5 mb-4 text-left"
@@ -292,9 +322,9 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
           {showExpectations && (
             <div className="bg-white border border-gray-100 rounded-2xl p-4 mb-5 space-y-3">
               {([
-                { n: '1', title: 'We review your application', body: 'Our team checks your content and audience fit within a few business days.' },
-                { n: '2', title: 'Quick identity check', body: "Once approved, you'll complete a 2-minute Persona ID verification required for ACH payouts." },
-                { n: '3', title: 'Dashboard activated', body: 'Your tracked link, promo code, and earnings dashboard go live immediately after verification.' },
+                { n: '1', title: 'Verify your identity', body: 'Complete a quick 2-minute Persona ID verification before submitting.' },
+                { n: '2', title: 'We review your application', body: 'Our team checks your content and audience fit within a few business days.' },
+                { n: '3', title: 'Dashboard activated', body: 'Your tracked link, promo code, and earnings dashboard go live immediately after approval.' },
               ] as const).map(({ n, title, body }) => (
                 <div key={n} className="flex gap-3">
                   <div className="w-6 h-6 rounded-full bg-[#7B5EA7]/10 text-[#7B5EA7] text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5">{n}</div>
@@ -369,29 +399,34 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
               </div>
             </div>
 
+            {/* Persona identity verification */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1.5">Why do you want to promote Parallel?</label>
-              <textarea
-                value={whyParallel}
-                onChange={e => setWhyParallel(e.target.value)}
-                placeholder="Tell us about your audience and why Parallel resonates with them..."
-                rows={3}
-                className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none resize-none"
-              />
+              <p className="text-sm font-medium text-gray-700 mb-2">Identity verification <span className="text-red-400 font-normal">required</span></p>
+              {personaVerified ? (
+                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-3 text-sm text-emerald-700 font-medium">
+                  <ShieldCheck size={15} className="text-emerald-500 flex-shrink-0" />
+                  Identity verified
+                </div>
+              ) : (
+                <a
+                  href={personaUrl}
+                  onClick={handlePersonaClick}
+                  className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                    userId
+                      ? 'border-[#7B5EA7] text-[#7B5EA7] hover:bg-[#7B5EA7]/5'
+                      : 'border-gray-200 text-gray-400 pointer-events-none'
+                  }`}
+                >
+                  <ShieldCheck size={15} />
+                  Verify Identity
+                </a>
+              )}
+              {!personaVerified && (
+                <p className="text-xs text-gray-400 mt-1.5 text-center leading-relaxed">
+                  Required before submission · Powered by Persona · ~2 minutes
+                </p>
+              )}
             </div>
-
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={phase1City}
-                onChange={e => setPhase1City(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded accent-[#7B5EA7]"
-              />
-              <span className="text-sm text-gray-700">
-                My audience is primarily in a Phase 1 launch city (NYC, LA, Chicago, SF, Austin, Miami)
-                <span className="block text-xs text-gray-400 mt-0.5 leading-relaxed">Phase 1 cities have the most active members — checking this may speed up approval.</span>
-              </span>
-            </label>
 
             <label className="flex items-start gap-3 cursor-pointer">
               <input
@@ -425,6 +460,9 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
           {!hasHandle && (
             <p className="text-xs text-gray-400 text-center mb-3">Add at least one social handle to continue.</p>
           )}
+          {hasHandle && !personaVerified && (
+            <p className="text-xs text-amber-600 text-center mb-3">Complete identity verification above to submit.</p>
+          )}
 
           <div className="flex gap-2">
             <button
@@ -435,7 +473,7 @@ function ApplyForm({ onSubmitted, onAlreadyApplied }: { onSubmitted: (app: Affil
             </button>
             <button
               onClick={submit}
-              disabled={isSubmitting || !hasHandle || !termsAccepted}
+              disabled={isSubmitting || !hasHandle || !termsAccepted || !personaVerified}
               className="flex-1 py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white disabled:opacity-40 transition-opacity"
             >
               {isSubmitting ? 'Submitting…' : 'Submit Application'}
@@ -1377,13 +1415,16 @@ interface Props {
   onSignOut?: () => void;
   isAffiliateOnly?: boolean;
   personaJustVerified?: boolean;
+  affiliatePreVerified?: boolean;
+  affiliatePreInquiryId?: string | null;
 }
 
-export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, personaJustVerified }: Props) {
+export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, personaJustVerified, affiliatePreVerified, affiliatePreInquiryId }: Props) {
   const [state, setState] = useState<PortalState>('loading');
   const [profile, setProfile] = useState<AffiliateProfile | null>(null);
   const [application, setApplication] = useState<AffiliateApplication | null>(null);
   const [loadKey, setLoadKey] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // When the user lands back from Persona (?affiliate_verified=1), the webhook
   // may not have fired yet so /profile still returns 404 and the portal would
@@ -1410,17 +1451,24 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
       }
 
       // Not yet an affiliate — check for pending application
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setState('apply'); return; }
+      const token = localStorage.getItem('parallel_access_token');
+      if (!token) { setState('apply'); return; }
 
-      const { data: apps } = await supabase
-        .from('affiliate_applications')
-        .select('id,tier_applied_for,audit_status,persona_status,created_at')
-        .eq('email', user.email ?? '')
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const userRes = await fetch(`https://${projectId}.supabase.co/auth/v1/user`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey },
+      }).catch(() => null);
+      const userData = userRes?.ok ? await userRes.json() : null;
+      const userEmail = userData?.email;
+      if (userData?.id) setUserId(userData.id);
+      if (!userEmail) { setState('apply'); return; }
 
-      if (apps && apps.length > 0) {
+      const appsRes = await fetch(
+        `https://${projectId}.supabase.co/rest/v1/affiliate_applications?select=id,tier_applied_for,audit_status,persona_status,created_at&email=eq.${encodeURIComponent(userEmail)}&order=created_at.desc&limit=1`,
+        { headers: { 'Authorization': `Bearer ${token}`, 'apikey': publicAnonKey } }
+      ).catch(() => null);
+      const apps = appsRes?.ok ? await appsRes.json() : null;
+
+      if (Array.isArray(apps) && apps.length > 0) {
         setApplication(apps[0] as AffiliateApplication);
         setState('submitted');
       } else {
@@ -1503,6 +1551,9 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
         {state === 'apply' && (
           <div className="pt-16 px-0">
             <ApplyForm
+              userId={userId}
+              personaPreVerified={affiliatePreVerified}
+              personaPreInquiryId={affiliatePreInquiryId}
               onSubmitted={(app) => { setApplication(app); setState('submitted'); }}
               onAlreadyApplied={() => setLoadKey(k => k + 1)}
             />

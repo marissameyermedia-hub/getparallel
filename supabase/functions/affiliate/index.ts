@@ -1,4 +1,21 @@
-// Parallel — affiliate edge function v15
+// Parallel — affiliate edge function v19
+// v19: Instagram — use HTTP status code to distinguish "account exists but blocked"
+//      (401/403) from "account not found" (404). Ensures Claude never flags valid
+//      accounts as fake just because Instagram blocks server-side API access.
+//      Update Claude prompt to note that Instagram server-side blocks are expected.
+// v18: Remove phase1_city_audience from /apply (launching US+Canada wide, not phase-gated).
+//      Fix social profile fetching — TikTok/YouTube oEmbed requires video URLs, not profiles;
+//      now fetches profile HTML and parses embedded JSON for follower/subscriber counts.
+//      Instagram falls back to HTML scrape with schema.org + regex extraction when API blocks.
+// v17: Remove why_parallel + audience_description from /apply (collected via social fetch instead).
+//      Add persona_inquiry_id to /apply insert/update.
+//      GET /admin/review now fetches real social profile data (Instagram follower count,
+//      TikTok/YouTube existence) before calling Claude. Prompt updated to use fetched data.
+//      Removed "questions" field from Claude JSON shape — collect everything upfront.
+// v16: GET /admin/review/:id — fetch full application + run Claude analysis for
+//      AI-powered review page. Marks app as in_review if still pending. Returns
+//      { application, analysis } where analysis has recommendation, confidence,
+//      strengths, concerns, questions, tier_fit, audience_quality.
 // v15: POST /apply allows re-application when previous application was rejected.
 //      Updates the existing rejected row (reset to 'pending') instead of 409.
 //      Email references updated to hello@getparallel.vip.
@@ -1081,7 +1098,7 @@ async function handleApply(req: Request): Promise<Response> {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid json" }, 400); }
-  const { tier, instagram, tiktok, youtube, why_parallel, audience_description, phase1_city_audience, terms_accepted } = body;
+  const { tier, instagram, tiktok, youtube, persona_inquiry_id, terms_accepted } = body;
   if (!tier) return json({ error: "tier required" }, 400);
   if (!terms_accepted) return json({ error: "You must accept the affiliate program terms to apply" }, 400);
 
@@ -1111,9 +1128,7 @@ async function handleApply(req: Request): Promise<Response> {
         instagram_handle:     instagram ? String(instagram).replace("@", "") : null,
         tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
         youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
-        why_parallel:         why_parallel         || null,
-        audience_description: audience_description || null,
-        phase1_city_audience: phase1_city_audience ?? false,
+        persona_inquiry_id:   persona_inquiry_id || null,
         terms_accepted_at:    now,
       })
       .eq("id", existing.id)
@@ -1131,9 +1146,7 @@ async function handleApply(req: Request): Promise<Response> {
         instagram_handle:     instagram ? String(instagram).replace("@", "") : null,
         tiktok_handle:        tiktok    ? String(tiktok).replace("@", "")    : null,
         youtube_handle:       youtube   ? String(youtube).replace("@", "")   : null,
-        why_parallel:         why_parallel         || null,
-        audience_description: audience_description || null,
-        phase1_city_audience: phase1_city_audience ?? false,
+        persona_inquiry_id:   persona_inquiry_id || null,
         terms_accepted_at:    now,
       })
       .select()
@@ -1159,6 +1172,329 @@ async function handleApply(req: Request): Promise<Response> {
   }).catch((err) => console.error("[affiliate/apply] email send failed:", err));
 
   return json({ ok: true, application: app });
+}
+
+// ── Social media profile fetchers ─────────────────────────────────────────────
+
+const BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+// Returns null only if the account is confirmed NOT to exist (404).
+// Returns { followers: null } if the account exists but Instagram blocked data access.
+// Returns { followers: N } if data was retrievable.
+async function fetchInstagramProfile(handle: string): Promise<{ followers: number | null; bio: string | null; verified: boolean } | null> {
+  try {
+    // Instagram's web_profile_info: 200=data, 404=not found, 401/403=exists but blocked
+    const apiRes = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`, {
+      headers: {
+        "x-ig-app-id": "936619743392459",
+        "User-Agent": BROWSER_UA,
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.instagram.com/",
+        "Origin": "https://www.instagram.com",
+        "Sec-Fetch-Site": "same-origin",
+        "Sec-Fetch-Mode": "cors",
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+
+    if (apiRes.status === 404) return null; // Account definitively does not exist
+
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      const user = data?.data?.user;
+      if (user) return {
+        followers: user.edge_followed_by?.count ?? null,
+        bio: user.biography ?? null,
+        verified: user.is_verified ?? false,
+      };
+    }
+
+    // 401/403/other non-404: account exists but Instagram blocked the API response.
+    // Try HTML as a secondary data source, but treat non-404 as "account exists" regardless.
+    const htmlRes = await fetch(`https://www.instagram.com/${encodeURIComponent(handle)}/`, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+
+    if (htmlRes.status === 404) return null; // Profile page 404 = doesn't exist
+
+    if (htmlRes.ok) {
+      const html = await htmlRes.text();
+      // schema.org JSON-LD (most reliable when present)
+      const ldMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+      if (ldMatch) {
+        try {
+          const ld = JSON.parse(ldMatch[1]);
+          const stats: any[] = ld?.mainEntity?.interactionStatistic ?? [];
+          const follow = stats.find((s: any) => String(s.interactionType ?? "").includes("Follow"));
+          if (follow?.userInteractionCount != null) {
+            return { followers: Number(follow.userInteractionCount), bio: null, verified: false };
+          }
+        } catch { /* continue */ }
+      }
+      const countMatch = html.match(/"edge_followed_by":\{"count":(\d+)\}/);
+      if (countMatch) return { followers: parseInt(countMatch[1]), bio: null, verified: false };
+    }
+
+    // Any non-404 response = account exists, just no data retrievable
+    return { followers: null, bio: null, verified: false };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchTikTokProfile(handle: string): Promise<{ followers: number | null; author: string | null } | null> {
+  try {
+    // TikTok embeds profile data in __UNIVERSAL_DATA_FOR_REHYDRATION__ script tag
+    const res = await fetch(`https://www.tiktok.com/@${encodeURIComponent(handle)}`, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    // Parse __UNIVERSAL_DATA_FOR_REHYDRATION__ for full profile stats
+    const scriptMatch = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+    if (scriptMatch) {
+      try {
+        const data = JSON.parse(scriptMatch[1]);
+        const userInfo = data?.["__DEFAULT_SCOPE__"]?.["webapp.user-detail"]?.userInfo;
+        if (userInfo) {
+          return {
+            followers: userInfo.stats?.followerCount ?? null,
+            author: userInfo.user?.nickname ?? userInfo.user?.uniqueId ?? null,
+          };
+        }
+      } catch { /* continue */ }
+    }
+
+    // Regex fallback
+    const followerMatch = html.match(/"followerCount":(\d+)/);
+    const nameMatch = html.match(/"nickname":"([^"]+)"/);
+    if (followerMatch || html.includes(handle)) {
+      return {
+        followers: followerMatch ? parseInt(followerMatch[1]) : null,
+        author: nameMatch?.[1] ?? null,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYouTubeProfile(handle: string): Promise<{ subscribers: number | null; subscribersText: string | null; author: string | null } | null> {
+  try {
+    // Try YouTube Data API v3 if key is configured
+    const ytKey = Deno.env.get("YOUTUBE_API_KEY");
+    if (ytKey) {
+      const apiRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&forHandle=${encodeURIComponent(handle)}&key=${ytKey}`,
+        { signal: AbortSignal.timeout(7000) }
+      );
+      if (apiRes.ok) {
+        const data = await apiRes.json();
+        const ch = data?.items?.[0];
+        if (ch) return {
+          subscribers: ch.statistics?.subscriberCount ? parseInt(ch.statistics.subscriberCount) : null,
+          subscribersText: null,
+          author: ch.snippet?.title ?? null,
+        };
+      }
+    }
+
+    // Fallback: fetch channel HTML and extract subscriber count from embedded JSON
+    const res = await fetch(`https://www.youtube.com/@${encodeURIComponent(handle)}`, {
+      headers: {
+        "User-Agent": BROWSER_UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    const subTextMatch = html.match(/"subscriberCountText":\{"simpleText":"([^"]+)"\}/);
+    const nameMatch = html.match(/"channelMetadataRenderer":\{"title":"([^"]+)"/);
+    const subNumMatch = html.match(/"subscriberCount":"(\d+)"/);
+
+    if (subTextMatch || nameMatch || html.includes("youtube.com")) {
+      return {
+        subscribers: subNumMatch ? parseInt(subNumMatch[1]) : null,
+        subscribersText: subTextMatch?.[1] ?? null,
+        author: nameMatch?.[1] ?? null,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ── GET /admin/review/:applicationId ─────────────────────────────────────────
+
+const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY") || "";
+
+async function handleAdminReview(applicationId: string, req: Request): Promise<Response> {
+  const { isAdmin } = await checkIsAdmin(req);
+  if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+  const admin = adminClient();
+
+  const { data: app, error } = await admin
+    .from("affiliate_applications")
+    .select("*")
+    .eq("id", applicationId)
+    .maybeSingle();
+
+  if (error || !app) return json({ error: "application not found" }, 404);
+
+  // Mark as in_review if still pending
+  if (app.audit_status === "pending") {
+    await admin
+      .from("affiliate_applications")
+      .update({ audit_status: "in_review" })
+      .eq("id", applicationId);
+    app.audit_status = "in_review";
+  }
+
+  // Fetch real social profile data concurrently (best-effort — null if blocked/rate-limited)
+  const [igProfile, ttProfile, ytProfile] = await Promise.all([
+    app.instagram_handle ? fetchInstagramProfile(app.instagram_handle) : Promise.resolve(null),
+    app.tiktok_handle ? fetchTikTokProfile(app.tiktok_handle) : Promise.resolve(null),
+    app.youtube_handle ? fetchYouTubeProfile(app.youtube_handle) : Promise.resolve(null),
+  ]);
+
+  // Build social data summary with real follower counts where available
+  const socialLines: string[] = [];
+  if (app.instagram_handle) {
+    let line = `Instagram: @${app.instagram_handle}`;
+    if (igProfile) {
+      const parts: string[] = [];
+      if (igProfile.followers !== null) {
+        parts.push(`${igProfile.followers.toLocaleString()} followers`);
+      } else {
+        parts.push("account confirmed to exist; follower count not accessible via server-side API (Instagram blocks all unauthenticated server requests — admin should click the profile link to verify count manually)");
+      }
+      if (igProfile.verified) parts.push("verified badge");
+      if (igProfile.bio) parts.push(`bio: "${igProfile.bio.slice(0, 120)}"`);
+      line += ` — ${parts.join("; ")}`;
+    } else {
+      line += " — account NOT FOUND (handle may be wrong, account deactivated, or renamed)";
+    }
+    socialLines.push(line);
+  }
+  if (app.tiktok_handle) {
+    let line = `TikTok: @${app.tiktok_handle}`;
+    if (ttProfile) {
+      const parts: string[] = [];
+      if (ttProfile.followers !== null) parts.push(`${ttProfile.followers.toLocaleString()} followers`);
+      else parts.push("account exists");
+      if (ttProfile.author) parts.push(`name: "${ttProfile.author}"`);
+      line += ` — ${parts.join("; ")}`;
+    } else {
+      line += " (not found or access blocked — verify manually)";
+    }
+    socialLines.push(line);
+  }
+  if (app.youtube_handle) {
+    let line = `YouTube: @${app.youtube_handle}`;
+    if (ytProfile) {
+      const parts: string[] = [];
+      if (ytProfile.subscribers !== null) parts.push(`${ytProfile.subscribers.toLocaleString()} subscribers`);
+      else if (ytProfile.subscribersText) parts.push(`${ytProfile.subscribersText} subscribers`);
+      else parts.push("channel exists");
+      if (ytProfile.author) parts.push(`name: "${ytProfile.author}"`);
+      line += ` — ${parts.join("; ")}`;
+    } else {
+      line += " (not found or access blocked — verify manually)";
+    }
+    socialLines.push(line);
+  }
+  const socialData = socialLines.length ? socialLines.join("\n") : "None provided";
+
+  // Build Claude prompt
+  const tierDescriptions: Record<string, string> = {
+    seeds: "Seeds tier — micro-influencers, typically 1K–10K followers, community-focused",
+    voices: "Voices tier — mid-tier, typically 10K–100K followers, growing reach",
+    anchors: "Anchors tier — macro-influencers, typically 100K+ followers, major reach",
+  };
+
+  const prompt = `You are a senior affiliate program manager at Parallel, a premium dating app launching in major US cities. Analyze this affiliate application and return a structured JSON review to help a human reviewer decide whether to approve or reject it. We do NOT ask applicants follow-up questions — we verify everything from public profile data.
+
+APPLICATION
+Email: ${app.email}
+Tier requested: ${tierDescriptions[app.tier_applied_for] || app.tier_applied_for}
+Submitted: ${new Date(app.created_at).toLocaleDateString()}
+ID verification: ${app.persona_status === "approved" ? "Verified ✓" : app.persona_status === "none" ? "Not yet verified" : app.persona_status}
+
+Social profiles (fetched from public APIs):
+${socialData}
+
+IMPORTANT: Instagram blocks all server-side API calls — if the Instagram line says "account confirmed to exist", that IS positive verification. The account is real. The admin will manually verify the follower count using the profile link. Do NOT penalize an applicant or lower confidence because Instagram follower count is unavailable — treat "account confirmed" the same as having the count for recommendation purposes, and note it in your summary.
+
+TIER GUIDE
+- Seeds: 1K–10K followers, authentic community presence, 15% commission
+- Voices: 10K–100K followers, consistent content, proven audience, 20% commission
+- Anchors: 100K+ followers, major reach, verified brand experience, 25% commission
+
+Best-converting audiences for a dating app: lifestyle, relationships, self-improvement, dating advice, social life, wellness.
+
+Return ONLY valid JSON with this exact shape:
+{
+  "recommendation": "approve" | "reject",
+  "confidence": "high" | "medium" | "low",
+  "summary": "2–3 sentence plain English assessment of this applicant",
+  "strengths": ["strength 1", "strength 2"],
+  "concerns": ["concern 1", "concern 2"],
+  "tier_fit": "well_suited" | "overstated" | "understated" | "unclear",
+  "tier_rationale": "One sentence on whether the requested tier matches their verified follower count",
+  "audience_quality": "strong" | "moderate" | "weak" | "unknown",
+  "audience_notes": "One sentence on likely audience relevance for a dating app"
+}`;
+
+  let analysis: Record<string, unknown> | null = null;
+  if (ANTHROPIC_API_KEY) {
+    try {
+      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1024,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        const text: string = aiData?.content?.[0]?.text ?? "";
+        try {
+          analysis = JSON.parse(text);
+        } catch {
+          const m = text.match(/\{[\s\S]*\}/);
+          if (m) analysis = JSON.parse(m[0]);
+        }
+      }
+    } catch (e) {
+      console.error("[affiliate/admin/review] Claude call failed:", e);
+    }
+  }
+
+  return json({ application: app, analysis });
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -1242,6 +1578,11 @@ Deno.serve(async (req: Request) => {
   // POST /admin/approve
   if (req.method === "POST" && endpoint === "admin" && segments[1] === "approve") {
     return await handleAdminApprove(req);
+  }
+
+  // GET /admin/review/:applicationId
+  if (req.method === "GET" && endpoint === "admin" && segments[1] === "review" && segments[2]) {
+    return await handleAdminReview(segments[2], req);
   }
 
   // POST /apply
