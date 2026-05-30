@@ -19,6 +19,7 @@ interface PricingPageProps {
   userEmail?: string;
   plan?: string;
   onNavigate?: (view: string) => void;
+  onPromoSuccess?: () => void;
 }
 
 interface PayPalPlan {
@@ -91,7 +92,7 @@ function loadPayPalSdk(clientId: string): Promise<any> {
 
 const BASE_PRICE = 149;
 
-export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavigate }: PricingPageProps) {
+export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavigate, onPromoSuccess }: PricingPageProps) {
   const [config, setConfig] = useState<PayPalConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -443,6 +444,7 @@ export function PricingPage({ onBack, onCheckout, onSkip, plan = 'free', onNavig
                     setAffiliatePromo(promo);
                     affiliatePromoRef.current = promo;
                   }}
+                  onSuccess={onPromoSuccess}
                 />
               )}
             </div>
