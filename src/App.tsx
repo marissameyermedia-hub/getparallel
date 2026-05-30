@@ -712,9 +712,13 @@ function App() {
             // affiliateIntent = true means the user explicitly came via the
             // affiliate URL — always send them to the portal, no network check.
             const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
-            setCurrentView(affiliateIntent
-              ? 'affiliate-portal'
-              : (cachedIsAffiliate ? await resolveNonOnboardedRoute(session.access_token) : 'onboarding'));
+            if (affiliateIntent) {
+              // Persist the flag so refresh without the URL param still routes here
+              try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
+              setCurrentView('affiliate-portal');
+            } else {
+              setCurrentView(cachedIsAffiliate ? await resolveNonOnboardedRoute(session.access_token) : 'onboarding');
+            }
           }
         } else {
           const storedToken = await getAccessToken();
@@ -781,9 +785,13 @@ function App() {
                 // affiliateIntent = true means the user explicitly came via the
                 // affiliate URL — always send them to the portal, no network check.
                 const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
-                setCurrentView(affiliateIntent
-                  ? 'affiliate-portal'
-                  : (cachedIsAffiliate ? await resolveNonOnboardedRoute(storedToken) : 'onboarding'));
+                if (affiliateIntent) {
+                  // Persist the flag so refresh without the URL param still routes here
+                  try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
+                  setCurrentView('affiliate-portal');
+                } else {
+                  setCurrentView(cachedIsAffiliate ? await resolveNonOnboardedRoute(storedToken) : 'onboarding');
+                }
               }
             } catch (tokenErr) {
               toast('Your session expired — please sign back in.', { duration: 4000 });

@@ -1463,6 +1463,8 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
       if (Array.isArray(apps) && apps.length > 0) {
         setApplication(apps[0] as AffiliateApplication);
         setState('submitted');
+        // Ensure refresh without ?view=affiliate-portal still routes here, not to dating onboarding
+        try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
       } else {
         setState('apply');
       }
