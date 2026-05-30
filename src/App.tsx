@@ -704,6 +704,8 @@ function App() {
             // Explicit affiliate deep link (apply / status / dashboard) —
             // the portal resolves which state to show, including pending
             // applicants who aren't active affiliates yet.
+            // Persist so that a refresh with a clean URL still routes here.
+            try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
             window.history.replaceState({}, '', window.location.pathname);
             setCurrentView('affiliate-portal');
           } else {
@@ -777,6 +779,8 @@ function App() {
                 }
               } else if (params.get('view') === 'affiliate-portal') {
                 // Explicit affiliate deep link — portal resolves the state.
+                // Persist so that a refresh with a clean URL still routes here.
+                try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
                 window.history.replaceState({}, '', window.location.pathname);
                 setCurrentView('affiliate-portal');
               } else {
