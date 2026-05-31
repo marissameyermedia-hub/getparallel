@@ -641,6 +641,10 @@ function PayoutSetupForm({
     const body: Record<string, any> = {
       legal_name: legalName.trim(),
       tax_address: taxAddress,
+      address_street: street.trim(),
+      address_city: city.trim(),
+      address_state: addrState.trim(),
+      address_zip: zip.trim(),
     };
     if (routingNumber.trim() || accountNumber.trim()) {
       body.routing_number = routingNumber.trim();

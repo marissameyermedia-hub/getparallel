@@ -1,6 +1,10 @@
-// Parallel — affiliate edge function v26
+// Parallel — affiliate edge function v32
+// v32: Add required address object to Mercury electronicRoutingInfo (address1, city, state, postalCode).
+// v31: Pass account_type directly as electronicAccountType (Mercury expects personalChecking/personalSavings/businessChecking).
+// v30: Fix Mercury electronicAccountType casing: "checking"/"savings" → "Checking"/"Savings" (Haskell constructor tags).
+// v28: Surface raw Mercury error in payout/setup response for easier diagnostics.
+// v27: /payout/config is now public (no auth required) for easier Mercury diagnostics.
 // v26: Add GET /payout/config — returns sandbox mode, token presence, and live Mercury API status.
-//      Used to diagnose whether secrets are being read and whether the token is valid.
 // v25: Redeploy to pick up MERCURY_IS_SANDBOX=false + MERCURY_API_TOKEN production secrets.
 // v24: Clearer sandbox error message — when MERCURY_IS_SANDBOX=true, bank account
 //      errors now explain the real cause instead of blaming the routing number.
@@ -252,6 +256,11 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
   if (!legal_name) return json({ error: "Legal name is required" }, 400);
   if (!tax_address) return json({ error: "Mailing address is required" }, 400);
 
+  const address_street = String(body.address_street ?? "").trim();
+  const address_city = String(body.address_city ?? "").trim();
+  const address_state = String(body.address_state ?? "").trim();
+  const address_zip = String(body.address_zip ?? "").trim();
+
   const routing_number = body.routing_number ? String(body.routing_number).replace(/\s/g, "") : null;
   const account_number = body.account_number ? String(body.account_number).replace(/\s/g, "") : null;
   const account_type: string | null = body.account_type ?? null;
@@ -285,7 +294,6 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
 
   // If bank fields provided, create Mercury recipient first
   if (bankFieldsProvided) {
-    const eraAccountType = account_type === "personalSavings" ? "savings" : "checking";
     const mercuryRes = await fetch(`${MERCURY_BASE}/recipients`, {
       method: "POST",
       headers: {
@@ -296,9 +304,16 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
         name: legal_name,
         emails: [affiliate.email],
         electronicRoutingInfo: {
-          accountType: eraAccountType,
+          electronicAccountType: account_type,
           routingNumber: routing_number,
           accountNumber: account_number,
+          address: {
+            address1: address_street,
+            city: address_city,
+            state: address_state,
+            postalCode: address_zip,
+            country: "US",
+          },
         },
       }),
     });
@@ -310,14 +325,8 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
       if (MERCURY_IS_SANDBOX) {
         return json({ error: "Bank account setup is in test mode — real bank accounts cannot be connected until production Mercury credentials are configured. Contact support@getparallel.vip to complete your payout setup." }, 400);
       }
-      if (msg.toLowerCase().includes("routing")) {
-        return json({ error: "The routing number you entered is invalid — please double-check it" }, 400);
-      }
-      if (msg.toLowerCase().includes("account")) {
-        return json({ error: "The account number you entered appears invalid — please double-check it" }, 400);
-      }
-      // Surface the raw Mercury error so it's visible during setup/debugging
-      return json({ error: `Bank account connection failed: ${msg}` }, 400);
+      // Always surface the raw Mercury message so we can diagnose exactly what's wrong
+      return json({ error: `Bank account connection failed: ${msg}`, mercury_status: mercuryRes.status }, 400);
     }
 
     const recipientId = (mercuryBody as any).id ?? (mercuryBody as any).recipient?.id ?? null;
@@ -350,11 +359,7 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
 // ── GET /payout/config ────────────────────────────────────────────────────────
 // Returns Mercury configuration state and pings the live API to verify the token.
 
-async function handlePayoutConfig(req: Request): Promise<Response> {
-  const admin = adminClient();
-  const { affiliate } = await getAffiliateFromAuth(req, admin);
-  if (!affiliate) return json({ error: "unauthorized" }, 401);
-
+async function handlePayoutConfig(_req: Request): Promise<Response> {
   const hasToken = MERCURY_TOKEN.length > 0;
   let mercuryStatus: number | null = null;
   let mercuryError: string | null = null;
