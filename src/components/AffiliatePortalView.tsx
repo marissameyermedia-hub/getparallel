@@ -590,14 +590,7 @@ function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: Affil
             Reapply
           </button>
         ) : null
-      ) : (
-        <button
-          onClick={onRefresh}
-          className="text-xs text-[#7B5EA7] underline"
-        >
-          Check for updates
-        </button>
-      )}
+      ) : null}
     </div>
   );
 }
