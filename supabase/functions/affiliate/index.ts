@@ -1,4 +1,6 @@
-// Parallel — affiliate edge function v23
+// Parallel — affiliate edge function v24
+// v24: Clearer sandbox error message — when MERCURY_IS_SANDBOX=true, bank account
+//      errors now explain the real cause instead of blaming the routing number.
 // v23: Fix affiliate routing for non-active affiliates.
 //      getAffiliateFromAuth now includes pending_verification + paused statuses so
 //      those users can access /profile and route to the portal. Adds email-based
@@ -302,6 +304,9 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
     if (!mercuryRes.ok) {
       const msg: string = (mercuryBody as any)?.message ?? JSON.stringify(mercuryBody);
       console.error("[affiliate/payout/setup] Mercury recipient error:", mercuryRes.status, msg, "sandbox:", MERCURY_IS_SANDBOX);
+      if (MERCURY_IS_SANDBOX) {
+        return json({ error: "Bank account setup is in test mode — real bank accounts cannot be connected until production Mercury credentials are configured. Contact support@getparallel.vip to complete your payout setup." }, 400);
+      }
       if (msg.toLowerCase().includes("routing")) {
         return json({ error: "The routing number you entered is invalid — please double-check it" }, 400);
       }
