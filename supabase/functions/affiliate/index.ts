@@ -1,4 +1,5 @@
-// Parallel — affiliate edge function v24
+// Parallel — affiliate edge function v25
+// v25: Redeploy to pick up MERCURY_IS_SANDBOX=false + MERCURY_API_TOKEN production secrets.
 // v24: Clearer sandbox error message — when MERCURY_IS_SANDBOX=true, bank account
 //      errors now explain the real cause instead of blaming the routing number.
 // v23: Fix affiliate routing for non-active affiliates.
