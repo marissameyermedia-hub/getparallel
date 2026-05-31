@@ -3,6 +3,7 @@ import {
   ChevronLeft, Copy, Check, Share2, Users, Star, Mic, Anchor,
   Clock, CheckCircle2, AlertCircle, ShieldCheck, Link2, Tag,
   ChevronDown, ChevronUp, History, CreditCard,
+  Sparkles, FileText, Image, Lightbulb, ExternalLink,
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -14,7 +15,7 @@ const AFFILIATE_FN_URL = `https://${projectId}.supabase.co/functions/v1/affiliat
 
 type AffiliateTier = 'seeds' | 'voices' | 'anchors';
 type AppAuditStatus = 'pending' | 'in_review' | 'approved' | 'rejected';
-type DashboardTab = 'overview' | 'earnings' | 'payouts';
+type DashboardTab = 'overview' | 'earnings' | 'payouts' | 'resources';
 type PortalState = 'loading' | 'apply' | 'submitted' | 'dashboard';
 
 interface AffiliateApplication {
@@ -1179,7 +1180,7 @@ function AffiliateDashboard({
 
       {/* ── Tab bar ── */}
       <div className="flex border-b border-gray-100 sticky top-14 bg-parallel-cream z-10">
-        {(['overview', 'earnings', 'payouts'] as DashboardTab[]).map(t => (
+        {(['overview', 'earnings', 'payouts', 'resources'] as DashboardTab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -1193,6 +1194,8 @@ function AffiliateDashboard({
               ? <span className="flex items-center justify-center gap-1.5">
                   Payouts <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                 </span>
+              : t === 'resources'
+              ? 'Promote'
               : t
             }
           </button>
@@ -1443,7 +1446,216 @@ function AffiliateDashboard({
             />
           </div>
         )}
+
+        {/* ── Resources tab ── */}
+        {tab === 'resources' && (
+          <ResourcesTab profile={profile} />
+        )}
       </div>
+    </div>
+  );
+}
+
+// ── Resources Tab ─────────────────────────────────────────────────────────────
+
+function CopyButton({ text, label }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#7B5EA7]/10 text-[#7B5EA7] hover:bg-[#7B5EA7]/20 transition-colors flex-shrink-0"
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? 'Copied!' : (label ?? 'Copy')}
+    </button>
+  );
+}
+
+interface CaptionCard {
+  id: string;
+  platform: string;
+  angle: string;
+  body: string;
+}
+
+function buildCaptions(link: string | null, code: string | null): CaptionCard[] {
+  const l = link ?? 'https://getparallel.vip';
+  const c = code ?? 'YOUR_CODE';
+  return [
+    {
+      id: 'authentic',
+      platform: 'Instagram · TikTok',
+      angle: 'Personal recommendation',
+      body: `I've been using this dating app called Parallel and honestly it's the most thoughtful one I've come across. Instead of swiping, you go through a detailed questionnaire and they match you based on real compatibility — values, lifestyle, attachment style, all of it.\n\nIf you want to try it, use my code ${c} for a discount on your subscription 🖤\n\n${l}`,
+    },
+    {
+      id: 'problem',
+      platform: 'Instagram · TikTok',
+      angle: 'Problem → solution',
+      body: `If you're tired of dating apps that feel like shopping for people, Parallel is different. They actually care about compatibility over appearance — their matching is based on a deep questionnaire, not just photos.\n\nUse code ${c} to get a discount when you sign up:\n${l}`,
+    },
+    {
+      id: 'short',
+      platform: 'Stories · Twitter/X',
+      angle: 'Short & punchy',
+      body: `Found a dating app that actually takes compatibility seriously. Use my code ${c} for a discount → ${l}`,
+    },
+    {
+      id: 'why',
+      platform: 'Long-form · YouTube desc',
+      angle: 'Why Parallel',
+      body: `I partnered with Parallel because I genuinely believe in what they're building. It's a curated matchmaking app — you fill out a thoughtful questionnaire covering your values, lifestyle, and what you're really looking for, and they handle the matching. No endless swiping.\n\nUse code ${c} to get a discount on your subscription: ${l}\n\n(I earn a small commission at no extra cost to you — thank you for supporting me!)`,
+    },
+  ];
+}
+
+function ResourcesTab({ profile }: { profile: AffiliateProfile }) {
+  const captions = buildCaptions(profile.affiliate_link, profile.promo_code);
+  const [openCaption, setOpenCaption] = useState<string | null>(null);
+
+  const hooks = [
+    '"I finally found a dating app that treats you like a whole person, not a photo"',
+    '"This app asked me more questions about myself than any date ever has"',
+    '"The reason I like Parallel: they actually think about whether two people are compatible before connecting them"',
+    '"Genuine question — why are most dating apps still just about photos? Parallel is doing it differently"',
+    '"Dating app hot take: the questionnaire is the most attractive part"',
+  ];
+
+  const dos = [
+    'Share your genuine experience — authenticity converts far better than scripted posts',
+    'Mention what specifically resonated with you about Parallel\'s approach',
+    'Use your unique code and link so you get credit for every referral',
+    'Disclose the partnership (required by FTC) — something like "partnered with" or "use my code"',
+    'Tag @getparallel or use #parallel if it fits your style',
+  ];
+
+  const donts = [
+    'Don\'t make guarantees about finding love or relationships',
+    'Don\'t compare Parallel negatively to specific other apps by name',
+    'Don\'t alter or fabricate screenshots of the app',
+    'Don\'t run paid ads targeting "Parallel" as a keyword without approval',
+    'Don\'t use the PARA//EL. wordmark in ways that look like official Parallel content',
+  ];
+
+  return (
+    <div className="pb-12 space-y-8 pt-6">
+
+      {/* Caption Templates */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <FileText size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Caption templates</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Ready to post — your promo code and link are already filled in. Tap to expand, copy, and customize.</p>
+        <div className="space-y-2">
+          {captions.map(c => (
+            <div key={c.id} className="border border-gray-200 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setOpenCaption(openCaption === c.id ? null : c.id)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{c.angle}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{c.platform}</p>
+                </div>
+                {openCaption === c.id ? <ChevronUp size={16} className="text-gray-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-gray-400 flex-shrink-0" />}
+              </button>
+              {openCaption === c.id && (
+                <div className="px-4 pb-4 border-t border-gray-100">
+                  <pre className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans mt-3 mb-3">{c.body}</pre>
+                  <CopyButton text={c.body} label="Copy caption" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Content hooks */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Lightbulb size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Hook ideas</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Opening lines that grab attention. Use these as-is or riff on them.</p>
+        <div className="space-y-2">
+          {hooks.map((h, i) => (
+            <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-xl px-4 py-3">
+              <p className="text-sm text-gray-700 flex-1 leading-snug italic">{h}</p>
+              <CopyButton text={h} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Visual assets — coming soon */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Image size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Visual assets</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Branded graphics, story templates, and Canva files — dropping soon.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {['Story slides', 'Square graphics', 'Canva templates', 'Logo kit'].map(name => (
+            <div key={name} className="border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center py-7 gap-2">
+              <Sparkles size={18} className="text-gray-300" />
+              <p className="text-xs text-gray-400 text-center font-medium">{name}</p>
+              <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Coming soon</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Do's and don'ts */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Brand guidelines</h3>
+        </div>
+        <div className="space-y-3">
+          <div className="bg-emerald-50 rounded-2xl px-4 py-4">
+            <p className="text-xs font-semibold text-emerald-700 mb-2 uppercase tracking-wide">Do</p>
+            <ul className="space-y-2">
+              {dos.map((d, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-emerald-800">
+                  <Check size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                  {d}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-red-50 rounded-2xl px-4 py-4">
+            <p className="text-xs font-semibold text-red-600 mb-2 uppercase tracking-wide">Don't</p>
+            <ul className="space-y-2">
+              {donts.map((d, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-red-800">
+                  <AlertCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  {d}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Need something custom */}
+      <section className="bg-[#7B5EA7]/8 rounded-2xl px-5 py-5 text-center" style={{ background: 'rgba(123,94,167,0.08)' }}>
+        <p className="text-sm font-semibold text-gray-900 mb-1">Need custom content?</p>
+        <p className="text-xs text-gray-500 mb-4 leading-relaxed">Have a specific campaign in mind or want co-created content? Reach out and we'll work with you directly.</p>
+        <a
+          href="mailto:hello@getparallel.vip?subject=Affiliate%20Content%20Request"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#7B5EA7] hover:opacity-80 transition-opacity"
+        >
+          hello@getparallel.vip <ExternalLink size={13} />
+        </a>
+      </section>
+
     </div>
   );
 }
