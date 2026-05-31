@@ -14,6 +14,7 @@ export const PASS_REASONS = [
   { id: 'communication_style_mismatch',     label: 'Different communication style',      category: 'communication_conflict'       },
   { id: 'different_social_energy',          label: 'Different social energy',            category: 'lifestyle_compatibility'      },
   { id: 'different_daily_habits',           label: 'Different daily habits or lifestyle', category: 'lifestyle_compatibility'     },
+  { id: 'no_in_person_connection',          label: "We've met in person — no connection", category: 'attraction_preferences'      },
 ] as const;
 
 export type PassReasonId = typeof PASS_REASONS[number]['id'];

@@ -1737,6 +1737,14 @@ function App() {
             onSkip={() => setCurrentView('matches')}
             userEmail={localStorage.getItem('parallel_user_email') || ''}
             onNavigate={(view) => setCurrentView(view as any)}
+            onPromoSuccess={() => {
+              getAccessToken().then(token => {
+                if (token) fetchUserData(token).then(() => {
+                  localStorage.setItem('parallel_activated', 'true');
+                  setCurrentView('matches');
+                });
+              }).catch(() => {});
+            }}
           />
         )}
         {currentView === 'payment-confirmation' && (

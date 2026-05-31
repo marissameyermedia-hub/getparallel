@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle, Star, Mic, Anchor } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 import { AppFooter } from './AppFooter';
 
 interface Props {
@@ -29,12 +29,6 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
               </span>
             </div>
             <span className="text-sm font-semibold tracking-tight">PARA//EL</span>
-          </a>
-          <a
-            href="/?view=affiliate-portal"
-            className="text-sm font-medium text-[#7B5EA7] hover:text-[#5d4480] transition-colors"
-          >
-            Apply now →
           </a>
         </div>
       </header>
@@ -106,7 +100,6 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {([
             {
-              Icon: Star,
               label: 'Tier 1',
               commission: '10%',
               discount: '20%',
@@ -116,7 +109,6 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
               border: 'border-emerald-200',
             },
             {
-              Icon: Mic,
               label: 'Tier 2',
               commission: '15%',
               discount: '25%',
@@ -126,7 +118,6 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
               border: 'border-blue-200',
             },
             {
-              Icon: Anchor,
               label: 'Tier 3',
               commission: '20%',
               discount: '30%',
@@ -135,12 +126,9 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
               text: 'text-purple-700',
               border: 'border-purple-200',
             },
-          ] as const).map(({ Icon, label, commission, discount, range, bg, text, border }) => (
+          ] as const).map(({ label, commission, discount, range, bg, text, border }) => (
             <div key={label} className={`rounded-2xl border p-5 ${bg} ${border}`}>
-              <div className={`flex items-center gap-2 mb-3 ${text}`}>
-                <Icon size={16} />
-                <span className="font-semibold text-sm">{label}</span>
-              </div>
+              <p className={`font-semibold text-sm mb-3 ${text}`}>{label}</p>
               <p className={`text-3xl font-bold ${text} mb-0.5`}>{commission}</p>
               <p className="text-xs text-gray-500 mb-3">commission per subscription</p>
               <p className="text-xs text-gray-600">
@@ -188,7 +176,7 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
             },
             {
               q: 'When do I get paid?',
-              a: 'Payouts are reviewed and processed around the 1st of each month. Minimum payout is $50.',
+              a: 'Payouts are reviewed and processed around the 1st of each month.',
             },
             {
               q: "What if I'm rejected?",
@@ -196,7 +184,7 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
             },
             {
               q: "Do I need to be a Parallel member?",
-              a: "No. Affiliate accounts are completely separate from the matching service. You're here to grow the pool and earn — not necessarily to date.",
+              a: "No. Affiliate accounts are completely separate from the matching service. You're here to grow the pool and earn.",
             },
           ] as const).map(({ q, a }) => (
             <div key={q} className="border border-gray-200 rounded-2xl p-4">
