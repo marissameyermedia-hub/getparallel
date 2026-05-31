@@ -15,7 +15,7 @@ const AFFILIATE_FN_URL = `https://${projectId}.supabase.co/functions/v1/affiliat
 
 type AffiliateTier = 'seeds' | 'voices' | 'anchors';
 type AppAuditStatus = 'pending' | 'in_review' | 'approved' | 'rejected';
-type DashboardTab = 'overview' | 'earnings' | 'payouts' | 'resources';
+type DashboardTab = 'promote' | 'payouts';
 type PortalState = 'loading' | 'apply' | 'submitted' | 'dashboard';
 
 interface AffiliateApplication {
@@ -791,9 +791,7 @@ function PayoutSetupForm({
         {submitting ? 'Saving…' : 'Save Payout Info'}
       </button>
 
-      <p className="text-xs text-gray-400 text-center leading-relaxed">
-        Your banking details are securely stored by Mercury, our payment processor, not on Parallel's servers directly.
-      </p>
+      <p className="text-xs text-gray-400 text-center">Stored securely by Mercury.</p>
     </div>
   );
 }
@@ -864,10 +862,8 @@ function EarningsTab() {
   const pendingTotal = parseFloat((lifetime.total_earned - lifetime.total_paid).toFixed(2));
 
   return (
-    <div className="pb-8">
-      <p className="text-xs text-gray-400 pt-1 pb-4 leading-relaxed">
-        Commissions lock in when your referral's subscription payment confirms. They're held for 30 days (clawback window), then become eligible for payout.
-      </p>
+    <div className="pb-4">
+
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="bg-white border border-gray-100 rounded-2xl p-4">
           <p className="text-xs text-gray-400 mb-1">Total earned</p>
@@ -1011,12 +1007,9 @@ function PayoutsTab({
       ) : (
         <div>
           {!profile.bank_account_connected && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5 mb-4">
-              <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-amber-800">Set up payouts to get paid</p>
-                <p className="text-xs text-amber-600">Add your bank account and legal info to receive ACH payouts when commissions are released.</p>
-              </div>
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4">
+              <AlertCircle size={15} className="text-amber-500 flex-shrink-0" />
+              <p className="text-sm text-amber-800">Add your bank account to receive payouts</p>
             </div>
           )}
           <PayoutSetupForm
@@ -1030,11 +1023,9 @@ function PayoutsTab({
       )}
 
       {/* Payout cadence note */}
-      <div className="flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5">
-        <Clock size={15} className="text-gray-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-gray-500 leading-relaxed">
-          Payouts are reviewed and processed by the Parallel team around the 1st of each month. No action needed from you — we'll send a confirmation email when your payout is on its way.
-        </p>
+      <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+        <Clock size={13} className="text-gray-400 flex-shrink-0" />
+        <p className="text-xs text-gray-500">Paid out on the 1st of each month — you'll get an email confirmation.</p>
       </div>
 
       {/* Payout history */}
@@ -1127,7 +1118,7 @@ function AffiliateDashboard({
   profile: AffiliateProfile;
 }) {
   const [profile, setProfile] = useState<AffiliateProfile>(initialProfile);
-  const [tab, setTab] = useState<DashboardTab>('overview');
+  const [tab, setTab] = useState<DashboardTab>('promote');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [sharedFallback, setSharedFallback] = useState(false);
@@ -1180,7 +1171,7 @@ function AffiliateDashboard({
 
       {/* ── Tab bar ── */}
       <div className="flex border-b border-gray-100 sticky top-14 bg-parallel-cream z-10">
-        {(['overview', 'earnings', 'payouts', 'resources'] as DashboardTab[]).map(t => (
+        {(['promote', 'payouts'] as DashboardTab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -1194,9 +1185,7 @@ function AffiliateDashboard({
               ? <span className="flex items-center justify-center gap-1.5">
                   Payouts <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                 </span>
-              : t === 'resources'
-              ? 'Promote'
-              : t
+              : t === 'promote' ? 'Promote' : 'Payouts'
             }
           </button>
         ))}
@@ -1204,108 +1193,87 @@ function AffiliateDashboard({
 
       <div className="px-5">
 
-        {/* ── Overview tab ── */}
-        {tab === 'overview' && (
-          <div className="pb-8">
+        {/* ── Promote tab ── */}
+        {tab === 'promote' && (
+          <div className="pb-12 pt-5 space-y-6">
 
-            {/* Hero */}
-            <div className="text-center pt-8 pb-2">
-              <div
-                className="text-8xl font-medium leading-none mb-2 transition-colors duration-500"
-                style={{ color: hex.accent }}
-              >
-                {conversions}
-              </div>
-              <div className="text-xs uppercase tracking-widest text-gray-500">members referred</div>
-              {Number(profile.total_paid_lifetime) > 0 && (
-                <div className="text-sm text-gray-400 mt-1">
-                  ${Number(profile.total_paid_lifetime).toFixed(2)} paid out
-                </div>
+            {/* Referral link */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Referral link</p>
+              {profile.affiliate_link ? (
+                <>
+                  <div className="flex gap-2 mb-1.5">
+                    <button
+                      onClick={handleCopyLink}
+                      className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-4 py-2.5 rounded-full text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      {copiedLink ? <><Check size={14} aria-hidden="true" />Copied!</> : <><Copy size={14} aria-hidden="true" />Copy link</>}
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="flex-1 text-white px-4 py-2.5 rounded-full text-sm font-medium flex items-center justify-center gap-2"
+                      style={{ background: hex.btn }}
+                    >
+                      {sharedFallback ? <><Check size={14} aria-hidden="true" />Copied!</> : <><Share2 size={14} aria-hidden="true" />Share</>}
+                    </button>
+                  </div>
+                  <p className="text-center text-xs text-gray-300 font-mono break-all">{profile.affiliate_link}</p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400">Your link is being set up — check back soon.</p>
               )}
             </div>
 
-            {/* Progress bar */}
-            <div className="mt-6">
-              <div className="flex justify-between items-baseline mb-2">
-                <div className="text-sm font-medium text-gray-900">{challenge.text}</div>
-                {challenge.to && (
-                  <div className="text-xs text-gray-500">{conversions} / {challenge.to}</div>
-                )}
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${progressPct}%`, background: hex.accent }}
-                />
-              </div>
-              <div className="flex justify-between mt-2">
-                {MILESTONES.map(m => (
-                  <div key={m} className="text-center">
-                    <div
-                      className="w-1.5 h-1.5 rounded-full mx-auto mb-1 transition-colors duration-300"
-                      style={{ background: conversions >= m ? hex.accent : '#E8E4DE' }}
-                    />
-                    <div
-                      className="text-[10px] transition-colors duration-300"
-                      style={{ color: conversions >= m ? '#888780' : '#D3D1C7' }}
-                    >
-                      {m}
-                    </div>
+            {/* Discount code */}
+            {profile.promo_code && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Discount code</p>
+                <button
+                  onClick={handleCopyCode}
+                  className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Tag size={14} className="text-gray-400 flex-shrink-0" />
+                    <span className="font-mono text-sm font-bold text-gray-900">{profile.promo_code}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* At a glance */}
-            <div className="mt-8 grid grid-cols-3 gap-2">
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Commission</p>
-                <p className="text-base font-bold tabular-nums" style={{ color: hex.accent }}>
-                  {profile.commission_rate_pct}%
-                </p>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Your discount</p>
-                <p className="text-base font-bold tabular-nums text-gray-900">
-                  {profile.subscription_discount_pct}% off
-                </p>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Attribution</p>
-                <p className="text-base font-bold tabular-nums text-gray-900">
-                  {profile.program.attribution_window_days}d
-                </p>
-              </div>
-            </div>
-
-            {/* Own discount callout */}
-            {profile.subscription_discount_pct > 0 && (
-              <div className="mt-4 bg-white border border-gray-100 rounded-2xl px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <Tag size={15} className="text-gray-400 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Your member discount</p>
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                      You can use your own discount code to subscribe — we track it automatically so no commission is earned on your own account.
-                    </p>
+                  <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
+                    {copiedCode ? <><Check size={13} />Copied</> : <><Copy size={13} />Copy</>}
                   </div>
-                </div>
-                {profile.promo_code && (
-                  <p className="text-xs text-gray-400 mt-2.5 pl-[26px]">
-                    Use code <span className="font-mono font-semibold text-gray-700">{profile.promo_code}</span> at checkout for {profile.subscription_discount_pct}% off.
-                  </p>
-                )}
+                </button>
+                <p className="text-xs text-gray-400 mt-1.5 text-center">Your audience uses this at checkout for {profile.subscription_discount_pct}% off</p>
               </div>
             )}
 
+            <ResourcesTab profile={profile} />
+          </div>
+        )}
+
+        {/* ── Payouts tab ── */}
+        {tab === 'payouts' && (
+          <div className="pb-8 pt-5">
+
+            {/* Stats header */}
+            <div className="flex items-baseline gap-3 mb-6">
+              <div className="text-5xl font-medium leading-none" style={{ color: hex.accent }}>
+                {conversions}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">referral{conversions !== 1 ? 's' : ''}</p>
+                {Number(profile.total_paid_lifetime) > 0 && (
+                  <p className="text-xs text-gray-400">${Number(profile.total_paid_lifetime).toFixed(2)} paid out</p>
+                )}
+              </div>
+              <div className="ml-auto text-right">
+                <p className="text-xs text-gray-400">Commission</p>
+                <p className="text-sm font-bold" style={{ color: hex.accent }}>{profile.commission_rate_pct}%</p>
+              </div>
+            </div>
+
             {/* Payout nudge */}
             {conversions > 0 && !profile.bank_account_connected && (
-              <div className="mt-6 flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5">
-                <AlertCircle size={16} className="text-amber-500 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-amber-800">Set up payouts to get paid</p>
-                  <p className="text-xs text-amber-600 mt-0.5">You have referrals — connect your bank to start receiving commissions.</p>
-                </div>
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-5">
+                <AlertCircle size={15} className="text-amber-500 flex-shrink-0" />
+                <p className="text-sm text-amber-800 flex-1">Connect your bank to receive commissions</p>
                 <button
                   onClick={() => setTab('payouts')}
                   className="text-xs font-medium text-amber-700 underline flex-shrink-0"
@@ -1315,141 +1283,22 @@ function AffiliateDashboard({
               </div>
             )}
 
-            {/* Share section */}
-            <div className="mt-8 space-y-3">
-              <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
-                {nudge}
-              </div>
-
-              {/* Affiliate link */}
-              <div className="bg-white border border-gray-100 rounded-2xl px-4 pt-3.5 pb-4">
-                <div className="mb-1">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Your referral link</span>
-                </div>
-                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                  Share this link — anyone who signs up for Parallel through it is automatically credited to you.
-                </p>
-                {profile.affiliate_link ? (
-                  <>
-                    <div className="flex gap-2 mb-2">
-                      <button
-                        onClick={handleCopyLink}
-                        className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-4 py-3 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                      >
-                        {copiedLink
-                          ? <><Check size={15} aria-hidden="true" />Copied!</>
-                          : <><Copy size={15} aria-hidden="true" />Copy link</>
-                        }
-                      </button>
-                      <button
-                        onClick={handleShare}
-                        className="flex-1 text-white px-4 py-3 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                        style={{ background: hex.btn }}
-                      >
-                        {sharedFallback
-                          ? <><Check size={15} aria-hidden="true" />Copied!</>
-                          : <><Share2 size={15} aria-hidden="true" />Share</>
-                        }
-                      </button>
-                    </div>
-                    <div className="text-center text-xs text-gray-300 font-mono break-all">
-                      {profile.affiliate_link}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-sm text-gray-400 text-center py-1">
-                    Your link is being set up — check back soon.
-                  </div>
-                )}
-              </div>
-
-              {/* Promo code */}
-              {profile.promo_code && (
-                <div className="bg-white border border-gray-100 rounded-2xl px-4 pt-3.5 pb-4">
-                  <div className="mb-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Follower discount code</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3 leading-relaxed">
-                    Give this code to your audience so they get a discount at checkout. We track it too, so you get credit either way.
-                  </p>
-                  <button
-                    onClick={handleCopyCode}
-                    className="w-full flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <Tag size={14} className="text-gray-400 flex-shrink-0" />
-                      <span className="font-mono text-sm font-semibold text-gray-900">{profile.promo_code}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
-                      {copiedCode
-                        ? <><Check size={13} />Copied</>
-                        : <><Copy size={13} />Copy</>
-                      }
-                    </div>
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Tier ladder */}
-            <div className="mt-8">
-              <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Affiliate tiers</div>
-              <div className="border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100 bg-white">
-                {TIERS.map((t, i) => {
-                  const isCurrent = profile.tier === t.id;
-                  const isPast = tierOrder[profile.tier] > i;
-                  const isActive = isCurrent || isPast;
-                  const tHex = TIER_HEX[t.id];
-                  return (
-                    <div
-                      key={t.id}
-                      className="flex items-center gap-3 px-4 py-3"
-                      style={{ opacity: isActive ? 1 : 0.35 }}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
-                        style={{
-                          background: isActive ? tHex.dotBg : '#F1EFE8',
-                          color: isActive ? tHex.dotText : '#B4B2A9',
-                        }}
-                      >
-                        {i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900">{t.label}</div>
-                        <div className="text-xs text-gray-500 truncate">{t.requirement} · {t.commission}</div>
-                      </div>
-                      <div className="text-sm font-medium w-5 text-right flex-shrink-0" style={{ color: isActive ? tHex.accent : '#D3D1C7' }}>
-                        {isPast ? '✓' : isCurrent ? '→' : ''}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Earnings tab ── */}
-        {tab === 'earnings' && (
-          <div className="pt-5">
+            {/* Earnings */}
             <EarningsTab />
-          </div>
-        )}
 
-        {/* ── Payouts tab ── */}
-        {tab === 'payouts' && (
-          <div className="pt-5">
+            {/* Payout setup divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
+              <div className="relative flex justify-center">
+                <span className="bg-parallel-cream px-3 text-xs text-gray-400">Payout setup</span>
+              </div>
+            </div>
+
             <PayoutsTab
               profile={profile}
               onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
             />
           </div>
-        )}
-
-        {/* ── Resources tab ── */}
-        {tab === 'resources' && (
-          <ResourcesTab profile={profile} />
         )}
       </div>
     </div>
@@ -1544,7 +1393,7 @@ function ResourcesTab({ profile }: { profile: AffiliateProfile }) {
   ];
 
   return (
-    <div className="pb-12 space-y-8 pt-6">
+    <div className="space-y-8">
 
       {/* Caption Templates */}
       <section>
@@ -1552,7 +1401,7 @@ function ResourcesTab({ profile }: { profile: AffiliateProfile }) {
           <FileText size={16} className="text-[#7B5EA7]" />
           <h3 className="text-sm font-semibold text-gray-900">Caption templates</h3>
         </div>
-        <p className="text-xs text-gray-500 mb-4">Ready to post — your promo code and link are already filled in. Tap to expand, copy, and customize.</p>
+        <p className="text-xs text-gray-500 mb-4">Tap to expand and copy — your code and link are already filled in.</p>
         <div className="space-y-2">
           {captions.map(c => (
             <div key={c.id} className="border border-gray-200 rounded-2xl overflow-hidden">
@@ -1583,7 +1432,7 @@ function ResourcesTab({ profile }: { profile: AffiliateProfile }) {
           <Share2 size={16} className="text-[#7B5EA7]" />
           <h3 className="text-sm font-semibold text-gray-900">Share our posts</h3>
         </div>
-        <p className="text-xs text-gray-500 mb-4">The easiest way to promote — repost one of our existing ads to your story and add your promo code or link on top.</p>
+        <p className="text-xs text-gray-500 mb-4">Repost one of our existing ads to your story and add your code or link on top.</p>
 
         {/* Profile links */}
         <div className="flex gap-3 mb-4">
@@ -1641,7 +1490,7 @@ function ResourcesTab({ profile }: { profile: AffiliateProfile }) {
           <Lightbulb size={16} className="text-[#7B5EA7]" />
           <h3 className="text-sm font-semibold text-gray-900">Hook ideas</h3>
         </div>
-        <p className="text-xs text-gray-500 mb-4">Opening lines that grab attention. Use these as-is or riff on them.</p>
+        <p className="text-xs text-gray-500 mb-4">Use as-is or riff on them.</p>
         <div className="space-y-2">
           {hooks.map((h, i) => (
             <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-xl px-4 py-3">
@@ -1658,7 +1507,7 @@ function ResourcesTab({ profile }: { profile: AffiliateProfile }) {
           <Image size={16} className="text-[#7B5EA7]" />
           <h3 className="text-sm font-semibold text-gray-900">Visual assets</h3>
         </div>
-        <p className="text-xs text-gray-500 mb-4">Branded graphics, story templates, and Canva files — dropping soon.</p>
+        <p className="text-xs text-gray-500 mb-4">Branded graphics, story templates, and Canva files — coming soon.</p>
         <div className="grid grid-cols-2 gap-3">
           {['Story slides', 'Square graphics', 'Canva templates', 'Logo kit'].map(name => (
             <div key={name} className="border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center py-7 gap-2">
