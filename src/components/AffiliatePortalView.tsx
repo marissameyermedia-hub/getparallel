@@ -565,7 +565,7 @@ function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: Affil
   const statusMessages: Record<AppAuditStatus, { icon: typeof Clock; color: string; title: string; body: string }> = {
     pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',    body: "We're reviewing your application. Typically 1–3 business days." },
     in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
-    approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Verified!',               body: "Identity confirmed. Your affiliate dashboard is being activated — check back shortly." },
+    approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Application approved',    body: "Your identity is verified and your application has been approved. We'll activate your account and send you an email — usually within 1 business day." },
     rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved', body: "Thank you for your interest. This tier may not be the right fit right now." },
   };
 
