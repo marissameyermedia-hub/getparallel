@@ -1,7 +1,6 @@
-// Parallel — affiliate edge function v32
+// Parallel — affiliate edge function v33
+// v33: Fallback address1 parsing from tax_address if address_street is empty (handles old frontend + parsing edge cases).
 // v32: Add required address object to Mercury electronicRoutingInfo (address1, city, state, postalCode).
-// v31: Pass account_type directly as electronicAccountType (Mercury expects personalChecking/personalSavings/businessChecking).
-// v30: Fix Mercury electronicAccountType casing: "checking"/"savings" → "Checking"/"Savings" (Haskell constructor tags).
 // v28: Surface raw Mercury error in payout/setup response for easier diagnostics.
 // v27: /payout/config is now public (no auth required) for easier Mercury diagnostics.
 // v26: Add GET /payout/config — returns sandbox mode, token presence, and live Mercury API status.
@@ -256,10 +255,28 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
   if (!legal_name) return json({ error: "Legal name is required" }, 400);
   if (!tax_address) return json({ error: "Mailing address is required" }, 400);
 
-  const address_street = String(body.address_street ?? "").trim();
-  const address_city = String(body.address_city ?? "").trim();
-  const address_state = String(body.address_state ?? "").trim();
-  const address_zip = String(body.address_zip ?? "").trim();
+  let address_street = String(body.address_street ?? "").trim();
+  let address_city = String(body.address_city ?? "").trim();
+  let address_state = String(body.address_state ?? "").trim();
+  let address_zip = String(body.address_zip ?? "").trim();
+
+  // Fallback: parse individual fields from tax_address if not sent separately.
+  // tax_address format: "street, city, STATE zip"
+  if (!address_street && tax_address) {
+    const parts = tax_address.split(/,\s*/);
+    if (parts.length >= 3) {
+      address_street = address_street || (parts[0] ?? "");
+      address_city = address_city || (parts[1] ?? "");
+      const stateZip = (parts[2] ?? "").trim().split(/\s+/);
+      address_state = address_state || (stateZip[0] ?? "");
+      address_zip = address_zip || (stateZip[1] ?? "");
+    } else if (parts.length === 2) {
+      address_street = address_street || (parts[0] ?? "");
+      const stateZip = (parts[1] ?? "").trim().split(/\s+/);
+      address_state = address_state || (stateZip[0] ?? "");
+      address_zip = address_zip || (stateZip[1] ?? "");
+    }
+  }
 
   const routing_number = body.routing_number ? String(body.routing_number).replace(/\s/g, "") : null;
   const account_number = body.account_number ? String(body.account_number).replace(/\s/g, "") : null;
