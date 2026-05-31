@@ -1,6 +1,6 @@
-// Parallel — affiliate edge function v33
+// Parallel — affiliate edge function v34
+// v34: Mercury address uses "region" not "state" (Model.AddressWithoutName requires "region").
 // v33: Fallback address1 parsing from tax_address if address_street is empty (handles old frontend + parsing edge cases).
-// v32: Add required address object to Mercury electronicRoutingInfo (address1, city, state, postalCode).
 // v28: Surface raw Mercury error in payout/setup response for easier diagnostics.
 // v27: /payout/config is now public (no auth required) for easier Mercury diagnostics.
 // v26: Add GET /payout/config — returns sandbox mode, token presence, and live Mercury API status.
@@ -327,7 +327,7 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
           address: {
             address1: address_street,
             city: address_city,
-            state: address_state,
+            region: address_state,
             postalCode: address_zip,
             country: "US",
           },
