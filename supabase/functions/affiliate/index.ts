@@ -1,4 +1,10 @@
-// Parallel — affiliate edge function v22
+// Parallel — affiliate edge function v23
+// v23: Fix affiliate routing for non-active affiliates.
+//      getAffiliateFromAuth now includes pending_verification + paused statuses so
+//      those users can access /profile and route to the portal. Adds email-based
+//      fallback with opportunistic user_id backfill when user_id is null.
+//      handleAdminApprove idempotent path now backfills user_id when the existing
+//      affiliate row has user_id = null (was the cause of refresh → dating onboarding).
 // v22: Fix Mercury recipient creation — remove non-standard top-level bank fields,
 //      only send electronicRoutingInfo. Surface raw Mercury error message for debugging.
 // v21: Two-phase payout flow with approval queue.
@@ -115,13 +121,37 @@ async function getUserFromAuth(req: Request) {
 async function getAffiliateFromAuth(req: Request, admin: ReturnType<typeof adminClient>) {
   const user = await getUserFromAuth(req);
   if (!user) return { user: null, affiliate: null };
-  const { data: affiliate } = await admin
+
+  const AFFILIATE_COLS = "id, user_id, display_name, email, tier, status, promo_code, tracked_link_slug, commission_rate, subscription_discount_pct, total_conversions, total_paid_lifetime, legal_name, tax_address, tax_country, tax_info_collected_at, bank_account_collected_at, mercury_recipient_id";
+  const ACTIVE_STATUSES = ["active", "pending_verification", "paused"];
+
+  // Primary lookup: by user_id (fast, no ambiguity)
+  const { data: byUserId } = await admin
     .from("affiliates")
-    .select("id, user_id, display_name, email, tier, status, promo_code, tracked_link_slug, commission_rate, subscription_discount_pct, total_conversions, total_paid_lifetime, legal_name, tax_address, tax_country, tax_info_collected_at, bank_account_collected_at, mercury_recipient_id")
+    .select(AFFILIATE_COLS)
     .eq("user_id", user.id)
-    .eq("status", "active")
+    .in("status", ACTIVE_STATUSES)
     .maybeSingle();
-  return { user, affiliate: affiliate ?? null };
+  if (byUserId) return { user, affiliate: byUserId };
+
+  // Fallback: by email — handles affiliates created before user_id was required.
+  // Opportunistically backfills user_id so the next request uses the fast path.
+  if (!user.email) return { user, affiliate: null };
+  const { data: byEmail } = await admin
+    .from("affiliates")
+    .select(AFFILIATE_COLS)
+    .eq("email", user.email)
+    .in("status", ACTIVE_STATUSES)
+    .maybeSingle();
+  if (byEmail) {
+    if (!byEmail.user_id) {
+      await admin.from("affiliates").update({ user_id: user.id }).eq("id", byEmail.id);
+      byEmail.user_id = user.id;
+    }
+    return { user, affiliate: byEmail };
+  }
+
+  return { user, affiliate: null };
 }
 
 async function hashIp(ip: string): Promise<string> {
@@ -1292,16 +1322,29 @@ async function handleAdminApprove(req: Request): Promise<Response> {
     .maybeSingle();
   if (appErr || !app) return json({ error: "application not found" }, 404);
 
-  // Idempotent — if affiliate already exists just update the application status
+  // Idempotent — if affiliate already exists just update the application status.
+  // Also backfills user_id if it was null (can happen when profile row didn't exist
+  // at first approval time, leaving the affiliate unable to log in to their portal).
   const { data: existing } = await admin
     .from("affiliates")
-    .select("id, promo_code, tracked_link_slug, status")
+    .select("id, user_id, promo_code, tracked_link_slug, status")
     .eq("email", app.email)
     .maybeSingle();
   if (existing) {
     await admin.from("affiliate_applications")
       .update({ audit_status: "approved", reviewed_at: new Date().toISOString() })
       .eq("id", application_id);
+    // Backfill user_id if missing
+    if (!existing.user_id) {
+      let uid: string | null = null;
+      const { data: prof } = await admin.from("profiles").select("id").eq("email", app.email).maybeSingle();
+      if (prof?.id) { uid = prof.id as string; }
+      else {
+        const { data: authId } = await admin.rpc("get_user_id_by_email", { p_email: app.email });
+        if (authId) uid = authId as string;
+      }
+      if (uid) await admin.from("affiliates").update({ user_id: uid }).eq("id", existing.id);
+    }
     return json({ ok: true, affiliate: existing, already_existed: true });
   }
 
