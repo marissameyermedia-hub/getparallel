@@ -1,4 +1,6 @@
-// Parallel — affiliate edge function v25
+// Parallel — affiliate edge function v26
+// v26: Add GET /payout/config — returns sandbox mode, token presence, and live Mercury API status.
+//      Used to diagnose whether secrets are being read and whether the token is valid.
 // v25: Redeploy to pick up MERCURY_IS_SANDBOX=false + MERCURY_API_TOKEN production secrets.
 // v24: Clearer sandbox error message — when MERCURY_IS_SANDBOX=true, bank account
 //      errors now explain the real cause instead of blaming the routing number.
@@ -342,6 +344,43 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
     ok: true,
     tax_info_collected: true,
     bank_account_connected: bankFieldsProvided ? true : !!affiliate.bank_account_collected_at,
+  });
+}
+
+// ── GET /payout/config ────────────────────────────────────────────────────────
+// Returns Mercury configuration state and pings the live API to verify the token.
+
+async function handlePayoutConfig(req: Request): Promise<Response> {
+  const admin = adminClient();
+  const { affiliate } = await getAffiliateFromAuth(req, admin);
+  if (!affiliate) return json({ error: "unauthorized" }, 401);
+
+  const hasToken = MERCURY_TOKEN.length > 0;
+  let mercuryStatus: number | null = null;
+  let mercuryError: string | null = null;
+
+  if (hasToken) {
+    try {
+      const r = await fetch(`${MERCURY_BASE}/accounts`, {
+        headers: { Authorization: `Basic ${btoa(`${MERCURY_TOKEN}:`)}` },
+      });
+      mercuryStatus = r.status;
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        mercuryError = (body as any)?.message ?? `HTTP ${r.status}`;
+      }
+    } catch (e: any) {
+      mercuryError = e?.message ?? "network error";
+    }
+  }
+
+  return json({
+    sandbox: MERCURY_IS_SANDBOX,
+    mercury_base: MERCURY_BASE,
+    has_token: hasToken,
+    mercury_status: mercuryStatus,
+    mercury_error: mercuryError,
+    mercury_ok: mercuryStatus === 200,
   });
 }
 
@@ -1902,6 +1941,11 @@ Deno.serve(async (req: Request) => {
   // GET /payout/history
   if (req.method === "GET" && endpoint === "payout" && segments[1] === "history") {
     return await handleGetPayoutHistory(req);
+  }
+
+  // GET /payout/config (Mercury config debug)
+  if (req.method === "GET" && endpoint === "payout" && segments[1] === "config") {
+    return await handlePayoutConfig(req);
   }
 
   // POST /click

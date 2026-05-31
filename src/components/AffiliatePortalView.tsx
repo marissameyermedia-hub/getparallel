@@ -132,7 +132,7 @@ const TIERS: Array<{
 
 const TIER_COLORS: Record<AffiliateTier, { bg: string; text: string; border: string }> = {
   seeds:   { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-  voices:  { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
+  voices:  { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-200' },
   anchors: { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-200' },
 };
 
@@ -142,7 +142,7 @@ const TIER_HEX: Record<AffiliateTier, {
   dotBg: string; dotText: string;
 }> = {
   seeds:   { accent: '#059669', btn: '#059669', badgeBg: '#ECFDF5', badgeText: '#065F46', dotBg: '#D1FAE5', dotText: '#065F46' },
-  voices:  { accent: '#2563EB', btn: '#2563EB', badgeBg: '#EFF6FF', badgeText: '#1E40AF', dotBg: '#DBEAFE', dotText: '#1E40AF' },
+  voices:  { accent: '#7B5EA7', btn: '#7B5EA7', badgeBg: '#F3F0F9', badgeText: '#4A3270', dotBg: '#E8E0F5', dotText: '#4A3270' },
   anchors: { accent: '#7C3AED', btn: '#7C3AED', badgeBg: '#F5F3FF', badgeText: '#4C1D95', dotBg: '#EDE9FE', dotText: '#4C1D95' },
 };
 
@@ -565,7 +565,7 @@ function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: Affil
 
   const statusMessages: Record<AppAuditStatus, { icon: typeof Clock; color: string; title: string; body: string }> = {
     pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',    body: "We're reviewing your application. Typically 1–3 business days." },
-    in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
+    in_review:  { icon: Clock,         color: 'text-[#7B5EA7]',  title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
     approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Application approved',    body: "Your identity is verified and your application has been approved. We'll activate your account and send you an email — usually within 1 business day." },
     rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved', body: "Thank you for your interest. This tier may not be the right fit right now." },
   };
@@ -889,7 +889,7 @@ function EarningsTab() {
             </span>
           )}
           {lifetime.in_window_count > 0 && (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
               {lifetime.in_window_count} in clawback window
             </span>
           )}
