@@ -30,7 +30,7 @@ Check the social planner to find the last published post's background color, the
 3. Replace copy on all 3 slides — do not change anything else
 4. Apply the correct background color to all slides
 5. Confirm logo top left + URL bottom right on every slide
-6. Send the Canva link to the user for approval
+6. Send the Canva **edit link** to the user for review — always include it as plain text, e.g. https://www.canva.com/d/...
 7. Once approved, upload the post to the next open slot in the social planner dashboard at the correct scheduled time
 
 ## Copy Format
