@@ -3,126 +3,270 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parallel — Match Card</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'parallel-void':   '#0D0D0F',
-            'parallel-cream':  '#F7F4EF',
-            'parallel-purple': '#7B5EA7',
-            'parallel-stone':  '#8A8690',
-          },
-          fontFamily: {
-            sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Segoe UI', 'sans-serif'],
-          },
-        },
-      },
-    };
-  </script>
+  <title>Parallel — Match Card Preview</title>
   <style>
-    body { background: #F7F4EF; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Lucide-style SVG icons inline */
-    .icon-shield { display:inline-block; }
-    .icon-heart  { display:inline-block; }
-    .icon-x      { display:inline-block; }
-    .icon-pin    { display:inline-block; }
+    body {
+      background: #F7F4EF;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    /* ── Wordmark ── */
+    .wordmark {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .wordmark-circle {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #0D0D0F;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .wordmark-circle span {
+      font-size: 9px; font-weight: 700; color: #fff;
+      letter-spacing: .02em; user-select: none;
+    }
+    .wordmark-circle span em { color: #A98FD0; font-style: normal; }
+    .wordmark-text {
+      font-size: 13px; font-weight: 700;
+      letter-spacing: 0.08em; color: #0D0D0F;
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 100%;
+      background: #fff;
+      border-radius: 20px;
+      border: 2px solid #e5e7eb;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    /* ── Photo zone ── */
+    .photo-zone {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      overflow: hidden;
+    }
+    .photo-bg {
+      width: 100%; height: 100%;
+      background: linear-gradient(160deg, #c9b8e8 0%, #a87fc7 30%, #6b4d9e 65%, #3d2966 100%);
+      position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .photo-initials {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      border: 2.5px solid rgba(255,255,255,0.35);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 40px;
+    }
+    .photo-initials span {
+      font-size: 2rem; font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: -.02em;
+    }
+
+    /* Name overlay */
+    .name-overlay {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 55%, transparent 100%);
+      padding: 16px;
+    }
+    .name-overlay .name {
+      color: #fff;
+      font-size: 1.2rem; font-weight: 600;
+      line-height: 1.2;
+    }
+    .name-overlay .location {
+      display: flex; align-items: center; gap: 4px;
+      margin-top: 5px;
+    }
+    .name-overlay .location span {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.75rem;
+    }
+
+    /* Verified badge */
+    .badge-verified {
+      position: absolute;
+      top: 12px; left: 12px;
+      background: #7B5EA7;
+      border-radius: 50%;
+      padding: 7px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      display: flex;
+    }
+
+    /* Compatibility badge */
+    .badge-compat {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: #fff;
+      border-radius: 999px;
+      padding: 7px 13px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      border: 2px solid #7B5EA7;
+      text-align: center;
+    }
+    .badge-compat .pct {
+      font-size: 1rem; font-weight: 700;
+      line-height: 1; color: #7B5EA7;
+    }
+    .badge-compat .label {
+      font-size: 0.65rem; color: #7B5EA7;
+      white-space: nowrap; margin-top: 2px;
+    }
+
+    /* View profile band */
+    .view-band {
+      width: 100%;
+      padding: 12px;
+      background: #0D0D0F;
+      color: #fff;
+      font-size: 0.875rem; font-weight: 500;
+      text-align: center;
+      border: none; cursor: pointer;
+      display: block;
+      letter-spacing: 0.01em;
+    }
+
+    /* Action row */
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+    }
+    .btn-pass {
+      width: 48px; height: 48px;
+      border: 2px solid #e5e7eb;
+      border-radius: 50%;
+      background: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 2px;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .btn-pass span {
+      font-size: 10px; color: #9ca3af;
+    }
+    .btn-like {
+      flex: 1; height: 48px;
+      border-radius: 999px;
+      background: #7B5EA7;
+      color: #fff;
+      font-size: 0.875rem; font-weight: 500;
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    /* Tagline */
+    .tagline {
+      font-size: 0.68rem;
+      color: #8A8690;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-8">
+<body>
+  <div class="page">
 
-  <!-- Page wrapper — brand context around the card -->
-  <div class="flex flex-col items-center gap-6 w-full max-w-sm">
-
-    <!-- PARA//EL wordmark -->
-    <div class="flex items-center gap-2">
-      <div style="width:32px;height:32px;border-radius:50%;background:#0D0D0F;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="font-size:9px;font-weight:700;color:#fff;letter-spacing:.02em;user-select:none;">P<span style="color:#A98FD0">//</span></span>
+    <!-- Wordmark -->
+    <div class="wordmark">
+      <div class="wordmark-circle">
+        <span>P<em>//</em></span>
       </div>
-      <span style="font-size:0.85rem;font-weight:700;letter-spacing:0.08em;color:#0D0D0F;">PARA//EL</span>
+      <span class="wordmark-text">PARA//EL</span>
     </div>
 
-    <!-- ── Match Card ── -->
-    <div class="w-full bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-xl">
+    <!-- Card -->
+    <div class="card">
 
-      <!-- Photo zone -->
-      <div class="relative w-full overflow-hidden" style="height:420px;">
-
-        <!-- Photo — warm gradient standing in for a real photo -->
-        <div class="w-full h-full" style="background: linear-gradient(160deg, #c9b8e8 0%, #a87fc7 30%, #6b4d9e 65%, #3d2966 100%); position:relative;">
-
-          <!-- subtle grain texture overlay -->
-          <div style="position:absolute;inset:0;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22200%22 height=%22200%22 filter=%22url(%23n)%22 opacity=%220.08%22/></svg>');opacity:.4;"></div>
-
-          <!-- Initials avatar centred in photo -->
-          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.18);border:2.5px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;">
-            <span style="font-size:2rem;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:-.02em;">AS</span>
+      <!-- Photo -->
+      <div class="photo-zone">
+        <div class="photo-bg">
+          <div class="photo-initials">
+            <span>AS</span>
           </div>
         </div>
 
-        <!-- Name / age / height gradient overlay -->
-        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 55%, transparent 100%);padding:16px;">
-          <p style="color:#fff;font-size:1.2rem;font-weight:600;line-height:1.2;margin:0;">Alexandra, 29 · 5'6"</p>
-          <div style="display:flex;align-items:center;gap:4px;margin-top:4px;">
-            <!-- Map pin SVG -->
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+        <!-- Name overlay -->
+        <div class="name-overlay">
+          <p class="name">Alexandra, 29 · 5'6"</p>
+          <div class="location">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
             </svg>
-            <p style="color:rgba(255,255,255,0.8);font-size:0.75rem;margin:0;">3 miles away</p>
+            <span>3 miles away</span>
           </div>
         </div>
 
-        <!-- Verified badge — top left -->
-        <div style="position:absolute;top:12px;left:12px;background:#7B5EA7;border-radius:50%;padding:7px;box-shadow:0 2px 8px rgba(0,0,0,0.25);z-index:20;display:flex;">
-          <!-- Shield check SVG -->
+        <!-- Verified badge -->
+        <div class="badge-verified">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <polyline points="9 12 11 14 15 10"/>
           </svg>
         </div>
 
-        <!-- Compatibility badge — top right -->
-        <div style="position:absolute;top:12px;right:12px;background:#fff;border-radius:999px;padding:7px 13px;box-shadow:0 2px 8px rgba(0,0,0,0.18);border:2px solid #7B5EA7;z-index:20;text-align:center;">
-          <div style="font-size:1rem;font-weight:700;line-height:1;color:#7B5EA7;">87%</div>
-          <div style="font-size:0.65rem;color:#7B5EA7;white-space:nowrap;margin-top:2px;">Strong Match</div>
+        <!-- Compatibility badge -->
+        <div class="badge-compat">
+          <div class="pct">87%</div>
+          <div class="label">Strong Match</div>
         </div>
+      </div>
 
-      </div><!-- /photo zone -->
-
-      <!-- View full profile band -->
-      <button style="width:100%;padding:12px;background:#0D0D0F;color:#fff;font-size:0.875rem;font-weight:500;text-align:center;border:none;cursor:pointer;display:block;">
-        View full profile →
-      </button>
+      <!-- View profile band -->
+      <button class="view-band">View full profile →</button>
 
       <!-- Pass + Like -->
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
-
-        <!-- Pass -->
-        <button style="width:48px;height:48px;border:2px solid #e5e7eb;border-radius:50%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;flex-shrink:0;">
+      <div class="actions">
+        <button class="btn-pass">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
-          <span style="font-size:10px;color:#9ca3af;">Pass</span>
+          <span>Pass</span>
         </button>
 
-        <!-- Like -->
-        <button style="flex:1;height:48px;border-radius:999px;background:#7B5EA7;color:#fff;font-size:0.875rem;font-weight:500;border:none;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+        <button class="btn-like">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
           </svg>
           Like
         </button>
-
       </div>
 
-    </div><!-- /card -->
+    </div>
 
-    <!-- Tagline below the card -->
-    <p style="font-size:0.7rem;color:#8A8690;letter-spacing:0.06em;text-transform:uppercase;">Matched by algorithm · not by swipe</p>
+    <!-- Tagline -->
+    <p class="tagline">Matched by algorithm · not by swipe</p>
 
   </div>
-
 </body>
 </html>
