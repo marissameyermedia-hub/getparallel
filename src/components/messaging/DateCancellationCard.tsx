@@ -57,9 +57,11 @@ export function DateCancellationCard({ data, currentUserId, matchName, matchId, 
         <p className="text-xs text-gray-500 mt-1">
           {intent === 'reschedule'
             ? 'You chose to reschedule — use the date planner to find a new time.'
-            : iCancelled
-              ? `Do you want to reschedule with ${matchName}?`
-              : 'Would you like to reschedule?'}
+            : intent === 'remove'
+              ? 'You chose to remove this match.'
+              : iCancelled
+                ? `Do you want to reschedule with ${matchName}?`
+                : 'Would you like to reschedule?'}
         </p>
       </div>
 
