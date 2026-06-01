@@ -1,6 +1,6 @@
-// Parallel — affiliate edge function v34
+// Parallel — affiliate edge function v35
+// v35: Add required idempotencyKey to Mercury SendMoneyAPIRequest (payout_id used as key).
 // v34: Mercury address uses "region" not "state" (Model.AddressWithoutName requires "region").
-// v33: Fallback address1 parsing from tax_address if address_street is empty (handles old frontend + parsing edge cases).
 // v28: Surface raw Mercury error in payout/setup response for easier diagnostics.
 // v27: /payout/config is now public (no auth required) for easier Mercury diagnostics.
 // v26: Add GET /payout/config — returns sandbox mode, token presence, and live Mercury API status.
@@ -754,6 +754,7 @@ async function handlePayoutRelease(req: Request): Promise<Response> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      idempotencyKey: payout.id,
       externalMemo: `Parallel affiliate commission — ${aff.display_name}`,
       amount: gross,
       paymentMethod: "ach",
@@ -1006,6 +1007,7 @@ async function handlePayoutApprove(req: Request): Promise<Response> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      idempotencyKey: payout_id,
       externalMemo: `Parallel affiliate commission — ${aff.display_name}`,
       amount: recalcGross,
       paymentMethod: "ach",
