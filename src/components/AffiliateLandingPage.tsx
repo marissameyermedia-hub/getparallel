@@ -113,9 +113,9 @@ export function AffiliateLandingPage({ onNavigate }: Props) {
               commission: '15%',
               discount: '25%',
               range: '10K–100K followers',
-              bg: 'bg-blue-50',
-              text: 'text-blue-700',
-              border: 'border-blue-200',
+              bg: 'bg-purple-50',
+              text: 'text-purple-700',
+              border: 'border-purple-200',
             },
             {
               label: 'Tier 3',

@@ -3,6 +3,7 @@ import {
   ChevronLeft, Copy, Check, Share2, Users, Star, Mic, Anchor,
   Clock, CheckCircle2, AlertCircle, ShieldCheck, Link2, Tag,
   ChevronDown, ChevronUp, History, CreditCard,
+  Sparkles, FileText, Image, Lightbulb, ExternalLink,
 } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
@@ -13,8 +14,8 @@ const AFFILIATE_FN_URL = `https://${projectId}.supabase.co/functions/v1/affiliat
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type AffiliateTier = 'seeds' | 'voices' | 'anchors';
-type AppAuditStatus = 'pending' | 'in_review' | 'approved' | 'rejected' | 'needs_info';
-type DashboardTab = 'overview' | 'earnings' | 'payouts';
+type AppAuditStatus = 'pending' | 'in_review' | 'approved' | 'rejected';
+type DashboardTab = 'promote' | 'payouts';
 type PortalState = 'loading' | 'apply' | 'submitted' | 'dashboard';
 
 interface AffiliateApplication {
@@ -105,7 +106,7 @@ const TIERS: Array<{
 }> = [
   {
     id: 'seeds',
-    label: 'Seeds',
+    label: 'Tier 1',
     icon: Star,
     commission: '10% commission · 20% member discount',
     description: 'Growing creators building their audience.',
@@ -113,7 +114,7 @@ const TIERS: Array<{
   },
   {
     id: 'voices',
-    label: 'Voices',
+    label: 'Tier 2',
     icon: Mic,
     commission: '15% commission · 25% member discount',
     description: 'Established voices with engaged communities.',
@@ -121,7 +122,7 @@ const TIERS: Array<{
   },
   {
     id: 'anchors',
-    label: 'Anchors',
+    label: 'Tier 3',
     icon: Anchor,
     commission: '20% commission · 30% member discount',
     description: 'Powerhouse partners with major reach.',
@@ -131,7 +132,7 @@ const TIERS: Array<{
 
 const TIER_COLORS: Record<AffiliateTier, { bg: string; text: string; border: string }> = {
   seeds:   { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
-  voices:  { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200' },
+  voices:  { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-200' },
   anchors: { bg: 'bg-purple-50',  text: 'text-purple-700',  border: 'border-purple-200' },
 };
 
@@ -141,7 +142,7 @@ const TIER_HEX: Record<AffiliateTier, {
   dotBg: string; dotText: string;
 }> = {
   seeds:   { accent: '#059669', btn: '#059669', badgeBg: '#ECFDF5', badgeText: '#065F46', dotBg: '#D1FAE5', dotText: '#065F46' },
-  voices:  { accent: '#2563EB', btn: '#2563EB', badgeBg: '#EFF6FF', badgeText: '#1E40AF', dotBg: '#DBEAFE', dotText: '#1E40AF' },
+  voices:  { accent: '#7B5EA7', btn: '#7B5EA7', badgeBg: '#F3F0F9', badgeText: '#4A3270', dotBg: '#E8E0F5', dotText: '#4A3270' },
   anchors: { accent: '#7C3AED', btn: '#7C3AED', badgeBg: '#F5F3FF', badgeText: '#4C1D95', dotBg: '#EDE9FE', dotText: '#4C1D95' },
 };
 
@@ -564,9 +565,8 @@ function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: Affil
 
   const statusMessages: Record<AppAuditStatus, { icon: typeof Clock; color: string; title: string; body: string }> = {
     pending:    { icon: Clock,         color: 'text-yellow-500', title: 'Application received',    body: "We're reviewing your application. Typically 1–3 business days." },
-    in_review:  { icon: Clock,         color: 'text-blue-500',   title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
-    approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Verified!',               body: "Identity confirmed. Your affiliate dashboard is being activated — check back shortly." },
-    needs_info: { icon: AlertCircle,   color: 'text-orange-500', title: 'More info needed',        body: "We need a bit more info before we can process your application. Check your email for details — then reply directly to that message." },
+    in_review:  { icon: Clock,         color: 'text-[#7B5EA7]',  title: 'Under review',            body: "We're actively reviewing your application. Typically 1–3 business days." },
+    approved:   { icon: CheckCircle2,  color: 'text-emerald-500',title: 'Application approved',    body: "Your identity is verified and your application has been approved. We'll activate your account and send you an email — usually within 1 business day." },
     rejected:   { icon: AlertCircle,   color: 'text-red-500',    title: 'Application not approved', body: "Thank you for your interest. This tier may not be the right fit right now." },
   };
 
@@ -591,21 +591,7 @@ function PendingScreen({ app, onRefresh, onReapply, justVerified }: { app: Affil
             Reapply
           </button>
         ) : null
-      ) : app.audit_status === 'needs_info' ? (
-        <a
-          href={`mailto:hello@getparallel.vip?subject=Affiliate%20Application%20Info&body=Application%20ID%3A%20${app.id}`}
-          className="inline-block px-6 py-3 rounded-2xl font-semibold text-sm border-2 border-[#7B5EA7] text-[#7B5EA7]"
-        >
-          Reply by email
-        </a>
-      ) : (
-        <button
-          onClick={onRefresh}
-          className="text-xs text-[#7B5EA7] underline"
-        >
-          Check for updates
-        </button>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -620,7 +606,22 @@ function PayoutSetupForm({
   onSuccess: (updates: { tax_info_collected: boolean; bank_account_connected: boolean }) => void;
 }) {
   const [legalName, setLegalName] = useState(profile.legal_name ?? '');
-  const [taxAddress, setTaxAddress] = useState(profile.tax_address ?? '');
+  // Parse stored address back into fields (stored as "street, city, state zip")
+  const parseStoredAddress = (addr: string | null) => {
+    if (!addr) return { street: '', city: '', state: '', zip: '' };
+    const parts = addr.split(',').map(s => s.trim());
+    const street = parts[0] ?? '';
+    const city = parts[1] ?? '';
+    const stateZip = (parts[2] ?? '').trim().split(' ');
+    const state = stateZip[0] ?? '';
+    const zip = stateZip[1] ?? '';
+    return { street, city, state, zip };
+  };
+  const parsed = parseStoredAddress(profile.tax_address);
+  const [street, setStreet] = useState(parsed.street);
+  const [city, setCity] = useState(parsed.city);
+  const [addrState, setAddrState] = useState(parsed.state);
+  const [zip, setZip] = useState(parsed.zip);
   const [accountType, setAccountType] = useState('personalChecking');
   const [routingNumber, setRoutingNumber] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -636,9 +637,14 @@ function PayoutSetupForm({
     setSubmitting(true);
     setError(null);
     setSavedMessage(null);
+    const taxAddress = [street.trim(), city.trim(), `${addrState.trim()} ${zip.trim()}`.trim()].filter(Boolean).join(', ');
     const body: Record<string, any> = {
       legal_name: legalName.trim(),
-      tax_address: taxAddress.trim(),
+      tax_address: taxAddress,
+      address_street: street.trim(),
+      address_city: city.trim(),
+      address_state: addrState.trim(),
+      address_zip: zip.trim(),
     };
     if (routingNumber.trim() || accountNumber.trim()) {
       body.routing_number = routingNumber.trim();
@@ -674,13 +680,40 @@ function PayoutSetupForm({
 
       <div>
         <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1.5">Mailing Address</label>
-        <textarea
-          value={taxAddress}
-          onChange={e => setTaxAddress(e.target.value)}
-          placeholder={'Street address, City, State ZIP'}
-          rows={2}
-          className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none resize-none border border-gray-100 focus:border-[#7B5EA7]"
-        />
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={street}
+            onChange={e => setStreet(e.target.value)}
+            placeholder="Street address"
+            className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7]"
+          />
+          <input
+            type="text"
+            value={city}
+            onChange={e => setCity(e.target.value)}
+            placeholder="City"
+            className="w-full bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7]"
+          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={addrState}
+              onChange={e => setAddrState(e.target.value.toUpperCase().slice(0, 2))}
+              placeholder="State"
+              maxLength={2}
+              className="w-20 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7] font-mono uppercase"
+            />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={zip}
+              onChange={e => setZip(e.target.value.replace(/\D/g, '').slice(0, 5))}
+              placeholder="ZIP code"
+              className="flex-1 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-900 placeholder-gray-300 outline-none border border-gray-100 focus:border-[#7B5EA7] font-mono"
+            />
+          </div>
+        </div>
       </div>
 
       <div className="relative">
@@ -756,15 +789,13 @@ function PayoutSetupForm({
 
       <button
         onClick={handleSubmit}
-        disabled={submitting || !legalName.trim() || !taxAddress.trim() || !bankValid}
+        disabled={submitting || !legalName.trim() || !street.trim() || !city.trim() || !addrState.trim() || !zip.trim() || !bankValid}
         className="w-full py-3.5 rounded-2xl font-semibold text-sm bg-[#7B5EA7] text-white disabled:opacity-40 transition-opacity"
       >
         {submitting ? 'Saving…' : 'Save Payout Info'}
       </button>
 
-      <p className="text-xs text-gray-400 text-center leading-relaxed">
-        Your banking details are securely stored by Mercury, our payment processor, not on Parallel's servers directly.
-      </p>
+      <p className="text-xs text-gray-400 text-center">Stored securely by Mercury.</p>
     </div>
   );
 }
@@ -835,10 +866,8 @@ function EarningsTab() {
   const pendingTotal = parseFloat((lifetime.total_earned - lifetime.total_paid).toFixed(2));
 
   return (
-    <div className="pb-8">
-      <p className="text-xs text-gray-400 pt-1 pb-4 leading-relaxed">
-        Commissions lock in when your referral's subscription payment confirms. They're held for 30 days (clawback window), then become eligible for payout.
-      </p>
+    <div className="pb-4">
+
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="bg-white border border-gray-100 rounded-2xl p-4">
           <p className="text-xs text-gray-400 mb-1">Total earned</p>
@@ -864,7 +893,7 @@ function EarningsTab() {
             </span>
           )}
           {lifetime.in_window_count > 0 && (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+            <span className="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
               {lifetime.in_window_count} in clawback window
             </span>
           )}
@@ -982,12 +1011,9 @@ function PayoutsTab({
       ) : (
         <div>
           {!profile.bank_account_connected && (
-            <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5 mb-4">
-              <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-amber-800">Set up payouts to get paid</p>
-                <p className="text-xs text-amber-600">Add your bank account and legal info to receive ACH payouts when commissions are released.</p>
-              </div>
+            <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-4">
+              <AlertCircle size={15} className="text-amber-500 flex-shrink-0" />
+              <p className="text-sm text-amber-800">Add your bank account to receive payouts</p>
             </div>
           )}
           <PayoutSetupForm
@@ -1001,11 +1027,9 @@ function PayoutsTab({
       )}
 
       {/* Payout cadence note */}
-      <div className="flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5">
-        <Clock size={15} className="text-gray-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-gray-500 leading-relaxed">
-          Payouts are reviewed and processed by the Parallel team around the 1st of each month. No action needed from you — we'll send a confirmation email when your payout is on its way.
-        </p>
+      <div className="flex items-center gap-2.5 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+        <Clock size={13} className="text-gray-400 flex-shrink-0" />
+        <p className="text-xs text-gray-500">Paid out on the 1st of each month — you'll get an email confirmation.</p>
       </div>
 
       {/* Payout history */}
@@ -1098,7 +1122,7 @@ function AffiliateDashboard({
   profile: AffiliateProfile;
 }) {
   const [profile, setProfile] = useState<AffiliateProfile>(initialProfile);
-  const [tab, setTab] = useState<DashboardTab>('overview');
+  const [tab, setTab] = useState<DashboardTab>('promote');
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [sharedFallback, setSharedFallback] = useState(false);
@@ -1151,7 +1175,7 @@ function AffiliateDashboard({
 
       {/* ── Tab bar ── */}
       <div className="flex border-b border-gray-100 sticky top-14 bg-parallel-cream z-10">
-        {(['overview', 'earnings', 'payouts'] as DashboardTab[]).map(t => (
+        {(['promote', 'payouts'] as DashboardTab[]).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -1165,7 +1189,7 @@ function AffiliateDashboard({
               ? <span className="flex items-center justify-center gap-1.5">
                   Payouts <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                 </span>
-              : t
+              : t === 'promote' ? 'Promote' : 'Payouts'
             }
           </button>
         ))}
@@ -1173,113 +1197,87 @@ function AffiliateDashboard({
 
       <div className="px-5">
 
-        {/* ── Overview tab ── */}
-        {tab === 'overview' && (
-          <div className="pb-8">
+        {/* ── Promote tab ── */}
+        {tab === 'promote' && (
+          <div className="pb-12 pt-5 space-y-6">
 
-            {/* Hero */}
-            <div className="text-center pt-8 pb-2">
-              <div
-                className="text-8xl font-medium leading-none mb-2 transition-colors duration-500"
-                style={{ color: hex.accent }}
-              >
-                {conversions}
-              </div>
-              <div className="text-xs uppercase tracking-widest text-gray-500">members referred</div>
-              {Number(profile.total_paid_lifetime) > 0 && (
-                <div className="text-sm text-gray-400 mt-1">
-                  ${Number(profile.total_paid_lifetime).toFixed(2)} paid out
-                </div>
+            {/* Referral link */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Referral link</p>
+              {profile.affiliate_link ? (
+                <>
+                  <div className="flex gap-2 mb-1.5">
+                    <button
+                      onClick={handleCopyLink}
+                      className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-4 py-2.5 rounded-full text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      {copiedLink ? <><Check size={14} aria-hidden="true" />Copied!</> : <><Copy size={14} aria-hidden="true" />Copy link</>}
+                    </button>
+                    <button
+                      onClick={handleShare}
+                      className="flex-1 text-white px-4 py-2.5 rounded-full text-sm font-medium flex items-center justify-center gap-2"
+                      style={{ background: hex.btn }}
+                    >
+                      {sharedFallback ? <><Check size={14} aria-hidden="true" />Copied!</> : <><Share2 size={14} aria-hidden="true" />Share</>}
+                    </button>
+                  </div>
+                  <p className="text-center text-xs text-gray-300 font-mono break-all">{profile.affiliate_link}</p>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400">Your link is being set up — check back soon.</p>
               )}
             </div>
 
-            {/* Progress bar */}
-            <div className="mt-6">
-              <div className="flex justify-between items-baseline mb-2">
-                <div className="text-sm font-medium text-gray-900">{challenge.text}</div>
-                {challenge.to && (
-                  <div className="text-xs text-gray-500">{conversions} / {challenge.to}</div>
-                )}
-              </div>
-              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${progressPct}%`, background: hex.accent }}
-                />
-              </div>
-              <div className="flex justify-between mt-2">
-                {MILESTONES.map(m => (
-                  <div key={m} className="text-center">
-                    <div
-                      className="w-1.5 h-1.5 rounded-full mx-auto mb-1 transition-colors duration-300"
-                      style={{ background: conversions >= m ? hex.accent : '#E8E4DE' }}
-                    />
-                    <div
-                      className="text-[10px] transition-colors duration-300"
-                      style={{ color: conversions >= m ? '#888780' : '#D3D1C7' }}
-                    >
-                      {m}
-                    </div>
+            {/* Discount code */}
+            {profile.promo_code && (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Discount code</p>
+                <button
+                  onClick={handleCopyCode}
+                  className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Tag size={14} className="text-gray-400 flex-shrink-0" />
+                    <span className="font-mono text-sm font-bold text-gray-900">{profile.promo_code}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* At a glance */}
-            <div className="mt-8 grid grid-cols-3 gap-2">
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Commission</p>
-                <p className="text-base font-bold tabular-nums" style={{ color: hex.accent }}>
-                  {profile.commission_rate_pct}%
-                </p>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Your discount</p>
-                <p className="text-base font-bold tabular-nums text-gray-900">
-                  {profile.subscription_discount_pct}% off
-                </p>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 text-center">
-                <p className="text-xs text-gray-400 mb-1">Attribution</p>
-                <p className="text-base font-bold tabular-nums text-gray-900">
-                  {profile.program.attribution_window_days}d
-                </p>
-              </div>
-            </div>
-
-            {/* Own discount callout */}
-            {profile.subscription_discount_pct > 0 && (
-              <div className="mt-4 bg-white border border-gray-100 rounded-2xl px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <Tag size={15} className="text-gray-400 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Your member discount</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Affiliates get {profile.subscription_discount_pct}% off their own subscription.</p>
+                  <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
+                    {copiedCode ? <><Check size={13} />Copied</> : <><Copy size={13} />Copy</>}
                   </div>
-                  <a
-                    href="/?view=pricing"
-                    className="text-xs font-medium underline flex-shrink-0"
-                    style={{ color: hex.accent }}
-                  >
-                    Subscribe →
-                  </a>
-                </div>
-                {profile.promo_code && (
-                  <p className="text-xs text-gray-400 mt-2.5 pl-[26px]">
-                    Enter code <span className="font-mono font-semibold text-gray-700">{profile.promo_code}</span> at checkout.
-                  </p>
-                )}
+                </button>
+                <p className="text-xs text-gray-400 mt-1.5 text-center">Your audience uses this at checkout for {profile.subscription_discount_pct}% off</p>
               </div>
             )}
 
+            <ResourcesTab profile={profile} />
+          </div>
+        )}
+
+        {/* ── Payouts tab ── */}
+        {tab === 'payouts' && (
+          <div className="pb-8 pt-5">
+
+            {/* Stats header */}
+            <div className="flex items-baseline gap-3 mb-6">
+              <div className="text-5xl font-medium leading-none" style={{ color: hex.accent }}>
+                {conversions}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">referral{conversions !== 1 ? 's' : ''}</p>
+                {Number(profile.total_paid_lifetime) > 0 && (
+                  <p className="text-xs text-gray-400">${Number(profile.total_paid_lifetime).toFixed(2)} paid out</p>
+                )}
+              </div>
+              <div className="ml-auto text-right">
+                <p className="text-xs text-gray-400">Commission</p>
+                <p className="text-sm font-bold" style={{ color: hex.accent }}>{profile.commission_rate_pct}%</p>
+              </div>
+            </div>
+
             {/* Payout nudge */}
             {conversions > 0 && !profile.bank_account_connected && (
-              <div className="mt-6 flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5">
-                <AlertCircle size={16} className="text-amber-500 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-amber-800">Set up payouts to get paid</p>
-                  <p className="text-xs text-amber-600 mt-0.5">You have referrals — connect your bank to start receiving commissions.</p>
-                </div>
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 mb-5">
+                <AlertCircle size={15} className="text-amber-500 flex-shrink-0" />
+                <p className="text-sm text-amber-800 flex-1">Connect your bank to receive commissions</p>
                 <button
                   onClick={() => setTab('payouts')}
                   className="text-xs font-medium text-amber-700 underline flex-shrink-0"
@@ -1289,114 +1287,17 @@ function AffiliateDashboard({
               </div>
             )}
 
-            {/* Share section */}
-            <div className="mt-8">
-              <div className="text-center text-sm text-gray-500 italic mb-4 px-4 leading-relaxed">
-                {nudge}
-              </div>
-
-              {profile.affiliate_link ? (
-                <>
-                  <div className="flex gap-3 mb-3">
-                    <button
-                      onClick={handleCopyLink}
-                      className="flex-1 border border-gray-200 bg-parallel-cream text-gray-800 px-5 py-3.5 rounded-full text-sm font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-                    >
-                      {copiedLink
-                        ? <><Check size={16} aria-hidden="true" />Copied!</>
-                        : <><Copy size={16} aria-hidden="true" />Copy link</>
-                      }
-                    </button>
-                    <button
-                      onClick={handleShare}
-                      className="flex-1 text-white px-5 py-3.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                      style={{ background: hex.btn }}
-                    >
-                      {sharedFallback
-                        ? <><Check size={16} aria-hidden="true" />Copied!</>
-                        : <><Share2 size={16} aria-hidden="true" />Share</>
-                      }
-                    </button>
-                  </div>
-                  <div className="text-center text-xs text-gray-300 font-mono break-all mb-4">
-                    {profile.affiliate_link}
-                  </div>
-                </>
-              ) : (
-                <div className="bg-white border border-gray-100 rounded-2xl p-4 text-sm text-gray-500 text-center mb-4">
-                  Your tracked link is being set up — check back soon.
-                </div>
-              )}
-
-              {profile.promo_code && (
-                <button
-                  onClick={handleCopyCode}
-                  className="w-full flex items-center justify-between bg-white border border-gray-100 rounded-2xl px-4 py-3.5 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Tag size={14} className="text-gray-400 flex-shrink-0" />
-                    <span className="text-xs text-gray-500 mr-1">Promo code</span>
-                    <span className="font-mono text-sm font-semibold text-gray-900">{profile.promo_code}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs font-medium flex-shrink-0" style={{ color: hex.accent }}>
-                    {copiedCode
-                      ? <><Check size={13} />Copied</>
-                      : <><Copy size={13} />Copy</>
-                    }
-                  </div>
-                </button>
-              )}
-            </div>
-
-            {/* Tier ladder */}
-            <div className="mt-8">
-              <div className="text-xs uppercase tracking-widest text-gray-500 mb-3">Affiliate tiers</div>
-              <div className="border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100 bg-white">
-                {TIERS.map((t, i) => {
-                  const isCurrent = profile.tier === t.id;
-                  const isPast = tierOrder[profile.tier] > i;
-                  const isActive = isCurrent || isPast;
-                  const tHex = TIER_HEX[t.id];
-                  return (
-                    <div
-                      key={t.id}
-                      className="flex items-center gap-3 px-4 py-3"
-                      style={{ opacity: isActive ? 1 : 0.35 }}
-                    >
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
-                        style={{
-                          background: isActive ? tHex.dotBg : '#F1EFE8',
-                          color: isActive ? tHex.dotText : '#B4B2A9',
-                        }}
-                      >
-                        {i + 1}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900">{t.label}</div>
-                        <div className="text-xs text-gray-500 truncate">{t.requirement} · {t.commission}</div>
-                      </div>
-                      <div className="text-sm font-medium w-5 text-right flex-shrink-0" style={{ color: isActive ? tHex.accent : '#D3D1C7' }}>
-                        {isPast ? '✓' : isCurrent ? '→' : ''}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── Earnings tab ── */}
-        {tab === 'earnings' && (
-          <div className="pt-5">
+            {/* Earnings */}
             <EarningsTab />
-          </div>
-        )}
 
-        {/* ── Payouts tab ── */}
-        {tab === 'payouts' && (
-          <div className="pt-5">
+            {/* Payout setup divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100" /></div>
+              <div className="relative flex justify-center">
+                <span className="bg-parallel-cream px-3 text-xs text-gray-400">Payout setup</span>
+              </div>
+            </div>
+
             <PayoutsTab
               profile={profile}
               onProfileUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
@@ -1404,6 +1305,268 @@ function AffiliateDashboard({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Resources Tab ─────────────────────────────────────────────────────────────
+
+function CopyButton({ text, label }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#7B5EA7]/10 text-[#7B5EA7] hover:bg-[#7B5EA7]/20 transition-colors flex-shrink-0"
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? 'Copied!' : (label ?? 'Copy')}
+    </button>
+  );
+}
+
+interface CaptionCard {
+  id: string;
+  platform: string;
+  angle: string;
+  body: string;
+}
+
+function buildCaptions(link: string | null, code: string | null): CaptionCard[] {
+  const l = link ?? 'https://getparallel.vip';
+  const c = code ?? 'YOUR_CODE';
+  return [
+    {
+      id: 'authentic',
+      platform: 'Instagram · TikTok',
+      angle: 'Personal recommendation',
+      body: `I've been using this dating app called Parallel and honestly it's the most thoughtful one I've come across. Instead of swiping, you go through a detailed questionnaire and they match you based on real compatibility — values, lifestyle, attachment style, all of it.\n\nIf you want to try it, use my code ${c} for a discount on your subscription 🖤\n\n${l}`,
+    },
+    {
+      id: 'problem',
+      platform: 'Instagram · TikTok',
+      angle: 'Problem → solution',
+      body: `If you're tired of dating apps that feel like shopping for people, Parallel is different. They actually care about compatibility over appearance — their matching is based on a deep questionnaire, not just photos.\n\nUse code ${c} to get a discount when you sign up:\n${l}`,
+    },
+    {
+      id: 'short',
+      platform: 'Stories · Twitter/X',
+      angle: 'Short & punchy',
+      body: `Found a dating app that actually takes compatibility seriously. Use my code ${c} for a discount → ${l}`,
+    },
+    {
+      id: 'why',
+      platform: 'Long-form · YouTube desc',
+      angle: 'Why Parallel',
+      body: `I partnered with Parallel because I genuinely believe in what they're building. It's a curated matchmaking app — you fill out a thoughtful questionnaire covering your values, lifestyle, and what you're really looking for, and they handle the matching. No endless swiping.\n\nUse code ${c} to get a discount on your subscription: ${l}\n\n(I earn a small commission at no extra cost to you — thank you for supporting me!)`,
+    },
+  ];
+}
+
+function ResourcesTab({ profile }: { profile: AffiliateProfile }) {
+  const captions = buildCaptions(profile.affiliate_link, profile.promo_code);
+  const [openCaption, setOpenCaption] = useState<string | null>(null);
+
+  const hooks = [
+    '"I finally found a dating app that treats you like a whole person, not a photo"',
+    '"This app asked me more questions about myself than any date ever has"',
+    '"The reason I like Parallel: they actually think about whether two people are compatible before connecting them"',
+    '"Genuine question — why are most dating apps still just about photos? Parallel is doing it differently"',
+    '"Dating app hot take: the questionnaire is the most attractive part"',
+  ];
+
+  const dos = [
+    'Share your genuine experience — authenticity converts far better than scripted posts',
+    'Mention what specifically resonated with you about Parallel\'s approach',
+    'Use your unique code and link so you get credit for every referral',
+    'Disclose the partnership (required by FTC) — something like "partnered with" or "use my code"',
+    'Tag @getparallel or use #parallel if it fits your style',
+  ];
+
+  const donts = [
+    'Don\'t make guarantees about finding love or relationships',
+    'Don\'t compare Parallel negatively to specific other apps by name',
+    'Don\'t alter or fabricate screenshots of the app',
+    'Don\'t run paid ads targeting "Parallel" as a keyword without approval',
+    'Don\'t use the PARA//EL. wordmark in ways that look like official Parallel content',
+  ];
+
+  return (
+    <div className="space-y-8">
+
+      {/* Caption Templates */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <FileText size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Caption templates</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Tap to expand and copy — your code and link are already filled in.</p>
+        <div className="space-y-2">
+          {captions.map(c => (
+            <div key={c.id} className="border border-gray-200 rounded-2xl overflow-hidden">
+              <button
+                onClick={() => setOpenCaption(openCaption === c.id ? null : c.id)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{c.angle}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{c.platform}</p>
+                </div>
+                {openCaption === c.id ? <ChevronUp size={16} className="text-gray-400 flex-shrink-0" /> : <ChevronDown size={16} className="text-gray-400 flex-shrink-0" />}
+              </button>
+              {openCaption === c.id && (
+                <div className="px-4 pb-4 border-t border-gray-100">
+                  <pre className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans mt-3 mb-3">{c.body}</pre>
+                  <CopyButton text={c.body} label="Copy caption" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Follow & share our posts */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Share2 size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Share our posts</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Repost one of our existing ads to your story and add your code or link on top.</p>
+
+        {/* Profile links */}
+        <div className="flex gap-3 mb-4">
+          <a
+            href="https://www.instagram.com/parallel_vip"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 text-white text-sm font-semibold"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            @parallel_vip
+          </a>
+          <a
+            href="https://www.tiktok.com/@parallel_vip"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl bg-black text-white text-sm font-semibold"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+            @parallel_vip
+          </a>
+        </div>
+
+        {/* Story sharing steps */}
+        <div className="bg-gray-50 rounded-2xl px-4 py-4 space-y-3">
+          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">How to share a post to your story</p>
+          {[
+            { n: '1', text: 'Open our Instagram or TikTok and find a post you like' },
+            { n: '2', text: 'Tap the share icon → "Add to Story" (Instagram) or "Share to Story" (TikTok)' },
+            { n: '3', text: 'Add a sticker or text with your promo code and affiliate link' },
+            { n: '4', text: 'Post — your followers see our content with your personal referral on top' },
+          ].map(step => (
+            <div key={step.n} className="flex items-start gap-3">
+              <span className="w-5 h-5 rounded-full bg-[#7B5EA7] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{step.n}</span>
+              <p className="text-sm text-gray-600 leading-snug">{step.text}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick copy for story overlay */}
+        <div className="mt-3 border border-gray-200 rounded-2xl px-4 py-3">
+          <p className="text-xs text-gray-500 mb-2">Quick copy for your story overlay:</p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-gray-800 font-medium">
+              Use code <span className="font-bold text-[#7B5EA7]">{profile.promo_code ?? 'YOUR_CODE'}</span> → {profile.affiliate_link ?? 'getparallel.vip'}
+            </p>
+            <CopyButton text={`Use code ${profile.promo_code ?? 'YOUR_CODE'} → ${profile.affiliate_link ?? 'https://getparallel.vip'}`} />
+          </div>
+        </div>
+      </section>
+
+      {/* Content hooks */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Lightbulb size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Hook ideas</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Use as-is or riff on them.</p>
+        <div className="space-y-2">
+          {hooks.map((h, i) => (
+            <div key={i} className="flex items-start gap-3 bg-gray-50 rounded-xl px-4 py-3">
+              <p className="text-sm text-gray-700 flex-1 leading-snug italic">{h}</p>
+              <CopyButton text={h} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Visual assets — coming soon */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Image size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Visual assets</h3>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">Branded graphics, story templates, and Canva files — coming soon.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {['Story slides', 'Square graphics', 'Canva templates', 'Logo kit'].map(name => (
+            <div key={name} className="border border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center py-7 gap-2">
+              <Sparkles size={18} className="text-gray-300" />
+              <p className="text-xs text-gray-400 text-center font-medium">{name}</p>
+              <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">Coming soon</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Do's and don'ts */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 size={16} className="text-[#7B5EA7]" />
+          <h3 className="text-sm font-semibold text-gray-900">Brand guidelines</h3>
+        </div>
+        <div className="space-y-3">
+          <div className="bg-emerald-50 rounded-2xl px-4 py-4">
+            <p className="text-xs font-semibold text-emerald-700 mb-2 uppercase tracking-wide">Do</p>
+            <ul className="space-y-2">
+              {dos.map((d, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-emerald-800">
+                  <Check size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                  {d}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-red-50 rounded-2xl px-4 py-4">
+            <p className="text-xs font-semibold text-red-600 mb-2 uppercase tracking-wide">Don't</p>
+            <ul className="space-y-2">
+              {donts.map((d, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-red-800">
+                  <AlertCircle size={14} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  {d}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Need something custom */}
+      <section className="bg-[#7B5EA7]/8 rounded-2xl px-5 py-5 text-center" style={{ background: 'rgba(123,94,167,0.08)' }}>
+        <p className="text-sm font-semibold text-gray-900 mb-1">Need custom content?</p>
+        <p className="text-xs text-gray-500 mb-4 leading-relaxed">Have a specific campaign in mind or want co-created content? Reach out and we'll work with you directly.</p>
+        <a
+          href="mailto:hello@getparallel.vip?subject=Affiliate%20Content%20Request"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#7B5EA7] hover:opacity-80 transition-opacity"
+        >
+          hello@getparallel.vip <ExternalLink size={13} />
+        </a>
+      </section>
+
     </div>
   );
 }
@@ -1471,6 +1634,8 @@ export function AffiliatePortalView({ onBack, onSignOut, isAffiliateOnly, person
       if (Array.isArray(apps) && apps.length > 0) {
         setApplication(apps[0] as AffiliateApplication);
         setState('submitted');
+        // Ensure refresh without ?view=affiliate-portal still routes here, not to dating onboarding
+        try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
       } else {
         setState('apply');
       }

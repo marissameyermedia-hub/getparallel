@@ -704,6 +704,8 @@ function App() {
             // Explicit affiliate deep link (apply / status / dashboard) —
             // the portal resolves which state to show, including pending
             // applicants who aren't active affiliates yet.
+            // Persist so that a refresh with a clean URL still routes here.
+            try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
             window.history.replaceState({}, '', window.location.pathname);
             setCurrentView('affiliate-portal');
           } else {
@@ -711,10 +713,20 @@ function App() {
             // pending applicants to the portal; everyone else to onboarding.
             // affiliateIntent = true means the user explicitly came via the
             // affiliate URL — always send them to the portal, no network check.
-            const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
-            setCurrentView(affiliateIntent
-              ? 'affiliate-portal'
-              : (cachedIsAffiliate ? await resolveNonOnboardedRoute(session.access_token) : 'onboarding'));
+            if (affiliateIntent) {
+              // Persist the flag so refresh without the URL param still routes here
+              try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
+              setCurrentView('affiliate-portal');
+            } else {
+              // Always probe the DB — do NOT gate on the localStorage cache.
+              // The cache can be absent (fresh browser, private mode, or wiped
+              // by a session-expiry localStorage.clear()), which would silently
+              // drop an affiliate into the dating onboarding questionnaire.
+              // resolveNonOnboardedRoute sets parallel_is_affiliate='true' on
+              // success, so the next load is just as fast and the portal is
+              // never accidentally skipped.
+              setCurrentView(await resolveNonOnboardedRoute(session.access_token));
+            }
           }
         } else {
           const storedToken = await getAccessToken();
@@ -773,6 +785,8 @@ function App() {
                 }
               } else if (params.get('view') === 'affiliate-portal') {
                 // Explicit affiliate deep link — portal resolves the state.
+                // Persist so that a refresh with a clean URL still routes here.
+                try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
                 window.history.replaceState({}, '', window.location.pathname);
                 setCurrentView('affiliate-portal');
               } else {
@@ -780,10 +794,14 @@ function App() {
                 // pending applicants to the portal; everyone else to onboarding.
                 // affiliateIntent = true means the user explicitly came via the
                 // affiliate URL — always send them to the portal, no network check.
-                const cachedIsAffiliate = (() => { try { return localStorage.getItem('parallel_is_affiliate') === 'true'; } catch { return false; } })();
-                setCurrentView(affiliateIntent
-                  ? 'affiliate-portal'
-                  : (cachedIsAffiliate ? await resolveNonOnboardedRoute(storedToken) : 'onboarding'));
+                if (affiliateIntent) {
+                  // Persist the flag so refresh without the URL param still routes here
+                  try { localStorage.setItem('parallel_is_affiliate', 'true'); } catch { /* noop */ }
+                  setCurrentView('affiliate-portal');
+                } else {
+                  // Always probe the DB — see comment in session path above.
+                  setCurrentView(await resolveNonOnboardedRoute(storedToken));
+                }
               }
             } catch (tokenErr) {
               toast('Your session expired — please sign back in.', { duration: 4000 });
