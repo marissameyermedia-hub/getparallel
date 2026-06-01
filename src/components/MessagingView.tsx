@@ -8,7 +8,8 @@ import { MessagingSkeleton } from './Skeletons';
 import { progress } from './NavigationProgress';
 import { ConversationUnsticker } from './messaging/ConversationUnsticker';
 import { DatePlannerCard, type DatePlannerCardHandle } from './messaging/DatePlannerCard';
-import { DateConfirmCard, DATE_CARD_PREFIX } from './messaging/DateConfirmCard';
+import { DateConfirmCard, DATE_CARD_PREFIX, type DateCardData } from './messaging/DateConfirmCard';
+import { DateCancellationCard, DATE_CANCELLATION_PREFIX, type DateCancellationData } from './messaging/DateCancellationCard';
 import { DateProposalCard, DATE_PROPOSAL_PREFIX, DATE_RESPONSE_PREFIX, type DateResponseData, type ProposalSlot } from './messaging/DateProposalCard';
 import { RecoverySignalSheet } from './messaging/RecoverySignalSheet';
 import { DateResponseBanner } from './messaging/DateResponseBanner';
@@ -53,6 +54,7 @@ interface MessagingViewProps {
   matchPhoto: string;
   matchId: string;
   onBack: () => void;
+  userName?: string;
   compatibilityScore?: number;
   mutualMatch?: boolean;
   onConfirmMet?: (matchId: string, source?: 'banner' | 'kebab') => void;
@@ -200,12 +202,16 @@ export function MessagingView({
   featureDateAgent = false,
   featureRecoverySignal = false,
   featureFeedbackLoop = false,
+  userName = '',
 }: MessagingViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showSafetyMenu, setShowSafetyMenu] = useState(false);
   const [showUnmatchModal, setShowUnmatchModal] = useState(false);
+  const [showCancelDateSheet, setShowCancelDateSheet] = useState(false);
+  const [pendingCancelCardData, setPendingCancelCardData] = useState<DateCardData | null>(null);
+  const [showRemoveMatchSheet, setShowRemoveMatchSheet] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showStarters, setShowStarters] = useState(false);
   const [aiStarters, setAiStarters] = useState<string[] | null>(null);
@@ -663,6 +669,19 @@ export function MessagingView({
     }
   };
 
+  const handleConfirmCancelDate = (cardData: DateCardData) => {
+    setShowCancelDateSheet(false);
+    setPendingCancelCardData(null);
+    localStorage.removeItem(`parallel_cancel_intent_${matchId}`);
+    const cancellationData: DateCancellationData = {
+      cancelledByUserId: currentUserId,
+      cancelledByName: userName || 'Your match',
+      venueName: cardData.venueName,
+      dateLabel: cardData.label,
+    };
+    handleSend(`${DATE_CANCELLATION_PREFIX}${JSON.stringify(cancellationData)}`);
+  };
+
   const dismissFadeNudge = () => {
     localStorage.setItem(`parallel_fade_nudge_${matchId}`, '1');
     setShowFadeNudge(false);
@@ -766,7 +785,7 @@ export function MessagingView({
     lastProposalMsg &&
     lastProposalMsg.senderId !== currentUserId &&
     !dateResponseMsg &&
-    !messages.some(m => m.text.startsWith(DATE_CARD_PREFIX))
+    !messages.some(m => m.text.startsWith(DATE_CARD_PREFIX)) || hasDateCancelled
   );
   const pendingProposalSlots: ProposalSlot[] = showResponseBanner && lastProposalMsg ? (() => {
     try {
@@ -777,7 +796,8 @@ export function MessagingView({
 
   // "Both online now" nudge — show when match is active now and no date confirmed
   const isMatchActiveNow = formatLastActive(lastActiveAt) === 'Active now';
-  const hasConfirmedDate = messages.some(m => m.text.startsWith(DATE_CARD_PREFIX));
+  const hasDateCancelled = messages.some(m => m.text.startsWith(DATE_CANCELLATION_PREFIX));
+  const hasConfirmedDate = messages.some(m => m.text.startsWith(DATE_CARD_PREFIX)) && !hasDateCancelled;
   const showBothOnlineNudge = !!(
     featureDateAgent &&
     isMatchActiveNow &&
@@ -904,6 +924,68 @@ export function MessagingView({
             if (recoveryTrigger === 'unmatch') onBack();
           }}
         />
+      )}
+
+      {/* Cancel date confirmation sheet */}
+      {showCancelDateSheet && pendingCancelCardData && (
+        <>
+          <div className="fixed inset-0 bg-parallel-void/40 z-[65]" onClick={() => setShowCancelDateSheet(false)} aria-hidden="true" />
+          <div
+            className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-[70] px-6 pt-6 pb-10"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-date-title"
+          >
+            <h3 id="cancel-date-title" className="text-lg font-semibold mb-1">Cancel this date?</h3>
+            <p className="text-sm text-gray-500 mb-6">{matchName} will be notified and asked if they'd like to reschedule.</p>
+            <div className="space-y-3">
+              <button
+                onClick={() => handleConfirmCancelDate(pendingCancelCardData)}
+                className="w-full py-3 rounded-full bg-parallel-void text-parallel-cream font-medium"
+              >
+                Cancel date
+              </button>
+              <button
+                onClick={() => setShowCancelDateSheet(false)}
+                className="w-full py-3 rounded-full border-2 border-gray-200 text-gray-700 font-medium"
+              >
+                Keep it
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Remove match confirmation sheet */}
+      {showRemoveMatchSheet && (
+        <>
+          <div className="fixed inset-0 bg-parallel-void/40 z-[65]" onClick={() => setShowRemoveMatchSheet(false)} aria-hidden="true" />
+          <div
+            className="fixed bottom-0 left-0 right-0 bg-parallel-cream rounded-t-3xl z-[70] px-6 pt-6 pb-10"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-match-title"
+          >
+            <h3 id="remove-match-title" className="text-lg font-semibold mb-1">Remove this match?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              {matchName} will be permanently removed from your matches. You won't be able to reconnect.
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => { setShowRemoveMatchSheet(false); handleUnmatch(); }}
+                className="w-full py-3 rounded-full bg-red-500 text-white font-medium"
+              >
+                Remove {matchName}
+              </button>
+              <button
+                onClick={() => setShowRemoveMatchSheet(false)}
+                className="w-full py-3 rounded-full border-2 border-gray-200 text-gray-700 font-medium"
+              >
+                Keep them for now
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Unmatch Modal */}
@@ -1098,20 +1180,33 @@ export function MessagingView({
                     <DateConfirmCard
                       data={cardData}
                       isMe={isMySend}
-                      onCancel={() => {
-                        const cancelMsg = `Hey, something came up and I need to cancel our plans at ${cardData.venueName}. So sorry — can we reschedule?`;
-                        setNewMessage(cancelMsg);
-                        setTimeout(() => textareaRef.current?.focus(), 50);
+                      onCancel={hasDateCancelled ? undefined : () => {
+                        setPendingCancelCardData(cardData);
+                        setShowCancelDateSheet(true);
                       }}
-                      onReschedule={() => {
-                        const rescheduleMsg = `Hey, I'm so sorry — something came up and I need to reschedule. Can we find another time that works?`;
-                        setNewMessage(rescheduleMsg);
-                        setTimeout(() => textareaRef.current?.focus(), 50);
-                      }}
+                      onReschedule={hasDateCancelled ? undefined : () => datePlannerRef.current?.open()}
                     />
                     {isLast && (
                       <p className="text-[10px] text-center text-gray-500 mt-1">{formatTime(message.timestamp)}</p>
                     )}
+                  </div>
+                );
+              } catch { /* fall through to normal bubble */ }
+            }
+
+            if (message.text.startsWith(DATE_CANCELLATION_PREFIX)) {
+              try {
+                const cancellationData: DateCancellationData = JSON.parse(message.text.slice(DATE_CANCELLATION_PREFIX.length));
+                return (
+                  <div key={message.id} className="px-2 my-2">
+                    <DateCancellationCard
+                      data={cancellationData}
+                      currentUserId={currentUserId}
+                      matchName={matchName}
+                      matchId={matchId}
+                      onReschedule={() => datePlannerRef.current?.open()}
+                      onRemoveMatch={() => setShowRemoveMatchSheet(true)}
+                    />
                   </div>
                 );
               } catch { /* fall through to normal bubble */ }

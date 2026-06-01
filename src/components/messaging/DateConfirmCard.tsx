@@ -69,7 +69,7 @@ export function DateConfirmCard({ data, isMe, onCancel, onReschedule }: DateConf
           <CalendarPlus size={13} className="text-[#7B5EA7]" aria-hidden="true" />
           <span className="text-[11px] font-semibold text-[#7B5EA7] tracking-wide">Date confirmed</span>
         </div>
-        {isMe && onCancel && (
+        {onCancel && (
           <button
             onClick={onCancel}
             className="flex items-center gap-1 text-[10px] text-[#C0BAC8] hover:text-[#8A8690] transition-colors"

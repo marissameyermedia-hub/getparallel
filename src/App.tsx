@@ -2033,6 +2033,7 @@ function App() {
             featureDateAgent={featureFlags['feature_date_agent_enabled'] === true}
             featureRecoverySignal={featureFlags['feature_recovery_signal_enabled'] === true}
             featureFeedbackLoop={featureFlags['feature_feedback_loop_enabled'] === true}
+            userName={userName}
           />
         )}
 
