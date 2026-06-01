@@ -9,6 +9,7 @@ import { SetupChecklist } from './SetupChecklist';
 const DATE_PROPOSAL_PREFIX = '__DATE_PROPOSAL__';
 const DATE_RESPONSE_PREFIX = '__DATE_RESPONSE__';
 const DATE_CARD_PREFIX = '__DATE_CARD__';
+const DATE_CANCELLATION_PREFIX = '__DATE_CANCEL__';
 
 function formatMessagePreview(text: string): string {
   if (!text) return '';
@@ -29,6 +30,12 @@ function formatMessagePreview(text: string): string {
       const d = JSON.parse(text.slice(DATE_CARD_PREFIX.length));
       return `🗓 Date at ${d.venueName ?? 'a venue'} confirmed`;
     } catch { return '🗓 Date confirmed'; }
+  }
+  if (text.startsWith(DATE_CANCELLATION_PREFIX)) {
+    try {
+      const d = JSON.parse(text.slice(DATE_CANCELLATION_PREFIX.length));
+      return `Date at ${d.venueName ?? 'a venue'} cancelled`;
+    } catch { return 'Date cancelled'; }
   }
   return text;
 }

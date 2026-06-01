@@ -670,6 +670,10 @@ export function MessagingView({
   };
 
   const handleConfirmCancelDate = (cardData: DateCardData) => {
+    if (!emailVerified) {
+      toast.error('Verify your email to send messages.');
+      return;
+    }
     setShowCancelDateSheet(false);
     setPendingCancelCardData(null);
     localStorage.removeItem(`parallel_cancel_intent_${matchId}`);
@@ -780,24 +784,18 @@ export function MessagingView({
 
   // Show recipient banner when the latest proposal came from the match and has no response yet
   const lastProposalMsg = lastProposalMsgId ? messages.find(m => m.id === lastProposalMsgId) : null;
+  // "Both online now" nudge — show when match is active now and no date confirmed
+  const isMatchActiveNow = formatLastActive(lastActiveAt) === 'Active now';
+  const hasDateCancelled = messages.some(m => m.text.startsWith(DATE_CANCELLATION_PREFIX));
+  const hasConfirmedDate = messages.some(m => m.text.startsWith(DATE_CARD_PREFIX)) && !hasDateCancelled;
+
   const showResponseBanner = !!(
     featureDateAgent &&
     lastProposalMsg &&
     lastProposalMsg.senderId !== currentUserId &&
     !dateResponseMsg &&
-    !messages.some(m => m.text.startsWith(DATE_CARD_PREFIX)) || hasDateCancelled
+    (!messages.some(m => m.text.startsWith(DATE_CARD_PREFIX)) || hasDateCancelled)
   );
-  const pendingProposalSlots: ProposalSlot[] = showResponseBanner && lastProposalMsg ? (() => {
-    try {
-      const d = JSON.parse(lastProposalMsg.text.slice(DATE_PROPOSAL_PREFIX.length));
-      return Array.isArray(d.slots) ? d.slots : [];
-    } catch { return []; }
-  })() : [];
-
-  // "Both online now" nudge — show when match is active now and no date confirmed
-  const isMatchActiveNow = formatLastActive(lastActiveAt) === 'Active now';
-  const hasDateCancelled = messages.some(m => m.text.startsWith(DATE_CANCELLATION_PREFIX));
-  const hasConfirmedDate = messages.some(m => m.text.startsWith(DATE_CARD_PREFIX)) && !hasDateCancelled;
   const showBothOnlineNudge = !!(
     featureDateAgent &&
     isMatchActiveNow &&
