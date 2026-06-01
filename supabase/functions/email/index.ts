@@ -1,4 +1,6 @@
-// Parallel — email edge function v20
+// Parallel — email edge function v21
+// v21: Add /affiliate-w9-reminder — weekly cron-based W-9 reminder for affiliates who have
+//      connected their bank but not yet submitted a W-9. Three escalating tiers based on count.
 // v20: Add /affiliate-bank-connected — sent after bank account connects in payout setup.
 //      Confirms the ACH link and requests W-9 (or W-8BEN) via reply-to email.
 // v19: Remove /affiliate-needs-info — "needs more info" flow deleted entirely.
@@ -776,12 +778,136 @@ async function handleAffiliateBankConnected(req: Request) {
   return json({ ok: true });
 }
 
+function tplAffiliateW9Reminder(name: string | null, count: number) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const safeName = name ? escapeHtml(name) : "Affiliate";
+
+  let heading: string;
+  let urgencyLine: string;
+  let subject: string;
+
+  if (count === 0) {
+    heading = "W-9 reminder — one step left";
+    subject = "Reminder: W-9 required before your first payout";
+    urgencyLine = `<p style="margin:0 0 12px 0;">We connected your bank account a week ago but haven't received your W-9 yet. Federal tax law requires a completed form before we can release any payments — it only takes a few minutes to fill out.</p>`;
+  } else if (count === 1) {
+    heading = "Second reminder — W-9 still needed";
+    subject = "Second reminder: your earnings are on hold until we receive your W-9";
+    urgencyLine = `<p style="margin:0 0 12px 0;">This is a second reminder that your W-9 (or W-8BEN for non-US persons) is still outstanding. Any commissions you've earned <strong>cannot be paid out</strong> until we have it on file.</p>`;
+  } else {
+    heading = "Action required — W-9 overdue";
+    subject = "Action required: W-9 overdue — payouts are suspended";
+    urgencyLine = `<p style="margin:0 0 12px 0;"><strong style="color:#b91c1c;">Payouts are suspended for your account.</strong> We've sent several reminders and still haven't received your W-9 (or W-8BEN). Please reply to this email with your completed form today to avoid further delay.</p>`;
+  }
+
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    urgencyLine,
+    `<p style="margin:0 0 8px 0;font-weight:600;color:${B.void_};">How to submit your W-9</p>`,
+    `<p style="margin:0 0 12px 0;"><strong>Reply to this email</strong> with your completed W-9 attached, or send it to <a href="mailto:hello@getparallel.vip" style="color:${B.purple};">hello@getparallel.vip</a> with subject line <strong>"W-9 — ${safeName}"</strong>. We'll confirm once it's received and processed.</p>`,
+    `<p style="margin:0 0 4px 0;font-size:13px;color:${B.stone};">Need the form? <a href="https://www.irs.gov/forms-pubs/about-form-w-9" style="color:${B.purple};">Download W-9 from IRS.gov</a>. Non-US persons should use <a href="https://www.irs.gov/forms-pubs/about-form-w-8-ben" style="color:${B.purple};">Form W-8BEN</a>.</p>`,
+  ].join("");
+
+  const html = shellHtml({
+    heading,
+    body,
+    ctaUrl: `${APP_URL}?view=affiliate-portal`,
+    ctaLabel: "View your dashboard",
+  });
+
+  const urgencyText = count === 0
+    ? "We connected your bank account a week ago but haven't received your W-9 yet."
+    : count === 1
+    ? "This is a second reminder — your W-9 is still outstanding and commissions cannot be paid out without it."
+    : "ACTION REQUIRED — payouts are suspended. We have not received your W-9 despite multiple reminders.";
+
+  return {
+    subject,
+    html,
+    text: `${greeting}\n\n${urgencyText}\n\nReply to this email with your completed W-9 (or W-8BEN for non-US persons) attached, or send it to hello@getparallel.vip with subject "W-9 — ${name ?? "Affiliate"}".\n\nDownload W-9: https://www.irs.gov/forms-pubs/about-form-w-9\nDownload W-8BEN: https://www.irs.gov/forms-pubs/about-form-w-8-ben\n\nWe'll confirm once we've received and processed your form.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateW9Reminder(req: Request) {
+  const { serviceRole } = await getCaller(req);
+  if (!serviceRole) return json({ error: "Unauthorized" }, 401);
+
+  const admin = adminClient();
+
+  // Find all affiliates who have connected their bank but not submitted a W-9,
+  // and either have never received a cron reminder and connected >7 days ago,
+  // or received their last cron reminder >7 days ago.
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: affiliates, error: qErr } = await admin
+    .from("affiliates")
+    .select("id, email, display_name, w9_reminder_count, w9_reminder_sent_at, bank_account_collected_at")
+    .not("bank_account_collected_at", "is", null)
+    .not("mercury_recipient_id", "is", null)
+    .is("w9_collected_at", null)
+    .not("status", "eq", "rejected")
+    .or(`w9_reminder_sent_at.is.null,w9_reminder_sent_at.lt.${sevenDaysAgo}`);
+
+  if (qErr) {
+    console.error("[affiliate-w9-reminder] query error", qErr);
+    return json({ error: "DB error" }, 500);
+  }
+
+  const rows = affiliates ?? [];
+
+  // Filter: if w9_reminder_sent_at is null, ensure bank was connected >7 days ago
+  // (so we don't double-up immediately after the bank-connected email fires).
+  const eligible = rows.filter((a) => {
+    if (a.w9_reminder_sent_at) return true; // already been reminded once, resend window is met by query
+    return a.bank_account_collected_at < sevenDaysAgo;
+  });
+
+  let sent = 0, skipped = 0;
+
+  for (const affiliate of eligible) {
+    try {
+      const count: number = affiliate.w9_reminder_count ?? 0;
+      const tpl = tplAffiliateW9Reminder(affiliate.display_name, count);
+
+      const sendRes = await resendSend({
+        to: affiliate.email,
+        subject: tpl.subject,
+        html: tpl.html,
+        text: tpl.text,
+      });
+
+      if (!sendRes.ok) {
+        console.error("[affiliate-w9-reminder] send failed for", affiliate.id, sendRes.error);
+        skipped++;
+        continue;
+      }
+
+      const { error: updateErr } = await admin
+        .from("affiliates")
+        .update({
+          w9_reminder_sent_at: new Date().toISOString(),
+          w9_reminder_count: count + 1,
+        })
+        .eq("id", affiliate.id);
+
+      if (updateErr) console.error("[affiliate-w9-reminder] update failed for", affiliate.id, updateErr);
+
+      sent++;
+    } catch (err) {
+      console.error("[affiliate-w9-reminder] per-affiliate error", affiliate.id, err);
+      skipped++;
+    }
+  }
+
+  return json({ ok: true, sent, skipped, total: eligible.length });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "20" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "21" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -800,6 +926,7 @@ Deno.serve(async (req) => {
     if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);
     if (path === "/affiliate-payout-failed"      && req.method === "POST") return await handleAffiliatePayoutFailed(req);
     if (path === "/affiliate-bank-connected"     && req.method === "POST") return await handleAffiliateBankConnected(req);
+    if (path === "/affiliate-w9-reminder"        && req.method === "POST") return await handleAffiliateW9Reminder(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);
