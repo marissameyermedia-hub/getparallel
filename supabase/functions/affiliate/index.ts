@@ -1,4 +1,7 @@
-// Parallel — affiliate edge function v35
+// Parallel — affiliate edge function v36
+// v36: Fire /email/affiliate-bank-connected after Mercury recipient created in handlePayoutSetup.
+//      Confirms ACH link and requests W-9/W-8BEN via reply-to email (Mercury has no API for
+//      triggering their "Request tax docs" UI flow programmatically).
 // v35: Add required idempotencyKey to Mercury SendMoneyAPIRequest (payout_id used as key).
 // v34: Mercury address uses "region" not "state" (Model.AddressWithoutName requires "region").
 // v28: Surface raw Mercury error in payout/setup response for easier diagnostics.
@@ -354,6 +357,13 @@ async function handlePayoutSetup(req: Request): Promise<Response> {
 
     taxUpdate.mercury_recipient_id = recipientId;
     taxUpdate.bank_account_collected_at = now;
+
+    // Fire bank-connected + W-9 request email (fire-and-forget — don't block the response)
+    fetch(`${SUPABASE_URL}/functions/v1/email/affiliate-bank-connected`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SUPABASE_SERVICE_ROLE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}` },
+      body: JSON.stringify({ email: affiliate.email, name: affiliate.display_name }),
+    }).catch((err) => console.error("[affiliate/payout/setup] bank-connected email failed:", err));
   }
 
   const { error: updateErr } = await admin

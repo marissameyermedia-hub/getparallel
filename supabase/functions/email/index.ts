@@ -1,4 +1,6 @@
-// Parallel — email edge function v19
+// Parallel — email edge function v20
+// v20: Add /affiliate-bank-connected — sent after bank account connects in payout setup.
+//      Confirms the ACH link and requests W-9 (or W-8BEN) via reply-to email.
 // v19: Remove /affiliate-needs-info — "needs more info" flow deleted entirely.
 //      Applications are now decided directly (approve/reject); applicants reapply if rejected.
 // v18: Add /affiliate-payout-failed — notify affiliate when Mercury ACH fails
@@ -739,12 +741,47 @@ async function handleAffiliatePayoutFailed(req: Request) {
   return json({ ok: true });
 }
 
+function tplAffiliateBankConnected(name: string | null) {
+  const greeting = name ? `Hi ${name},` : "Hi,";
+  const safeName = name ? escapeHtml(name) : "Affiliate";
+  const body = [
+    `<p style="margin:0 0 12px 0;">${greeting}</p>`,
+    `<p style="margin:0 0 12px 0;">Your bank account has been successfully linked to your Parallel affiliate account. Payouts are sent via ACH on the 1st of each month once your commissions are available.</p>`,
+    `<p style="margin:0 0 8px 0;font-weight:600;color:${B.void_};">One more step — W-9 required</p>`,
+    `<p style="margin:0 0 12px 0;">Federal tax law requires a completed W-9 (or W-8BEN for non-US persons) before we can release any payments. <strong>Reply to this email with your completed form attached</strong>, or send it to <a href="mailto:hello@getparallel.vip" style="color:${B.purple};">hello@getparallel.vip</a> with subject line "W-9 — ${safeName}".</p>`,
+    `<p style="margin:0 0 4px 0;font-size:13px;color:${B.stone};">Need the form? <a href="https://www.irs.gov/forms-pubs/about-form-w-9" style="color:${B.purple};">Download W-9 from IRS.gov</a>. We'll confirm once we've received and processed your form.</p>`,
+  ].join("");
+  const html = shellHtml({
+    heading: "Bank account connected",
+    body,
+    ctaUrl: `${APP_URL}?view=affiliate-portal`,
+    ctaLabel: "View your dashboard",
+  });
+  return {
+    subject: "Bank account connected — W-9 required for payouts",
+    html,
+    text: `${greeting}\n\nYour bank account has been successfully linked to your Parallel affiliate account. Payouts are sent via ACH on the 1st of each month.\n\nOne more step — W-9 required:\nFederal tax law requires a completed W-9 (or W-8BEN for non-US persons) before we can release payments. Reply to this email with your completed form attached, or send it to hello@getparallel.vip with subject "W-9 — ${name ?? "Affiliate"}".\n\nDownload W-9 from IRS.gov: https://www.irs.gov/forms-pubs/about-form-w-9\n\nWe'll confirm once we've received your form.\n\n${APP_URL}?view=affiliate-portal`,
+  };
+}
+
+async function handleAffiliateBankConnected(req: Request) {
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "Invalid JSON" }, 400); }
+  const email = String(body.email ?? "").trim();
+  const name = body.name ? String(body.name).trim() : null;
+  if (!email) return json({ error: "email required" }, 400);
+  const tpl = tplAffiliateBankConnected(name);
+  const sendRes = await resendSend({ to: email, subject: tpl.subject, html: tpl.html, text: tpl.text });
+  if (!sendRes.ok) return json({ error: sendRes.error }, 500);
+  return json({ ok: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   const url = new URL(req.url);
   const path = url.pathname.replace(/^\/email\/?/i, "/").replace(/\/$/, "") || "/";
   try {
-    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "19" });
+    if (path === "/" || path === "/health") return json({ ok: true, service: "email", version: "20" });
     if (path === "/verify-send"        && req.method === "POST") return await handleVerifySend(req);
     if (path === "/resend"             && req.method === "POST") return await handleVerifySend(req);
     if (path === "/verify-confirm"     && req.method === "POST") return await handleVerifyConfirm(req);
@@ -762,6 +799,7 @@ Deno.serve(async (req) => {
     if (path === "/affiliate-commission-clawback" && req.method === "POST") return await handleAffiliateCommissionClawback(req);
     if (path === "/affiliate-payout-released"    && req.method === "POST") return await handleAffiliatePayoutReleased(req);
     if (path === "/affiliate-payout-failed"      && req.method === "POST") return await handleAffiliatePayoutFailed(req);
+    if (path === "/affiliate-bank-connected"     && req.method === "POST") return await handleAffiliateBankConnected(req);
     return json({ error: "Not found", path, method: req.method }, 404);
   } catch (err) {
     console.error("[email] unhandled:", err);
