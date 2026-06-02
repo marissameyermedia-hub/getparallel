@@ -9,7 +9,6 @@ interface MatchCardProps {
   onViewProfile: (userId: string) => void;
   onUnlock?: () => void;
   isLiked?: boolean;
-  hasLikedMe?: boolean;
 }
 
 export function MatchCard({
@@ -20,7 +19,6 @@ export function MatchCard({
   onViewProfile,
   onUnlock,
   isLiked = false,
-  hasLikedMe = false,
 }: MatchCardProps) {
   const { user, compatibilityScore, distanceMiles } = match;
 
@@ -124,13 +122,6 @@ export function MatchCard({
             {user.isVerified && (
               <div className="absolute top-3 left-3 bg-parallel-purple rounded-full p-1.5 shadow-lg z-20">
                 <ShieldCheck size={16} className="text-white" />
-              </div>
-            )}
-
-            {/* "Interested in you" chip */}
-            {hasLikedMe && !user.isVerified && (
-              <div className="absolute top-3 left-3 bg-white text-parallel-void text-xs font-medium px-2 py-1 rounded-full z-10">
-                ❤️ Interested in you
               </div>
             )}
 
